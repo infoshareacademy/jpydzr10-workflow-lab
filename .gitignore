@@ -414,4 +414,4 @@ data/
 
 # --- Milestone 2+ (Django) ---
 media/
-staticfiles/
+staticfiles/.idea/
