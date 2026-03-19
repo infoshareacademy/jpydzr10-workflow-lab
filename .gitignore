@@ -398,31 +398,20 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,django,pycharm,visualstudiocode
 
 
+# =============================================================================
+# PROJEKT: Planer Maszyn Budowlanych
+# =============================================================================
 
-
-
-
-# --- Moje pliki danych ---
-# Ignorujemy bazę danych tworzoną przez program
+# --- Dane aplikacji (generowane w runtime) ---
 data/
+*.bak
 
-
-# --- Wyjątki ---
-# Chcemy śledzić plik z maszynami do importu
-!machines_db.json
-
-
-
-
-# --- Specyficzne dla Milestone 2 i 3 ---
-# Ignorujemy pliki przesłane przez użytkowników (np. zdjęcia maszyn)
-media/
-
-# Ignorujemy zebrane pliki statyczne Django
-staticfiles/
-
-# Ignorujemy folder z danymi roboczymi (Milestone 1)
-data/
- 
+# --- macOS ---
 .DS_Store
 
+# --- Wyjątki: pliki śledzone mimo reguł wyżej ---
+!machines_db.json
+
+# --- Milestone 2+ (Django) ---
+media/
+staticfiles/
