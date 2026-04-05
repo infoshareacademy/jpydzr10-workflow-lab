@@ -210,6 +210,39 @@ class TestDataStore:
         assert "M001" in uids
         assert "M002" in uids
 
+    def test_load_json_with_non_dict_items_falls_to_bak(self, tmp_store):
+        """JSON z nie-słownikowymi elementami (AttributeError) → fallback .bak."""
+        machines = [Machine("M001", "Koparka", "koparka")]
+        tmp_store.save_machines(machines)
+        tmp_store.save_machines(machines)  # tworzy .bak
+
+        # Nadpisz główny plik listą z intami (nie-dictami)
+        with open(tmp_store.paths["machines"], "w") as f:
+            json.dump([1, 2, 3], f)
+
+        # Powinien wczytać z .bak
+        loaded = tmp_store.load_machines()
+        assert len(loaded) == 1
+        assert loaded[0].uid == "M001"
+
+    def test_import_skips_non_dict_items(self, tmp_store, tmp_path):
+        """Import pomija nie-słownikowe elementy (int, string)."""
+        source = [
+            {"uid": "M001", "name": "Koparka", "type": "koparka",
+             "status": "W magazynie"},
+            42,
+            "garbage",
+            {"uid": "M002", "name": "Wywrotka", "type": "wywrotka",
+             "status": "W magazynie"},
+        ]
+        source_path = str(tmp_path / "mixed.json")
+        with open(source_path, "w") as f:
+            json.dump(source, f)
+
+        result = tmp_store.import_machines(source_path)
+        assert result["imported"] == 2
+        assert result["skipped"] == 2
+
     def test_import_file_not_found(self, tmp_store):
         with pytest.raises(FileNotFoundError):
             tmp_store.import_machines("/nonexistent/path/machines.json")

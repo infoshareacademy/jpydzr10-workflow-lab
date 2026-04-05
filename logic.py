@@ -124,8 +124,6 @@ def run_daily_sync(
         machine = machine_map.get(res.machine_id)
         if not machine or machine.status != "W magazynie":
             continue
-        if machine.status == "W serwisie":
-            continue
         if parse_date(res.start_date) > today:
             machine.status = "Zarezerwowana"
             reserved += 1

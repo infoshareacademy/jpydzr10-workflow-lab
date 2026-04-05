@@ -76,6 +76,11 @@ class App:
         """Wczytuje dane z graceful error handling."""
         try:
             return loader()
+        except OSError as e:
+            print(f"\n  BŁĄD I/O: {e}")
+            print(f"  Kontynuuję z pustą listą dla: {name}.\n")
+            self._corrupted.add(name)
+            return []
         except DataCorruptionError as e:
             print(f"\n  BŁĄD: {e}")
             print(f"  Kontynuuję z pustą listą dla: {name}.")
@@ -486,11 +491,13 @@ class App:
         cost = 0.0
         if record_type == "naprawa":
             try:
-                cost = float(input("Koszt (PLN): ").strip())
+                raw = input("Koszt (PLN): ").strip().replace(",", ".")
+                cost = float(raw) if raw else 0.0
                 if cost < 0:
                     print("  Koszt nie może być ujemny — 0.00 PLN.")
                     cost = 0.0
             except ValueError:
+                print("  Nieprawidłowa kwota — ustawiono 0.00 PLN.")
                 cost = 0.0
 
         next_insp = ""
@@ -592,12 +599,18 @@ class App:
             try:
                 choice = input("\nWybierz (0-11): ").strip()
             except EOFError:
-                self.save_all()
+                try:
+                    self.save_all()
+                except OSError:
+                    pass
                 print("\n  Do widzenia!")
                 break
 
             if choice == "0":
-                self.save_all()
+                try:
+                    self.save_all()
+                except OSError as e:
+                    print(f"  Błąd zapisu: {e}")
                 print("\n  Do widzenia!")
                 break
             elif choice in menu:
@@ -605,5 +618,7 @@ class App:
                     menu[choice][1]()
                 except (KeyboardInterrupt, EOFError):
                     print("\n  Przerwano — powrót do menu.")
+                except OSError as e:
+                    print(f"\n  Błąd zapisu/odczytu: {e}")
             else:
                 print("  Nieprawidłowy wybór.")
