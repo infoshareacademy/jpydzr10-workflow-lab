@@ -121,7 +121,7 @@ class Machine:
             notes=data.get("notes", ""),
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str | int]:
         return {
             "uid": self.uid,
             "name": self.name,
@@ -142,6 +142,9 @@ class Machine:
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Machine) and self.uid == other.uid
+
+    def __hash__(self) -> int:
+        return hash(self.uid)
 
     def __repr__(self) -> str:
         return f"Machine(uid={self.uid!r}, name={self.name!r}, status={self.status!r})"
@@ -212,7 +215,7 @@ class Reservation:
             status=data.get("status", "oczekująca"),
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str]:
         return {
             "id": self.id,
             "machineId": self.machine_id,
@@ -233,6 +236,9 @@ class Reservation:
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Reservation) and self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
 
     def __repr__(self) -> str:
         return (
@@ -299,7 +305,7 @@ class ServiceRecord:
             next_inspection=data.get("nextInspection", ""),
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str | float]:
         return {
             "id": self.id,
             "machineId": self.machine_id,
@@ -316,6 +322,9 @@ class ServiceRecord:
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, ServiceRecord) and self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
 
     def __repr__(self) -> str:
         return (

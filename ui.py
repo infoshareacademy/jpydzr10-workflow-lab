@@ -98,26 +98,22 @@ class App:
             self._save_service_records()
         self._dirty.clear()
 
-    def _save_machines(self) -> None:
-        if "machines" in self._corrupted:
-            print("  UWAGA: Zapis maszyn pominięty — plik uszkodzony.")
+    def _save_collection(self, name: str, saver, data: list) -> None:
+        """Generyczny zapis kolekcji z ochroną uszkodzonych plików."""
+        if name in self._corrupted:
+            print(f"  UWAGA: Zapis {name} pominięty — plik uszkodzony.")
             return
-        self.store.save_machines(self.machines)
-        self._dirty.discard("machines")
+        saver(data)
+        self._dirty.discard(name)
+
+    def _save_machines(self) -> None:
+        self._save_collection("machines", self.store.save_machines, self.machines)
 
     def _save_reservations(self) -> None:
-        if "reservations" in self._corrupted:
-            print("  UWAGA: Zapis rezerwacji pominięty — plik uszkodzony.")
-            return
-        self.store.save_reservations(self.reservations)
-        self._dirty.discard("reservations")
+        self._save_collection("reservations", self.store.save_reservations, self.reservations)
 
     def _save_service_records(self) -> None:
-        if "service" in self._corrupted:
-            print("  UWAGA: Zapis serwisu pominięty — plik uszkodzony.")
-            return
-        self.store.save_service_records(self.service_records)
-        self._dirty.discard("service")
+        self._save_collection("service", self.store.save_service_records, self.service_records)
 
     def find_machine(self, uid: str) -> Machine | None:
         return next((m for m in self.machines if m.uid == uid), None)
