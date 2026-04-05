@@ -174,17 +174,17 @@
     "machineId": "KOP-002",
     "startDate": "2026-02-28",
     "endDate": "2026-03-15",
-    "person": "Robert Wójcik",
+    "person": "Ewa Kamińska-Nowak",
     "projectNumber": "BUD-2024-045",
     "address": "Poznań, ul. Przemysłowa 15",
-    "status": "potwierdzona"
+    "status": "anulowana"
   },
   {
     "id": "RES-0020",
     "machineId": "POD-002",
     "startDate": "2026-03-17",
     "endDate": "2026-04-17",
-    "person": "Ewa Kamińska-Nowak",
+    "person": "Nowa Osoba",
     "projectNumber": "BUD-2025-011",
     "address": "Łódź, ul. Fabryczna 3",
     "status": "potwierdzona"
