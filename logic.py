@@ -9,7 +9,6 @@ from datetime import date
 from models import Machine, Reservation
 from utils import parse_date
 
-
 # =============================================================================
 # LOGIKA REZERWACJI
 # =============================================================================
@@ -117,11 +116,10 @@ def run_daily_sync(
                 res.end_date = today_str
                 extended += 1
 
-        elif start > today:
+        elif start > today and machine.status == "In Magazijn":
             # Rezerwacja w przyszłości — oznacz maszynę jako zarezerwowaną
             # (tylko jeśli nie jest już na budowie z inną rezerwacją)
-            if machine.status == "In Magazijn":
-                machine.status = "Gereserveerd"
-                reserved += 1
+            machine.status = "Gereserveerd"
+            reserved += 1
 
     return {"updated": updated, "extended": extended, "reserved": reserved}

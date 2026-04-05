@@ -15,6 +15,4 @@ class DataCorruptionError(Exception):
     def __init__(self, path: str, original_error: Exception):
         self.path = path
         self.original_error = original_error
-        super().__init__(
-            f"Plik {path} i kopia .bak są oba uszkodzone: {original_error}"
-        )
+        super().__init__(f"Plik {path} i kopia .bak są oba uszkodzone: {original_error}")

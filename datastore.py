@@ -45,17 +45,17 @@ class DataStore:
         if not os.path.exists(path):
             return []
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return [cls.from_dict(item) for item in json.load(f)]
-        except (json.JSONDecodeError, KeyError, ValueError):
+        except (json.JSONDecodeError, KeyError, ValueError) as orig_err:
             bak_path = path + ".bak"
             if os.path.exists(bak_path):
                 try:
-                    with open(bak_path, "r", encoding="utf-8") as f:
+                    with open(bak_path, encoding="utf-8") as f:
                         return [cls.from_dict(item) for item in json.load(f)]
                 except (json.JSONDecodeError, KeyError, ValueError) as bak_err:
                     raise DataCorruptionError(path, bak_err) from bak_err
-            raise DataCorruptionError(path, Exception(f"Brak pliku .bak dla {path}"))
+            raise DataCorruptionError(path, Exception(f"Brak pliku .bak dla {path}")) from orig_err
 
     def _save(self, path: str, items: list[T]) -> None:
         """Zapisuje listę obiektów do JSON.
@@ -67,9 +67,7 @@ class DataStore:
         if os.path.exists(path):
             shutil.copy2(path, path + ".bak")
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(
-                [item.to_dict() for item in items], f, indent=2, ensure_ascii=False
-            )
+            json.dump([item.to_dict() for item in items], f, indent=2, ensure_ascii=False)
 
     # --- Load ---
 
@@ -113,7 +111,7 @@ class DataStore:
             raise FileNotFoundError(f"Plik nie istnieje: {filepath}")
 
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 raw = json.load(f)
         except json.JSONDecodeError as e:
             raise ValueError(f"Plik {filepath} nie zawiera prawidłowego JSON: {e}") from e

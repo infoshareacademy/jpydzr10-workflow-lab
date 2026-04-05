@@ -1,8 +1,8 @@
 """Testy modeli danych: Machine, Reservation, ServiceRecord."""
 
 import pytest
-from models import Machine, Reservation, ServiceRecord
 
+from models import Machine, Reservation, ServiceRecord
 
 # =============================================================================
 # Machine
@@ -47,12 +47,14 @@ class TestMachine:
     def test_check_inspection_status_warning(self):
         """Przegląd za 7 dni — powinien zwrócić 'warning'."""
         from datetime import date, timedelta
+
         future_7 = (date.today() + timedelta(days=7)).strftime("%Y-%m-%d")
         assert Machine.check_inspection_status(future_7) == "warning"
 
     def test_check_inspection_status_ok(self):
         """Przegląd za 30 dni — powinien zwrócić 'ok'."""
         from datetime import date, timedelta
+
         future_30 = (date.today() + timedelta(days=30)).strftime("%Y-%m-%d")
         assert Machine.check_inspection_status(future_30) == "ok"
 
@@ -91,8 +93,9 @@ class TestReservation:
 
     def test_invalid_status_raises(self):
         with pytest.raises(ValueError):
-            Reservation("RES-001", "UID001", "2025-04-01", "2025-04-10",
-                        "Jan", "P100", status="aktywna")
+            Reservation(
+                "RES-001", "UID001", "2025-04-01", "2025-04-10", "Jan", "P100", status="aktywna"
+            )
 
     def test_validate_date_range_valid(self):
         assert Reservation.validate_date_range("2025-04-01", "2025-04-10") is True
@@ -104,8 +107,7 @@ class TestReservation:
         assert Reservation.validate_date_range("2025-04-10", "2025-04-01") is False
 
     def test_to_dict_and_back(self):
-        r = Reservation("RES-001", "UID001", "2025-04-01", "2025-04-10",
-                        "Jan", "P100", "Gent")
+        r = Reservation("RES-001", "UID001", "2025-04-01", "2025-04-10", "Jan", "P100", "Gent")
         d = r.to_dict()
         r2 = Reservation.from_dict(d)
         assert r2.id == r.id
@@ -149,8 +151,7 @@ class TestServiceRecord:
         assert result == "2025-04-01"
 
     def test_to_dict_and_back(self):
-        s = ServiceRecord("SRV-001", "UID001", "2025-04-01", "repair",
-                          "Wymiana filtra", 250.0)
+        s = ServiceRecord("SRV-001", "UID001", "2025-04-01", "repair", "Wymiana filtra", 250.0)
         d = s.to_dict()
         s2 = ServiceRecord.from_dict(d)
         assert s2.cost == 250.0

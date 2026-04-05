@@ -7,12 +7,11 @@ Zawiera też helpery do pobierania danych od użytkownika
 
 from datetime import date, datetime
 
-from models import Machine, Reservation, ServiceRecord
 from datastore import DataStore
 from exceptions import DataCorruptionError
 from logic import has_conflict, run_daily_sync
-from utils import parse_date, generate_unique_id
-
+from models import Machine, Reservation, ServiceRecord
+from utils import generate_unique_id, parse_date
 
 # =============================================================================
 # HELPERY DO INPUTU (przeniesione z logic.py — należą do warstwy UI)
@@ -64,9 +63,7 @@ class App:
         # Kolekcje, których pliki były uszkodzone przy starcie.
         # Zapis do nich jest blokowany, żeby nie nadpisać danych na dysku.
         self._corrupted: set[str] = set()
-        self.machines: list[Machine] = self._safe_load(
-            "machines", self.store.load_machines
-        )
+        self.machines: list[Machine] = self._safe_load("machines", self.store.load_machines)
         self.reservations: list[Reservation] = self._safe_load(
             "reservations", self.store.load_reservations
         )
@@ -94,7 +91,7 @@ class App:
         except DataCorruptionError as e:
             print(f"\n  BŁĄD: {e}")
             print(f"  Kontynuuję z pustą listą dla: {name}.")
-            print(f"  Uszkodzone pliki NIE zostały nadpisane — sprawdź je ręcznie.\n")
+            print("  Uszkodzone pliki NIE zostały nadpisane — sprawdź je ręcznie.\n")
             self._corrupted.add(name)
             return []
 
@@ -210,10 +207,7 @@ class App:
         FIX: generate_unique_id zamiast generate_id (sprawdza kolizje)
         """
         print("\n--- NOWA REZERWACJA ---")
-        available = [
-            m for m in self.machines
-            if m.status in ("In Magazijn", "Gereserveerd")
-        ]
+        available = [m for m in self.machines if m.status in ("In Magazijn", "Gereserveerd")]
         if not available:
             print("  Brak wolnych maszyn!")
             return
@@ -250,9 +244,7 @@ class App:
         # Status "confirmed" od razu — w Isocab rezerwacje tworzy warehouse manager,
         # więc nie ma procesu zatwierdzania. Status "pending" w VALID_STATUSES
         # pozostaje na przyszłość (Milestone 2: multi-user z rolami).
-        res = Reservation(
-            res_id, uid, start, end, person, project, address, "confirmed"
-        )
+        res = Reservation(res_id, uid, start, end, person, project, address, "confirmed")
         self.reservations.append(res)
 
         # Ustaw status maszyny na podstawie daty rozpoczęcia
@@ -310,10 +302,7 @@ class App:
             res_end = parse_date(res.end_date)
 
             # Zamknij tylko bieżące rezerwacje (obejmujące dziś)
-            if res_start <= today <= res_end:
-                res.status = "completed"
-            # Przeterminowane (przedłużone przez sync) — też zamknij
-            elif res_end < today:
+            if res_start <= today <= res_end or res_end < today:
                 res.status = "completed"
 
         machine.status = "In Magazijn"
@@ -321,10 +310,9 @@ class App:
 
         # Sprawdź czy maszyna ma rezerwację w przyszłości
         has_future = any(
-            r for r in self.reservations
-            if r.machine_id == uid
-            and r.status == "confirmed"
-            and parse_date(r.start_date) > today
+            r
+            for r in self.reservations
+            if r.machine_id == uid and r.status == "confirmed" and parse_date(r.start_date) > today
         )
         if has_future:
             machine.status = "Gereserveerd"
@@ -415,7 +403,10 @@ class App:
                 if not Reservation.validate_date_range(res.start_date, new_end):
                     print("  Data końca wcześniejsza niż początku — zmiana daty pominięta.")
                 elif has_conflict(
-                    self.reservations, res.machine_id, res.start_date, new_end,
+                    self.reservations,
+                    res.machine_id,
+                    res.start_date,
+                    new_end,
                     exclude_id=res.id,
                 ):
                     print("  Nowy termin koliduje z inną rezerwacją — zmiana daty pominięta.")
@@ -466,10 +457,9 @@ class App:
         machine = self.find_machine(res.machine_id)
         if machine and machine.status in ("Op de werf", "Gereserveerd"):
             other_active = [
-                r for r in self.reservations
-                if r.machine_id == res.machine_id
-                and r.status == "confirmed"
-                and r.id != res.id
+                r
+                for r in self.reservations
+                if r.machine_id == res.machine_id and r.status == "confirmed" and r.id != res.id
             ]
             if not other_active:
                 if machine.status == "Op de werf":
@@ -491,9 +481,7 @@ class App:
             print("  Nie znaleziono maszyny.")
             return
 
-        record_type = input_choice(
-            "Typ (inspection / repair): ", ("inspection", "repair")
-        )
+        record_type = input_choice("Typ (inspection / repair): ", ("inspection", "repair"))
         record_date = input_date("Data (RRRR-MM-DD): ")
         description = input("Opis: ").strip()
 
@@ -541,10 +529,7 @@ class App:
 
     def import_machines(self) -> None:
         print("\n--- IMPORT MASZYN ---")
-        path = (
-            input("Ścieżka do pliku (Enter = machines_db.json): ").strip()
-            or "machines_db.json"
-        )
+        path = input("Ścieżka do pliku (Enter = machines_db.json): ").strip() or "machines_db.json"
         try:
             result = self.store.import_machines(path)
             # Odczyt z dysku — store.import_machines() już zapisał plik,
@@ -552,10 +537,7 @@ class App:
             self.machines = self.store.load_machines()
             for detail in result["skipped_details"]:
                 print(f"  Pominięto {detail}")
-            print(
-                f"  Zaimportowano {result['imported']} maszyn"
-                f" (pominięto: {result['skipped']})."
-            )
+            print(f"  Zaimportowano {result['imported']} maszyn (pominięto: {result['skipped']}).")
         except (FileNotFoundError, ValueError) as e:
             print(f"  BŁĄD: {e}")
 

@@ -37,6 +37,5 @@ def generate_unique_id(
         if new_id not in existing_ids:
             return new_id
     raise RuntimeError(
-        f"Nie udało się wygenerować unikalnego ID z prefiksem '{prefix}' "
-        f"po {max_attempts} próbach"
+        f"Nie udało się wygenerować unikalnego ID z prefiksem '{prefix}' po {max_attempts} próbach"
     )

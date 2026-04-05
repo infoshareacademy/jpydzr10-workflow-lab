@@ -23,7 +23,6 @@ from datetime import date, timedelta
 
 from utils import parse_date
 
-
 # =============================================================================
 # MACHINE
 # =============================================================================
@@ -70,9 +69,7 @@ class Machine:
     @status.setter
     def status(self, value: str) -> None:
         if value not in self.VALID_STATUSES:
-            raise ValueError(
-                f"Nieprawidłowy status: {value}. Dozwolone: {self.VALID_STATUSES}"
-            )
+            raise ValueError(f"Nieprawidłowy status: {value}. Dozwolone: {self.VALID_STATUSES}")
         self._status = value
 
     @staticmethod
@@ -215,8 +212,7 @@ class Reservation:
 
     def __repr__(self) -> str:
         return (
-            f"Reservation(id={self.id!r}, machine_id={self.machine_id!r}, "
-            f"status={self.status!r})"
+            f"Reservation(id={self.id!r}, machine_id={self.machine_id!r}, status={self.status!r})"
         )
 
 
@@ -257,23 +253,19 @@ class ServiceRecord:
     @record_type.setter
     def record_type(self, value: str) -> None:
         if value not in self.VALID_TYPES:
-            raise ValueError(
-                f"Nieprawidłowy typ wpisu: {value}. Dozwolone: {self.VALID_TYPES}"
-            )
+            raise ValueError(f"Nieprawidłowy typ wpisu: {value}. Dozwolone: {self.VALID_TYPES}")
         self._record_type = value
 
     @staticmethod
-    def calculate_next_inspection(
-        performed_date: str, interval_months: int = 3
-    ) -> str:
+    def calculate_next_inspection(performed_date: str, interval_months: int = 3) -> str:
         """Oblicza datę następnego przeglądu (uproszczenie: 1 miesiąc = 30 dni).
 
         TODO (Milestone 2): Zamienić na dateutil.relativedelta dla precyzyjnych
         obliczeń miesięcznych (luty, lata przestępne).
         """
-        return (
-            parse_date(performed_date) + timedelta(days=interval_months * 30)
-        ).strftime("%Y-%m-%d")
+        return (parse_date(performed_date) + timedelta(days=interval_months * 30)).strftime(
+            "%Y-%m-%d"
+        )
 
     @classmethod
     def from_dict(cls, data: dict) -> "ServiceRecord":

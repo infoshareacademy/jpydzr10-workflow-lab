@@ -2,14 +2,13 @@
 
 import json
 import os
-import tempfile
 
 import pytest
-from utils import parse_date, generate_id, generate_unique_id
+
 from datastore import DataStore
 from exceptions import DataCorruptionError
 from models import Machine
-
+from utils import generate_id, generate_unique_id, parse_date
 
 # =============================================================================
 # utils
@@ -54,6 +53,7 @@ class TestGenerateUniqueId:
 
     def test_max_attempts_raises(self):
         """Przy wyczerpaniu prób powinien rzucić RuntimeError."""
+
         # Sztuczka: podajemy set tak duży, że każdy ID jest "zajęty"
         # (w praktyce niemożliwe, ale testujemy mechanizm limitu)
         class AlwaysContains:
@@ -102,7 +102,7 @@ class TestDataStore:
         assert os.path.exists(bak_path)
 
         # .bak powinien mieć starą wersję (1 maszyna)
-        with open(bak_path, "r") as f:
+        with open(bak_path) as f:
             bak_data = json.load(f)
         assert len(bak_data) == 1
 
@@ -177,7 +177,9 @@ class TestDataStore:
         tmp_store.save_machines([Machine("M001", "Dźwig", "crane")])
 
         # Importuj tę samą maszynę
-        source = [{"uid": "M001", "name": "Dźwig Updated", "type": "crane", "status": "In Magazijn"}]
+        source = [
+            {"uid": "M001", "name": "Dźwig Updated", "type": "crane", "status": "In Magazijn"}
+        ]
         source_path = str(tmp_path / "import.json")
         with open(source_path, "w") as f:
             json.dump(source, f)
@@ -203,7 +205,7 @@ class TestDataStore:
 
         result = tmp_store.import_machines(source_path)
         assert result["imported"] == 2  # M001 i M002
-        assert result["skipped"] == 2   # pusty UID i zły status
+        assert result["skipped"] == 2  # pusty UID i zły status
 
         loaded = tmp_store.load_machines()
         assert len(loaded) == 2

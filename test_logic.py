@@ -2,14 +2,13 @@
 
 from datetime import date, timedelta
 
-import pytest
-from models import Machine, Reservation
 from logic import has_conflict, run_daily_sync
-
+from models import Machine, Reservation
 
 # =============================================================================
 # Helpers
 # =============================================================================
+
 
 def _date_str(offset_days=0):
     """Zwraca datę jako string RRRR-MM-DD z przesunięciem od dziś."""
@@ -20,12 +19,17 @@ def _machine(uid="M001", status="In Magazijn"):
     return Machine(uid, "Testowa", "crane", status=status)
 
 
-def _reservation(machine_id="M001", start_offset=0, end_offset=5,
-                 status="confirmed", res_id="RES-001"):
+def _reservation(
+    machine_id="M001", start_offset=0, end_offset=5, status="confirmed", res_id="RES-001"
+):
     return Reservation(
-        res_id, machine_id,
-        _date_str(start_offset), _date_str(end_offset),
-        "Jan", "P100", status=status,
+        res_id,
+        machine_id,
+        _date_str(start_offset),
+        _date_str(end_offset),
+        "Jan",
+        "P100",
+        status=status,
     )
 
 
@@ -65,9 +69,10 @@ class TestHasConflict:
 
     def test_exclude_id(self):
         reservations = [_reservation(res_id="RES-001")]
-        assert has_conflict(
-            reservations, "M001", _date_str(0), _date_str(5), exclude_id="RES-001"
-        ) is False
+        assert (
+            has_conflict(reservations, "M001", _date_str(0), _date_str(5), exclude_id="RES-001")
+            is False
+        )
 
     def test_adjacent_dates_no_conflict(self):
         """Rezerwacja kończy się dzień przed nową — brak konfliktu."""
@@ -134,12 +139,8 @@ class TestRunDailySync:
         'Op de werf' (nie przeskoczyć na 'Gereserveerd').
         """
         m = _machine(status="In Magazijn")
-        r_active = _reservation(
-            start_offset=-2, end_offset=3, res_id="RES-ACTIVE"
-        )
-        r_future = _reservation(
-            start_offset=7, end_offset=14, res_id="RES-FUTURE"
-        )
+        r_active = _reservation(start_offset=-2, end_offset=3, res_id="RES-ACTIVE")
+        r_future = _reservation(start_offset=7, end_offset=14, res_id="RES-FUTURE")
         result = run_daily_sync([m], [r_active, r_future])
 
         # Maszyna powinna być Op de werf (aktywna rezerwacja wygrywa)
