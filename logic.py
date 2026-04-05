@@ -27,8 +27,7 @@ def has_conflict(
 
     Uwaga: stykające się daty (end_a == start_b) SĄ traktowane jako konflikt.
     W branży budowlanej maszyna potrzebuje transportu i przygotowania,
-    więc rezerwacja "dzień na dzień" nie jest praktyczna. Jeśli wymagania
-    się zmienią, zamień <= na < w jednym z warunków.
+    więc rezerwacja "dzień na dzień" nie jest praktyczna.
     """
     new_start = parse_date(start)
     new_end = parse_date(end)
@@ -36,7 +35,7 @@ def has_conflict(
     for res in reservations:
         if res.machine_id != machine_id:
             continue
-        if res.status in ("rejected", "completed"):
+        if res.status in ("anulowana", "zakończona"):
             continue
         if res.id == exclude_id:
             continue
@@ -59,19 +58,11 @@ def run_daily_sync(
     """Codzienna synchronizacja statusów.
 
     Reguły (w kolejności priorytetu):
-    1. Maszyny ze statusem 'In Herstelling' — pomijane (serwis > automatyka)
-    2. Rezerwacja aktywna (start <= dziś <= end) → maszyna 'Op de werf'
+    1. Maszyny ze statusem 'W serwisie' — pomijane (serwis > automatyka)
+    2. Rezerwacja aktywna (start <= dziś <= end) → maszyna 'Na budowie'
     3. Rezerwacja przeterminowana (end < dziś, maszyna nie wróciła)
        → przedłuż end_date do dziś (Hard Return Policy)
-    4. Maszyna z rezerwacją w przyszłości → status 'Gereserveerd'
-
-    Uwaga dotycząca kolejności iteracji:
-    Jeśli maszyna ma jednocześnie aktywną i przeterminowaną rezerwację,
-    wynik zależy od kolejności rezerwacji na liście. To jest intencjonalne:
-    - Aktywna rezerwacja ustawi 'Op de werf'
-    - Przeterminowana (przetworzona później) przedłuży end_date do dziś,
-      bo maszyna jest już 'Op de werf'
-    W obu przypadkach maszyna poprawnie pozostaje na budowie.
+    4. Maszyna z rezerwacją w przyszłości → status 'Zarezerwowana'
 
     Returns:
         dict z kluczami: updated, extended, reserved
@@ -80,11 +71,10 @@ def run_daily_sync(
     today_str = today.strftime("%Y-%m-%d")
     updated = extended = reserved = 0
 
-    # Zbierz aktywne rezerwacje per maszyna, żeby uniknąć wielokrotnych zmian
     machine_map: dict[str, Machine] = {m.uid: m for m in machines}
 
     for res in reservations:
-        if res.status != "confirmed":
+        if res.status != "potwierdzona":
             continue
 
         machine = machine_map.get(res.machine_id)
@@ -92,34 +82,26 @@ def run_daily_sync(
             continue
 
         # Maszyna w serwisie — nie ruszamy jej statusu
-        if machine.status == "In Herstelling":
+        if machine.status == "W serwisie":
             continue
 
         start = parse_date(res.start_date)
         end = parse_date(res.end_date)
 
         if start <= today <= end:
-            # Rezerwacja aktywna — maszyna powinna być na budowie
-            # UWAGA: Lokalizacja aktualizowana tylko przy zmianie statusu.
-            # Jeśli maszyna jest już "Op de werf" z innym adresem (np. przeniesiona
-            # między budowami), lokalizacja NIE zostanie zmieniona automatycznie.
-            # To jest intencjonalne — ręczna zmiana lokalizacji przez edit_machine.
-            if machine.status != "Op de werf":
-                machine.status = "Op de werf"
+            if machine.status != "Na budowie":
+                machine.status = "Na budowie"
                 machine.location = res.address or machine.location
                 updated += 1
 
         elif end < today:
             # Rezerwacja przeterminowana — maszyna nie wróciła
-            # Przedłuż rezerwację do dziś (Hard Return Policy)
-            if machine.status == "Op de werf":
+            if machine.status == "Na budowie":
                 res.end_date = today_str
                 extended += 1
 
-        elif start > today and machine.status == "In Magazijn":
-            # Rezerwacja w przyszłości — oznacz maszynę jako zarezerwowaną
-            # (tylko jeśli nie jest już na budowie z inną rezerwacją)
-            machine.status = "Gereserveerd"
+        elif start > today and machine.status == "W magazynie":
+            machine.status = "Zarezerwowana"
             reserved += 1
 
     return {"updated": updated, "extended": extended, "reserved": reserved}

@@ -411,6 +411,8 @@ data/
 
 # --- Wyjątki: pliki śledzone mimo reguł wyżej ---
 !machines_db.json
+!data/
+data/*.bak
 
 # --- Milestone 2+ (Django) ---
 media/

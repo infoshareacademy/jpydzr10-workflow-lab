@@ -14,7 +14,7 @@ from models import Machine, Reservation, ServiceRecord
 from utils import generate_unique_id, parse_date
 
 # =============================================================================
-# HELPERY DO INPUTU (przeniesione z logic.py — należą do warstwy UI)
+# HELPERY DO INPUTU (warstwa UI)
 # =============================================================================
 
 
@@ -60,47 +60,31 @@ class App:
 
     def __init__(self):
         self.store = DataStore()
-        # Kolekcje, których pliki były uszkodzone przy starcie.
-        # Zapis do nich jest blokowany, żeby nie nadpisać danych na dysku.
         self._corrupted: set[str] = set()
-        self.machines: list[Machine] = self._safe_load("machines", self.store.load_machines)
+        self.machines: list[Machine] = self._safe_load(
+            "machines", self.store.load_machines
+        )
         self.reservations: list[Reservation] = self._safe_load(
             "reservations", self.store.load_reservations
         )
         self.service_records: list[ServiceRecord] = self._safe_load(
             "service", self.store.load_service_records
         )
-        # Flagi śledzące które kolekcje zostały zmodyfikowane od ostatniego zapisu.
-        # Celowane zapisy (save_machines itp.) ustawiają flagę na False.
-        # save_all() przy wyjściu zapisuje tylko zmienione kolekcje.
         self._dirty: set[str] = set()
 
     def _safe_load(self, name: str, loader) -> list:
-        """Wczytuje dane z graceful error handling.
-
-        DataStore automatycznie próbuje wczytać .bak jeśli główny plik
-        jest uszkodzony. Jeśli oba pliki są uszkodzone, rzuca
-        DataCorruptionError — tutaj łapiemy go i wyświetlamy czytelny
-        komunikat zamiast surowego traceback.
-
-        Kolekcja jest dodawana do _corrupted, co blokuje późniejszy
-        zapis — uszkodzone pliki NIE są nadpisywane pustą listą.
-        """
+        """Wczytuje dane z graceful error handling."""
         try:
             return loader()
         except DataCorruptionError as e:
             print(f"\n  BŁĄD: {e}")
             print(f"  Kontynuuję z pustą listą dla: {name}.")
-            print("  Uszkodzone pliki NIE zostały nadpisane — sprawdź je ręcznie.\n")
+            print("  Uszkodzone pliki NIE zostały nadpisane.\n")
             self._corrupted.add(name)
             return []
 
     def save_all(self) -> None:
-        """Zapisuje tylko zmodyfikowane kolekcje (celowany zapis przy wyjściu).
-
-        Kolekcje z _corrupted są pomijane — nie nadpisujemy uszkodzonych
-        plików pustą/częściową listą.
-        """
+        """Zapisuje tylko zmodyfikowane kolekcje przy wyjściu."""
         if "machines" in self._dirty:
             self._save_machines()
         if "reservations" in self._dirty:
@@ -110,25 +94,22 @@ class App:
         self._dirty.clear()
 
     def _save_machines(self) -> None:
-        """Celowany zapis maszyn z oznaczeniem jako czyste."""
         if "machines" in self._corrupted:
-            print("  UWAGA: Zapis maszyn pominięty — plik był uszkodzony przy starcie.")
+            print("  UWAGA: Zapis maszyn pominięty — plik uszkodzony.")
             return
         self.store.save_machines(self.machines)
         self._dirty.discard("machines")
 
     def _save_reservations(self) -> None:
-        """Celowany zapis rezerwacji z oznaczeniem jako czyste."""
         if "reservations" in self._corrupted:
-            print("  UWAGA: Zapis rezerwacji pominięty — plik był uszkodzony przy starcie.")
+            print("  UWAGA: Zapis rezerwacji pominięty — plik uszkodzony.")
             return
         self.store.save_reservations(self.reservations)
         self._dirty.discard("reservations")
 
     def _save_service_records(self) -> None:
-        """Celowany zapis wpisów serwisowych z oznaczeniem jako czyste."""
         if "service" in self._corrupted:
-            print("  UWAGA: Zapis serwisu pominięty — plik był uszkodzony przy starcie.")
+            print("  UWAGA: Zapis serwisu pominięty — plik uszkodzony.")
             return
         self.store.save_service_records(self.service_records)
         self._dirty.discard("service")
@@ -141,23 +122,28 @@ class App:
     # -------------------------------------------------------------------------
 
     def show_machines(self) -> None:
-        print(f"\n{'UID':<14} {'Nazwa':<22} {'Status':<16} Lokalizacja")
+        print(
+            f"\n{'UID':<14} {'Nazwa':<22} {'Status':<16} Lokalizacja"
+        )
         print(self.LINE)
         if not self.machines:
-            print("  Brak maszyn. Użyj opcji 10 żeby zaimportować z pliku.")
+            print("  Brak maszyn. Użyj opcji 10 żeby zaimportować.")
             return
         for m in self.machines:
             insp = Machine.check_inspection_status(m.inspection_date)
-            markers = {"warning": " [!]", "overdue": " [PRZETERMINOWANY]"}
+            markers = {
+                "warning": " [!]",
+                "overdue": " [PRZEGLĄD!]",
+            }
             marker = markers.get(insp, "")
             print(f"{m}{marker}")
 
     def show_reservations(self) -> None:
         for label, st in [
-            ("Oczekujące", "pending"),
-            ("Aktywne", "confirmed"),
-            ("Zakończone", "completed"),
-            ("Anulowane", "rejected"),
+            ("Oczekujące", "oczekująca"),
+            ("Aktywne (potwierdzone)", "potwierdzona"),
+            ("Zakończone", "zakończona"),
+            ("Anulowane", "anulowana"),
         ]:
             group = [r for r in self.reservations if r.status == st]
             if group:
@@ -174,40 +160,37 @@ class App:
         self._display_service_records(uid)
 
     def _display_service_records(self, uid: str = "") -> None:
-        """Wyświetla wpisy serwisowe (opcjonalnie filtrowane po UID).
-
-        Wydzielone z show_service_history, żeby logika wyświetlania
-        była testowalna bez input().
-        """
-        records = [r for r in self.service_records if not uid or r.machine_id == uid]
+        """Wyświetla wpisy serwisowe (opcjonalnie filtrowane po UID)."""
+        records = [
+            r for r in self.service_records
+            if not uid or r.machine_id == uid
+        ]
         if not records:
             print("  Brak wpisów.")
             return
 
-        print(f"\n{'Data':<12} {'Typ':<12} {'Koszt':<14} Opis")
+        print(
+            f"\n{'Data':<12} {'Typ':<12} {'Koszt':<14} Opis"
+        )
         print(self.LINE)
         total = 0.0
         for r in records:
             print(f"  {r}")
             total += r.cost
         print(self.LINE)
-        print(f"  ŁĄCZNY KOSZT: {total:.2f} EUR")
+        print(f"  ŁĄCZNY KOSZT: {total:.2f} PLN")
 
     # -------------------------------------------------------------------------
     # Formularze — tworzenie i edycja
     # -------------------------------------------------------------------------
 
     def create_reservation(self) -> None:
-        """Tworzy nową rezerwację.
-
-        FIX: Po utworzeniu rezerwacji ustawia status maszyny:
-        - 'Op de werf' jeśli rezerwacja zaczyna się dziś lub wcześniej
-        - 'Gereserveerd' jeśli rezerwacja jest w przyszłości
-        FIX: Walidacja wymaganych pól (osoba, numer projektu)
-        FIX: generate_unique_id zamiast generate_id (sprawdza kolizje)
-        """
+        """Tworzy nową rezerwację."""
         print("\n--- NOWA REZERWACJA ---")
-        available = [m for m in self.machines if m.status in ("In Magazijn", "Gereserveerd")]
+        available = [
+            m for m in self.machines
+            if m.status in ("W magazynie", "Zarezerwowana")
+        ]
         if not available:
             print("  Brak wolnych maszyn!")
             return
@@ -220,7 +203,7 @@ class App:
 
         uid = input("\nUID maszyny: ").strip()
         if uid not in available_uids:
-            print("  Maszyna nie jest dostępna (nie ma jej na liście wolnych).")
+            print("  Maszyna nie jest dostępna.")
             return
 
         start = input_date("Data od (RRRR-MM-DD): ")
@@ -241,26 +224,25 @@ class App:
         existing_ids = {r.id for r in self.reservations}
         res_id = generate_unique_id("RES-", existing_ids)
 
-        # Status "confirmed" od razu — w Isocab rezerwacje tworzy warehouse manager,
-        # więc nie ma procesu zatwierdzania. Status "pending" w VALID_STATUSES
-        # pozostaje na przyszłość (Milestone 2: multi-user z rolami).
-        res = Reservation(res_id, uid, start, end, person, project, address, "confirmed")
+        res = Reservation(
+            res_id, uid, start, end, person, project,
+            address, "potwierdzona",
+        )
         self.reservations.append(res)
 
-        # Ustaw status maszyny na podstawie daty rozpoczęcia
         machine = self.find_machine(uid)
         if not machine:
-            print("  Błąd wewnętrzny: nie znaleziono maszyny po walidacji.")
+            print("  Błąd wewnętrzny: nie znaleziono maszyny.")
             return
 
         today = date.today()
         start_date = parse_date(start)
 
         if start_date <= today:
-            machine.status = "Op de werf"
+            machine.status = "Na budowie"
             machine.location = address or machine.location
         else:
-            machine.status = "Gereserveerd"
+            machine.status = "Zarezerwowana"
 
         self._dirty.add("reservations")
         self._save_reservations()
@@ -269,14 +251,9 @@ class App:
         print(f"\n  Rezerwacja utworzona: {res.title}")
 
     def return_machine(self) -> None:
-        """Realizuje zwrot maszyny do magazynu.
-
-        FIX: Zamyka tylko rezerwacje, które obejmują dzisiejszą datę
-        (start <= today <= end), nie wszystkie z start <= today.
-        Rezerwacje w przyszłości pozostają nienaruszone.
-        """
+        """Realizuje zwrot maszyny do magazynu."""
         print("\n--- ZWROT MASZYNY ---")
-        on_site = [m for m in self.machines if m.status == "Op de werf"]
+        on_site = [m for m in self.machines if m.status == "Na budowie"]
         if not on_site:
             print("  Brak maszyn do zwrotu.")
             return
@@ -287,7 +264,7 @@ class App:
 
         uid = input("\nUID maszyny: ").strip()
         machine = self.find_machine(uid)
-        if not machine or machine.status != "Op de werf":
+        if not machine or machine.status != "Na budowie":
             print("  Nie znaleziono maszyny na budowie.")
             return
 
@@ -295,27 +272,26 @@ class App:
         for res in self.reservations:
             if res.machine_id != uid:
                 continue
-            if res.status != "confirmed":
+            if res.status != "potwierdzona":
                 continue
 
             res_start = parse_date(res.start_date)
             res_end = parse_date(res.end_date)
 
-            # Zamknij tylko bieżące rezerwacje (obejmujące dziś)
             if res_start <= today <= res_end or res_end < today:
-                res.status = "completed"
+                res.status = "zakończona"
 
-        machine.status = "In Magazijn"
+        machine.status = "W magazynie"
         machine.location = "Magazyn"
 
-        # Sprawdź czy maszyna ma rezerwację w przyszłości
         has_future = any(
-            r
-            for r in self.reservations
-            if r.machine_id == uid and r.status == "confirmed" and parse_date(r.start_date) > today
+            r for r in self.reservations
+            if r.machine_id == uid
+            and r.status == "potwierdzona"
+            and parse_date(r.start_date) > today
         )
         if has_future:
-            machine.status = "Gereserveerd"
+            machine.status = "Zarezerwowana"
 
         self._dirty.add("reservations")
         self._save_reservations()
@@ -343,11 +319,14 @@ class App:
         if new_model:
             machine.model = new_model
 
-        new_location = input(f"  Lokalizacja [{machine.location}]: ").strip()
-        if new_location:
-            machine.location = new_location
+        new_loc = input(f"  Lokalizacja [{machine.location}]: ").strip()
+        if new_loc:
+            machine.location = new_loc
 
-        print(f"\n  Dozwolone statusy: {', '.join(Machine.VALID_STATUSES)}")
+        print(
+            f"\n  Dozwolone statusy: "
+            f"{', '.join(Machine.VALID_STATUSES)}"
+        )
         new_status = input(f"  Status [{machine.status}]: ").strip()
         if new_status:
             try:
@@ -363,7 +342,10 @@ class App:
         """Edycja istniejącej rezerwacji z poziomu konsoli."""
         print("\n--- EDYCJA REZERWACJI ---")
 
-        active = [r for r in self.reservations if r.status in ("pending", "confirmed")]
+        active = [
+            r for r in self.reservations
+            if r.status in ("oczekująca", "potwierdzona")
+        ]
         if not active:
             print("  Brak aktywnych rezerwacji do edycji.")
             return
@@ -373,7 +355,7 @@ class App:
             print(f"  {i}. {r}")
 
         try:
-            choice = int(input("\nNumer rezerwacji z listy powyżej: ").strip())
+            choice = int(input("\nNumer rezerwacji: ").strip())
             if choice < 1:
                 raise IndexError
             res = active[choice - 1]
@@ -388,7 +370,9 @@ class App:
         if new_person:
             res.person = new_person
 
-        new_project = input(f"  Nr projektu [{res.project_number}]: ").strip()
+        new_project = input(
+            f"  Nr projektu [{res.project_number}]: "
+        ).strip()
         if new_project:
             res.project_number = new_project
 
@@ -396,12 +380,16 @@ class App:
         if new_address:
             res.address = new_address
 
-        new_end = input(f"  Data końca [{res.end_date}] (RRRR-MM-DD): ").strip()
+        new_end = input(
+            f"  Data końca [{res.end_date}] (RRRR-MM-DD): "
+        ).strip()
         if new_end:
             try:
-                parse_date(new_end)  # walidacja formatu
-                if not Reservation.validate_date_range(res.start_date, new_end):
-                    print("  Data końca wcześniejsza niż początku — zmiana daty pominięta.")
+                parse_date(new_end)
+                if not Reservation.validate_date_range(
+                    res.start_date, new_end
+                ):
+                    print("  Data końca < początku — pominięto.")
                 elif has_conflict(
                     self.reservations,
                     res.machine_id,
@@ -409,26 +397,24 @@ class App:
                     new_end,
                     exclude_id=res.id,
                 ):
-                    print("  Nowy termin koliduje z inną rezerwacją — zmiana daty pominięta.")
+                    print("  Nowy termin koliduje — pominięto.")
                 else:
                     res.end_date = new_end
             except ValueError:
-                print("  Zły format daty — zmiana pominięta.")
+                print("  Zły format daty — pominięto.")
 
         self._dirty.add("reservations")
         self._save_reservations()
         print(f"  Rezerwacja {res.id} zaktualizowana.")
 
     def cancel_reservation(self) -> None:
-        """Anulowanie (odrzucenie) rezerwacji.
-
-        FIX: Obsługuje status 'Gereserveerd' — jeśli maszyna była
-        zarezerwowana na przyszłość i nie ma innych rezerwacji,
-        wraca do 'In Magazijn'.
-        """
+        """Anulowanie rezerwacji."""
         print("\n--- ANULOWANIE REZERWACJI ---")
 
-        active = [r for r in self.reservations if r.status in ("pending", "confirmed")]
+        active = [
+            r for r in self.reservations
+            if r.status in ("oczekująca", "potwierdzona")
+        ]
         if not active:
             print("  Brak aktywnych rezerwacji do anulowania.")
             return
@@ -438,7 +424,9 @@ class App:
             print(f"  {i}. {r}")
 
         try:
-            choice = int(input("\nNumer rezerwacji do anulowania: ").strip())
+            choice = int(
+                input("\nNumer rezerwacji do anulowania: ").strip()
+            )
             if choice < 1:
                 raise IndexError
             res = active[choice - 1]
@@ -446,25 +434,30 @@ class App:
             print("  Nieprawidłowy wybór.")
             return
 
-        confirm = input(f"  Na pewno anulować {res.id}? (t/n): ").strip().lower()
+        confirm = input(
+            f"  Na pewno anulować {res.id}? (t/n): "
+        ).strip().lower()
         if confirm != "t":
             print("  Anulowanie przerwane.")
             return
 
-        res.status = "rejected"
+        res.status = "anulowana"
 
-        # Sprawdź czy maszyna powinna wrócić do magazynu
         machine = self.find_machine(res.machine_id)
-        if machine and machine.status in ("Op de werf", "Gereserveerd"):
+        if machine and machine.status in ("Na budowie", "Zarezerwowana"):
             other_active = [
-                r
-                for r in self.reservations
-                if r.machine_id == res.machine_id and r.status == "confirmed" and r.id != res.id
+                r for r in self.reservations
+                if r.machine_id == res.machine_id
+                and r.status == "potwierdzona"
+                and r.id != res.id
             ]
             if not other_active:
-                if machine.status == "Op de werf":
-                    print("  UWAGA: Maszyna była 'Op de werf' — upewnij się, że fizycznie wróciła.")
-                machine.status = "In Magazijn"
+                if machine.status == "Na budowie":
+                    print(
+                        "  UWAGA: Maszyna była 'Na budowie' "
+                        "— upewnij się, że fizycznie wróciła."
+                    )
+                machine.status = "W magazynie"
                 machine.location = "Magazyn"
 
         self._dirty.add("reservations")
@@ -481,25 +474,31 @@ class App:
             print("  Nie znaleziono maszyny.")
             return
 
-        record_type = input_choice("Typ (inspection / repair): ", ("inspection", "repair"))
+        record_type = input_choice(
+            "Typ (przegląd / naprawa): ", ("przegląd", "naprawa")
+        )
         record_date = input_date("Data (RRRR-MM-DD): ")
         description = input("Opis: ").strip()
 
         cost = 0.0
-        if record_type == "repair":
+        if record_type == "naprawa":
             try:
-                cost = float(input("Koszt (EUR): ").strip())
+                cost = float(input("Koszt (PLN): ").strip())
                 if cost < 0:
-                    print("  Koszt nie może być ujemny — ustawiam 0.00 EUR.")
+                    print("  Koszt nie może być ujemny — 0.00 PLN.")
                     cost = 0.0
             except ValueError:
                 cost = 0.0
 
         next_insp = ""
-        if record_type == "inspection":
-            interval = input("Interwał miesięcy (domyślnie 3): ").strip()
+        if record_type == "przegląd":
+            interval = input(
+                "Interwał miesięcy (domyślnie 3): "
+            ).strip()
             interval = int(interval) if interval.isdigit() else 3
-            next_insp = ServiceRecord.calculate_next_inspection(record_date, interval)
+            next_insp = ServiceRecord.calculate_next_inspection(
+                record_date, interval
+            )
             machine.inspection_date = next_insp
             print(f"  Następny przegląd: {next_insp}")
 
@@ -507,13 +506,8 @@ class App:
         record_id = generate_unique_id("SRV-", existing_ids)
 
         record = ServiceRecord(
-            record_id,
-            uid,
-            record_date,
-            record_type,
-            description,
-            cost,
-            next_insp,
+            record_id, uid, record_date, record_type,
+            description, cost, next_insp,
         )
         self.service_records.append(record)
 
@@ -529,21 +523,25 @@ class App:
 
     def import_machines(self) -> None:
         print("\n--- IMPORT MASZYN ---")
-        path = input("Ścieżka do pliku (Enter = machines_db.json): ").strip() or "machines_db.json"
+        path = (
+            input("Ścieżka do pliku (Enter = machines_db.json): ").strip()
+            or "machines_db.json"
+        )
         try:
             result = self.store.import_machines(path)
-            # Odczyt z dysku — store.import_machines() już zapisał plik,
-            # więc _dirty nie jest potrzebne (dane zsynchronizowane z dyskiem).
             self.machines = self.store.load_machines()
             for detail in result["skipped_details"]:
                 print(f"  Pominięto {detail}")
-            print(f"  Zaimportowano {result['imported']} maszyn (pominięto: {result['skipped']}).")
+            print(
+                f"  Zaimportowano {result['imported']} maszyn "
+                f"(pominięto: {result['skipped']})."
+            )
         except (FileNotFoundError, ValueError) as e:
             print(f"  BŁĄD: {e}")
 
     def sync(self) -> None:
         result = run_daily_sync(self.machines, self.reservations)
-        total = result["updated"] + result["extended"] + result["reserved"]
+        total = sum(result.values())
         if total:
             self._dirty.add("machines")
             self._save_machines()

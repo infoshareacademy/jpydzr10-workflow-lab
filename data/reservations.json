@@ -1,0 +1,272 @@
+[
+  {
+    "id": "RES-0014",
+    "machineId": "WAL-001",
+    "startDate": "2025-03-08",
+    "endDate": "2025-04-12",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2024-045",
+    "address": "Rzeszów, ul. Mostowa 14",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0015",
+    "machineId": "NAC-002",
+    "startDate": "2025-03-16",
+    "endDate": "2025-04-23",
+    "person": "Anna Nowak",
+    "projectNumber": "BUD-2025-034",
+    "address": "Łódź, ul. Fabryczna 3",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0003",
+    "machineId": "LAD-001",
+    "startDate": "2025-03-21",
+    "endDate": "2025-04-10",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2026-009",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0007",
+    "machineId": "WYW-001",
+    "startDate": "2025-03-21",
+    "endDate": "2025-05-04",
+    "person": "Katarzyna Zielińska",
+    "projectNumber": "BUD-2025-027",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0011",
+    "machineId": "ZUR-002",
+    "startDate": "2025-06-25",
+    "endDate": "2025-07-07",
+    "person": "Jan Kowalski",
+    "projectNumber": "BUD-2025-027",
+    "address": "Łódź, ul. Fabryczna 3",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0005",
+    "machineId": "KOP-001",
+    "startDate": "2025-07-10",
+    "endDate": "2025-08-14",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2025-011",
+    "address": "Warszawa, ul. Konstruktorska 8",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0001",
+    "machineId": "WAL-001",
+    "startDate": "2025-07-25",
+    "endDate": "2025-08-29",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2025-011",
+    "address": "Rzeszów, ul. Mostowa 14",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0002",
+    "machineId": "NAC-002",
+    "startDate": "2025-09-01",
+    "endDate": "2025-10-14",
+    "person": "Jan Kowalski",
+    "projectNumber": "BUD-2026-005",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0010",
+    "machineId": "ZUR-001",
+    "startDate": "2025-09-02",
+    "endDate": "2025-10-04",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2026-001",
+    "address": "Lublin, ul. Inżynierska 9",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0006",
+    "machineId": "LAD-002",
+    "startDate": "2025-09-10",
+    "endDate": "2025-10-05",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2024-032",
+    "address": "Wrocław, ul. Budowlana 21",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0012",
+    "machineId": "POD-002",
+    "startDate": "2025-09-29",
+    "endDate": "2025-10-07",
+    "person": "Anna Nowak",
+    "projectNumber": "BUD-2025-003",
+    "address": "Rzeszów, ul. Mostowa 14",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0004",
+    "machineId": "KOL-002",
+    "startDate": "2025-10-05",
+    "endDate": "2025-10-23",
+    "person": "Robert Wójcik",
+    "projectNumber": "BUD-2024-032",
+    "address": "Gdańsk, ul. Portowa 44",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0008",
+    "machineId": "WAL-002",
+    "startDate": "2025-10-12",
+    "endDate": "2025-10-28",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2024-045",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0009",
+    "machineId": "KOP-002",
+    "startDate": "2025-11-12",
+    "endDate": "2025-12-08",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2025-034",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0025",
+    "machineId": "ZUR-001",
+    "startDate": "2026-01-23",
+    "endDate": "2026-02-02",
+    "person": "Jan Kowalski",
+    "projectNumber": "BUD-2026-009",
+    "address": "Rzeszów, ul. Mostowa 14",
+    "status": "anulowana"
+  },
+  {
+    "id": "RES-0013",
+    "machineId": "POD-001",
+    "startDate": "2026-01-25",
+    "endDate": "2026-02-18",
+    "person": "Jan Kowalski",
+    "projectNumber": "BUD-2024-045",
+    "address": "Szczecin, ul. Magazynowa 22",
+    "status": "zakończona"
+  },
+  {
+    "id": "RES-0023",
+    "machineId": "WAL-001",
+    "startDate": "2026-02-08",
+    "endDate": "2026-03-06",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2026-009",
+    "address": "Szczecin, ul. Magazynowa 22",
+    "status": "anulowana"
+  },
+  {
+    "id": "RES-0024",
+    "machineId": "KOP-002",
+    "startDate": "2026-02-28",
+    "endDate": "2026-03-15",
+    "person": "Robert Wójcik",
+    "projectNumber": "BUD-2024-045",
+    "address": "Poznań, ul. Przemysłowa 15",
+    "status": "anulowana"
+  },
+  {
+    "id": "RES-0020",
+    "machineId": "POD-002",
+    "startDate": "2026-03-17",
+    "endDate": "2026-04-17",
+    "person": "Ewa Kamińska",
+    "projectNumber": "BUD-2025-011",
+    "address": "Łódź, ul. Fabryczna 3",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0016",
+    "machineId": "KOP-003",
+    "startDate": "2026-03-18",
+    "endDate": "2026-04-25",
+    "person": "Ewa Kamińska",
+    "projectNumber": "BUD-2026-009",
+    "address": "Warszawa, ul. Konstruktorska 8",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0018",
+    "machineId": "CIS-002",
+    "startDate": "2026-03-18",
+    "endDate": "2026-05-07",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2025-011",
+    "address": "Gdańsk, ul. Portowa 44",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0019",
+    "machineId": "ZUR-002",
+    "startDate": "2026-03-19",
+    "endDate": "2026-05-11",
+    "person": "Robert Wójcik",
+    "projectNumber": "BUD-2024-018",
+    "address": "Wrocław, ul. Budowlana 21",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0017",
+    "machineId": "KOL-001",
+    "startDate": "2026-03-28",
+    "endDate": "2026-05-12",
+    "person": "Piotr Wiśniewski",
+    "projectNumber": "BUD-2025-019",
+    "address": "Kraków, os. Złotego Wieku 12",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0021",
+    "machineId": "LAD-001",
+    "startDate": "2026-04-20",
+    "endDate": "2026-05-11",
+    "person": "Tomasz Dąbrowski",
+    "projectNumber": "BUD-2026-001",
+    "address": "Warszawa, ul. Konstruktorska 8",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0022",
+    "machineId": "ZUR-001",
+    "startDate": "2026-05-01",
+    "endDate": "2026-06-13",
+    "person": "Tomasz Dąbrowski",
+    "projectNumber": "BUD-2024-018",
+    "address": "Wrocław, ul. Budowlana 21",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0027",
+    "machineId": "NAC-002",
+    "startDate": "2026-05-15",
+    "endDate": "2026-05-24",
+    "person": "Katarzyna Zielińska",
+    "projectNumber": "BUD-2024-032",
+    "address": "Szczecin, ul. Magazynowa 22",
+    "status": "oczekująca"
+  },
+  {
+    "id": "RES-0026",
+    "machineId": "KOL-002",
+    "startDate": "2026-06-03",
+    "endDate": "2026-06-15",
+    "person": "Marek Lewandowski",
+    "projectNumber": "BUD-2026-001",
+    "address": "Warszawa, ul. Konstruktorska 8",
+    "status": "oczekująca"
+  }
+]

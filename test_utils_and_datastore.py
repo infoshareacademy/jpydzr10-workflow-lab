@@ -36,12 +36,11 @@ class TestGenerateId:
         assert generate_id("RES-").startswith("RES-")
 
     def test_length(self):
-        # prefix (4) + 8 hex chars = 12
         assert len(generate_id("RES-")) == 12
 
     def test_unique(self):
         ids = {generate_id("RES-") for _ in range(100)}
-        assert len(ids) == 100  # wszystkie unikalne
+        assert len(ids) == 100
 
 
 class TestGenerateUniqueId:
@@ -52,10 +51,6 @@ class TestGenerateUniqueId:
         assert new_id.startswith("RES-")
 
     def test_max_attempts_raises(self):
-        """Przy wyczerpaniu prób powinien rzucić RuntimeError."""
-
-        # Sztuczka: podajemy set tak duży, że każdy ID jest "zajęty"
-        # (w praktyce niemożliwe, ale testujemy mechanizm limitu)
         class AlwaysContains:
             def __contains__(self, item):
                 return True
@@ -72,7 +67,6 @@ class TestGenerateUniqueId:
 class TestDataStore:
     @pytest.fixture
     def tmp_store(self, tmp_path):
-        """Tworzy DataStore z tymczasowym katalogiem."""
         return DataStore(data_dir=str(tmp_path))
 
     def test_load_empty(self, tmp_store):
@@ -81,8 +75,8 @@ class TestDataStore:
 
     def test_save_and_load(self, tmp_store):
         machines = [
-            Machine("M001", "Dźwig", "crane"),
-            Machine("M002", "Koparka", "excavator"),
+            Machine("M001", "Koparka", "koparka"),
+            Machine("M002", "Ładowarka", "ładowarka"),
         ]
         tmp_store.save_machines(machines)
         loaded = tmp_store.load_machines()
@@ -91,47 +85,36 @@ class TestDataStore:
         assert loaded[1].uid == "M002"
 
     def test_backup_created(self, tmp_store):
-        machines = [Machine("M001", "Dźwig", "crane")]
+        machines = [Machine("M001", "Koparka", "koparka")]
         tmp_store.save_machines(machines)
 
-        # Drugie zapisanie — powinno utworzyć .bak
-        machines.append(Machine("M002", "Koparka", "excavator"))
+        machines.append(Machine("M002", "Ładowarka", "ładowarka"))
         tmp_store.save_machines(machines)
 
         bak_path = tmp_store.paths["machines"] + ".bak"
         assert os.path.exists(bak_path)
 
-        # .bak powinien mieć starą wersję (1 maszyna)
         with open(bak_path) as f:
             bak_data = json.load(f)
         assert len(bak_data) == 1
 
     def test_corrupted_json_falls_back_to_bak(self, tmp_store):
-        # Zapisz poprawne dane
-        machines = [Machine("M001", "Dźwig", "crane")]
+        machines = [Machine("M001", "Koparka", "koparka")]
+        tmp_store.save_machines(machines)
         tmp_store.save_machines(machines)
 
-        # Zapisz ponownie (tworzy .bak)
-        tmp_store.save_machines(machines)
-
-        # Uszkodź główny plik
         with open(tmp_store.paths["machines"], "w") as f:
             f.write("{{{BROKEN JSON")
 
-        # Powinien wczytać z .bak
         loaded = tmp_store.load_machines()
         assert len(loaded) == 1
         assert loaded[0].uid == "M001"
 
-    # --- Nowy test: podwójna awaria (oba pliki uszkodzone) ---
-
-    def test_both_corrupted_raises_data_corruption_error(self, tmp_store):
-        """Gdy główny plik i .bak są oba uszkodzone → DataCorruptionError."""
-        machines = [Machine("M001", "Dźwig", "crane")]
+    def test_both_corrupted_raises(self, tmp_store):
+        machines = [Machine("M001", "Koparka", "koparka")]
         tmp_store.save_machines(machines)
-        tmp_store.save_machines(machines)  # tworzy .bak
+        tmp_store.save_machines(machines)
 
-        # Uszkodź oba pliki
         with open(tmp_store.paths["machines"], "w") as f:
             f.write("{{{BROKEN")
         with open(tmp_store.paths["machines"] + ".bak", "w") as f:
@@ -140,13 +123,10 @@ class TestDataStore:
         with pytest.raises(DataCorruptionError):
             tmp_store.load_machines()
 
-    def test_corrupted_no_bak_raises_data_corruption_error(self, tmp_store):
-        """Gdy główny plik uszkodzony i brak .bak → DataCorruptionError."""
-        # Zapisz raz (bez .bak)
-        machines = [Machine("M001", "Dźwig", "crane")]
+    def test_corrupted_no_bak_raises(self, tmp_store):
+        machines = [Machine("M001", "Koparka", "koparka")]
         tmp_store.save_machines(machines)
 
-        # Uszkodź główny plik
         with open(tmp_store.paths["machines"], "w") as f:
             f.write("{{{BROKEN")
 
@@ -156,10 +136,15 @@ class TestDataStore:
     # --- Import ---
 
     def test_import_machines(self, tmp_store, tmp_path):
-        # Utwórz plik źródłowy
         source = [
-            {"uid": "M001", "name": "Dźwig", "type": "crane", "status": "In Magazijn"},
-            {"uid": "M002", "name": "Koparka", "type": "excavator", "status": "In Magazijn"},
+            {
+                "uid": "M001", "name": "Koparka",
+                "type": "koparka", "status": "W magazynie",
+            },
+            {
+                "uid": "M002", "name": "Ładowarka",
+                "type": "ładowarka", "status": "W magazynie",
+            },
         ]
         source_path = str(tmp_path / "import.json")
         with open(source_path, "w") as f:
@@ -173,12 +158,15 @@ class TestDataStore:
         assert len(loaded) == 2
 
     def test_import_no_duplicates(self, tmp_store, tmp_path):
-        # Zapisz jedną maszynę
-        tmp_store.save_machines([Machine("M001", "Dźwig", "crane")])
+        tmp_store.save_machines(
+            [Machine("M001", "Koparka", "koparka")]
+        )
 
-        # Importuj tę samą maszynę
         source = [
-            {"uid": "M001", "name": "Dźwig Updated", "type": "crane", "status": "In Magazijn"}
+            {
+                "uid": "M001", "name": "Koparka v2",
+                "type": "koparka", "status": "W magazynie",
+            },
         ]
         source_path = str(tmp_path / "import.json")
         with open(source_path, "w") as f:
@@ -187,25 +175,34 @@ class TestDataStore:
         tmp_store.import_machines(source_path)
         loaded = tmp_store.load_machines()
         assert len(loaded) == 1
-        assert loaded[0].name == "Dźwig Updated"
-
-    # --- Nowy test: defensywny import (pominięcie uszkodzonych rekordów) ---
+        assert loaded[0].name == "Koparka v2"
 
     def test_import_skips_invalid_records(self, tmp_store, tmp_path):
-        """Uszkodzone rekordy w pliku importu nie przerywają całego importu."""
         source = [
-            {"uid": "M001", "name": "Dźwig", "type": "crane", "status": "In Magazijn"},
-            {"uid": "", "name": "Brak UID", "type": "crane", "status": "In Magazijn"},
-            {"uid": "M003", "name": "Ładowarka", "type": "loader", "status": "BZDURA"},
-            {"uid": "M002", "name": "Koparka", "type": "excavator", "status": "In Magazijn"},
+            {
+                "uid": "M001", "name": "Koparka",
+                "type": "koparka", "status": "W magazynie",
+            },
+            {
+                "uid": "", "name": "Brak UID",
+                "type": "koparka", "status": "W magazynie",
+            },
+            {
+                "uid": "M003", "name": "Ładowarka",
+                "type": "ładowarka", "status": "BZDURA",
+            },
+            {
+                "uid": "M002", "name": "Wywrotka",
+                "type": "wywrotka", "status": "W magazynie",
+            },
         ]
         source_path = str(tmp_path / "import.json")
         with open(source_path, "w") as f:
             json.dump(source, f)
 
         result = tmp_store.import_machines(source_path)
-        assert result["imported"] == 2  # M001 i M002
-        assert result["skipped"] == 2  # pusty UID i zły status
+        assert result["imported"] == 2
+        assert result["skipped"] == 2
 
         loaded = tmp_store.load_machines()
         assert len(loaded) == 2
@@ -213,15 +210,11 @@ class TestDataStore:
         assert "M001" in uids
         assert "M002" in uids
 
-    # --- Import: obsługa błędów ---
-
     def test_import_file_not_found(self, tmp_store):
-        """Import z nieistniejącego pliku → FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
             tmp_store.import_machines("/nonexistent/path/machines.json")
 
     def test_import_invalid_json(self, tmp_store, tmp_path):
-        """Import z uszkodzonego pliku JSON → ValueError."""
         bad_path = str(tmp_path / "broken.json")
         with open(bad_path, "w") as f:
             f.write("{{{NOT VALID JSON")
@@ -230,10 +223,9 @@ class TestDataStore:
             tmp_store.import_machines(bad_path)
 
     def test_import_json_dict_instead_of_list(self, tmp_store, tmp_path):
-        """Import z JSON-em zawierającym {} zamiast [] → ValueError."""
         dict_path = str(tmp_path / "dict.json")
         with open(dict_path, "w") as f:
-            json.dump({"uid": "M001", "name": "Dźwig"}, f)
+            json.dump({"uid": "M001", "name": "Koparka"}, f)
 
         with pytest.raises(ValueError, match="powinien zawierać listę"):
             tmp_store.import_machines(dict_path)

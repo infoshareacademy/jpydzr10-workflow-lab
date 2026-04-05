@@ -7,15 +7,17 @@ Każda klasa:
 - Używa hermetyzacji dla pól z walidacją (@property + setter)
 - Posiada dekoratory @property, @classmethod, @staticmethod
 
-Mapowanie nazw Python → JSON (camelCase w JSON dla kompatybilności z frontendem):
-  machine_type  → type
+Mapowanie nazw Python → JSON (camelCase w JSON dla kompatybilności):
+  machine_type    → type
   inspection_date → inspectionDate
-  machine_id    → machineId
-  start_date    → startDate
-  end_date      → endDate
-  project_number → projectNumber
-  record_date   → date
-  record_type   → type
+  serial_number   → serialNumber
+  build_year      → buildYear
+  machine_id      → machineId
+  start_date      → startDate
+  end_date        → endDate
+  project_number  → projectNumber
+  record_date     → date
+  record_type     → type
   next_inspection → nextInspection
 """
 
@@ -32,13 +34,13 @@ class Machine:
     """Reprezentuje maszynę budowlaną w inwentarzu firmy.
 
     Statusy:
-        In Magazijn   — w magazynie, dostępna do rezerwacji
-        Gereserveerd  — zarezerwowana na przyszły termin
-        Op de werf    — aktualnie na budowie (rezerwacja w trakcie)
-        In Herstelling — w serwisie (wyłączona z rezerwacji)
+        W magazynie   — dostępna do rezerwacji
+        Zarezerwowana — zarezerwowana na przyszły termin
+        Na budowie    — aktualnie na budowie (rezerwacja w trakcie)
+        W serwisie    — w naprawie/przeglądzie (wyłączona z rezerwacji)
     """
 
-    VALID_STATUSES = ("In Magazijn", "Op de werf", "Gereserveerd", "In Herstelling")
+    VALID_STATUSES = ("W magazynie", "Na budowie", "Zarezerwowana", "W serwisie")
 
     def __init__(
         self,
@@ -49,7 +51,11 @@ class Machine:
         capacity: int = 0,
         inspection_date: str = "",
         location: str = "Magazyn",
-        status: str = "In Magazijn",
+        status: str = "W magazynie",
+        manufacturer: str = "",
+        serial_number: str = "",
+        build_year: int = 0,
+        notes: str = "",
     ):
         if not uid or not uid.strip():
             raise ValueError("UID maszyny nie może być pusty")
@@ -61,6 +67,10 @@ class Machine:
         self.inspection_date = inspection_date
         self.location = location
         self.status = status  # wywołuje setter z walidacją
+        self.manufacturer = manufacturer
+        self.serial_number = serial_number
+        self.build_year = build_year
+        self.notes = notes
 
     @property
     def status(self) -> str:
@@ -104,7 +114,11 @@ class Machine:
             capacity=data.get("capacity", 0),
             inspection_date=data.get("inspectionDate", ""),
             location=data.get("location", "Magazyn"),
-            status=data.get("status", "In Magazijn"),
+            status=data.get("status", "W magazynie"),
+            manufacturer=data.get("manufacturer", ""),
+            serial_number=data.get("serialNumber", ""),
+            build_year=data.get("buildYear", 0),
+            notes=data.get("notes", ""),
         )
 
     def to_dict(self) -> dict:
@@ -117,6 +131,10 @@ class Machine:
             "inspectionDate": self.inspection_date,
             "location": self.location,
             "status": self.status,
+            "manufacturer": self.manufacturer,
+            "serialNumber": self.serial_number,
+            "buildYear": self.build_year,
+            "notes": self.notes,
         }
 
     def __str__(self) -> str:
@@ -134,7 +152,7 @@ class Machine:
 class Reservation:
     """Reprezentuje rezerwację maszyny na określony okres."""
 
-    VALID_STATUSES = ("pending", "confirmed", "rejected", "completed")
+    VALID_STATUSES = ("oczekująca", "potwierdzona", "anulowana", "zakończona")
 
     def __init__(
         self,
@@ -145,7 +163,7 @@ class Reservation:
         person: str,
         project_number: str,
         address: str = "",
-        status: str = "pending",
+        status: str = "oczekująca",
     ):
         if not reservation_id or not reservation_id.strip():
             raise ValueError("ID rezerwacji nie może być puste")
@@ -188,7 +206,7 @@ class Reservation:
             person=data.get("person", ""),
             project_number=data.get("projectNumber", ""),
             address=data.get("address", ""),
-            status=data.get("status", "pending"),
+            status=data.get("status", "oczekująca"),
         )
 
     def to_dict(self) -> dict:
@@ -205,7 +223,7 @@ class Reservation:
 
     def __str__(self) -> str:
         return (
-            f"[{self.status:>10}] {self.machine_id:<14} "
+            f"[{self.status:>12}] {self.machine_id:<14} "
             f"{self.start_date} → {self.end_date}  "
             f"{self.project_number} ({self.person})"
         )
@@ -224,7 +242,7 @@ class Reservation:
 class ServiceRecord:
     """Rejestruje przegląd techniczny lub naprawę maszyny."""
 
-    VALID_TYPES = ("inspection", "repair")
+    VALID_TYPES = ("przegląd", "naprawa")
 
     def __init__(
         self,
@@ -258,11 +276,7 @@ class ServiceRecord:
 
     @staticmethod
     def calculate_next_inspection(performed_date: str, interval_months: int = 3) -> str:
-        """Oblicza datę następnego przeglądu (uproszczenie: 1 miesiąc = 30 dni).
-
-        TODO (Milestone 2): Zamienić na dateutil.relativedelta dla precyzyjnych
-        obliczeń miesięcznych (luty, lata przestępne).
-        """
+        """Oblicza datę następnego przeglądu (uproszczenie: 1 miesiąc = 30 dni)."""
         return (parse_date(performed_date) + timedelta(days=interval_months * 30)).strftime(
             "%Y-%m-%d"
         )
@@ -273,7 +287,7 @@ class ServiceRecord:
             record_id=data["id"],
             machine_id=data.get("machineId", ""),
             record_date=data.get("date", ""),
-            record_type=data.get("type", "inspection"),
+            record_type=data.get("type", "przegląd"),
             description=data.get("description", ""),
             cost=data.get("cost", 0.0),
             next_inspection=data.get("nextInspection", ""),
@@ -291,7 +305,7 @@ class ServiceRecord:
         }
 
     def __str__(self) -> str:
-        cost_str = f"{self.cost:.2f} EUR" if self.cost else "---"
+        cost_str = f"{self.cost:.2f} PLN" if self.cost else "---"
         return f"{self.record_date}  {self.record_type:<12}  {cost_str:<14}  {self.description}"
 
     def __repr__(self) -> str:
