@@ -47,27 +47,31 @@ class DataStore:
         try:
             with open(path, encoding="utf-8") as f:
                 return [cls.from_dict(item) for item in json.load(f)]
-        except (json.JSONDecodeError, KeyError, ValueError, TypeError) as orig_err:
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError, AttributeError) as orig_err:
             bak_path = path + ".bak"
             if os.path.exists(bak_path):
                 try:
                     with open(bak_path, encoding="utf-8") as f:
                         return [cls.from_dict(item) for item in json.load(f)]
-                except (json.JSONDecodeError, KeyError, ValueError, TypeError) as bak_err:
+                except (json.JSONDecodeError, KeyError, ValueError, TypeError, AttributeError) as bak_err:
                     raise DataCorruptionError(path, bak_err) from bak_err
             raise DataCorruptionError(path, Exception(f"Brak pliku .bak dla {path}")) from orig_err
 
     def _save(self, path: str, items: list[T]) -> None:
-        """Zapisuje listę obiektów do JSON.
+        """Zapisuje listę obiektów do JSON (atomowy zapis).
 
-        Tworzy kopię zapasową (.bak) istniejącego pliku przed nadpisaniem,
-        żeby chronić dane przed utratą w razie awarii.
+        Zapisuje najpierw do pliku tymczasowego (.tmp), a dopiero po
+        pomyślnym zapisie podmienia główny plik i tworzy kopię .bak.
+        Dzięki temu crash w trakcie zapisu nie uszkodzi ani głównego
+        pliku, ani kopii zapasowej.
         """
         os.makedirs(self.data_dir, exist_ok=True)
+        tmp_path = path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump([item.to_dict() for item in items], f, indent=2, ensure_ascii=False)
         if os.path.exists(path):
             shutil.copy2(path, path + ".bak")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump([item.to_dict() for item in items], f, indent=2, ensure_ascii=False)
+        shutil.move(tmp_path, path)
 
     # --- Load ---
 
@@ -132,7 +136,7 @@ class DataStore:
                 m = Machine.from_dict(item)
                 existing[m.uid] = m
                 imported += 1
-            except (ValueError, KeyError) as e:
+            except (ValueError, KeyError, TypeError, AttributeError) as e:
                 skipped_details.append(f"Rekord #{i + 1}: {e}")
                 skipped += 1
 

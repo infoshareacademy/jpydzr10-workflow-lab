@@ -100,12 +100,33 @@ def run_daily_sync(
                 updated += 1
 
         elif end < today:
-            # Rezerwacja przeterminowana — maszyna nie wróciła
+            # Rezerwacja przeterminowana
             if machine.status == "Na budowie":
+                # Maszyna nie wróciła — przedłuż rezerwację do dziś
                 res.end_date = today_str
                 extended += 1
+            elif machine.status == "Zarezerwowana":
+                # Rezerwacja minęła bez aktywacji — zwróć do magazynu
+                machine.status = "W magazynie"
+                updated += 1
 
         elif start > today and machine.status == "W magazynie":
+            machine.status = "Zarezerwowana"
+            reserved += 1
+
+    # Drugi przebieg: maszyny "W magazynie" z przyszłą rezerwacją → "Zarezerwowana"
+    # (naprawia kolejność iteracji gdy przeterminowana rez zepchnęła status)
+    for res in reservations:
+        if res.status != "potwierdzona":
+            continue
+        if not res.start_date:
+            continue
+        machine = machine_map.get(res.machine_id)
+        if not machine or machine.status != "W magazynie":
+            continue
+        if machine.status == "W serwisie":
+            continue
+        if parse_date(res.start_date) > today:
             machine.status = "Zarezerwowana"
             reserved += 1
 

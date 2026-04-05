@@ -667,3 +667,123 @@ class TestImportEdgeCases:
         assert loaded[0].manufacturer == "Caterpillar"
         assert loaded[0].serial_number == "CAT123"
         assert loaded[0].build_year == 2020
+
+
+# =============================================================================
+# Testy znalezione przez agentów code review (luki w pokryciu)
+# =============================================================================
+
+
+class TestSyncEmptyDates:
+    """Testy guard'ów na puste daty w sync i conflict."""
+
+    def test_conflict_skips_reservation_with_empty_dates(self):
+        """Rezerwacja z pustymi datami nie crashuje conflict check."""
+        r = Reservation(
+            "RES-001", "M001", "", "",
+            "Jan", "B1", status="potwierdzona",
+        )
+        assert not has_conflict([r], "M001", _date_str(0), _date_str(5))
+
+    def test_sync_skips_reservation_with_empty_start(self):
+        """Sync pomija rezerwacje z pustą datą startową."""
+        m = Machine("M001", "Test", "test")
+        r = Reservation(
+            "RES-001", "M001", "", _date_str(5),
+            "Jan", "B1", status="potwierdzona",
+        )
+        result = run_daily_sync([m], [r])
+        assert m.status == "W magazynie"
+        assert result["updated"] == 0
+
+    def test_sync_skips_reservation_with_empty_end(self):
+        """Sync pomija rezerwacje z pustą datą końcową."""
+        m = Machine("M001", "Test", "test")
+        r = Reservation(
+            "RES-001", "M001", _date_str(-2), "",
+            "Jan", "B1", status="potwierdzona",
+        )
+        result = run_daily_sync([m], [r])
+        assert m.status == "W magazynie"
+
+
+class TestSyncZarezerwowanaExpired:
+    """Testy naprawionego buga: Zarezerwowana → W magazynie po wygaśnięciu."""
+
+    def test_expired_zarezerwowana_returns_to_magazyn(self):
+        """Maszyna 'Zarezerwowana' z przeterminowaną rezerwacją wraca do magazynu."""
+        m = Machine("M001", "Test", "test", status="Zarezerwowana")
+        r = Reservation(
+            "RES-001", "M001", _date_str(-10), _date_str(-2),
+            "Jan", "B1", status="potwierdzona",
+        )
+        result = run_daily_sync([m], [r])
+        assert m.status == "W magazynie"
+        assert result["updated"] == 1
+
+    def test_expired_plus_future_order_independent(self):
+        """Maszyna z przeterminowaną i przyszłą rez — wynik niezależny od kolejności."""
+        m = Machine("M001", "Test", "test", status="W magazynie")
+        # Przeterminowana
+        r_exp = Reservation(
+            "RES-OLD", "M001", _date_str(-20), _date_str(-5),
+            "Jan", "B1", status="potwierdzona",
+        )
+        # Przyszła
+        r_fut = Reservation(
+            "RES-NEW", "M001", _date_str(10), _date_str(20),
+            "Anna", "B2", status="potwierdzona",
+        )
+        # Test z kolejnością: przyszła przed przeterminowaną
+        run_daily_sync([m], [r_fut, r_exp])
+        assert m.status == "Zarezerwowana"
+
+        # Reset i test z odwrotną kolejnością
+        m.status = "W magazynie"
+        run_daily_sync([m], [r_exp, r_fut])
+        assert m.status == "Zarezerwowana"
+
+    def test_active_zarezerwowana_goes_to_na_budowie(self):
+        """Maszyna 'Zarezerwowana' z aktywną rezerwacją idzie na budowę."""
+        m = Machine("M001", "Test", "test", status="Zarezerwowana")
+        r = Reservation(
+            "RES-001", "M001", _date_str(-2), _date_str(5),
+            "Jan", "B1", "Warszawa", "potwierdzona",
+        )
+        result = run_daily_sync([m], [r])
+        assert m.status == "Na budowie"
+        assert m.location == "Warszawa"
+
+
+class TestSyncLocationUpdate:
+    """Test że sync ustawia lokalizację z adresu rezerwacji."""
+
+    def test_sync_sets_location_from_reservation(self):
+        m = Machine("M001", "Test", "test", location="Magazyn")
+        r = Reservation(
+            "RES-001", "M001", _date_str(-1), _date_str(5),
+            "Jan", "B1", "Kraków, ul. Budowlana 3", "potwierdzona",
+        )
+        run_daily_sync([m], [r])
+        assert m.location == "Kraków, ul. Budowlana 3"
+
+
+class TestAtomicSave:
+    """Test atomowego zapisu (.tmp → .bak → rename)."""
+
+    @pytest.fixture
+    def store(self, tmp_path):
+        return DataStore(data_dir=str(tmp_path))
+
+    def test_save_creates_bak_after_second_write(self, store):
+        machines = [Machine("M001", "Test", "test")]
+        store.save_machines(machines)
+        store.save_machines(machines)
+        bak = store.paths["machines"] + ".bak"
+        assert os.path.exists(bak)
+
+    def test_no_tmp_file_left_after_save(self, store):
+        machines = [Machine("M001", "Test", "test")]
+        store.save_machines(machines)
+        tmp = store.paths["machines"] + ".tmp"
+        assert not os.path.exists(tmp)

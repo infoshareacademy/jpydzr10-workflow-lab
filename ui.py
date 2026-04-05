@@ -23,8 +23,8 @@ def input_date(prompt: str) -> str:
     while True:
         value = input(prompt).strip()
         try:
-            datetime.strptime(value, "%Y-%m-%d")
-            return value
+            parsed = datetime.strptime(value, "%Y-%m-%d")
+            return parsed.strftime("%Y-%m-%d")
         except ValueError:
             print("  Zły format. Użyj RRRR-MM-DD.")
 
@@ -170,7 +170,7 @@ class App:
             return
 
         print(
-            f"\n{'Data':<12} {'Typ':<12} {'Koszt':<14} Opis"
+            f"\n  {'Data':<12}{'Typ':<12}  {'Koszt':<14}  Opis"
         )
         print(self.LINE)
         total = 0.0
@@ -274,6 +274,8 @@ class App:
                 continue
             if res.status != "potwierdzona":
                 continue
+            if not res.start_date or not res.end_date:
+                continue
 
             res_start = parse_date(res.start_date)
             res_end = parse_date(res.end_date)
@@ -288,6 +290,7 @@ class App:
             r for r in self.reservations
             if r.machine_id == uid
             and r.status == "potwierdzona"
+            and r.start_date
             and parse_date(r.start_date) > today
         )
         if has_future:
@@ -537,7 +540,7 @@ class App:
                 f"  Zaimportowano {result['imported']} maszyn "
                 f"(pominięto: {result['skipped']})."
             )
-        except (FileNotFoundError, ValueError) as e:
+        except (FileNotFoundError, ValueError, DataCorruptionError) as e:
             print(f"  BŁĄD: {e}")
 
     def sync(self) -> None:
