@@ -47,13 +47,13 @@ class DataStore:
         try:
             with open(path, encoding="utf-8") as f:
                 return [cls.from_dict(item) for item in json.load(f)]
-        except (json.JSONDecodeError, KeyError, ValueError) as orig_err:
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError) as orig_err:
             bak_path = path + ".bak"
             if os.path.exists(bak_path):
                 try:
                     with open(bak_path, encoding="utf-8") as f:
                         return [cls.from_dict(item) for item in json.load(f)]
-                except (json.JSONDecodeError, KeyError, ValueError) as bak_err:
+                except (json.JSONDecodeError, KeyError, ValueError, TypeError) as bak_err:
                     raise DataCorruptionError(path, bak_err) from bak_err
             raise DataCorruptionError(path, Exception(f"Brak pliku .bak dla {path}")) from orig_err
 

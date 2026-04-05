@@ -305,7 +305,7 @@ class ServiceRecord:
         }
 
     def __str__(self) -> str:
-        cost_str = f"{self.cost:.2f} PLN" if self.cost else "---"
+        cost_str = f"{self.cost:.2f} PLN" if self.cost > 0 else "---"
         return f"{self.record_date}  {self.record_type:<12}  {cost_str:<14}  {self.description}"
 
     def __repr__(self) -> str:

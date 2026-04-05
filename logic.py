@@ -39,6 +39,8 @@ def has_conflict(
             continue
         if res.id == exclude_id:
             continue
+        if not res.start_date or not res.end_date:
+            continue
         res_start = parse_date(res.start_date)
         res_end = parse_date(res.end_date)
         if new_start <= res_end and new_end >= res_start:
@@ -83,6 +85,9 @@ def run_daily_sync(
 
         # Maszyna w serwisie — nie ruszamy jej statusu
         if machine.status == "W serwisie":
+            continue
+
+        if not res.start_date or not res.end_date:
             continue
 
         start = parse_date(res.start_date)

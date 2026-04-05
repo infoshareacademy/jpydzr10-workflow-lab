@@ -530,6 +530,7 @@ class App:
         try:
             result = self.store.import_machines(path)
             self.machines = self.store.load_machines()
+            self._corrupted.discard("machines")
             for detail in result["skipped_details"]:
                 print(f"  Pominięto {detail}")
             print(
@@ -585,13 +586,21 @@ class App:
                 print(f"  {key:>2}. {label}")
             print("   0. Wyjście")
 
-            choice = input("\nWybierz (0-11): ").strip()
+            try:
+                choice = input("\nWybierz (0-11): ").strip()
+            except EOFError:
+                self.save_all()
+                print("\n  Do widzenia!")
+                break
 
             if choice == "0":
                 self.save_all()
                 print("\n  Do widzenia!")
                 break
             elif choice in menu:
-                menu[choice][1]()
+                try:
+                    menu[choice][1]()
+                except (KeyboardInterrupt, EOFError):
+                    print("\n  Przerwano — powrót do menu.")
             else:
                 print("  Nieprawidłowy wybór.")

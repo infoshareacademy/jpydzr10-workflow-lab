@@ -177,14 +177,14 @@
     "person": "Robert Wójcik",
     "projectNumber": "BUD-2024-045",
     "address": "Poznań, ul. Przemysłowa 15",
-    "status": "anulowana"
+    "status": "potwierdzona"
   },
   {
     "id": "RES-0020",
     "machineId": "POD-002",
     "startDate": "2026-03-17",
     "endDate": "2026-04-17",
-    "person": "Ewa Kamińska",
+    "person": "Ewa Kamińska-Nowak",
     "projectNumber": "BUD-2025-011",
     "address": "Łódź, ul. Fabryczna 3",
     "status": "potwierdzona"
