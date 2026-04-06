@@ -1,0 +1,65 @@
+[project]
+name = "planer-maszyn"
+version = "1.0.0"
+description = "Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla Isocab Construct"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.10"
+authors = [
+    { name = "Sebastian", email = "sebastian@werkstroomlab.be" },
+]
+
+# Brak zewnętrznych zależności — czysty stdlib Python
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[project.scripts]
+planer = "main:main"
+
+
+# =============================================================================
+# PYTEST
+# =============================================================================
+[tool.pytest.ini_options]
+# Zastępuje hack z conftest.py (sys.path.insert)
+pythonpath = ["."]
+testpaths = ["."]
+# Domyślnie verbose + krótkie tracebacki
+addopts = "-v --tb=short"
+
+
+# =============================================================================
+# RUFF — linter + formatter (zastępuje flake8, isort, black)
+# =============================================================================
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (sortowanie importów)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (modernizacja składni)
+    "B",    # flake8-bugbear (typowe bugi)
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long — ruff format zajmie się tym
+    "SIM108", # ternary operator — czasem if/else jest czytelniejsze
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["models", "logic", "datastore", "ui", "utils", "exceptions"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

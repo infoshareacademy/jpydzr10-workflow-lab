@@ -1,0 +1,1847 @@
+[
+  {
+    "id": "SRV-0156",
+    "machineId": "ZUR-002",
+    "date": "2017-04-09",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 350,
+    "nextInspection": "2018-04-09"
+  },
+  {
+    "id": "SRV-0157",
+    "machineId": "ZUR-002",
+    "date": "2018-01-24",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2019-01-24"
+  },
+  {
+    "id": "SRV-0109",
+    "machineId": "WYW-002",
+    "date": "2018-02-09",
+    "type": "naprawa",
+    "description": "Naprawa siłownika wywrotu skrzyni",
+    "cost": 4532.06,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0047",
+    "machineId": "KOL-002",
+    "date": "2018-02-18",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 750,
+    "nextInspection": "2019-02-18"
+  },
+  {
+    "id": "SRV-0098",
+    "machineId": "WYW-002",
+    "date": "2018-04-20",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 0,
+    "nextInspection": "2019-04-20"
+  },
+  {
+    "id": "SRV-0059",
+    "machineId": "KOL-002",
+    "date": "2018-11-21",
+    "type": "naprawa",
+    "description": "Wymiana opon przednich — komplet",
+    "cost": 3369.72,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0037",
+    "machineId": "KOL-001",
+    "date": "2019-02-17",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 1200,
+    "nextInspection": "2020-02-17"
+  },
+  {
+    "id": "SRV-0099",
+    "machineId": "WYW-002",
+    "date": "2019-02-26",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 350,
+    "nextInspection": "2020-02-26"
+  },
+  {
+    "id": "SRV-0158",
+    "machineId": "ZUR-002",
+    "date": "2019-03-08",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 1200,
+    "nextInspection": "2020-03-07"
+  },
+  {
+    "id": "SRV-0048",
+    "machineId": "KOL-002",
+    "date": "2019-03-13",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 350,
+    "nextInspection": "2020-03-12"
+  },
+  {
+    "id": "SRV-0088",
+    "machineId": "WYW-001",
+    "date": "2019-03-28",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 0,
+    "nextInspection": "2020-03-27"
+  },
+  {
+    "id": "SRV-0142",
+    "machineId": "ZUR-001",
+    "date": "2019-04-23",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 750,
+    "nextInspection": "2020-04-22"
+  },
+  {
+    "id": "SRV-0151",
+    "machineId": "ZUR-001",
+    "date": "2019-07-11",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych wysięgnika",
+    "cost": 5896.73,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0168",
+    "machineId": "ZUR-002",
+    "date": "2019-10-23",
+    "type": "naprawa",
+    "description": "Naprawa układu obrotu — łożysko wieńcowe",
+    "cost": 17038.03,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0100",
+    "machineId": "WYW-002",
+    "date": "2020-01-06",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 1200,
+    "nextInspection": "2021-01-05"
+  },
+  {
+    "id": "SRV-0143",
+    "machineId": "ZUR-001",
+    "date": "2020-02-03",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 350,
+    "nextInspection": "2021-02-02"
+  },
+  {
+    "id": "SRV-0110",
+    "machineId": "WYW-002",
+    "date": "2020-02-20",
+    "type": "naprawa",
+    "description": "Naprawa zawieszenia pneumatycznego",
+    "cost": 4382.75,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0196",
+    "machineId": "POD-001",
+    "date": "2020-04-10",
+    "type": "naprawa",
+    "description": "Naprawa mechanizmu obrotu kosza",
+    "cost": 2221.76,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0082",
+    "machineId": "LAD-002",
+    "date": "2020-04-12",
+    "type": "naprawa",
+    "description": "Wymiana opon — komplet 4 szt.",
+    "cost": 9261.97,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0189",
+    "machineId": "POD-001",
+    "date": "2020-04-24",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2021-04-24"
+  },
+  {
+    "id": "SRV-0049",
+    "machineId": "KOL-002",
+    "date": "2020-05-15",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 0,
+    "nextInspection": "2021-05-15"
+  },
+  {
+    "id": "SRV-0075",
+    "machineId": "LAD-002",
+    "date": "2020-05-19",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2021-05-19"
+  },
+  {
+    "id": "SRV-0159",
+    "machineId": "ZUR-002",
+    "date": "2020-06-02",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 0,
+    "nextInspection": "2021-06-02"
+  },
+  {
+    "id": "SRV-0001",
+    "machineId": "KOP-001",
+    "date": "2020-06-04",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 750,
+    "nextInspection": "2021-06-04"
+  },
+  {
+    "id": "SRV-0038",
+    "machineId": "KOL-001",
+    "date": "2020-06-10",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 500,
+    "nextInspection": "2021-06-10"
+  },
+  {
+    "id": "SRV-0089",
+    "machineId": "WYW-001",
+    "date": "2020-06-14",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2021-06-14"
+  },
+  {
+    "id": "SRV-0198",
+    "machineId": "POD-001",
+    "date": "2020-09-10",
+    "type": "naprawa",
+    "description": "Naprawa mechanizmu obrotu kosza",
+    "cost": 2775.74,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0090",
+    "machineId": "WYW-001",
+    "date": "2021-01-11",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 750,
+    "nextInspection": "2022-01-11"
+  },
+  {
+    "id": "SRV-0071",
+    "machineId": "LAD-001",
+    "date": "2021-01-19",
+    "type": "naprawa",
+    "description": "Regeneracja mostu napędowego tylnego",
+    "cost": 8017.1,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0050",
+    "machineId": "KOL-002",
+    "date": "2021-02-03",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2022-02-03"
+  },
+  {
+    "id": "SRV-0039",
+    "machineId": "KOL-001",
+    "date": "2021-02-05",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 1200,
+    "nextInspection": "2022-02-05"
+  },
+  {
+    "id": "SRV-0062",
+    "machineId": "KOL-002",
+    "date": "2021-02-15",
+    "type": "naprawa",
+    "description": "Wymiana stabilizatorów — tuleje i sworznie",
+    "cost": 2293.73,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0166",
+    "machineId": "ZUR-002",
+    "date": "2021-02-19",
+    "type": "naprawa",
+    "description": "Wymiana liny nośnej — 120 m",
+    "cost": 11502.21,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0160",
+    "machineId": "ZUR-002",
+    "date": "2021-02-27",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 500,
+    "nextInspection": "2022-02-27"
+  },
+  {
+    "id": "SRV-0076",
+    "machineId": "LAD-002",
+    "date": "2021-03-07",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2022-03-07"
+  },
+  {
+    "id": "SRV-0002",
+    "machineId": "KOP-001",
+    "date": "2021-03-08",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2022-03-08"
+  },
+  {
+    "id": "SRV-0120",
+    "machineId": "CIS-002",
+    "date": "2021-03-13",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 1200,
+    "nextInspection": "2022-03-13"
+  },
+  {
+    "id": "SRV-0144",
+    "machineId": "ZUR-001",
+    "date": "2021-03-18",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 350,
+    "nextInspection": "2022-03-18"
+  },
+  {
+    "id": "SRV-0011",
+    "machineId": "KOP-002",
+    "date": "2021-03-20",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 1200,
+    "nextInspection": "2022-03-20"
+  },
+  {
+    "id": "SRV-0045",
+    "machineId": "KOL-001",
+    "date": "2021-03-22",
+    "type": "naprawa",
+    "description": "Naprawa układu hamulcowego",
+    "cost": 4356.49,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0190",
+    "machineId": "POD-001",
+    "date": "2021-03-23",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2022-03-23"
+  },
+  {
+    "id": "SRV-0169",
+    "machineId": "WAL-001",
+    "date": "2021-03-28",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 1200,
+    "nextInspection": "2022-03-28"
+  },
+  {
+    "id": "SRV-0101",
+    "machineId": "WYW-002",
+    "date": "2021-04-26",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2022-04-26"
+  },
+  {
+    "id": "SRV-0017",
+    "machineId": "KOP-002",
+    "date": "2021-04-28",
+    "type": "naprawa",
+    "description": "Naprawa układu klimatyzacji kabiny",
+    "cost": 2074.29,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0063",
+    "machineId": "LAD-001",
+    "date": "2021-06-18",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 0,
+    "nextInspection": "2022-06-18"
+  },
+  {
+    "id": "SRV-0057",
+    "machineId": "KOL-002",
+    "date": "2021-07-07",
+    "type": "naprawa",
+    "description": "Wymiana opon przednich — komplet",
+    "cost": 3471.41,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0056",
+    "machineId": "KOL-002",
+    "date": "2021-09-05",
+    "type": "naprawa",
+    "description": "Wymiana stabilizatorów — tuleje i sworznie",
+    "cost": 3728.63,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0009",
+    "machineId": "KOP-001",
+    "date": "2021-12-14",
+    "type": "naprawa",
+    "description": "Naprawa instalacji elektrycznej — czujniki",
+    "cost": 1272.38,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0145",
+    "machineId": "ZUR-001",
+    "date": "2022-01-07",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 350,
+    "nextInspection": "2023-01-07"
+  },
+  {
+    "id": "SRV-0023",
+    "machineId": "KOP-003",
+    "date": "2022-01-08",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 1200,
+    "nextInspection": "2023-01-08"
+  },
+  {
+    "id": "SRV-0154",
+    "machineId": "ZUR-001",
+    "date": "2022-01-09",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych wysięgnika",
+    "cost": 4309.41,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0121",
+    "machineId": "CIS-002",
+    "date": "2022-01-10",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2023-01-10"
+  },
+  {
+    "id": "SRV-0199",
+    "machineId": "POD-001",
+    "date": "2022-01-19",
+    "type": "naprawa",
+    "description": "Wymiana siłownika nożycowego",
+    "cost": 4142.89,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0197",
+    "machineId": "POD-001",
+    "date": "2022-01-23",
+    "type": "naprawa",
+    "description": "Naprawa panelu sterowania",
+    "cost": 1189.87,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0012",
+    "machineId": "KOP-002",
+    "date": "2022-01-24",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 500,
+    "nextInspection": "2023-01-24"
+  },
+  {
+    "id": "SRV-0170",
+    "machineId": "WAL-001",
+    "date": "2022-01-26",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 1200,
+    "nextInspection": "2023-01-26"
+  },
+  {
+    "id": "SRV-0064",
+    "machineId": "LAD-001",
+    "date": "2022-02-06",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 350,
+    "nextInspection": "2023-02-06"
+  },
+  {
+    "id": "SRV-0060",
+    "machineId": "KOL-002",
+    "date": "2022-02-08",
+    "type": "naprawa",
+    "description": "Naprawa skrzyni biegów — synchronizatory",
+    "cost": 6331.46,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0161",
+    "machineId": "ZUR-002",
+    "date": "2022-02-08",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 350,
+    "nextInspection": "2023-02-08"
+  },
+  {
+    "id": "SRV-0187",
+    "machineId": "WAL-002",
+    "date": "2022-02-10",
+    "type": "naprawa",
+    "description": "Naprawa silnika wibracyjnego",
+    "cost": 3915.4,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0040",
+    "machineId": "KOL-001",
+    "date": "2022-02-18",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2023-02-18"
+  },
+  {
+    "id": "SRV-0107",
+    "machineId": "WYW-002",
+    "date": "2022-02-25",
+    "type": "naprawa",
+    "description": "Wymiana sprzęgła",
+    "cost": 5755.73,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0102",
+    "machineId": "WYW-002",
+    "date": "2022-02-26",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 350,
+    "nextInspection": "2023-02-26"
+  },
+  {
+    "id": "SRV-0091",
+    "machineId": "WYW-001",
+    "date": "2022-03-06",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 500,
+    "nextInspection": "2023-03-06"
+  },
+  {
+    "id": "SRV-0085",
+    "machineId": "LAD-002",
+    "date": "2022-03-09",
+    "type": "naprawa",
+    "description": "Wymiana łyżki ładowarki",
+    "cost": 7558.85,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0191",
+    "machineId": "POD-001",
+    "date": "2022-03-09",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2023-03-09"
+  },
+  {
+    "id": "SRV-0077",
+    "machineId": "LAD-002",
+    "date": "2022-03-13",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 750,
+    "nextInspection": "2023-03-13"
+  },
+  {
+    "id": "SRV-0069",
+    "machineId": "LAD-001",
+    "date": "2022-04-10",
+    "type": "naprawa",
+    "description": "Naprawa turbosprężarki",
+    "cost": 6890.48,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0112",
+    "machineId": "CIS-001",
+    "date": "2022-05-07",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2023-05-07"
+  },
+  {
+    "id": "SRV-0051",
+    "machineId": "KOL-002",
+    "date": "2022-05-18",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 500,
+    "nextInspection": "2023-05-18"
+  },
+  {
+    "id": "SRV-0003",
+    "machineId": "KOP-001",
+    "date": "2022-06-04",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2023-06-04"
+  },
+  {
+    "id": "SRV-0180",
+    "machineId": "WAL-002",
+    "date": "2022-06-13",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2023-06-13"
+  },
+  {
+    "id": "SRV-0133",
+    "machineId": "NAC-002",
+    "date": "2022-06-17",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2023-06-17"
+  },
+  {
+    "id": "SRV-0111",
+    "machineId": "WYW-002",
+    "date": "2022-07-20",
+    "type": "naprawa",
+    "description": "Wymiana alternatora i regulatora napięcia",
+    "cost": 996.6,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0150",
+    "machineId": "ZUR-001",
+    "date": "2022-08-08",
+    "type": "naprawa",
+    "description": "Kalibracja ogranicznika obciążenia (LMI)",
+    "cost": 3307.51,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0097",
+    "machineId": "WYW-001",
+    "date": "2022-11-04",
+    "type": "naprawa",
+    "description": "Wymiana sprzęgła",
+    "cost": 7900.58,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0140",
+    "machineId": "NAC-002",
+    "date": "2022-12-10",
+    "type": "naprawa",
+    "description": "Naprawa plandeki — łatanie i uszczelnienie",
+    "cost": 844.54,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0128",
+    "machineId": "NAC-001",
+    "date": "2023-01-08",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 500,
+    "nextInspection": "2024-01-08"
+  },
+  {
+    "id": "SRV-0171",
+    "machineId": "WAL-001",
+    "date": "2023-01-12",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 350,
+    "nextInspection": "2024-01-12"
+  },
+  {
+    "id": "SRV-0013",
+    "machineId": "KOP-002",
+    "date": "2023-01-13",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 500,
+    "nextInspection": "2024-01-13"
+  },
+  {
+    "id": "SRV-0103",
+    "machineId": "WYW-002",
+    "date": "2023-01-28",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2024-01-28"
+  },
+  {
+    "id": "SRV-0052",
+    "machineId": "KOL-002",
+    "date": "2023-02-01",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 750,
+    "nextInspection": "2024-02-01"
+  },
+  {
+    "id": "SRV-0029",
+    "machineId": "KOP-004",
+    "date": "2023-02-05",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 350,
+    "nextInspection": "2024-02-05"
+  },
+  {
+    "id": "SRV-0185",
+    "machineId": "WAL-002",
+    "date": "2023-02-08",
+    "type": "naprawa",
+    "description": "Naprawa systemu zraszania bębna",
+    "cost": 1039.72,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0072",
+    "machineId": "LAD-001",
+    "date": "2023-03-03",
+    "type": "naprawa",
+    "description": "Naprawa instalacji pneumatycznej",
+    "cost": 1322.33,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0024",
+    "machineId": "KOP-003",
+    "date": "2023-03-13",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2024-03-12"
+  },
+  {
+    "id": "SRV-0061",
+    "machineId": "KOL-002",
+    "date": "2023-03-14",
+    "type": "naprawa",
+    "description": "Naprawa skrzyni biegów — synchronizatory",
+    "cost": 6949.82,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0021",
+    "machineId": "KOP-002",
+    "date": "2023-03-15",
+    "type": "naprawa",
+    "description": "Wymiana filtrów DPF i regeneracja",
+    "cost": 4444.82,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0201",
+    "machineId": "POD-002",
+    "date": "2023-04-04",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 350,
+    "nextInspection": "2024-04-03"
+  },
+  {
+    "id": "SRV-0065",
+    "machineId": "LAD-001",
+    "date": "2023-04-07",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 0,
+    "nextInspection": "2024-04-06"
+  },
+  {
+    "id": "SRV-0019",
+    "machineId": "KOP-002",
+    "date": "2023-04-22",
+    "type": "naprawa",
+    "description": "Wymiana łożysk wieńca obrotu",
+    "cost": 12912.74,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0122",
+    "machineId": "CIS-002",
+    "date": "2023-04-26",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 500,
+    "nextInspection": "2024-04-25"
+  },
+  {
+    "id": "SRV-0181",
+    "machineId": "WAL-002",
+    "date": "2023-04-28",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2024-04-27"
+  },
+  {
+    "id": "SRV-0134",
+    "machineId": "NAC-002",
+    "date": "2023-05-08",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 350,
+    "nextInspection": "2024-05-07"
+  },
+  {
+    "id": "SRV-0086",
+    "machineId": "LAD-002",
+    "date": "2023-05-10",
+    "type": "naprawa",
+    "description": "Naprawa instalacji pneumatycznej",
+    "cost": 1579.13,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0041",
+    "machineId": "KOL-001",
+    "date": "2023-05-11",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2024-05-10"
+  },
+  {
+    "id": "SRV-0004",
+    "machineId": "KOP-001",
+    "date": "2023-05-14",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 0,
+    "nextInspection": "2024-05-13"
+  },
+  {
+    "id": "SRV-0146",
+    "machineId": "ZUR-001",
+    "date": "2023-05-23",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 1200,
+    "nextInspection": "2024-05-22"
+  },
+  {
+    "id": "SRV-0162",
+    "machineId": "ZUR-002",
+    "date": "2023-06-04",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 0,
+    "nextInspection": "2024-06-03"
+  },
+  {
+    "id": "SRV-0192",
+    "machineId": "POD-001",
+    "date": "2023-06-07",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2024-06-06"
+  },
+  {
+    "id": "SRV-0078",
+    "machineId": "LAD-002",
+    "date": "2023-06-10",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2024-06-09"
+  },
+  {
+    "id": "SRV-0092",
+    "machineId": "WYW-001",
+    "date": "2023-06-14",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2024-06-13"
+  },
+  {
+    "id": "SRV-0113",
+    "machineId": "CIS-001",
+    "date": "2023-06-14",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 500,
+    "nextInspection": "2024-06-13"
+  },
+  {
+    "id": "SRV-0096",
+    "machineId": "WYW-001",
+    "date": "2023-06-26",
+    "type": "naprawa",
+    "description": "Wymiana klocków hamulcowych — oś przednia",
+    "cost": 3297.85,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0073",
+    "machineId": "LAD-001",
+    "date": "2023-07-04",
+    "type": "naprawa",
+    "description": "Naprawa instalacji pneumatycznej",
+    "cost": 1643.19,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0132",
+    "machineId": "NAC-001",
+    "date": "2023-07-08",
+    "type": "naprawa",
+    "description": "Naprawa plandeki — łatanie i uszczelnienie",
+    "cost": 1323.7,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0126",
+    "machineId": "CIS-002",
+    "date": "2023-09-22",
+    "type": "naprawa",
+    "description": "Wymiana klap bocznych — uszkodzenie mechaniczne",
+    "cost": 1803.34,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0177",
+    "machineId": "WAL-001",
+    "date": "2023-09-25",
+    "type": "naprawa",
+    "description": "Naprawa systemu zraszania bębna",
+    "cost": 1018.39,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0046",
+    "machineId": "KOL-001",
+    "date": "2023-09-28",
+    "type": "naprawa",
+    "description": "Wymiana stabilizatorów — tuleje i sworznie",
+    "cost": 3269.41,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0008",
+    "machineId": "KOP-001",
+    "date": "2023-10-09",
+    "type": "naprawa",
+    "description": "Wymiana uszczelki cylindra hydraulicznego",
+    "cost": 5607.59,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0139",
+    "machineId": "NAC-002",
+    "date": "2023-11-09",
+    "type": "naprawa",
+    "description": "Wymiana hamulców bębnowych — komplet",
+    "cost": 3953.79,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0186",
+    "machineId": "WAL-002",
+    "date": "2023-11-23",
+    "type": "naprawa",
+    "description": "Naprawa systemu zraszania bębna",
+    "cost": 1003.36,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0034",
+    "machineId": "KOP-004",
+    "date": "2023-11-24",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych",
+    "cost": 1958.91,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0175",
+    "machineId": "WAL-001",
+    "date": "2023-11-27",
+    "type": "naprawa",
+    "description": "Naprawa systemu zraszania bębna",
+    "cost": 1236.58,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0079",
+    "machineId": "LAD-002",
+    "date": "2024-01-01",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 500,
+    "nextInspection": "2024-12-31"
+  },
+  {
+    "id": "SRV-0093",
+    "machineId": "WYW-001",
+    "date": "2024-01-03",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 500,
+    "nextInspection": "2025-01-02"
+  },
+  {
+    "id": "SRV-0005",
+    "machineId": "KOP-001",
+    "date": "2024-01-07",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 500,
+    "nextInspection": "2025-01-06"
+  },
+  {
+    "id": "SRV-0042",
+    "machineId": "KOL-001",
+    "date": "2024-01-12",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2025-01-11"
+  },
+  {
+    "id": "SRV-0129",
+    "machineId": "NAC-001",
+    "date": "2024-01-15",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 750,
+    "nextInspection": "2025-01-14"
+  },
+  {
+    "id": "SRV-0030",
+    "machineId": "KOP-004",
+    "date": "2024-01-25",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 1200,
+    "nextInspection": "2025-01-24"
+  },
+  {
+    "id": "SRV-0010",
+    "machineId": "KOP-001",
+    "date": "2024-02-03",
+    "type": "naprawa",
+    "description": "Wymiana filtrów DPF i regeneracja",
+    "cost": 3838.51,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0066",
+    "machineId": "LAD-001",
+    "date": "2024-02-13",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 350,
+    "nextInspection": "2025-02-12"
+  },
+  {
+    "id": "SRV-0025",
+    "machineId": "KOP-003",
+    "date": "2024-02-19",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2025-02-18"
+  },
+  {
+    "id": "SRV-0135",
+    "machineId": "NAC-002",
+    "date": "2024-02-26",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 750,
+    "nextInspection": "2025-02-25"
+  },
+  {
+    "id": "SRV-0104",
+    "machineId": "WYW-002",
+    "date": "2024-02-27",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2025-02-26"
+  },
+  {
+    "id": "SRV-0176",
+    "machineId": "WAL-001",
+    "date": "2024-03-24",
+    "type": "naprawa",
+    "description": "Wymiana opon tylnych — komplet",
+    "cost": 4413.68,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0014",
+    "machineId": "KOP-002",
+    "date": "2024-03-27",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 1200,
+    "nextInspection": "2025-03-27"
+  },
+  {
+    "id": "SRV-0202",
+    "machineId": "POD-002",
+    "date": "2024-04-03",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 750,
+    "nextInspection": "2025-04-03"
+  },
+  {
+    "id": "SRV-0182",
+    "machineId": "WAL-002",
+    "date": "2024-04-07",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 1200,
+    "nextInspection": "2025-04-07"
+  },
+  {
+    "id": "SRV-0087",
+    "machineId": "LAD-002",
+    "date": "2024-04-22",
+    "type": "naprawa",
+    "description": "Wymiana opon — komplet 4 szt.",
+    "cost": 12043.27,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0163",
+    "machineId": "ZUR-002",
+    "date": "2024-04-23",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 1200,
+    "nextInspection": "2025-04-23"
+  },
+  {
+    "id": "SRV-0147",
+    "machineId": "ZUR-001",
+    "date": "2024-05-13",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2025-05-13"
+  },
+  {
+    "id": "SRV-0114",
+    "machineId": "CIS-001",
+    "date": "2024-05-22",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2025-05-22"
+  },
+  {
+    "id": "SRV-0053",
+    "machineId": "KOL-002",
+    "date": "2024-06-02",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2025-06-02"
+  },
+  {
+    "id": "SRV-0123",
+    "machineId": "CIS-002",
+    "date": "2024-06-11",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 350,
+    "nextInspection": "2025-06-11"
+  },
+  {
+    "id": "SRV-0155",
+    "machineId": "ZUR-001",
+    "date": "2024-06-11",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych wysięgnika",
+    "cost": 4113.03,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0172",
+    "machineId": "WAL-001",
+    "date": "2024-06-12",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 500,
+    "nextInspection": "2025-06-12"
+  },
+  {
+    "id": "SRV-0058",
+    "machineId": "KOL-002",
+    "date": "2024-06-14",
+    "type": "naprawa",
+    "description": "Naprawa układu hamulcowego",
+    "cost": 3060.97,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0193",
+    "machineId": "POD-001",
+    "date": "2024-06-18",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 0,
+    "nextInspection": "2025-06-18"
+  },
+  {
+    "id": "SRV-0036",
+    "machineId": "KOP-004",
+    "date": "2024-08-01",
+    "type": "naprawa",
+    "description": "Wymiana łyżki z ząbkami",
+    "cost": 2949.4,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0179",
+    "machineId": "WAL-001",
+    "date": "2024-08-08",
+    "type": "naprawa",
+    "description": "Naprawa systemu zraszania bębna",
+    "cost": 1112.86,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0141",
+    "machineId": "NAC-002",
+    "date": "2024-09-03",
+    "type": "naprawa",
+    "description": "Naprawa plandeki — łatanie i uszczelnienie",
+    "cost": 735.75,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0118",
+    "machineId": "CIS-001",
+    "date": "2024-09-05",
+    "type": "naprawa",
+    "description": "Naprawa układu AdBlue — czujnik NOx",
+    "cost": 2340.89,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0018",
+    "machineId": "KOP-002",
+    "date": "2024-11-27",
+    "type": "naprawa",
+    "description": "Naprawa instalacji elektrycznej — czujniki",
+    "cost": 1076.51,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0031",
+    "machineId": "KOP-004",
+    "date": "2025-01-05",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 1200,
+    "nextInspection": "2026-01-05"
+  },
+  {
+    "id": "SRV-0043",
+    "machineId": "KOL-001",
+    "date": "2025-01-08",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 0,
+    "nextInspection": "2026-01-08"
+  },
+  {
+    "id": "SRV-0074",
+    "machineId": "LAD-001",
+    "date": "2025-01-20",
+    "type": "naprawa",
+    "description": "Wymiana łyżki ładowarki",
+    "cost": 5676.9,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0094",
+    "machineId": "WYW-001",
+    "date": "2025-01-27",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 500,
+    "nextInspection": "2026-01-27"
+  },
+  {
+    "id": "SRV-0054",
+    "machineId": "KOL-002",
+    "date": "2025-01-28",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 0,
+    "nextInspection": "2026-01-28"
+  },
+  {
+    "id": "SRV-0020",
+    "machineId": "KOP-002",
+    "date": "2025-02-20",
+    "type": "naprawa",
+    "description": "Wymiana gąsienic — komplet lewy i prawy",
+    "cost": 18943.82,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0194",
+    "machineId": "POD-001",
+    "date": "2025-02-24",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2026-02-24"
+  },
+  {
+    "id": "SRV-0164",
+    "machineId": "ZUR-002",
+    "date": "2025-03-06",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 500,
+    "nextInspection": "2026-03-06"
+  },
+  {
+    "id": "SRV-0148",
+    "machineId": "ZUR-001",
+    "date": "2025-03-10",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 1200,
+    "nextInspection": "2026-03-10"
+  },
+  {
+    "id": "SRV-0183",
+    "machineId": "WAL-002",
+    "date": "2025-03-11",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 500,
+    "nextInspection": "2026-03-11"
+  },
+  {
+    "id": "SRV-0015",
+    "machineId": "KOP-002",
+    "date": "2025-03-19",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 750,
+    "nextInspection": "2026-03-19"
+  },
+  {
+    "id": "SRV-0138",
+    "machineId": "NAC-002",
+    "date": "2025-03-24",
+    "type": "naprawa",
+    "description": "Naprawa instalacji elektrycznej — oświetlenie",
+    "cost": 760.06,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0067",
+    "machineId": "LAD-001",
+    "date": "2025-03-26",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2026-03-26"
+  },
+  {
+    "id": "SRV-0105",
+    "machineId": "WYW-002",
+    "date": "2025-03-27",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 0,
+    "nextInspection": "2026-03-27"
+  },
+  {
+    "id": "SRV-0115",
+    "machineId": "CIS-001",
+    "date": "2025-04-03",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
+    "cost": 500,
+    "nextInspection": "2026-04-03"
+  },
+  {
+    "id": "SRV-0124",
+    "machineId": "CIS-002",
+    "date": "2025-04-22",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 500,
+    "nextInspection": "2026-04-22"
+  },
+  {
+    "id": "SRV-0006",
+    "machineId": "KOP-001",
+    "date": "2025-05-01",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2026-05-01"
+  },
+  {
+    "id": "SRV-0080",
+    "machineId": "LAD-002",
+    "date": "2025-05-04",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 500,
+    "nextInspection": "2026-05-04"
+  },
+  {
+    "id": "SRV-0130",
+    "machineId": "NAC-001",
+    "date": "2025-05-07",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 350,
+    "nextInspection": "2026-05-07"
+  },
+  {
+    "id": "SRV-0127",
+    "machineId": "CIS-002",
+    "date": "2025-05-08",
+    "type": "naprawa",
+    "description": "Naprawa układu AdBlue — czujnik NOx",
+    "cost": 1794.71,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0136",
+    "machineId": "NAC-002",
+    "date": "2025-05-18",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 0,
+    "nextInspection": "2026-05-18"
+  },
+  {
+    "id": "SRV-0203",
+    "machineId": "POD-002",
+    "date": "2025-06-02",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 0,
+    "nextInspection": "2026-06-02"
+  },
+  {
+    "id": "SRV-0200",
+    "machineId": "POD-001",
+    "date": "2025-06-06",
+    "type": "naprawa",
+    "description": "Wymiana akumulatorów trakcyjnych — komplet",
+    "cost": 5009.91,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0173",
+    "machineId": "WAL-001",
+    "date": "2025-06-11",
+    "type": "przegląd",
+    "description": "Przegląd okresowy — stan ogólny dobry",
+    "cost": 1200,
+    "nextInspection": "2026-06-11"
+  },
+  {
+    "id": "SRV-0026",
+    "machineId": "KOP-003",
+    "date": "2025-06-16",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 750,
+    "nextInspection": "2026-06-16"
+  },
+  {
+    "id": "SRV-0153",
+    "machineId": "ZUR-001",
+    "date": "2025-10-19",
+    "type": "naprawa",
+    "description": "Wymiana liny nośnej — 120 m",
+    "cost": 5587.63,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0035",
+    "machineId": "KOP-004",
+    "date": "2025-11-11",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych",
+    "cost": 1298.95,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0119",
+    "machineId": "CIS-001",
+    "date": "2025-11-24",
+    "type": "naprawa",
+    "description": "Naprawa układu AdBlue — czujnik NOx",
+    "cost": 2731.03,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0022",
+    "machineId": "KOP-002",
+    "date": "2025-12-18",
+    "type": "naprawa",
+    "description": "Regeneracja pompy hydraulicznej",
+    "cost": 7580.76,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0070",
+    "machineId": "LAD-001",
+    "date": "2025-12-18",
+    "type": "naprawa",
+    "description": "Wymiana łyżki ładowarki",
+    "cost": 6991.9,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0016",
+    "machineId": "KOP-002",
+    "date": "2026-01-02",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 1200,
+    "nextInspection": "2027-01-02"
+  },
+  {
+    "id": "SRV-0081",
+    "machineId": "LAD-002",
+    "date": "2026-01-17",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2027-01-17"
+  },
+  {
+    "id": "SRV-0152",
+    "machineId": "ZUR-001",
+    "date": "2026-01-20",
+    "type": "naprawa",
+    "description": "Naprawa podpory teleskopowej — siłownik",
+    "cost": 4134.83,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0084",
+    "machineId": "LAD-002",
+    "date": "2026-01-22",
+    "type": "naprawa",
+    "description": "Naprawa instalacji pneumatycznej",
+    "cost": 1738.88,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0106",
+    "machineId": "WYW-002",
+    "date": "2026-01-22",
+    "type": "przegląd",
+    "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
+    "cost": 350,
+    "nextInspection": "2027-01-22"
+  },
+  {
+    "id": "SRV-0044",
+    "machineId": "KOL-001",
+    "date": "2026-01-24",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 1200,
+    "nextInspection": "2027-01-24"
+  },
+  {
+    "id": "SRV-0027",
+    "machineId": "KOP-003",
+    "date": "2026-02-05",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 0,
+    "nextInspection": "2027-02-05"
+  },
+  {
+    "id": "SRV-0131",
+    "machineId": "NAC-001",
+    "date": "2026-02-08",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 750,
+    "nextInspection": "2027-02-08"
+  },
+  {
+    "id": "SRV-0188",
+    "machineId": "WAL-002",
+    "date": "2026-02-16",
+    "type": "naprawa",
+    "description": "Wymiana opon tylnych — komplet",
+    "cost": 3327.3,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0149",
+    "machineId": "ZUR-001",
+    "date": "2026-02-18",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 1200,
+    "nextInspection": "2027-02-18"
+  },
+  {
+    "id": "SRV-0137",
+    "machineId": "NAC-002",
+    "date": "2026-02-20",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 350,
+    "nextInspection": "2027-02-20"
+  },
+  {
+    "id": "SRV-0108",
+    "machineId": "WYW-002",
+    "date": "2026-02-22",
+    "type": "naprawa",
+    "description": "Wymiana alternatora i regulatora napięcia",
+    "cost": 1362.95,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0116",
+    "machineId": "CIS-001",
+    "date": "2026-02-22",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 750,
+    "nextInspection": "2027-02-22"
+  },
+  {
+    "id": "SRV-0117",
+    "machineId": "CIS-001",
+    "date": "2026-02-22",
+    "type": "naprawa",
+    "description": "Regeneracja turbosprężarki",
+    "cost": 4467.82,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0068",
+    "machineId": "LAD-001",
+    "date": "2026-02-23",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 750,
+    "nextInspection": "2027-02-23"
+  },
+  {
+    "id": "SRV-0125",
+    "machineId": "CIS-002",
+    "date": "2026-02-26",
+    "type": "przegląd",
+    "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
+    "cost": 750,
+    "nextInspection": "2027-02-26"
+  },
+  {
+    "id": "SRV-0174",
+    "machineId": "WAL-001",
+    "date": "2026-02-27",
+    "type": "przegląd",
+    "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
+    "cost": 0,
+    "nextInspection": "2027-02-27"
+  },
+  {
+    "id": "SRV-0095",
+    "machineId": "WYW-001",
+    "date": "2026-03-05",
+    "type": "przegląd",
+    "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
+    "cost": 0,
+    "nextInspection": "2027-03-05"
+  },
+  {
+    "id": "SRV-0055",
+    "machineId": "KOL-002",
+    "date": "2026-03-08",
+    "type": "przegląd",
+    "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
+    "cost": 750,
+    "nextInspection": "2027-03-08"
+  },
+  {
+    "id": "SRV-0028",
+    "machineId": "KOP-003",
+    "date": "2026-03-09",
+    "type": "naprawa",
+    "description": "Naprawa wycieku oleju z przekładni",
+    "cost": 3285.3,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0178",
+    "machineId": "WAL-001",
+    "date": "2026-03-09",
+    "type": "naprawa",
+    "description": "Wymiana uszczelek układu hydraulicznego",
+    "cost": 2733.08,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0184",
+    "machineId": "WAL-002",
+    "date": "2026-03-09",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 0,
+    "nextInspection": "2027-03-09"
+  },
+  {
+    "id": "SRV-0204",
+    "machineId": "POD-002",
+    "date": "2026-03-10",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 0,
+    "nextInspection": "2027-03-10"
+  },
+  {
+    "id": "SRV-0167",
+    "machineId": "ZUR-002",
+    "date": "2026-03-13",
+    "type": "naprawa",
+    "description": "Wymiana węży hydraulicznych wysięgnika",
+    "cost": 6765.88,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0032",
+    "machineId": "KOP-004",
+    "date": "2026-03-14",
+    "type": "przegląd",
+    "description": "Przegląd gwarancyjny — brak usterek",
+    "cost": 0,
+    "nextInspection": "2027-03-14"
+  },
+  {
+    "id": "SRV-0033",
+    "machineId": "KOP-004",
+    "date": "2026-03-15",
+    "type": "naprawa",
+    "description": "Wymiana oleju hydraulicznego — komplet 60L",
+    "cost": 601.13,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0195",
+    "machineId": "POD-001",
+    "date": "2026-03-19",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 500,
+    "nextInspection": "2027-03-19"
+  },
+  {
+    "id": "SRV-0205",
+    "machineId": "POD-002",
+    "date": "2026-03-20",
+    "type": "naprawa",
+    "description": "Wymiana kół jezdnych",
+    "cost": 1606.24,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0007",
+    "machineId": "KOP-001",
+    "date": "2026-03-21",
+    "type": "przegląd",
+    "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
+    "cost": 350,
+    "nextInspection": "2027-03-21"
+  },
+  {
+    "id": "SRV-0083",
+    "machineId": "LAD-002",
+    "date": "2026-03-23",
+    "type": "naprawa",
+    "description": "Wymiana opon — komplet 4 szt.",
+    "cost": 12893.42,
+    "nextInspection": ""
+  },
+  {
+    "id": "SRV-0165",
+    "machineId": "ZUR-002",
+    "date": "2026-03-23",
+    "type": "przegląd",
+    "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
+    "cost": 1200,
+    "nextInspection": "2027-03-23"
+  }
+]
