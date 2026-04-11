@@ -192,7 +192,12 @@ class TestDemoReservations:
     def test_active_reservations_match_na_budowie(
         self, reservations, machines
     ):
-        """Maszyny 'Na budowie' mają aktywną rezerwację."""
+        """Maszyny 'Na budowie' mają aktywną lub przeterminowaną rezerwację.
+
+        Stan demo może zawierać rezerwacje przeterminowane (end < today),
+        ponieważ maszyna jeszcze nie wróciła do magazynu — Hard Return Policy
+        utrzymuje status 'Na budowie' aż do uruchomienia synchronizacji.
+        """
         today = date.today()
         na_budowie = {m.uid for m in machines if m.status == "Na budowie"}
 
@@ -201,14 +206,14 @@ class TestDemoReservations:
             if r.status != "potwierdzona":
                 continue
             start = parse_date(r.start_date)
-            end = parse_date(r.end_date)
-            if start <= today <= end:
+            # Aktywna (start <= today <= end) lub przeterminowana (start <= today)
+            if start <= today:
                 active_machines.add(r.machine_id)
 
         for uid in na_budowie:
             assert uid in active_machines, (
                 f"Maszyna {uid} jest 'Na budowie' ale nie ma "
-                f"aktywnej rezerwacji"
+                f"aktywnej ani przeterminowanej rezerwacji"
             )
 
 
