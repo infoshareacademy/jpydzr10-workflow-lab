@@ -57,7 +57,7 @@ class App:
     """Główna klasa aplikacji — menu i formularze."""
 
     SEP = "=" * 65
-    LINE = "-" * 65
+    LINE = "-" * 99
 
     def __init__(self):
         self.store = DataStore()
@@ -125,7 +125,7 @@ class App:
 
     def show_machines(self) -> None:
         print(
-            f"\n{'UID':<14} {'Nazwa':<22} {'Status':<16} Lokalizacja"
+            f"\n{'UID':<10} {'Nazwa':<40} {'Status':<14} Lokalizacja"
         )
         print(self.LINE)
         if not self.machines:
@@ -201,7 +201,7 @@ class App:
 
         print("\nDostępne maszyny:")
         for m in available:
-            print(f"  {m.uid:<14} {m.name:<22} {m.status}")
+            print(f"  {m.uid:<10} {m.name:<40} {m.status}")
 
         uid = input("\nUID maszyny: ").strip()
         if uid not in available_uids:
@@ -262,7 +262,7 @@ class App:
 
         print("\nMaszyny na budowie:")
         for m in on_site:
-            print(f"  {m.uid:<14} {m.name:<22} {m.location}")
+            print(f"  {m.uid:<10} {m.name:<40} {m.location}")
 
         uid = input("\nUID maszyny: ").strip()
         machine = self.find_machine(uid)

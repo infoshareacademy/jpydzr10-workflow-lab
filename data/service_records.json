@@ -14,7 +14,7 @@
     "date": "2018-01-24",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2019-01-24"
   },
   {
@@ -41,7 +41,7 @@
     "date": "2018-04-20",
     "type": "przegląd",
     "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2019-04-20"
   },
   {
@@ -95,7 +95,7 @@
     "date": "2019-03-28",
     "type": "przegląd",
     "description": "Przegląd okresowy — stan ogólny dobry",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2020-03-27"
   },
   {
@@ -176,7 +176,7 @@
     "date": "2020-04-24",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2021-04-24"
   },
   {
@@ -185,7 +185,7 @@
     "date": "2020-05-15",
     "type": "przegląd",
     "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2021-05-15"
   },
   {
@@ -194,7 +194,7 @@
     "date": "2020-05-19",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2021-05-19"
   },
   {
@@ -203,7 +203,7 @@
     "date": "2020-06-02",
     "type": "przegląd",
     "description": "Przegląd okresowy — stan ogólny dobry",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2021-06-02"
   },
   {
@@ -230,7 +230,7 @@
     "date": "2020-06-14",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2021-06-14"
   },
   {
@@ -266,7 +266,7 @@
     "date": "2021-02-03",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2022-02-03"
   },
   {
@@ -311,7 +311,7 @@
     "date": "2021-03-07",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2022-03-07"
   },
   {
@@ -320,7 +320,7 @@
     "date": "2021-03-08",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2022-03-08"
   },
   {
@@ -365,7 +365,7 @@
     "date": "2021-03-23",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2022-03-23"
   },
   {
@@ -383,7 +383,7 @@
     "date": "2021-04-26",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2022-04-26"
   },
   {
@@ -401,7 +401,7 @@
     "date": "2021-06-18",
     "type": "przegląd",
     "description": "Przegląd okresowy — stan ogólny dobry",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2022-06-18"
   },
   {
@@ -464,7 +464,7 @@
     "date": "2022-01-10",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2023-01-10"
   },
   {
@@ -545,7 +545,7 @@
     "date": "2022-02-18",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2023-02-18"
   },
   {
@@ -590,7 +590,7 @@
     "date": "2022-03-09",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2023-03-09"
   },
   {
@@ -617,7 +617,7 @@
     "date": "2022-05-07",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2023-05-07"
   },
   {
@@ -635,7 +635,7 @@
     "date": "2022-06-04",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2023-06-04"
   },
   {
@@ -644,7 +644,7 @@
     "date": "2022-06-13",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2023-06-13"
   },
   {
@@ -653,7 +653,7 @@
     "date": "2022-06-17",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2023-06-17"
   },
   {
@@ -725,7 +725,7 @@
     "date": "2023-01-28",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2024-01-28"
   },
   {
@@ -770,7 +770,7 @@
     "date": "2023-03-13",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2024-03-12"
   },
   {
@@ -806,7 +806,7 @@
     "date": "2023-04-07",
     "type": "przegląd",
     "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2024-04-06"
   },
   {
@@ -833,7 +833,7 @@
     "date": "2023-04-28",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2024-04-27"
   },
   {
@@ -860,7 +860,7 @@
     "date": "2023-05-11",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2024-05-10"
   },
   {
@@ -869,7 +869,7 @@
     "date": "2023-05-14",
     "type": "przegląd",
     "description": "Przegląd okresowy — stan ogólny dobry",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2024-05-13"
   },
   {
@@ -887,7 +887,7 @@
     "date": "2023-06-04",
     "type": "przegląd",
     "description": "Przegląd gwarancyjny — brak usterek",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2024-06-03"
   },
   {
@@ -896,7 +896,7 @@
     "date": "2023-06-07",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2024-06-06"
   },
   {
@@ -905,7 +905,7 @@
     "date": "2023-06-10",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2024-06-09"
   },
   {
@@ -914,7 +914,7 @@
     "date": "2023-06-14",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2024-06-13"
   },
   {
@@ -1058,7 +1058,7 @@
     "date": "2024-01-12",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2025-01-11"
   },
   {
@@ -1103,7 +1103,7 @@
     "date": "2024-02-19",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2025-02-18"
   },
   {
@@ -1121,7 +1121,7 @@
     "date": "2024-02-27",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2025-02-26"
   },
   {
@@ -1184,7 +1184,7 @@
     "date": "2024-05-13",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2025-05-13"
   },
   {
@@ -1193,7 +1193,7 @@
     "date": "2024-05-22",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2025-05-22"
   },
   {
@@ -1202,7 +1202,7 @@
     "date": "2024-06-02",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2025-06-02"
   },
   {
@@ -1247,7 +1247,7 @@
     "date": "2024-06-18",
     "type": "przegląd",
     "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2025-06-18"
   },
   {
@@ -1310,7 +1310,7 @@
     "date": "2025-01-08",
     "type": "przegląd",
     "description": "Przegląd gwarancyjny — brak usterek",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2026-01-08"
   },
   {
@@ -1337,7 +1337,7 @@
     "date": "2025-01-28",
     "type": "przegląd",
     "description": "Przegląd okresowy — kontrola hamulców i oświetlenia",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2026-01-28"
   },
   {
@@ -1355,7 +1355,7 @@
     "date": "2025-02-24",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2026-02-24"
   },
   {
@@ -1409,7 +1409,7 @@
     "date": "2025-03-26",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2026-03-26"
   },
   {
@@ -1418,7 +1418,7 @@
     "date": "2025-03-27",
     "type": "przegląd",
     "description": "Przegląd 500-godzinny — kontrola układu hydraulicznego",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2026-03-27"
   },
   {
@@ -1445,7 +1445,7 @@
     "date": "2025-05-01",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2026-05-01"
   },
   {
@@ -1481,7 +1481,7 @@
     "date": "2025-05-18",
     "type": "przegląd",
     "description": "Przegląd gwarancyjny — brak usterek",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2026-05-18"
   },
   {
@@ -1490,7 +1490,7 @@
     "date": "2025-06-02",
     "type": "przegląd",
     "description": "Przegląd techniczny — wymiana filtrów oleju i paliwa",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2026-06-02"
   },
   {
@@ -1580,7 +1580,7 @@
     "date": "2026-01-17",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2027-01-17"
   },
   {
@@ -1625,7 +1625,7 @@
     "date": "2026-02-05",
     "type": "przegląd",
     "description": "Przegląd 1000-godzinny — pełna diagnostyka komputerowa",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2027-02-05"
   },
   {
@@ -1715,7 +1715,7 @@
     "date": "2026-02-27",
     "type": "przegląd",
     "description": "Przegląd po sezonie — czyszczenie, smarowanie, regulacja",
-    "cost": 0,
+    "cost": 350.0,
     "nextInspection": "2027-02-27"
   },
   {
@@ -1724,7 +1724,7 @@
     "date": "2026-03-05",
     "type": "przegląd",
     "description": "Przegląd sezonowy — przygotowanie do sezonu zimowego",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2027-03-05"
   },
   {
@@ -1760,7 +1760,7 @@
     "date": "2026-03-09",
     "type": "przegląd",
     "description": "Przegląd UDT — certyfikat ważny 12 miesięcy",
-    "cost": 0,
+    "cost": 1200.0,
     "nextInspection": "2027-03-09"
   },
   {
@@ -1769,7 +1769,7 @@
     "date": "2026-03-10",
     "type": "przegląd",
     "description": "Przegląd roczny UDT — dopuszczenie do eksploatacji",
-    "cost": 0,
+    "cost": 750.0,
     "nextInspection": "2027-03-10"
   },
   {
@@ -1787,7 +1787,7 @@
     "date": "2026-03-14",
     "type": "przegląd",
     "description": "Przegląd gwarancyjny — brak usterek",
-    "cost": 0,
+    "cost": 500.0,
     "nextInspection": "2027-03-14"
   },
   {

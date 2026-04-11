@@ -250,26 +250,6 @@
     "status": "potwierdzona"
   },
   {
-    "id": "RES-0027",
-    "machineId": "NAC-002",
-    "startDate": "2026-05-15",
-    "endDate": "2026-05-24",
-    "person": "Katarzyna Zielińska",
-    "projectNumber": "BUD-2024-032",
-    "address": "Szczecin, ul. Magazynowa 22",
-    "status": "oczekująca"
-  },
-  {
-    "id": "RES-0026",
-    "machineId": "KOL-002",
-    "startDate": "2026-06-03",
-    "endDate": "2026-06-15",
-    "person": "Marek Lewandowski",
-    "projectNumber": "BUD-2026-001",
-    "address": "Warszawa, ul. Konstruktorska 8",
-    "status": "oczekująca"
-  },
-  {
     "id": "RES-0028",
     "machineId": "KOP-003",
     "startDate": "2026-02-01",

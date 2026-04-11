@@ -138,7 +138,7 @@ class Machine:
         }
 
     def __str__(self) -> str:
-        return f"{self.uid:<14} {self.name:<22} {self.status:<16} {self.location}"
+        return f"{self.uid:<10} {self.name:<40} {self.status:<14} {self.location}"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Machine) and self.uid == other.uid
