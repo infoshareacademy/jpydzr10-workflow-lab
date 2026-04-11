@@ -268,5 +268,35 @@
     "projectNumber": "BUD-2026-001",
     "address": "Warszawa, ul. Konstruktorska 8",
     "status": "oczekująca"
+  },
+  {
+    "id": "RES-0028",
+    "machineId": "KOP-003",
+    "startDate": "2026-02-01",
+    "endDate": "2026-03-15",
+    "person": "Piotr Wiśniewski",
+    "projectNumber": "BUD-2026-004",
+    "address": "Warszawa, ul. Konstruktorska 8",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0029",
+    "machineId": "POD-002",
+    "startDate": "2026-02-05",
+    "endDate": "2026-03-12",
+    "person": "Anna Nowak",
+    "projectNumber": "BUD-2026-007",
+    "address": "Łódź, ul. Fabryczna 3",
+    "status": "potwierdzona"
+  },
+  {
+    "id": "RES-0030",
+    "machineId": "ZUR-002",
+    "startDate": "2026-02-10",
+    "endDate": "2026-03-14",
+    "person": "Magdalena Szymańska",
+    "projectNumber": "BUD-2026-012",
+    "address": "Wrocław, ul. Budowlana 21",
+    "status": "potwierdzona"
   }
 ]

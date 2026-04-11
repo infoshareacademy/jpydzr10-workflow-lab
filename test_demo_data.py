@@ -1,6 +1,5 @@
 """Testy walidujące spójność danych demo w data/."""
 
-import json
 import os
 from collections import Counter
 from datetime import date
