@@ -9,7 +9,7 @@ import pytest
 from datastore import DataStore
 from logic import has_conflict, run_daily_sync
 from models import Machine, Reservation, ServiceRecord
-from utils import generate_unique_id, parse_date
+from utils import generate_unique_id
 
 
 def _date_str(offset=0):
@@ -559,7 +559,7 @@ class TestSyncMultipleMachines:
             ),
         ]
 
-        result = run_daily_sync(machines, reservations)
+        run_daily_sync(machines, reservations)
 
         # M000 powinna być Zarezerwowana
         assert machines[0].status == "Zarezerwowana"
@@ -703,7 +703,7 @@ class TestSyncEmptyDates:
             "RES-001", "M001", _date_str(-2), "",
             "Jan", "B1", status="potwierdzona",
         )
-        result = run_daily_sync([m], [r])
+        run_daily_sync([m], [r])
         assert m.status == "W magazynie"
 
 
@@ -750,7 +750,7 @@ class TestSyncZarezerwowanaExpired:
             "RES-001", "M001", _date_str(-2), _date_str(5),
             "Jan", "B1", "Warszawa", "potwierdzona",
         )
-        result = run_daily_sync([m], [r])
+        run_daily_sync([m], [r])
         assert m.status == "Na budowie"
         assert m.location == "Warszawa"
 

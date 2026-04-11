@@ -5,6 +5,7 @@ Zawiera też helpery do pobierania danych od użytkownika
 (input_date, input_choice) — bo to warstwa I/O, nie logika biznesowa.
 """
 
+import contextlib
 from datetime import date, datetime
 
 from datastore import DataStore
@@ -595,10 +596,8 @@ class App:
             try:
                 choice = input("\nWybierz (0-11): ").strip()
             except EOFError:
-                try:
+                with contextlib.suppress(OSError):
                     self.save_all()
-                except OSError:
-                    pass
                 print("\n  Do widzenia!")
                 break
 
