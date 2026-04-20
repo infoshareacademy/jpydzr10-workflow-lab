@@ -2,6 +2,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,pycharm,visualstudiocode
 
 
+JIRA_TASKS_Milestone*_INTERNAL.md
+
 ### Django ###
 *.log
 *.pot
