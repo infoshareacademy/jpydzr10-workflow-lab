@@ -2285,14 +2285,14 @@ class TestTimelineViewAlpineDataM2(TestCase):
 
 ---
 
-### S6-T09 — Tests: Alpine helpers (preview MCP eval)
+### S6-T09 — Tests: Alpine helpers (browser JS eval)
 
 - Manualna weryfikacja w przeglądarce (DevTools Console):
   1. Start server, open `/machines/dashboard/`.
-  2. Eval: `document.querySelector('[x-data]').__x.$data.currentPendingCount()` → match backend count.
+  2. Eval: `document.querySelector('[x-data]').__x.$data.currentPendingCount()` → porównaj z liczbą z backendu.
   3. Eval: click bar → `editModal.open === true`.
-  4. Eval: change `editModal.fields.end_date`, call saveEdit → `editedReservations[pk]` populated.
-  5. Screenshot: commit panel visible z counter.
+  4. Eval: zmień `editModal.fields.end_date`, wywołaj saveEdit → `editedReservations[pk]` populated.
+  5. Screenshot: panel commit visible z counter.
 
 ---
 
@@ -2833,7 +2833,7 @@ git push origin main --tags
 
 # Appendix A — Git workflow cheat sheet
 
-(Szczegółowe komendy per sprint, z sekwencją: start branch → praca → rebase → push → merge → cleanup. opisane w każdym sprincie powyżej w sekcji "Git commands".)
+(Szczegółowe komendy per sprint, z sekwencją: start branch → praca → rebase → push → merge → cleanup — opisane w każdym sprincie powyżej w sekcji "Git commands".)
 
 # Appendix B — Pre-commit hook specification
 
