@@ -1,0 +1,40 @@
+# =============================================================================
+# Planer Maszyn Budowlanych — środowisko deweloperskie
+# =============================================================================
+#
+# Uruchomienie:
+#     docker-compose up -d                # start w tle
+#     docker-compose logs -f postgres     # podgląd logów
+#     docker-compose down                 # zatrzymanie (dane zachowane)
+#     docker-compose down -v              # zatrzymanie + reset danych (volume)
+#
+# macOS rekomendacja: OrbStack zamiast Docker Desktop (szybszy, lżejszy).
+# Linux: standardowe `docker` + `docker compose`.
+#
+# Po `docker-compose up -d` PostgreSQL jest dostępny na localhost:5432
+# z credentialami z `.env` (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: planer-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-planer_kursowy}
+      POSTGRES_USER: ${POSTGRES_USER:-planer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-planer_dev_2026}
+      # Polskie locale dla sortowania PL i znaków diakrytycznych
+      LANG: pl_PL.utf8
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-planer} -d ${POSTGRES_DB:-planer_kursowy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: planer_postgres_data
