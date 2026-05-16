@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy budowlanej.">
+
+    {# Tytuł nadpisywany przez child templates: {% block title %}...{% endblock %} #}
+    <title>{% block title %}Planer Maszyn Budowlanych{% endblock %}</title>
+
+    {# ==================================================================== #}
+    {# FOUC PREVENTION — ustaw motyw (light/dark) PRZED każdym renderem #}
+    {# ==================================================================== #}
+    {# Bez tego skryptu strona by mignęła białym tłem przy starcie w dark mode. #}
+    {# Skrypt jest synchroniczny (BEZ defer) i pierwszy w <head>. #}
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem("planer-theme");
+                var prefersDark = window.matchMedia &&
+                                  window.matchMedia("(prefers-color-scheme: dark)").matches;
+                var theme = saved || (prefersDark ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.classList.toggle("dark", theme === "dark");
+            } catch (e) { /* localStorage zablokowane — ignorujemy */ }
+        })();
+    </script>
+
+    {# ==================================================================== #}
+    {# STYLE — wszystko vendored w static/vendor/ (zero CDN) #}
+    {# ==================================================================== #}
+
+    {# Tailwind CSS v3.4.17 (Play CDN runtime — generuje klasy dynamicznie) #}
+    <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+    <script>
+        // Konfiguracja Tailwind — dark mode po `class="dark"` na <html>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+                    },
+                    colors: {
+                        // Brand color = niebieski (matches UNFOLD COLORS.primary)
+                        brand: {
+                            50: "#eff6ff",   100: "#dbeafe",  200: "#bfdbfe",
+                            300: "#93c5fd",  400: "#60a5fa",  500: "#3b82f6",
+                            600: "#2563eb",  700: "#1d4ed8",  800: "#1e40af",
+                            900: "#1e3a8a",  950: "#172554",
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+
+    {# Flatpickr — date picker (z polską lokalizacją) #}
+    <link rel="stylesheet" href="{% static 'vendor/flatpickr.min.css' %}">
+
+    {# Custom style + x-cloak helper dla Alpine (musi być przed Alpine init) #}
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: "Inter", "ui-sans-serif", system-ui, sans-serif; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 antialiased">
+
+    {# ==================================================================== #}
+    {# TOPBAR — branding + nawigacja + theme toggle #}
+    {# ==================================================================== #}
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    {# Logo / Brand #}
+                    <a href="{% url 'home' %}"
+                       class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M3 7l9-4 9 4M3 7v10l9 4M3 7l9 4m9-4v10l-9 4M12 11v10"/>
+                        </svg>
+                        <span class="hidden sm:inline">Planer Maszyn</span>
+                    </a>
+
+                    <nav class="hidden md:flex gap-1 ml-6">
+                        {# Linki dodajemy w Sprint 2+ #}
+                        <a href="/admin/" class="px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Admin</a>
+                        <a href="/healthz/" class="px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Healthz</a>
+                    </nav>
+                </div>
+
+                {# Theme toggle (Alpine.js) #}
+                <div x-data="themeToggle()" x-cloak class="flex items-center gap-2">
+                    <button @click="toggleTheme()"
+                            :aria-label="theme === 'dark' ? 'Włącz tryb jasny' : 'Włącz tryb ciemny'"
+                            class="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                        {# Słońce dla dark mode (kliknij = przełącz na light) #}
+                        <svg x-show="theme === 'dark'" xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        {# Księżyc dla light mode (kliknij = przełącz na dark) #}
+                        <svg x-show="theme === 'light'" xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {# ==================================================================== #}
+    {# MAIN CONTENT — nadpisywane przez child templates #}
+    {# ==================================================================== #}
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {# Messages framework (django.contrib.messages) — komunikaty flash #}
+        {% if messages %}
+            <ul class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <li class="px-4 py-3 rounded-md
+                        {% if message.tags == 'success' %}bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200{% endif %}
+                        {% if message.tags == 'error' %}bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-200{% endif %}
+                        {% if message.tags == 'warning' %}bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200{% endif %}
+                        {% if message.tags == 'info' %}bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200{% endif %}">
+                        {{ message }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block content %}
+            <div class="prose dark:prose-invert max-w-none">
+                <h1>Witaj w Planerze Maszyn Budowlanych</h1>
+                <p>Strona w budowie. Przejdź do
+                    <a href="/admin/" class="text-brand-600 dark:text-brand-400">panelu admina</a>
+                    żeby zalogować się jako administrator.</p>
+            </div>
+        {% endblock %}
+    </main>
+
+    {# ==================================================================== #}
+    {# FOOTER #}
+    {# ==================================================================== #}
+    <footer class="mt-16 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-gray-500 dark:text-gray-400">
+            <p>Planer Maszyn Budowlanych &middot; Milestone 2 (Django 5.2 LTS)</p>
+        </div>
+    </footer>
+
+    {# ==================================================================== #}
+    {# JAVASCRIPT — wszystko vendored, na końcu <body> żeby HTML wyświetlił się szybciej #}
+    {# ==================================================================== #}
+
+    {# HTMX 2.0.9 — server-driven HTML interactivity #}
+    <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+
+    {# Alpine.js 3.15.11 — client-side state + reaktywność #}
+    <script src="{% static 'vendor/alpine.min.js' %}" defer></script>
+
+    {# Flatpickr 4.6.13 — date picker (z polską lokalizacją) #}
+    <script src="{% static 'vendor/flatpickr.min.js' %}" defer></script>
+    <script src="{% static 'vendor/flatpickr-pl.js' %}" defer></script>
+
+    {# ==================================================================== #}
+    {# Globalne komponenty Alpine.js #}
+    {# ==================================================================== #}
+    <script>
+        // Theme toggle — używa localStorage do persist między sesjami
+        function themeToggle() {
+            return {
+                theme: document.documentElement.getAttribute("data-theme") || "light",
+                toggleTheme() {
+                    this.theme = this.theme === "light" ? "dark" : "light";
+                    document.documentElement.setAttribute("data-theme", this.theme);
+                    document.documentElement.classList.toggle("dark", this.theme === "dark");
+                    try {
+                        localStorage.setItem("planer-theme", this.theme);
+                    } catch (e) { /* ignoruj */ }
+                },
+            };
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
