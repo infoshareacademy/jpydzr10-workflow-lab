@@ -50,10 +50,10 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").s
 
 DJANGO_APPS = [
     # django-unfold MUSI być przed django.contrib.admin
-    # (nadpisuje template tags admina)
-    # "unfold",                              # dodamy w następnym commicie
-    # "unfold.contrib.filters",
-    # "unfold.contrib.forms",
+    # (nadpisuje template tags + base templates admina)
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -63,13 +63,11 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "simple_history",                       # audit trail per model (HistoricalRecords)
     "django_htmx",                          # request.htmx flag + HX-* shortcuts
     "widget_tweaks",                        # widget.attrs class injection w template
     "axes",                                 # brute-force protection na login
     "django_cleanup.apps.CleanupConfig",    # auto-delete orphan FileField uploads
-    # Dodawane w następnym commicie:
-    # "simple_history",      # audit trail per model
-    # "unfold", "unfold.contrib.filters", "unfold.contrib.forms",  # admin theme
 ]
 
 LOCAL_APPS = [
@@ -94,6 +92,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",                     # Content Security Policy
     "django_htmx.middleware.HtmxMiddleware",            # request.htmx flag
+    "simple_history.middleware.HistoryRequestMiddleware",   # request._history_user
     "axes.middleware.AxesMiddleware",                   # MUSI być na końcu listy
     # Dodawane w następnym commicie:
     # "simple_history.middleware.HistoryRequestMiddleware",
@@ -115,6 +114,52 @@ AXES_COOLOFF_TIME = 1                           # 1 godzina lockout po 5 nieudan
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True
 AXES_VERBOSE = True
+
+
+# =============================================================================
+# django-simple-history — audit trail per model
+# =============================================================================
+# Każdy model dodaje pole `history = HistoricalRecords()` które tworzy tabelę
+# `<app>_historical<model>` z snapshotem przy każdej zmianie.
+
+SIMPLE_HISTORY_REVERT_DISABLED = False        # pozwala na revert w adminie
+
+
+# =============================================================================
+# django-unfold — Tailwind admin theme
+# =============================================================================
+# Konfiguracja branding + dashboard. Pełna lista opcji:
+# https://unfoldadmin.com/docs/configuration/settings/
+
+UNFOLD = {
+    "SITE_TITLE": "Planer Maszyn Budowlanych",
+    "SITE_HEADER": "Planer Maszyn",
+    "SITE_SUBHEADER": "Panel administracyjny",
+    "SITE_URL": "/",
+    "SHOW_HISTORY": True,                     # przycisk historii w detail view
+    "SHOW_VIEW_ON_SITE": True,
+    "THEME": None,                            # None = user wybiera (light/dark/auto)
+    "LOGIN": {
+        "image": None,                        # opcjonalnie logo na ekranie loginu
+    },
+    "COLORS": {
+        # Kolor primary = jasny niebieski (#2563eb) — domyślny Tailwind blue-600.
+        # Można zmienić w late W3 polish.
+        "primary": {
+            "50": "239 246 255",
+            "100": "219 234 254",
+            "200": "191 219 254",
+            "300": "147 197 253",
+            "400": "96 165 250",
+            "500": "59 130 246",
+            "600": "37 99 235",
+            "700": "29 78 216",
+            "800": "30 64 175",
+            "900": "30 58 138",
+            "950": "23 37 84",
+        },
+    },
+}
 
 
 # =============================================================================
