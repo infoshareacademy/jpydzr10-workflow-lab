@@ -6,23 +6,25 @@ Ten plik jest celowo cienki — tylko top-level routing + healthz.
 """
 
 from django.contrib import admin
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.shortcuts import render
 from django.urls import path
 
 
 def home(request):
-    """Tymczasowy widok strony głównej — redirect do admina.
+    """Welcome page — pokazuje status projektu + skróty do admina / healthz.
 
-    Zostanie zastąpiony w Sprint 5 dashboardem z timeline rezerwacji.
+    Zostanie zastąpione w Sprint 5 dashboardem z timeline rezerwacji
+    (KPI cards + overdue alerts + filterable timeline grid).
     """
-    return HttpResponseRedirect("/admin/")
+    return render(request, "home.html")
 
 
 def healthz(request):
-    """Endpoint do monitoringu (load balancer / uptime check).
+    """Endpoint dla monitoringu (load balancer / uptime check).
 
-    Zwraca HTTP 200 + plain text 'ok'. Można rozszerzyć o probe DB / cache
-    w późniejszych etapach (Sprint 8 / Milestone 3).
+    Zwraca HTTP 200 + plain text 'ok'. NIE używa DB (więc działa nawet
+    gdy Postgres jest down — używamy do liveness probe).
     """
     return HttpResponse("ok", content_type="text/plain")
 
