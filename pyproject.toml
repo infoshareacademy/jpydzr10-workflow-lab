@@ -1,0 +1,177 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+# =============================================================================
+# PROJECT METADATA
+# =============================================================================
+[project]
+name = "planer-maszyn-kursowy"
+version = "2.0.0"
+description = "Planer Maszyn Budowlanych — aplikacja webowa Django (Milestone 2)"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.14"
+authors = [{ name = "Sebastian Nowak" }]
+keywords = ["django", "construction", "machinery", "reservations", "service-records"]
+
+# =============================================================================
+# RUNTIME DEPENDENCIES (production-grade)
+# =============================================================================
+dependencies = [
+    # --- Core Django + DB ---
+    "django>=5.2,<5.3",                # LTS, supported do 2028-04-30
+    "psycopg[binary]>=3.3",            # PostgreSQL driver v3 (nie v2)
+    "python-dotenv>=1.2",              # ładowanie .env w settings
+    "python-dateutil>=2.9",            # relativedelta dla calculate_next_inspection
+
+    # --- Frontend helpers (wszystkie static jest vendored w static/vendor/) ---
+    "django-htmx>=1.27",               # request.htmx + HX-* shortcuts
+    "django-widget-tweaks>=1.5",       # widget.attrs class injection w templates
+    "django-unfold>=0.90",             # Tailwind admin theme (dashboard widgets)
+
+    # --- Audit / Security ---
+    "django-simple-history>=3.11",     # historia zmian każdego modelu
+    "django-axes>=8.3",                # brute-force protection na login
+    "django-csp>=4.0",                 # Content Security Policy headers
+    "django-cleanup>=8.0",             # auto-delete orphan FileField uploads
+
+    # --- Files / Images / Reports ---
+    "Pillow>=12.2",                    # upload zdjęć maszyn
+    "openpyxl>=3.1",                   # Excel import/export (raporty + bulk import)
+    "reportlab>=4.0",                  # PDF generation (rezerwacje, certyfikaty)
+
+    # --- Pomocnik chatbota (W4 bonus) ---
+    "pydantic-ai-slim>=0.1.7",         # framework agenta (provider deps dorabiamy w W4)
+]
+
+# =============================================================================
+# DEV DEPENDENCIES — pytest stack + linter + dev tools
+# =============================================================================
+[project.optional-dependencies]
+dev = [
+    # --- Linter + formatter ---
+    "ruff>=0.15",                      # pycodestyle + pyflakes + isort + black + bugbear w 1
+    "pre-commit>=4.5",                 # git hook manager
+
+    # --- Pytest stack ---
+    "pytest>=9.0",
+    "pytest-django>=4.11",             # Django integration (DJANGO_SETTINGS_MODULE)
+    "pytest-cov>=7.1",                 # coverage z fail_under
+    "pytest-xdist>=3.8",               # parallel test execution (-n auto)
+    "factory-boy>=3.3",                # test fixtures (zamiast ręcznego Machine(...))
+    "freezegun>=1.5",                  # mock date.today() / timezone.now()
+    "hypothesis>=6.152",               # property-based testing dla has_conflict, run_daily_sync
+    "pytest-bdd>=8.1",                 # Gherkin scenarios (Sprint 6+ bonus)
+
+    # --- Dev convenience ---
+    "django-debug-toolbar>=4.4",       # SQL profiling, request inspection
+    "django-extensions>=3.2",          # manage.py shell_plus, show_urls, etc.
+]
+
+prod = [
+    "whitenoise>=6.12",                # static file serving w production
+    "gunicorn>=25.3",                  # WSGI server (Sprint 8 / Milestone 3)
+]
+
+# =============================================================================
+# SETUPTOOLS — wskazanie które foldery to pakiety Pythona
+# =============================================================================
+[tool.setuptools.packages.find]
+include = [
+    "planer_config*",
+    "machines*",
+    "reservations*",
+    "service*",
+    "core*",
+    "accounts*",
+]
+exclude = ["archive*", "tests*", "media*", "static*"]
+
+# =============================================================================
+# PYTEST CONFIG
+# =============================================================================
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "planer_config.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_test.py"]
+addopts = "-v --tb=short --strict-markers --reuse-db"
+markers = [
+    "unit: testy jednostkowe (pure functions, bez DB)",
+    "integration: testy integracyjne (z DB)",
+    "e2e: testy end-to-end (browser, Playwright)",
+    "slow: testy wolne (>1s — wykluczane w pre-commit)",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:django.*",
+]
+
+# =============================================================================
+# RUFF — linter + formatter
+# =============================================================================
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = ["archive", "*/migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (sortowanie importów)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (modernizacja składni)
+    "B",    # flake8-bugbear (typowe bugi)
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+    "DJ",   # flake8-django (Django-specific)
+]
+ignore = [
+    "E501",   # line too long — ruff format zajmie się tym
+    "SIM108", # ternary operator — czasem if/else jest czytelniejsze
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["E501", "N806", "RUF012"]
+"tests/**/*.py" = ["S101"]      # asserty OK w testach
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "planer_config",
+    "machines",
+    "reservations",
+    "service",
+    "core",
+    "accounts",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# =============================================================================
+# COVERAGE — start z fail_under=60, ratchet do 80% docelowo
+# =============================================================================
+[tool.coverage.run]
+source = ["planer_config", "machines", "reservations", "service", "core", "accounts"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/__init__.py",
+]
+branch = true
+
+[tool.coverage.report]
+fail_under = 60.0
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

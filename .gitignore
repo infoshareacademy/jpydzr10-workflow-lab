@@ -402,21 +402,40 @@ pyrightconfig.json
 
 
 # =============================================================================
-# PROJEKT: Planer Maszyn Budowlanych
+# PROJEKT: Planer Maszyn Budowlanych — Milestone 2 (Django)
 # =============================================================================
-
-# --- Dane aplikacji (generowane w runtime) ---
-data/
-*.bak
 
 # --- macOS ---
 .DS_Store
+**/.DS_Store
 
-# --- Wyjątki: pliki śledzone mimo reguł wyżej ---
-!machines_db.json
-!data/
-data/*.bak
+# --- Pliki backup tworzone przez aplikację konsolową M1 (zachowane lokalnie, nie do repo) ---
+**/*.bak
 
-# --- Milestone 2+ (Django) ---
-media/
-staticfiles/.idea/
+# --- Django — pliki generowane w runtime ---
+staticfiles/                 # output collectstatic
+media/                       # uploadowane przez użytkowników (zdjęcia maszyn, PDF protokoły)
+db.sqlite3
+db.sqlite3-journal
+*.pot                        # gettext templates
+*.mo                         # compiled translations
+
+# --- uv / venv / Python local ---
+.venv/
+.python-version              # generowany przez uv (na potrzeby pyenv)
+*.egg-info/
+
+# --- Coverage / pytest cache ---
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.hypothesis/
+
+# --- Tailwind build (jeśli używany lokalnie zamiast vendored) ---
+node_modules/
+
+# --- Pliki M1 zachowane w archive/ — śledzone normalnie, NIE ignorujemy ---
+# (nadrzędne reguły Python wyżej ignorują *.pyc, __pycache__/ etc. — to OK)
+!archive/**/*.json           # jawnie śledzimy dane M1 w archive/milestone-1/data/
+!archive/**/*.py             # jawnie śledzimy kod M1 w archive/milestone-1/console/
