@@ -22,6 +22,34 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
 
 
 # =============================================================================
+# django-debug-toolbar — SQL profiling, request inspection, settings dump
+# =============================================================================
+# Pokazuje się jako pasek po prawej stronie w przeglądarce gdy DEBUG=True
+# i request idzie z INTERNAL_IPS.
+
+INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
+
+# Middleware MUSI być wstawione PRZED HtmxMiddleware (żeby toolbar
+# nie był renderowany w HTMX partial responses) — znajdujemy index ręcznie.
+_htmx_idx = MIDDLEWARE.index("django_htmx.middleware.HtmxMiddleware")  # noqa: F405
+MIDDLEWARE.insert(_htmx_idx, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
+
+INTERNAL_IPS = ["127.0.0.1", "localhost"]
+
+DEBUG_TOOLBAR_CONFIG = {
+    "DISABLE_PANELS": {"debug_toolbar.panels.redirects.RedirectsPanel"},
+    "SHOW_TEMPLATE_CONTEXT": True,
+}
+
+
+# =============================================================================
+# django-axes — wyłączone w dev (uniknięcie lockoutu podczas testowania)
+# =============================================================================
+
+AXES_ENABLED = False
+
+
+# =============================================================================
 # EMAIL — w dev wszystko leci do konsoli (nie spamuje prawdziwych adresów)
 # =============================================================================
 

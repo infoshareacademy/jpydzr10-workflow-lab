@@ -63,12 +63,13 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    # Dodawane stopniowo w kolejnych commitach:
+    "django_htmx",                          # request.htmx flag + HX-* shortcuts
+    "widget_tweaks",                        # widget.attrs class injection w template
+    "axes",                                 # brute-force protection na login
+    "django_cleanup.apps.CleanupConfig",    # auto-delete orphan FileField uploads
+    # Dodawane w następnym commicie:
     # "simple_history",      # audit trail per model
-    # "axes",                # brute-force protection
-    # "django_htmx",         # request.htmx + utilities
-    # "widget_tweaks",       # widget.attrs class injection
-    # "django_cleanup.apps.CleanupConfig",   # auto-delete orphan FileFields
+    # "unfold", "unfold.contrib.filters", "unfold.contrib.forms",  # admin theme
 ]
 
 LOCAL_APPS = [
@@ -84,19 +85,56 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # whitenoise serwuje static w prod (dev używa runserver)
-    # "whitenoise.middleware.WhiteNoiseMiddleware",  # tylko prod
+    # whitenoise dodawany w prod.py (insert na pozycję 1)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Dodawane w kolejnych commitach:
-    # "django_htmx.middleware.HtmxMiddleware",
-    # "axes.middleware.AxesMiddleware",      # po AuthenticationMiddleware
+    "csp.middleware.CSPMiddleware",                     # Content Security Policy
+    "django_htmx.middleware.HtmxMiddleware",            # request.htmx flag
+    "axes.middleware.AxesMiddleware",                   # MUSI być na końcu listy
+    # Dodawane w następnym commicie:
     # "simple_history.middleware.HistoryRequestMiddleware",
 ]
+
+
+# =============================================================================
+# AUTENTYKACJA + django-axes (brute-force protection)
+# =============================================================================
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",      # MUSI być pierwszy
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# django-axes config — wartości konserwatywne (5 prób, 1h lockout)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1                           # 1 godzina lockout po 5 nieudanych próbach
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+AXES_VERBOSE = True
+
+
+# =============================================================================
+# CONTENT SECURITY POLICY (django-csp 4.x)
+# =============================================================================
+# Reguły relaxed dla M2 — dopuszczamy 'unsafe-inline' w stylu i skryptach
+# bo Alpine.js + niektóre Tailwind class strings tego wymagają.
+# W Milestone 3 zacieśnimy do nonce-based CSP (Phase B).
+
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ("'self'",),
+        "style-src": ("'self'", "'unsafe-inline'"),
+        "script-src": ("'self'", "'unsafe-inline'"),
+        "img-src": ("'self'", "data:"),
+        "font-src": ("'self'", "data:"),
+        "connect-src": ("'self'",),
+        "frame-ancestors": ("'none'",),
+    },
+}
 
 
 # =============================================================================
