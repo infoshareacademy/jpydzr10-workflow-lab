@@ -409,6 +409,16 @@ pyrightconfig.json
 .DS_Store
 **/.DS_Store
 
+# --- Lokalne notatki, scratchpady i konfiguracja narzędzi deweloperskich (osobiste, nie do repo) ---
+.local/
+.cache/
+.scratch/
+*.local.md
+*.scratch.md
+.claude/
+CLAUDE.md
+notes_local/
+
 # --- Pliki backup tworzone przez aplikację konsolową M1 (zachowane lokalnie, nie do repo) ---
 **/*.bak
 
