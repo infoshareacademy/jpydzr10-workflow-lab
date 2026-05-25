@@ -2,13 +2,15 @@
 URL routing dla projektu planer_config.
 
 Konwencja: każda app ma własny `urls.py`, włączany tu przez `include()`.
-Ten plik jest celowo cienki — tylko top-level routing + healthz.
+Ten plik jest celowo cienki — tylko top-level routing + healthz +
+warunkowe URL'e debug-toolbar w trybie DEBUG.
 """
 
+from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.urls import path
+from django.urls import include, path
 
 
 def home(request):
@@ -34,3 +36,16 @@ urlpatterns = [
     path("healthz/", healthz, name="healthz"),
     path("admin/", admin.site.urls),
 ]
+
+
+# =============================================================================
+# django-debug-toolbar — URL'e tylko w trybie DEBUG
+# =============================================================================
+# Toolbar middleware (dodane w dev.py) renderuje pasek z linkami do
+# `djdt:render_panel` / `djdt:history_sidebar`. Te nazwy musimy wpiąć
+# w urlpatterns, inaczej template `debug_toolbar/base.html` rzuca
+# NoReverseMatch przy każdym requeście.
+if settings.DEBUG:
+    urlpatterns += [
+        path("__debug__/", include("debug_toolbar.urls")),
+    ]
