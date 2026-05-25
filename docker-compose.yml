@@ -1,23 +1,31 @@
 # =============================================================================
-# Planer Maszyn Budowlanych — środowisko deweloperskie
+# Planer Maszyn Budowlanych — środowisko deweloperskie (kursowy repo)
 # =============================================================================
 #
 # Uruchomienie:
-#     docker-compose up -d                # start w tle
-#     docker-compose logs -f postgres     # podgląd logów
-#     docker-compose down                 # zatrzymanie (dane zachowane)
-#     docker-compose down -v              # zatrzymanie + reset danych (volume)
+#     docker compose up -d                # start w tle
+#     docker compose logs -f postgres     # podgląd logów
+#     docker compose down                 # zatrzymanie (dane zachowane)
+#     docker compose down -v              # zatrzymanie + reset danych (volume)
 #
 # macOS rekomendacja: OrbStack zamiast Docker Desktop (szybszy, lżejszy).
 # Linux: standardowe `docker` + `docker compose`.
 #
-# Po `docker-compose up -d` PostgreSQL jest dostępny na localhost:5432
+# Port 5434 (zamiast standardowego 5432) — porty na MacOS Sebastian'a:
+#   - 5432 = isocab-postgres (WMS Sebastiana, inny projekt)
+#   - 5433 = planer-maszyn-reference (sandbox reference)
+#   - 5434 = ten kursowy repo (Django runserver na :8002 — patrz Makefile)
+#
+# Po `docker compose up -d` PostgreSQL dostępny na localhost:5434
 # z credentialami z `.env` (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).
+# Django startujesz osobno: `make run` (→ manage.py runserver 0.0.0.0:8002).
+#
+# Container name `kursowe-repo-8002` w OrbStack UI pokazuje port Django.
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: planer-postgres
+    container_name: kursowe-repo-8002
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-planer_kursowy}
@@ -26,7 +34,7 @@ services:
       # Polskie locale dla sortowania PL i znaków diakrytycznych
       LANG: pl_PL.utf8
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -37,4 +45,4 @@ services:
 
 volumes:
   postgres_data:
-    name: planer_postgres_data
+    name: kursowe_repo_data

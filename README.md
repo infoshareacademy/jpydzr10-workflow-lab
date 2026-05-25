@@ -45,19 +45,41 @@ Pełny plan i podział na sprinty: [`JIRA_TASKS_Milestone2.md`](JIRA_TASKS_Miles
 
 Pełna lista i wersje: zobacz `pyproject.toml` (po inicjalizacji Django).
 
-## Uruchomienie (po zakończeniu Milestone 2)
+## Uruchomienie
+
+**Wymagania:** Python 3.14, uv, Docker (lub OrbStack na macOS).
+
+### Szybki start (z Makefile)
 
 ```bash
-# Wymagania: Python 3.14, uv, Docker (lub OrbStack na macOS)
-
-uv sync                                  # instaluje zależności
-docker-compose up -d                     # startuje PostgreSQL 16
-cp .env.example .env                     # konfiguracja lokalna
-uv run python manage.py migrate          # tworzy schemat bazy
-uv run python manage.py createsuperuser  # konto admina
-uv run python manage.py seed_demo        # demo data (maszyny, budowy, rezerwacje)
-uv run python manage.py runserver        # http://localhost:8000
+make install              # uv sync (deps)
+cp .env.example .env      # konfiguracja lokalna (uzupełnij brakujące pola)
+make db-up                # PostgreSQL 16 na localhost:5434 (container "kursowe-repo-8002")
+make migrate              # tworzy schemat bazy
+make superuser            # konto admin (jednorazowo)
+make run                  # Django na http://localhost:8002
 ```
+
+### Bez Makefile (komendy 1:1)
+
+```bash
+uv sync
+cp .env.example .env
+docker compose up -d                                 # Postgres na 5434
+uv run python manage.py migrate
+uv run python manage.py createsuperuser
+uv run python manage.py runserver 0.0.0.0:8002       # http://localhost:8002
+```
+
+### Porty (lokalne, MacOS)
+
+| Projekt | Postgres | Django | Container Postgres w OrbStack |
+|---------|----------|--------|-------------------------------|
+| **Ten kursowy repo** | localhost:**5434** | http://localhost:**8002** | `kursowe-repo-8002` |
+| planer-maszyn-reference (sandbox) | localhost:5433 | http://localhost:8001 | `planer-maszyn-reference-8001` |
+| WMS (inny projekt Sebastian'a) | localhost:5432 | http://localhost:8000 | `isocab-postgres` |
+
+Nazwa kontenera Postgres w OrbStack UI zawiera port Django — łatwo zobaczyć na jaki localhost wejść.
 
 ## Testy
 
