@@ -24,23 +24,19 @@ dependencies = [
     "psycopg[binary]>=3.3",            # PostgreSQL driver v3 (nie v2)
     "python-dotenv>=1.2",              # ładowanie .env w settings
     "python-dateutil>=2.9",            # relativedelta dla calculate_next_inspection
-
     # --- Frontend helpers (wszystkie static jest vendored w static/vendor/) ---
     "django-htmx>=1.27",               # request.htmx + HX-* shortcuts
     "django-widget-tweaks>=1.5",       # widget.attrs class injection w templates
     "django-unfold>=0.90",             # Tailwind admin theme (dashboard widgets)
-
     # --- Audit / Security ---
     "django-simple-history>=3.11",     # historia zmian każdego modelu
     "django-axes>=8.3",                # brute-force protection na login
     "django-csp>=4.0",                 # Content Security Policy headers
     "django-cleanup>=8.0",             # auto-delete orphan FileField uploads
-
     # --- Files / Images / Reports ---
     "Pillow>=12.2",                    # upload zdjęć maszyn
     "openpyxl>=3.1",                   # Excel import/export (raporty + bulk import)
     "reportlab>=4.0",                  # PDF generation (rezerwacje, certyfikaty)
-
     # --- Pomocnik chatbota (W4 bonus) ---
     "pydantic-ai-slim>=0.1.7",         # framework agenta (provider deps dorabiamy w W4)
 ]
@@ -174,4 +170,10 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
+]
+
+[dependency-groups]
+dev = [
+    "django-debug-toolbar>=6.3.0",
+    "django-extensions>=4.1",
 ]

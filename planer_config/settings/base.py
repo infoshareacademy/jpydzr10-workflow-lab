@@ -71,7 +71,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    # Dodajemy w Sprint 2+: machines, reservations, service, accounts, core
+    "core.apps.CoreConfig",
+    "accounts.apps.AccountsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -90,12 +91,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "csp.middleware.CSPMiddleware",                     # Content Security Policy
-    "django_htmx.middleware.HtmxMiddleware",            # request.htmx flag
+    "csp.middleware.CSPMiddleware",                         # Content Security Policy
+    "django_htmx.middleware.HtmxMiddleware",                # request.htmx flag
     "simple_history.middleware.HistoryRequestMiddleware",   # request._history_user
-    "axes.middleware.AxesMiddleware",                   # MUSI być na końcu listy
-    # Dodawane w następnym commicie:
-    # "simple_history.middleware.HistoryRequestMiddleware",
+    "axes.middleware.AxesMiddleware",                       # MUSI być na końcu listy
 ]
 
 

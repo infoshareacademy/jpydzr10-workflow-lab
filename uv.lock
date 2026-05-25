@@ -656,6 +656,12 @@ prod = [
     { name = "whitenoise" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "django-debug-toolbar" },
+    { name = "django-extensions" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.2,<5.3" },
@@ -689,6 +695,12 @@ requires-dist = [
     { name = "whitenoise", marker = "extra == 'prod'", specifier = ">=6.12" },
 ]
 provides-extras = ["dev", "prod"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "django-debug-toolbar", specifier = ">=6.3.0" },
+    { name = "django-extensions", specifier = ">=4.1" },
+]
 
 [[package]]
 name = "platformdirs"

@@ -47,7 +47,7 @@ CONTENT_SECURITY_POLICY = {
 # Pokazuje się jako pasek po prawej stronie w przeglądarce gdy DEBUG=True
 # i request idzie z INTERNAL_IPS.
 
-INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
+INSTALLED_APPS += ["debug_toolbar", "django_extensions"]  # noqa: F405
 
 # Middleware MUSI być wstawione PRZED HtmxMiddleware (żeby toolbar
 # nie był renderowany w HTMX partial responses) — znajdujemy index ręcznie.
