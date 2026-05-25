@@ -418,6 +418,9 @@ pyrightconfig.json
 .claude/
 CLAUDE.md
 notes_local/
+timeline-snapshot.yml
+.playwright-mcp/
+
 
 # --- Pliki backup tworzone przez aplikację konsolową M1 (zachowane lokalnie, nie do repo) ---
 **/*.bak
