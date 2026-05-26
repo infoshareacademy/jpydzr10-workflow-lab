@@ -153,7 +153,8 @@
                                         {% endif %}
 
                                         {% if r.is_pending %}
-                                            <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="block">
+                                            <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="block"
+                                                  onsubmit="return confirm('Potwierdzić rezerwację #{{ r.pk }} ({{ r.machine.uid }})? Status zmieni się z oczekującej na potwierdzoną.');">
                                                 {% csrf_token %}
                                                 <button type="submit"
                                                         role="menuitem"
@@ -167,7 +168,8 @@
                                         {% endif %}
 
                                         {% if r.is_confirmed %}
-                                            <form method="post" action="{% url 'reservations:complete' r.pk %}" class="block">
+                                            <form method="post" action="{% url 'reservations:complete' r.pk %}" class="block"
+                                                  onsubmit="return confirm('Zakończyć rezerwację #{{ r.pk }} ({{ r.machine.uid }})? Maszyna wróci do magazynu — tej operacji NIE da się cofnąć.');">
                                                 {% csrf_token %}
                                                 <button type="submit"
                                                         role="menuitem"
@@ -264,7 +266,8 @@
                         Szczegóły
                     </a>
                     {% if r.is_pending %}
-                        <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="flex-1 min-w-[6rem]">
+                        <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="flex-1 min-w-[6rem]"
+                              onsubmit="return confirm('Potwierdzić rezerwację #{{ r.pk }} ({{ r.machine.uid }})?');">
                             {% csrf_token %}
                             <button type="submit"
                                     class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
@@ -272,7 +275,8 @@
                             </button>
                         </form>
                     {% elif r.is_confirmed %}
-                        <form method="post" action="{% url 'reservations:complete' r.pk %}" class="flex-1 min-w-[6rem]">
+                        <form method="post" action="{% url 'reservations:complete' r.pk %}" class="flex-1 min-w-[6rem]"
+                              onsubmit="return confirm('Zakończyć rezerwację #{{ r.pk }}? Maszyna {{ r.machine.uid }} wróci do magazynu — nie da się cofnąć.');">
                             {% csrf_token %}
                             <button type="submit"
                                     class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
