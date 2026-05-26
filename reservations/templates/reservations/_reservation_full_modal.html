@@ -1,0 +1,133 @@
+{% load planer_tags %}
+{% comment %}
+    Wave 14-A Bundle 2 + 3 — Pelny modal rezerwacji (popup na timeline).
+
+    Re-uzywa _form_partial.html (ten sam ReservationForm) zeby uniknac
+    duplikacji UI: user widzi te same pola w modal jak na pelnej stronie
+    /rezerwacje/<pk>/edytuj/.
+
+    Renderowany przez:
+      * reservation_modal_view (Bundle 2): tryb edit, pre-filled instance.
+      * reservation_quick_modal_view (Bundle 3): tryb create, preselect
+        machine + start_date z clicked day.
+
+    Modal panel:
+      * max-w-2xl (~672px) w-[90%] -- ~1/4 viewport na desktop 1280+;
+      * bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6;
+      * scroll wewnetrzny gdy zawartosc przekroczy 80vh.
+
+    Backdrop:
+      * bg-slate-500/30 backdrop-blur-sm (subtle gray, NIE czarny black/80)
+        wg specyfikacji Sebastian'a -- pozwala widziec timeline w tle.
+
+    Akcje (tryb edit, w stopce):
+      * Edytuj (submit) -- pelna sciezka POST do /rezerwacje/<pk>/edytuj/;
+      * Anuluj rezerwacje -- modal w modalu (potwierdz powod);
+      * Zakoncz rezerwacje -- POST do /rezerwacje/<pk>/zakoncz/;
+      * Zmien osobe -- POST do /rezerwacje/<pk>/zmien-osobe/;
+      * Zamknij (X) -- closes popup bez submitu.
+
+    A11y:
+      * role="dialog" aria-modal="true" aria-labelledby;
+      * focus trap -- pierwszy input dostaje focus po open;
+      * ESC + click-outside zamykaja (wrapper na timeline.html);
+      * keyboard-navigable form (Tab przeskakuje przez pola).
+{% endcomment %}
+
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-[90%] max-h-[85vh] overflow-y-auto ring-1 ring-slate-200 dark:ring-slate-700"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="reservation-modal-title"
+     @click.stop
+     x-init="$nextTick(() => { const f = $el.querySelector('select, input, textarea, button'); if (f) f.focus(); })">
+
+    {# ============================== HEADER ============================== #}
+    <header class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-start justify-between gap-3 bg-gradient-to-br from-brand-50/40 to-white dark:from-brand-900/20 dark:to-slate-800">
+        <div class="min-w-0 flex-1">
+            <h2 id="reservation-modal-title" class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 flex-shrink-0" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </span>
+                {% if mode == 'edit' and reservation %}
+                    Rezerwacja #{{ reservation.pk }}
+                {% else %}
+                    Nowa rezerwacja
+                {% endif %}
+            </h2>
+            {% if mode == 'edit' and reservation %}
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 ml-10 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ reservation.machine.uid }}</span>
+                    <span class="text-slate-300 dark:text-slate-600">·</span>
+                    <span class="font-mono tabular-nums">{{ reservation.start_date|date:"d.m.Y" }}</span>
+                    <span class="text-slate-400">→</span>
+                    <span class="font-mono tabular-nums">{{ reservation.end_date|date:"d.m.Y" }}</span>
+                    <span class="text-slate-300 dark:text-slate-600">·</span>
+                    {% status_badge reservation.status as cls %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[0.6875rem] font-semibold uppercase tracking-wider {{ cls }}">
+                        {{ reservation.get_status_display }}
+                    </span>
+                </p>
+            {% elif mode == 'create' and preselect_machine_uid %}
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 ml-10">
+                    Maszyna <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ preselect_machine_uid }}</span>
+                    {% if preselect_day %}
+                        <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
+                        od dnia <span class="font-mono tabular-nums">{{ preselect_day }}</span>
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+        <button type="button"
+                @click="closeReservationModal()"
+                class="flex-shrink-0 p-2 -m-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                aria-label="Zamknij okno rezerwacji">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </header>
+
+    {# ============================== BODY: REUSE _form_partial.html 1:1 ============================== #}
+    <div class="p-6 space-y-4">
+        {% include "reservations/_form_partial.html" %}
+    </div>
+
+    {# ============================== FOOTER: AKCJE (tylko w edit mode) ============================== #}
+    {% if mode == 'edit' and reservation and not reservation.is_closed %}
+    <footer class="px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30 flex flex-wrap items-center gap-2">
+        <p class="text-xs text-slate-500 dark:text-slate-400 flex-1 min-w-0">
+            Szybkie akcje (nie wymagaja edycji formularza):
+        </p>
+
+        {# Zmien status (confirm / complete -- zalezy od aktualnego statusu) #}
+        {% if reservation.is_pending %}
+            <form method="post" action="{% url 'reservations:confirm' reservation.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Potwierdz
+                </button>
+            </form>
+        {% elif reservation.is_confirmed %}
+            <form method="post" action="{% url 'reservations:complete' reservation.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Zakoncz
+                </button>
+            </form>
+        {% endif %}
+
+        {# Pelny widok detail w nowej karcie (escape do pelnej strony) #}
+        <a href="{% url 'reservations:detail' reservation.pk %}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Pelny widok
+        </a>
+    </footer>
+    {% endif %}
+</div>

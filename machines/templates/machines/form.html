@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ form_title }} — Planer Maszyn{% endblock %}
+
+{% block content %}
+{# ------------------------------------------------------------------ #}
+{# Breadcrumb — Maszyny → ten formularz. Pomaga z głębokim linkowaniem #}
+{# i orientacją (gdzie jestem). Wzorzec identyczny jak w detail.html. #}
+{# ------------------------------------------------------------------ #}
+<nav class="text-sm text-gray-500 dark:text-gray-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
+    <a href="{% url 'machines:list' %}"
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+        Maszyny
+    </a>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-900 dark:text-gray-200 font-medium">
+        {% if machine %}Edycja{% else %}Nowa maszyna{% endif %}
+    </span>
+</nav>
+
+{# ------------------------------------------------------------------ #}
+{# Page title — różny w trybie create vs edit. Edycja pokazuje UID +   #}
+{# nazwę żeby user wiedział co edytuje (zwłaszcza po deep linku).      #}
+{# ------------------------------------------------------------------ #}
+<header class="mb-6">
+    <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        <span>{% if machine %}Edycja maszyny{% else %}Nowa maszyna{% endif %}</span>
+    </div>
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+        {% if machine %}
+            <span class="font-mono text-brand-700 dark:text-brand-300 text-xl md:text-2xl">{{ machine.uid }}</span>
+            <span class="text-gray-400 dark:text-gray-500 mx-1.5">·</span>
+            {{ machine.name }}
+        {% else %}
+            Nowa maszyna
+        {% endif %}
+    </h1>
+</header>
+
+{# ------------------------------------------------------------------ #}
+{% comment %} Form card — sekcjonowane sekcje semantyczne (fieldset/legend).
+   Wave 14-A Bundle 7 -- Sebastian walkthrough: poprzednio space-y-7 + p-7
+   = przestrzen ogromna jak na 1+ stron A4. Teraz compact: p-4 md:p-5,
+   2-kolumnowy grid lg+ (lewa: podstawowe+specy, prawa: lokalizacja+
+   zdjecie+notatki), gap-3 w wewnetrznych gridach pol. {% endcomment %}
+{# ------------------------------------------------------------------ #}
+<form method="post" enctype="multipart/form-data"
+      x-data="machineForm()"
+      class="surface-card p-4 md:p-5 max-w-5xl"
+      novalidate>
+    {% csrf_token %}
+
+    {# Top-level error block (non-field errors z update_machine warnings   #}
+    {# / clean() ValidationError — np. status NA_BUDOWIE bez aktywnej     #}
+    {# rezerwacji. Wzór z UI rules: role=alert + ikona + szczegóły).      #}
+    {% if form.non_field_errors %}
+    <div role="alert"
+         class="mb-4 flex items-start gap-3 px-4 py-3 rounded-lg bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="text-sm space-y-1">{{ form.non_field_errors }}</div>
+    </div>
+    {% endif %}
+
+    {% comment %} Wave 14-A Bundle 7 -- 2-kolumnowy grid lg+ wokół wszystkich fieldsetow.
+       Lewa kolumna: Sekcje 1-2 (basic info + tech specs).
+       Prawa kolumna: Sekcje 3-5 (location + image + notes).
+       Mobile/tablet: stack pionowy (grid-cols-1). {% endcomment %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+    <div class="space-y-4">
+
+    {# ============================================================ #}
+    {# SEKCJA 1 — Podstawowe informacje (UID, nazwa, typ)            #}
+    {# ============================================================ #}
+    <fieldset class="space-y-3">
+        <legend class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
+            Podstawowe informacje
+        </legend>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {# UID — readonly w edit mode (UID = stabilny klucz biznesowy). #}
+            <div>
+                <label for="{{ form.uid.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.uid.label }}{% if form.uid.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {% if machine %}
+                    {# Widoczny read-only display + hidden input z aktualną wartością. #}
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <span class="font-mono text-sm text-gray-700 dark:text-gray-200">{{ machine.uid }}</span>
+                    </div>
+                    <input type="hidden" name="{{ form.uid.name }}" value="{{ machine.uid }}">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">UID jest stałym identyfikatorem — nie można go zmienić.</p>
+                {% else %}
+                    {{ form.uid }}
+                    {% if form.uid.help_text %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.uid.help_text }}</p>
+                    {% endif %}
+                {% endif %}
+                {% if form.uid.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.uid.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            {# Nazwa — pełna sm:col-span-1 (UID + Nazwa = jedna linia). #}
+            <div>
+                <label for="{{ form.name.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.name.label }}{% if form.name.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {{ form.name }}
+                {% if form.name.help_text %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.name.help_text }}</p>
+                {% endif %}
+                {% if form.name.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.name.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            {# Typ — select (pełna szerokość 2-col na sm). #}
+            <div class="sm:col-span-2">
+                <label for="{{ form.machine_type.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.machine_type.label }}{% if form.machine_type.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {{ form.machine_type }}
+                {% if form.machine_type.help_text %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.machine_type.help_text }}</p>
+                {% endif %}
+                {% if form.machine_type.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.machine_type.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    {# ============================================================ #}
+    {# SEKCJA 2 — Specyfikacja techniczna                            #}
+    {# ============================================================ #}
+    <fieldset class="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <legend class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </span>
+            Specyfikacja techniczna
+        </legend>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label for="{{ form.manufacturer.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.manufacturer.label }}
+                </label>
+                {{ form.manufacturer }}
+                {% if form.manufacturer.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.manufacturer.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.model.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.model.label }}
+                </label>
+                {{ form.model }}
+                {% if form.model.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.model.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.serial_number.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.serial_number.label }}
+                </label>
+                {{ form.serial_number }}
+                {% if form.serial_number.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.serial_number.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.build_year.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.build_year.label }}
+                </label>
+                {{ form.build_year }}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Rok produkcji maszyny (np. 2018).</p>
+                {% if form.build_year.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.build_year.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            {# Capacity — z prefixem ikonowym dla wagi/udźwigu (sugeruje że to liczba z jednostką). #}
+            <div class="sm:col-span-2">
+                <label for="{{ form.capacity.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.capacity.label }}
+                </label>
+                <div class="relative">
+                    {{ form.capacity }}
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-gray-400 dark:text-gray-500 font-medium">
+                        kg / m³
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Udźwig (kg) lub pojemność (m³) — zależnie od typu maszyny.</p>
+                {% if form.capacity.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.capacity.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    </div>{# <-- Wave 14-A Bundle 7: koniec lewej kolumny grida #}
+
+    <div class="space-y-4">
+
+    {# ============================================================ #}
+    {# SEKCJA 3 — Lokalizacja i status                               #}
+    {# ============================================================ #}
+    <fieldset class="space-y-3">
+        <legend class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </span>
+            Lokalizacja i status
+        </legend>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label for="{{ form.location.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.location.label }}{% if form.location.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {{ form.location }}
+                {% if form.location.help_text %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.location.help_text }}</p>
+                {% endif %}
+                {% if form.location.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.location.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            {# Status — z Alpine watch'em który pokazuje warning gdy operator    #}
+            {# ręcznie wybrał "Na budowie" (bo update_machine zwróci warning).   #}
+            <div>
+                <label for="{{ form.status.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.status.label }}{% if form.status.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {{ form.status|attr:"x-model:statusValue" }}
+                {% if form.status.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.status.errors|join:", " }}</p>
+                {% endif %}
+                {# Helper text — pojawia się gdy user wybrał "Na budowie" ręcznie. #}
+                <div x-show="statusValue === 'Na budowie'" x-cloak x-transition.opacity
+                     class="mt-2 flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Status <strong>Na budowie</strong> powinien wynikać z aktywnej rezerwacji — przy zapisie zostanie wyświetlone ostrzeżenie jeśli takiej rezerwacji nie ma.</span>
+                </div>
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="{{ form.inspection_date.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.inspection_date.label }}
+                </label>
+                {{ form.inspection_date }}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Data najbliższego obowiązkowego przeglądu technicznego.</p>
+                {% if form.inspection_date.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.inspection_date.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    {# ============================================================ #}
+    {# SEKCJA 4 — Zdjęcie (file upload + Alpine preview)              #}
+    {# ============================================================ #}
+    <fieldset class="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <legend class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </span>
+            Zdjęcie maszyny
+        </legend>
+
+        <div class="flex flex-col sm:flex-row gap-4 items-start">
+            {% comment %} Preview — Wave 14-A Bundle 7: w-24 h-24 (96x96) zamiast 128x128.
+               `previewSrc` ustawia się z FileReader w handleFile() (poniżej Alpine).  {% endcomment %}
+            <div class="flex-shrink-0">
+                <div class="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+                    {# Preview z localFileReader (Alpine state). #}
+                    <img x-show="previewSrc" x-cloak :src="previewSrc"
+                         alt="Podgląd wybranego zdjęcia"
+                         class="absolute inset-0 w-full h-full object-cover">
+                    {# Aktualne zdjęcie z DB (edycja) — gdy preview nie ustawiony. #}
+                    {% if machine and machine.image %}
+                    <img x-show="!previewSrc" src="{{ machine.image.url }}"
+                         alt="Aktualne zdjęcie maszyny {{ machine.name }}"
+                         class="absolute inset-0 w-full h-full object-cover">
+                    {% endif %}
+                    {# Placeholder gdy brak zarówno preview jak i aktualnego zdjęcia. #}
+                    <div x-show="!previewSrc{% if machine and machine.image %} && false{% endif %}"
+                         class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-2 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-1" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="text-xs">Brak zdjęcia</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 min-w-0 w-full">
+                <label for="{{ form.image.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ form.image.label }}
+                </label>
+                {# Wstrzykujemy @change żeby Alpine handleFile() ustawił previewSrc. #}
+                {{ form.image|attr:"@change:handleFile($event)" }}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Wybierz zdjęcie maszyny — JPG, PNG lub WebP. Podgląd pojawi się obok po wyborze pliku.
+                </p>
+                {% if form.image.errors %}
+                <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.image.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    {# ============================================================ #}
+    {# SEKCJA 5 — Notatki                                            #}
+    {# ============================================================ #}
+    <fieldset class="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <legend class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </span>
+            Notatki
+        </legend>
+
+        <div>
+            <label for="{{ form.notes.id_for_label }}" class="sr-only">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Dowolne uwagi operatora — uszkodzenia, historia, kontakt do serwisanta.</p>
+            {% if form.notes.errors %}
+            <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.notes.errors|join:", " }}</p>
+            {% endif %}
+        </div>
+    </fieldset>
+
+    </div>{# <-- Wave 14-A Bundle 7: koniec prawej kolumny grida #}
+    </div>{# <-- Wave 14-A Bundle 7: koniec 2-col grid wrapper #}
+
+    {# ============================================================ #}
+    {# Bottom actions — Anuluj (lewy) + primary CTA (prawy)           #}
+    {# Wave 14-A Bundle 7: pt-4 zamiast pt-6 (compact spacing).       #}
+    {# ============================================================ #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% if machine %}{% url 'machines:detail' uid=machine.uid %}{% else %}{% url 'machines:list' %}{% endif %}"
+           class="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Anuluj
+        </a>
+        <button type="submit"
+                class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            {{ submit_label|default:"Zapisz" }}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ CSP_NONCE }}">
+    // -----------------------------------------------------------------------
+    // machineForm() — Alpine component:
+    //   * `statusValue` — odzwierciedla aktualną wartość <select name=status>
+    //     żeby pokazać banner ostrzegawczy gdy operator ręcznie wybrał
+    //     "Na budowie" (update_machine zwróci warning ale lepiej powiedzieć
+    //     to PRZED submitem). Wstrzyknięty przez `|attr:"x-model:statusValue"`.
+    //   * `previewSrc` — dataURL podglądu wybranego zdjęcia (FileReader).
+    //   * `handleFile($event)` — odczytuje pierwszy plik z <input type=file>
+    //     i wsadza go do <img :src="previewSrc">.
+    // -----------------------------------------------------------------------
+    function machineForm() {
+        return {
+            statusValue: "{{ form.status.value|default:'' }}",
+            previewSrc: null,
+            handleFile($event) {
+                var input = $event.target;
+                if (!input.files || !input.files[0]) {
+                    this.previewSrc = null;
+                    return;
+                }
+                var file = input.files[0];
+                if (!file.type || file.type.indexOf("image/") !== 0) {
+                    // Nie-obraz — wyczyść preview, walidację zrobi serwer.
+                    this.previewSrc = null;
+                    return;
+                }
+                var self = this;
+                var reader = new FileReader();
+                reader.onload = function (e) { self.previewSrc = e.target.result; };
+                reader.readAsDataURL(file);
+            },
+        };
+    }
+</script>
+{% endblock %}

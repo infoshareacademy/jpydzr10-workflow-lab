@@ -1,0 +1,15 @@
+{% load planer_tags %}
+<div class="rounded-md bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-3 text-sm border border-red-200 dark:border-red-700/40">
+    <p class="font-semibold mb-1">Konflikt: maszyna jest już zarezerwowana w tym terminie.</p>
+    <ul class="list-disc pl-5 space-y-0.5">
+        {% for c in conflicts %}
+            <li>
+                <a href="{% url 'reservations:detail' c.pk %}" class="underline">
+                    #{{ c.pk }}
+                </a>
+                — {{ c.start_date|date_pl }} → {{ c.end_date|date_pl }}
+                ({{ c.person }}{% if c.site %}, {{ c.site.project_number }}{% endif %})
+            </li>
+        {% endfor %}
+    </ul>
+</div>

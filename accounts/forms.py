@@ -1,0 +1,133 @@
+"""Formularze aplikacji accounts."""
+
+from django import forms
+from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
+
+from core.forms import INPUT_CSS, SELECT_CSS
+
+from .models import EmployeeProfile
+
+User = get_user_model()
+
+
+class ProfileForm(forms.ModelForm):
+    """Formularz edycji profilu pracownika (telefon, motyw, ID pracownika)."""
+
+    class Meta:
+        model = EmployeeProfile
+        fields = ["phone", "employee_id", "theme_preference"]
+        labels = {
+            "phone": _("Telefon"),
+            "employee_id": _("Identyfikator pracownika"),
+            "theme_preference": _("Motyw interfejsu"),
+        }
+        widgets = {
+            "phone": forms.TextInput(attrs={"class": INPUT_CSS, "placeholder": "+48 …"}),
+            "employee_id": forms.TextInput(attrs={"class": INPUT_CSS}),
+            "theme_preference": forms.Select(attrs={"class": SELECT_CSS}),
+        }
+
+
+class RegisterEmployeeForm(forms.Form):
+    """Wave 14-F O-1: UI dla ``accounts.services.register_employee``.
+
+    Audyt Wave 14-E O-1: ``register_employee`` jako service istniał ale
+    nie miał view'a — operator mógł tworzyć pracowników tylko przez
+    ``/admin/auth/user/add/`` (raw Django form, bez HIBP walidacji hasła
+    i bez profile setup w jednym kroku). Ten formularz expose'uje całą
+    funkcjonalność service'u: dane User'a + profile.function/phone +
+    walidację match haseł po stronie formularza.
+
+    Walidacja hasła (min. długość, HIBP breach check) odbywa się w samym
+    service (``validate_password``) — tu sprawdzamy tylko match dwóch pól
+    i unikalność username (defensive, mimo że ``User.objects.create_user``
+    rzuci IntegrityError gdyby duplikat się przepchnął).
+    """
+
+    username = forms.CharField(
+        max_length=150,
+        label=_("Login"),
+        widget=forms.TextInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "username",
+                "placeholder": "jan.kowalski",
+            }
+        ),
+        help_text=_("Krótki identyfikator do logowania (bez spacji)."),
+    )
+    first_name = forms.CharField(
+        max_length=150,
+        label=_("Imię"),
+        widget=forms.TextInput(attrs={"class": INPUT_CSS, "autocomplete": "given-name"}),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        label=_("Nazwisko"),
+        widget=forms.TextInput(attrs={"class": INPUT_CSS, "autocomplete": "family-name"}),
+    )
+    email = forms.EmailField(
+        label=_("Email"),
+        widget=forms.EmailInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "email",
+                "placeholder": "jan.kowalski@firma.pl",
+            }
+        ),
+    )
+    function = forms.ChoiceField(
+        choices=EmployeeProfile.Function.choices,
+        initial=EmployeeProfile.Function.MONTAZYSTA,
+        label=_("Funkcja w firmie"),
+        widget=forms.Select(attrs={"class": SELECT_CSS}),
+        help_text=_("Funkcja definiuje grupy RBAC i uprawnienia (Magazynierzy, Kierownicy itd.)."),
+    )
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        label=_("Telefon"),
+        widget=forms.TextInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "tel",
+                "placeholder": "+48 …",
+            }
+        ),
+    )
+    password1 = forms.CharField(
+        min_length=10,
+        label=_("Hasło"),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text=_(
+            "Min. 10 znaków. Hasło jest sprawdzane przez Have I Been Pwned — "
+            "wycieki publicznych baz są odrzucane."
+        ),
+    )
+    password2 = forms.CharField(
+        min_length=10,
+        label=_("Potwierdź hasło"),
+        widget=forms.PasswordInput(attrs={"class": INPUT_CSS, "autocomplete": "new-password"}),
+    )
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if not username:
+            raise forms.ValidationError(_("Login jest wymagany."))
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError(_("Użytkownik o takim loginie już istnieje."))
+        return username
+
+    def clean(self):
+        cleaned = super().clean()
+        pwd1 = cleaned.get("password1")
+        pwd2 = cleaned.get("password2")
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            self.add_error("password2", _("Hasła nie pasują do siebie."))
+        return cleaned

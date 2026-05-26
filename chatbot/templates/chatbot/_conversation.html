@@ -1,0 +1,23 @@
+{# ==================================================================== #}
+{# chatbot/_conversation.html — partial z listą wiadomości               #}
+{# ==================================================================== #}
+{# Renderowane w odpowiedzi na POST /asystent/zapytaj/ — HTMX wstrzyknie #}
+{# do `#chatbot-stream` przez `hx-swap="beforeend"`.                     #}
+{#                                                                       #}
+{# Wave 14-C: jeśli `pending_action` jest ustawione (write tool zaproponowany #}
+{# przez agenta, czekający na confirmation), pod ostatnią wiadomością    #}
+{# pojawia się confirmation card z buttonami "Potwierdź" / "Anuluj".     #}
+{# Click button wysyła kolejny POST z question="tak"/"nie" — triggeruje  #}
+{# _handle_pending_confirm/_cancel w services.                           #}
+{# ==================================================================== #}
+
+<div class="space-y-2"
+     {% if conversation %}data-conversation-id="{{ conversation.pk }}"{% endif %}>
+    {% for message in messages %}
+        {% include "chatbot/_message.html" with message=message only %}
+    {% endfor %}
+
+    {% if pending_action %}
+        {% include "chatbot/_confirmation_card.html" with pending=pending_action conversation=conversation only %}
+    {% endif %}
+</div>

@@ -1,121 +1,681 @@
 {% extends "base.html" %}
+{% load planer_tags %}
+
+{% comment %} ==========================================================================
+   home.html — FLAGSHIP DASHBOARD (Bento Grid layout)
+   ==========================================================================
+
+   Design notes (Design notes applied):
+   - Bento Grid (Apple-style modular cards) — KPI top row + activity + actions.
+   - Priority 1 (a11y): focus-visible rings, aria-labels na icon links, sequential h1→h2.
+   - Priority 2 (touch): 44x44 min on action tiles, 8px+ gap.
+   - Priority 3 (perf): no animacji width/height — tylko transform/opacity.
+   - Priority 4 (style): Heroicons (inline SVG, jednolity stroke 2), brand blue + slate.
+   - Priority 5 (responsive): mobile-first 1col → sm:2 → lg:4 (KPI), main 1col → lg:3 (split).
+   - Priority 6 (typo): tabular-nums dla liczb, weight hierarchy (700 dla numerów).
+   - Priority 7 (motion): fade-in via custom.css respect prefers-reduced-motion.
+========================================================================== {% endcomment %}
 
 {% block title %}Strona główna — Planer Maszyn Budowlanych{% endblock %}
 
 {% block content %}
-<div class="text-center mb-12">
-    <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
-        Planer Maszyn Budowlanych
-    </h1>
-    <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
-        System rezerwacji i serwisu maszyn dla firmy budowlanej.
-        <span class="inline-block ml-2 px-2 py-0.5 rounded text-sm bg-yellow-100 text-yellow-800
-                     dark:bg-yellow-900/40 dark:text-yellow-200">
-            Milestone 2 &mdash; w budowie
+<div class="space-y-8">
+
+    {# ==================================================================== #}
+    {# PAGE HEADER — breadcrumb + hero greeting (visual hierarchy) #}
+    {# ==================================================================== #}
+    <section class="space-y-1 animate-fade-in">
+        <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Panel główny</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            Witaj{% if user.is_authenticated %}, {{ user.get_full_name|default:user.username }}{% endif %}
+        </h1>
+        <p class="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
+            Przegląd kluczowych wskaźników: maszyny, rezerwacje, przeglądy techniczne.
+            Wszystko czego potrzebujesz na pierwszy rzut oka.
+        </p>
+    </section>
+
+    {# ==================================================================== #}
+    {# KPI BENTO ROW — 4 metrics, mobile 1col → sm 2col → lg 4col #}
+    {# Każda karta = link clickable → odpowiednia lista z filtrem. #}
+    {# ==================================================================== #}
+    <section aria-label="Kluczowe wskaźniki" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        {# KPI #1 — Dostępne maszyny (emerald accent — pozytywny status) #}
+        <a href="{% url 'machines:list' %}?status=W+magazynie"
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+           aria-label="Dostępne maszyny — przejdź do listy">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dostępne maszyny</span>
+                <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.machines_available }}</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400 tabular-nums">/ {{ kpi.machines_total }}</div>
+            </div>
+            <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
+                <span>Zobacz listę</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        {# KPI #2 — Aktualnie na budowie (brand blue) #}
+        <a href="{% url 'machines:list' %}?status=Na+budowie"
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+           aria-label="Maszyny na budowie — przejdź do listy">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Aktualnie na budowie</span>
+                <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.machines_on_site }}</div>
+            <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
+                <span>Zobacz listę</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        {# KPI #3 — Aktywne rezerwacje (amber/yellow — uwaga, w toku) #}
+        <a href="{% url 'reservations:timeline' %}"
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+           aria-label="Aktywne rezerwacje — otwórz timeline">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Aktywne rezerwacje</span>
+                <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2 flex-wrap">
+                <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.reservations_active }}</div>
+                {% if kpi.reservations_pending %}
+                    <span class="badge-warning">+ {{ kpi.reservations_pending }} oczek.</span>
+                {% endif %}
+            </div>
+            <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
+                <span>Otwórz timeline</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        {% comment %}
+        ============================================================
+        KPI #4 — Przeglądy techniczne (rose accent jeśli overdue).
+        Wave 14-F D-3: klik → otwiera modal HTMX z lista konkretnych
+        maszyn (overdue + upcoming 14d). Zamiast linka -> button +
+        hx-get → swap do #inspections-modal-content. Alpine modal
+        inicjowany przez window event "open-inspections-modal".
+        ============================================================
+        {% endcomment %}
+        <button type="button"
+                hx-get="{% url 'machines:inspections_due_modal' %}"
+                hx-target="#inspections-modal-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="window.dispatchEvent(new CustomEvent('open-inspections-modal'))"
+                class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border text-left w-full {% if kpi.inspections_overdue %}border-rose-300 dark:border-rose-800{% else %}border-slate-200 dark:border-slate-700{% endif %} p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
+                aria-label="Przeglądy techniczne — otwórz listę maszyn z datami przeglądów"
+                aria-haspopup="dialog">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Przeglądy techniczne</span>
+                <span class="relative flex items-center justify-center w-9 h-9 rounded-xl {% if kpi.inspections_overdue %}bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400{% else %}bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400{% endif %}">
+                    {% if kpi.inspections_overdue %}
+                        <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800 status-dot-pulse" aria-hidden="true"></span>
+                    {% endif %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2 flex-wrap">
+                {% if kpi.inspections_overdue %}
+                    <div class="text-4xl font-bold text-rose-600 dark:text-rose-400 tabular-nums leading-none">{{ kpi.inspections_overdue }}</div>
+                    <div class="text-xs font-medium text-rose-700 dark:text-rose-300">przeterminowane</div>
+                {% else %}
+                    <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.inspections_upcoming }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">w 14 dniach</div>
+                {% endif %}
+            </div>
+            <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
+                <span>Pokaż listę maszyn</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+        </button>
+    </section>
+
+    {% comment %}
+    ====================================================================
+    Wave 14-F D-3 — Modal "Przeglądy techniczne" (Alpine + HTMX content).
+
+    Modal opened by ``window.dispatchEvent('open-inspections-modal')``
+    z KPI button (hx-on::after-request). Content swapped into
+    #inspections-modal-content przez HTMX (machines:inspections_due_modal).
+
+    Modal-motion: scale+fade from KPI button origin (apple-like).
+    Escape key + click on backdrop + close button — wszystkie zamykają.
+    focus-trap przez @keydown.tab.window (basic — Alpine.focus plugin
+    sugeruje x-trap.noscroll dla pełnej impl, ale base.html juz ladowal
+    alpine-focus.min.js).
+    ====================================================================
+    {% endcomment %}
+    <div x-data="{ open: false }"
+         @open-inspections-modal.window="open = true; $nextTick(() => $refs.closeBtn && $refs.closeBtn.focus())"
+         @keydown.escape.window="open = false"
+         x-cloak>
+        <div x-show="open"
+             x-transition:enter="transition-opacity ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="open = false"
+             class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center px-4 py-10 sm:py-16"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="inspections-modal-title">
+            <div @click.stop
+                 x-show="open"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+
+                {# Modal header — sticky title + close button #}
+                <header class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            </svg>
+                        </span>
+                        <h2 id="inspections-modal-title" class="text-base font-semibold text-slate-900 dark:text-slate-50">
+                            Maszyny z przeglądem
+                        </h2>
+                    </div>
+                    <button type="button"
+                            x-ref="closeBtn"
+                            @click="open = false"
+                            class="p-2 -mr-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                            aria-label="Zamknij okno">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </header>
+
+                {# Modal body — scrollable + HTMX swap target #}
+                <div class="flex-1 overflow-y-auto px-5 py-5">
+                    <div id="inspections-modal-content">
+                        {% comment %}
+                        Initial loading skeleton — replaced przez hx-swap.
+                        Empty na start; ujmuje się tylko po klik KPI.
+                        {% endcomment %}
+                        <div class="flex items-center justify-center py-12 text-slate-400 dark:text-slate-500">
+                            <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                            </svg>
+                            <span class="ml-2 text-sm">Ładowanie listy maszyn…</span>
+                        </div>
+                    </div>
+                </div>
+
+                {# Modal footer — secondary action (przejdź do pełnej listy) #}
+                <footer class="flex items-center justify-end gap-3 px-5 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0">
+                    <a href="{% url 'machines:list' %}?inspection_status={% if kpi.inspections_overdue %}overdue{% else %}warning{% endif %}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors">
+                        <span>Otwórz pełną listę z filtrem</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    <button type="button"
+                            @click="open = false"
+                            class="inline-flex items-center px-4 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-colors">
+                        Zamknij
+                    </button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    {# ==================================================================== #}
+    {# Wave 14-F UX-1 — MORNING CHECKLIST (dziś w magazynie)                #}
+    {# Sebastian walkthrough 17 maja 2026: liczby same w sobie (KPI) nie    #}
+    {# wystarczą gdy operator chce zadzwonić do osoby która dziś ma         #}
+    {# odbierać maszynę. 3-column grid pokazuje:                            #}
+    {#   1. Maszyny które dziś wyjeżdżają (start_date=dziś)                 #}
+    {#   2. Maszyny które dziś wracają (end_date=dziś)                      #}
+    {#   3. Maszyny aktualnie w trasie (active_today via manager)           #}
+    {# Design notes: visual-hierarchy (h2 + emoji-free SVG ikony),         #}
+    {# empty-states per kolumna ("Brak rezerwacji na dziś"),                #}
+    {# focus-visible rings, mobile-first stack → lg:3 col grid,             #}
+    {# touch-target ≥44px na card-linkach.                                  #}
+    {# ==================================================================== #}
+    <section aria-labelledby="morning-checklist-title" class="space-y-4 animate-fade-in">
+        <header class="space-y-1">
+            <h2 id="morning-checklist-title" class="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-50 inline-flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Dziś w magazynie</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                Plan operacyjny na <time datetime="{{ today|date:'Y-m-d' }}" class="font-medium">{{ today|date:'d.m.Y' }}</time>
+                — kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            {% comment %}
+            ============================================================
+            Kolumna 1 — Maszyny które dziś WYJEŻDŻAJĄ.
+            Emerald accent (start = pozytywne, ruszamy).
+            ============================================================
+            {% endcomment %}
+            <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <header class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-emerald-50/50 dark:bg-emerald-900/10">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Wyjeżdżają dziś</h3>
+                        <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
+                            {{ starting_today|length }} {% if starting_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                        </p>
+                    </div>
+                </header>
+
+                {% if starting_today %}
+                    <ul class="divide-y divide-slate-100 dark:divide-slate-700" role="list">
+                        {% for res in starting_today %}
+                            <li>
+                                <a href="{% url 'reservations:detail' res.pk %}"
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 focus:outline-none focus-visible:bg-emerald-50/60 dark:focus-visible:bg-emerald-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 transition-colors"
+                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — wyjazd {{ res.start_date|date:'d.m.Y' }}">
+                                    <span class="font-mono font-semibold text-xs text-emerald-700 dark:text-emerald-300 flex-shrink-0">{{ res.machine.uid }}</span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                            {% if res.site %}{{ res.site.project_number }} · {{ res.site.name }}{% else %}{{ res.address|truncatechars:30 }}{% endif %}
+                                        </p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    {# Empty state — friendly, NIE pusta sekcja #}
+                    <div class="px-4 py-8 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji wyjeżdżających dziś.</p>
+                    </div>
+                {% endif %}
+            </article>
+
+            {% comment %}
+            ============================================================
+            Kolumna 2 — Maszyny które dziś WRACAJĄ.
+            Amber accent (zwrot = uwaga, sprawdzić stan).
+            ============================================================
+            {% endcomment %}
+            <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <header class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50/50 dark:bg-amber-900/10">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18"/>
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Wracają dziś</h3>
+                        <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
+                            {{ ending_today|length }} {% if ending_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                        </p>
+                    </div>
+                </header>
+
+                {% if ending_today %}
+                    <ul class="divide-y divide-slate-100 dark:divide-slate-700" role="list">
+                        {% for res in ending_today %}
+                            <li>
+                                <a href="{% url 'reservations:detail' res.pk %}"
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-amber-50/40 dark:hover:bg-amber-900/10 focus:outline-none focus-visible:bg-amber-50/60 dark:focus-visible:bg-amber-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 transition-colors"
+                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — zwrot {{ res.end_date|date:'d.m.Y' }}">
+                                    <span class="font-mono font-semibold text-xs text-amber-700 dark:text-amber-300 flex-shrink-0">{{ res.machine.uid }}</span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                            {% if res.site %}{{ res.site.project_number }} · {{ res.site.name }}{% else %}{{ res.address|truncatechars:30 }}{% endif %}
+                                        </p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="px-4 py-8 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji wracających dziś.</p>
+                    </div>
+                {% endif %}
+            </article>
+
+            {% comment %}
+            ============================================================
+            Kolumna 3 — Maszyny aktualnie W TRASIE (active_today).
+            Brand-blue accent (neutralne, "w toku").
+            ============================================================
+            {% endcomment %}
+            <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <header class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-brand-50/50 dark:bg-brand-900/10">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Dziś w trasie</h3>
+                        <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
+                            {{ active_today|length }} {% if active_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                        </p>
+                    </div>
+                </header>
+
+                {% if active_today %}
+                    <ul class="divide-y divide-slate-100 dark:divide-slate-700" role="list">
+                        {% for res in active_today %}
+                            <li>
+                                <a href="{% url 'reservations:detail' res.pk %}"
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-brand-50/40 dark:hover:bg-brand-900/10 focus:outline-none focus-visible:bg-brand-50/60 dark:focus-visible:bg-brand-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 transition-colors"
+                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — koniec {{ res.end_date|date:'d.m.Y' }}">
+                                    <span class="font-mono font-semibold text-xs text-brand-700 dark:text-brand-300 flex-shrink-0">{{ res.machine.uid }}</span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                            do <time datetime="{{ res.end_date|date:'Y-m-d' }}" class="tabular-nums font-mono">{{ res.end_date|date:'d.m.Y' }}</time>
+                                            {% if res.site %} · {{ res.site.project_number }}{% endif %}
+                                        </p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="px-4 py-8 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji w trasie.</p>
+                    </div>
+                {% endif %}
+            </article>
+        </div>
+    </section>
+
+    {# ==================================================================== #}
+    {# F-6: KPI alert — "Maszyny do zwrotu" (rezerwacje POTWIERDZONA z       #}
+    {# end_date < today). Conditional — visible tylko jeśli overdue > 0.    #}
+    {# Klikalna karta → reservations list z filter end_before=today.        #}
+    {# Przeplata kolorem rose (destructive emphasis) ale z ikoną + tekstem  #}
+    {# (color-not-only WCAG). Surfaces ReservationManager.overdue() w UI.   #}
+    {# ==================================================================== #}
+    {% if kpi.reservations_overdue %}
+    <a href="{% url 'reservations:list' %}?status=potwierdzona&amp;end_before={{ today|date:'Y-m-d' }}"
+       class="group block rounded-2xl p-5 bg-rose-50/70 dark:bg-rose-900/20 border-l-4 border-rose-500 dark:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 animate-fade-in"
+       aria-label="Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę">
+        <div class="flex items-center justify-between gap-4">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                    <span class="inline-block h-2 w-2 rounded-full bg-rose-500 status-dot-pulse" aria-hidden="true"></span>
+                    Maszyny do zwrotu
+                </p>
+                <p class="text-3xl sm:text-4xl font-bold text-rose-900 dark:text-rose-100 tabular-nums leading-none mt-1">{{ kpi.reservations_overdue }}</p>
+                <p class="text-xs sm:text-sm text-rose-700 dark:text-rose-300 mt-2 max-w-xl">
+                    Spóźnione zwroty — rezerwacje potwierdzone, których planowy koniec już minął.
+                    Kliknij żeby zobaczyć listę i podjąć kontakt z osobą wynajmującą.
+                </p>
+            </div>
+            <span class="flex-shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
+        </div>
+    </a>
+    {% endif %}
+
+    {# ==================================================================== #}
+    {# OVERDUE ALERT — pełnoszerokościowy alert tylko gdy overdue > 0 #}
+    {# (a11y: role="alert" + icon nie tylko kolor — kolor + ikona + tekst) #}
+    {# ==================================================================== #}
+    {% if kpi.inspections_overdue %}
+    <section role="alert" class="flex items-start gap-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 animate-fade-in">
+        <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
         </span>
-    </p>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-
-    {# Card 1 — Maszyny #}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 bg-brand-50 dark:bg-brand-900/30 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-brand-600 dark:text-brand-400"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M19 11H5m14-4H5m14 8H5m14 4H5"/>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold">Maszyny</h3>
+        <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-semibold text-rose-900 dark:text-rose-100">
+                {{ kpi.inspections_overdue }} maszyn z przeterminowanym przeglądem technicznym
+            </h2>
+            <p class="text-xs sm:text-sm text-rose-800 dark:text-rose-200 mt-1">
+                Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym przeglądem
+                nie mogą legalnie pracować na budowie.
+            </p>
         </div>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Inwentarz maszyn z oznaczeniami przeglądów technicznych
-            (<span class="font-mono">✅ OK</span>, <span class="font-mono">⚠️ zbliża się</span>,
-            <span class="font-mono">🔴 przeterminowany</span>).
-        </p>
-        <span class="text-xs text-gray-500 dark:text-gray-400">Sprint 2</span>
-    </div>
+    </section>
+    {% endif %}
 
-    {# Card 2 — Rezerwacje #}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 bg-green-50 dark:bg-green-900/30 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 dark:text-green-400"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold">Rezerwacje</h3>
+    {# ==================================================================== #}
+    {# BENTO SPLIT — Ostatnie rezerwacje (2/3) + Szybkie akcje (1/3) #}
+    {# Mobile: stack (1col). Tablet: stack. Desktop lg+: 3-col grid. #}
+    {# ==================================================================== #}
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+        {# === Recent reservations — 2/3 width on desktop === #}
+        <div class="lg:col-span-2 card-padded animate-fade-in">
+            <header class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                <h2 class="text-base font-semibold text-slate-900 dark:text-slate-50 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Ostatnie rezerwacje</span>
+                </h2>
+                <a href="{% url 'reservations:list' %}"
+                   class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
+                   aria-label="Zobacz wszystkie rezerwacje">
+                    <span>Wszystkie</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </header>
+
+            {% if recent_reservations %}
+                {% comment %}
+                ============================================================
+                Wave 14-A Bundle 6 -- card list zamiast tabeli.
+                Sebastian walkthrough: tabela byla "nieczytelna", lamala
+                sie na dwie linie. Card list daje:
+                  - avatar circle (1 litera osoby) -- visual anchor;
+                  - person name top-bold -- najwazniejsza informacja;
+                  - machine UID + dates compact w sub-row;
+                  - status badge right -- jasne kolorowe oznaczenie;
+                  - truncate w wszystkich text fields -- nie wylewa sie.
+                Touch-target: caly card jest klikalny -> link do rezerwacji.
+                A11y: focus-visible ring, aria-label opisuje cale card.
+                ============================================================
+                {% endcomment %}
+                <ul class="space-y-2" role="list">
+                    {% for res in recent_reservations %}
+                        <li>
+                            <a href="{% url 'reservations:detail' res.pk %}"
+                               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                               aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }}, {{ res.start_date|date:'d.m.Y' }} – {{ res.end_date|date:'d.m.Y' }}, status {{ res.get_status_display }}">
+
+                                {# Avatar -- inicjal osoby rezerwujacej. #}
+                                <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold text-sm" aria-hidden="true">
+                                    {{ res.person|slice:":1"|upper|default:"?" }}
+                                </span>
+
+                                {# Main column -- person + machine/dates. #}
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="font-semibold text-sm text-slate-900 dark:text-slate-50 truncate">{{ res.person }}</span>
+                                        {% if res.site %}
+                                            <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                                            <span class="font-mono text-[0.6875rem] text-slate-500 dark:text-slate-400 truncate" title="{{ res.site.name }}">{{ res.site.project_number }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-600 dark:text-slate-400 min-w-0">
+                                        <span class="font-mono font-semibold text-brand-700 dark:text-brand-300 flex-shrink-0">{{ res.machine.uid }}</span>
+                                        <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                                        <span class="tabular-nums font-mono truncate">{{ res.start_date|date:"d.m" }} – {{ res.end_date|date:"d.m.Y" }}</span>
+                                    </div>
+                                </div>
+
+                                {# Status badge right -- visually anchor. #}
+                                {% status_badge res.status as cls %}
+                                <span class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold uppercase tracking-wider {{ cls }}">
+                                    {{ res.get_status_display }}
+                                </span>
+
+                                {# Chevron right -- hint klikalnosci. #}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:block h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {# Empty state — friendly message + CTA #}
+                <div class="text-center py-10 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">Brak rezerwacji.</p>
+                    <a href="{% url 'reservations:create' %}" class="btn-primary mt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Dodaj pierwszą
+                    </a>
+                </div>
+            {% endif %}
         </div>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Planowanie wynajmu maszyn z wykrywaniem konfliktów,
-            timeline w stylu Gantt, Hard Return Policy.
-        </p>
-        <span class="text-xs text-gray-500 dark:text-gray-400">Sprint 3 + 5</span>
-    </div>
 
-    {# Card 3 — Serwis #}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600 dark:text-yellow-400"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold">Serwis</h3>
+        {# === Quick actions — 1/3 width on desktop, stacked tiles === #}
+        <div class="space-y-3 animate-fade-in">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Szybkie akcje</h2>
+
+            {# Primary action — gradient brand card (one primary CTA per screen) #}
+            <a href="{% url 'reservations:create' %}"
+               class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+               aria-label="Utwórz nową rezerwację">
+                <div class="flex items-start gap-3">
+                    <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-sm leading-tight">Nowa rezerwacja</div>
+                        <div class="text-xs text-brand-100/90 mt-0.5">Zarezerwuj maszynę na konkretny termin</div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+
+            {# Secondary — timeline #}
+            <a href="{% url 'reservations:timeline' %}"
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+               aria-label="Otwórz timeline rezerwacji">
+                <div class="flex items-start gap-3">
+                    <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/>
+                        </svg>
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-sm text-slate-900 dark:text-slate-50">Timeline</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Wizualny harmonogram wszystkich maszyn</div>
+                    </div>
+                </div>
+            </a>
+
+            {# Secondary — add machine #}
+            <a href="{% url 'machines:create' %}"
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+               aria-label="Dodaj nową maszynę">
+                <div class="flex items-center gap-3">
+                    <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                    </span>
+                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">Dodaj maszynę</div>
+                </div>
+            </a>
+
+            {# Secondary — add construction site #}
+            <a href="{% url 'reservations:site_create' %}"
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+               aria-label="Dodaj nową budowę">
+                <div class="flex items-center gap-3">
+                    <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+                        </svg>
+                    </span>
+                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">Dodaj budowę</div>
+                </div>
+            </a>
         </div>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Przeglądy techniczne i naprawy z automatycznym obliczaniem
-            terminu kolejnego przeglądu (per typ maszyny).
-        </p>
-        <span class="text-xs text-gray-500 dark:text-gray-400">Sprint 4</span>
-    </div>
+    </section>
 
-</div>
-
-<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-    <h2 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-        Status projektu
-    </h2>
-    <p class="text-sm text-blue-800 dark:text-blue-200 mb-3">
-        Aplikacja jest w trakcie budowy &mdash; Milestone 2 (Django web app).
-        Aktualnie dostępna jest tylko podstawowa struktura projektu i panel administracyjny.
-    </p>
-    <div class="flex flex-wrap gap-3">
-        <a href="/admin/" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-sm font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            Panel administracyjny
-        </a>
-        <a href="/healthz/" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M5 13l4 4L19 7"/>
-            </svg>
-            Healthcheck
-        </a>
-    </div>
-</div>
-
-<div class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-    <p>
-        <span class="font-medium">Stack:</span>
-        Python 3.14 &middot; Django 5.2 LTS &middot; PostgreSQL 16 &middot;
-        HTMX 2 &middot; Alpine.js 3 &middot; Tailwind CSS 3
-    </p>
-    <p>
-        <span class="font-medium">Deadline prezentacji:</span> 14.06.2026
-    </p>
 </div>
 {% endblock %}

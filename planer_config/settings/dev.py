@@ -9,7 +9,7 @@ weaker security, console email backend) trafia tutaj. Importujemy `*` z `base`
 i nadpisujemy/dodajemy.
 """
 
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F403
 
 # =============================================================================
 # DEBUG ON — szczegółowe komunikaty błędów + auto-reload
@@ -22,32 +22,12 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
 
 
 # =============================================================================
-# CSP override — Alpine.js (django-unfold + base.html Tailwind Play CDN) wymaga 'unsafe-eval'
-# =============================================================================
-# Alpine.js w panelu admina (django-unfold) i Tailwind JIT runtime używają
-# `new Function(...)` dla reactive expressions (x-data="theme()", x-show,
-# tailwind.config). Bez 'unsafe-eval' Alpine ciszy się, modal-overlay
-# zostaje widoczny -> cała strona admina rozmyta backdrop-blur-xs.
-#
-# WAŻNE: 'unsafe-eval' jest TYLKO w dev. prod.py ma własną politykę
-# (zero unsafe-* — admin tam działa z prekompilowanym Alpine CSP build
-# lub static Tailwind CSS bez JIT).
-
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        **CONTENT_SECURITY_POLICY["DIRECTIVES"],  # noqa: F405
-        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'"),
-    }
-}
-
-
-# =============================================================================
 # django-debug-toolbar — SQL profiling, request inspection, settings dump
 # =============================================================================
 # Pokazuje się jako pasek po prawej stronie w przeglądarce gdy DEBUG=True
 # i request idzie z INTERNAL_IPS.
 
-INSTALLED_APPS += ["debug_toolbar", "django_extensions"]  # noqa: F405
+INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
 
 # Middleware MUSI być wstawione PRZED HtmxMiddleware (żeby toolbar
 # nie był renderowany w HTMX partial responses) — znajdujemy index ręcznie.

@@ -1,0 +1,514 @@
+/* ============================================================================
+ * Planer Maszyn Budowlanych — custom styles (uzupelnienie Tailwind utilities)
+ * ============================================================================
+ *
+ * Wszystko co wymaga prawdziwego CSS (CSS Grid templates, keyframes, print
+ * media query, sticky strategy z `position: sticky` i `z-index` warstwami)
+ * trafia tu — Tailwind utility classes zalatwiaja reszte w template'ach.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Subtelny scrollbar pasujacy do dark mode */
+.scrollbar-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184 / 0.4);
+    border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgb(148 163 184 / 0.7);
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(71 85 105 / 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+ * KPI cards — animacja wejscia + hover lift
+ * --------------------------------------------------------------------------- */
+
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -10px rgb(37 99 235 / 0.25);
+}
+.dark .kpi-card:hover {
+    box-shadow: 0 10px 30px -10px rgb(37 99 235 / 0.35);
+}
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: linear-gradient(180deg, transparent 0%, currentColor 50%, transparent 100%);
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+.kpi-card:hover::before {
+    opacity: 0.6;
+}
+
+@keyframes kpi-reveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card {
+    animation: kpi-reveal 400ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+.kpi-card:nth-child(1) { animation-delay: 0ms; }
+.kpi-card:nth-child(2) { animation-delay: 60ms; }
+.kpi-card:nth-child(3) { animation-delay: 120ms; }
+.kpi-card:nth-child(4) { animation-delay: 180ms; }
+
+@keyframes pulse-dot {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+}
+.status-dot-pulse {
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+ * Chatbot — animacja wjazdu pojedynczej wiadomości (fade + slide-up).
+ * Używana w `_message.html` po każdym HTMX append.
+ * --------------------------------------------------------------------------- */
+
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.animate-msg-in {
+    animation: msg-in 200ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+/* Trzy „bouncing dots" wskaźnik ładowania asystenta (HTMX indicator). */
+@keyframes chat-dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40%           { transform: scale(1);   opacity: 1; }
+}
+.chat-dot {
+    animation: chat-dot-bounce 1.2s ease-in-out infinite both;
+}
+.chat-dot:nth-child(2) { animation-delay: 0.15s; }
+.chat-dot:nth-child(3) { animation-delay: 0.30s; }
+
+/* Respect reduced-motion — wyłącz wszystkie chat animacje. */
+@media (prefers-reduced-motion: reduce) {
+    .animate-msg-in,
+    .chat-dot,
+    .status-dot-pulse {
+        animation: none !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Timeline grid — CSS Grid layout (wow factor projektu)
+ * --------------------------------------------------------------------------- */
+
+.timeline-wrap {
+    /* Wave 14-A Bundle 9 -- Sebastian uzywa Comet (Perplexity AI browser).
+       W Chrome scrollbar widoczny, w Comet NIE -- Comet domyslnie hide-uje
+       horizontal scrollbar gdy content przekracza viewport. Naprawione:
+         (1) `overflow-x: scroll` zamiast `auto` -- ZAWSZE wymuszamy
+             scrollbar, niezaleznie od preferencji uzytkownika browsera;
+         (2) `::-webkit-scrollbar { -webkit-appearance: auto }` poniżej
+             wymusza native scrollbar w WebKit-based browsers (Comet,
+             Safari, niektore Chromium fork z aggressive hide);
+         (3) `scrollbar-width: auto` (Firefox standard) zamiast `thin`
+             zeby na FF tez bylo widoczne; */
+    overflow-x: scroll;
+    overflow-y: visible;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(229 231 235);
+    background: rgb(255 255 255);
+    background-image:
+        linear-gradient(rgb(229 231 235 / 0.4) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(229 231 235 / 0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 220px 64px;
+    scrollbar-width: auto;
+    -ms-overflow-style: scrollbar;
+}
+
+/* Wave 14-A Bundle 9 -- Comet browser scrollbar override.
+   Default WebKit scrollbar = 15px wysokosc native. Wymuszamy widocznosc +
+   subtelny styling pasujacy do D-HAT designu. NIE display:none NIGDY na
+   timeline scrollbar -- zawsze musi byc widoczny (P0 wymog Sebastian'a). */
+.timeline-wrap::-webkit-scrollbar {
+    -webkit-appearance: auto;
+    height: 12px;
+    width: 12px;
+    background-color: rgb(241 245 249);
+}
+.timeline-wrap::-webkit-scrollbar-track {
+    background: rgb(241 245 249);
+    border-radius: 6px;
+}
+.timeline-wrap::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184);
+    border-radius: 6px;
+    border: 2px solid rgb(241 245 249);
+}
+.timeline-wrap::-webkit-scrollbar-thumb:hover {
+    background: rgb(100 116 139);
+}
+.dark .timeline-wrap::-webkit-scrollbar {
+    background-color: rgb(30 41 59);
+}
+.dark .timeline-wrap::-webkit-scrollbar-track {
+    background: rgb(30 41 59);
+}
+.dark .timeline-wrap::-webkit-scrollbar-thumb {
+    background: rgb(71 85 105);
+    border-color: rgb(30 41 59);
+}
+.dark .timeline-wrap::-webkit-scrollbar-thumb:hover {
+    background: rgb(100 116 139);
+}
+.dark .timeline-wrap {
+    border-color: rgb(51 65 85);
+    background: rgb(15 23 42);
+    background-image:
+        linear-gradient(rgb(51 65 85 / 0.35) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(51 65 85 / 0.35) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 220px 64px;
+}
+
+.timeline-grid {
+    display: grid;
+    grid-template-columns: 220px repeat(var(--days, 7), minmax(56px, 1fr));
+    grid-auto-rows: minmax(64px, auto);
+    min-width: 100%;
+    position: relative;
+}
+
+.timeline-head-cell {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgb(255 255 255);
+    border-bottom: 1px solid rgb(229 231 235);
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+.dark .timeline-head-cell {
+    background: rgb(15 23 42);
+    border-bottom-color: rgb(51 65 85);
+}
+
+.timeline-corner {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    background: rgb(255 255 255);
+    border-right: 1px solid rgb(229 231 235);
+    border-bottom: 1px solid rgb(229 231 235);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(71 85 105);
+}
+.dark .timeline-corner {
+    background: rgb(15 23 42);
+    border-right-color: rgb(51 65 85);
+    border-bottom-color: rgb(51 65 85);
+    color: rgb(148 163 184);
+}
+
+.timeline-head-cell.is-weekend,
+.timeline-day-cell.is-weekend {
+    background-color: rgb(241 245 249 / 0.6);
+}
+.dark .timeline-head-cell.is-weekend,
+.dark .timeline-day-cell.is-weekend {
+    background-color: rgb(15 23 42 / 0.6);
+}
+
+.timeline-head-cell.is-today,
+.timeline-day-cell.is-today {
+    background-color: rgb(219 234 254 / 0.4);
+    box-shadow: inset 2px 0 0 0 rgb(37 99 235 / 0.5);
+}
+.dark .timeline-head-cell.is-today,
+.dark .timeline-day-cell.is-today {
+    background-color: rgb(30 58 138 / 0.25);
+}
+
+.timeline-machine-cell {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: rgb(255 255 255);
+    border-right: 1px solid rgb(229 231 235);
+    border-bottom: 1px solid rgb(241 245 249);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.125rem;
+    min-width: 220px;
+}
+.dark .timeline-machine-cell {
+    background: rgb(15 23 42);
+    border-right-color: rgb(51 65 85);
+    border-bottom-color: rgb(30 41 59);
+}
+
+.timeline-day-cell {
+    position: relative;
+    border-right: 1px solid rgb(241 245 249 / 0.5);
+    border-bottom: 1px solid rgb(241 245 249);
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+.dark .timeline-day-cell {
+    border-right-color: rgb(30 41 59 / 0.5);
+    border-bottom-color: rgb(30 41 59);
+}
+.timeline-day-cell:hover {
+    background-color: rgb(219 234 254 / 0.3);
+}
+.dark .timeline-day-cell:hover {
+    background-color: rgb(30 58 138 / 0.2);
+}
+
+.timeline-bar {
+    /* Bundle 1 (Wave 14-A) — Sebastian walkthrough: bary musza zajmowac
+       pelna szerokosc cells (offset+span) zamiast ~1/3 day-cell.
+       Trzy klucze:
+         (1) `justify-self: stretch` + `width: 100%` -- niektore przegladarki
+             nie rozciagaja domyslnie grid-item gdy ma intrinsic content.
+         (2) `box-sizing: border-box` -- padding nie wypycha width poza grid cell.
+         (3) `display: flex; align-items: center` -- pionowe wycentrowanie bez
+             zaleznosci od `align-self: center` (ktore zwezalo bara). */
+    grid-row: var(--row);
+    grid-column: var(--col-start) / span var(--col-span);
+    justify-self: stretch;
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    margin: 0.25rem 0.125rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.1;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.04) inset;
+    transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 150ms ease,
+                filter 150ms ease;
+    position: relative;
+    z-index: 10;
+    /* maksymalna wysokosc -- nie rozciagamy bara na cala wysokosc wiersza,
+       a zachowujemy minimum kliniczne (h-9 ~ 36px) zgodnie z touch-target 44px
+       po dodaniu marginu pionowego 4px (2x). */
+    min-height: 2.25rem;
+}
+
+/* Inner span -- bar's content (osoba + budowa). Pozwalamy textowi
+   trunkowac sie po prawej a budowa numerowi sciagac na koniec. */
+.timeline-bar > span {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.timeline-bar:hover {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 6px 16px -4px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(255 255 255 / 0.2) inset;
+    filter: brightness(1.05);
+    z-index: 15;
+}
+.timeline-bar:focus-visible {
+    outline: 2px solid rgb(37 99 235);
+    outline-offset: 2px;
+}
+
+.timeline-bar.status-oczekujaca {
+    background: linear-gradient(135deg, rgb(234 179 8) 0%, rgb(202 138 4) 100%);
+}
+.timeline-bar.status-potwierdzona {
+    background: linear-gradient(135deg, rgb(37 99 235) 0%, rgb(29 78 216) 100%);
+}
+.timeline-bar.status-anulowana {
+    background: linear-gradient(135deg, rgb(148 163 184) 0%, rgb(100 116 139) 100%);
+    opacity: 0.7;
+}
+.timeline-bar.status-zakonczona {
+    background: linear-gradient(135deg, rgb(16 185 129) 0%, rgb(5 150 105) 100%);
+}
+
+.timeline-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    min-width: 200px;
+    padding: 0.5rem 0.75rem;
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3);
+    pointer-events: none;
+    white-space: normal;
+}
+.timeline-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgb(15 23 42);
+}
+
+@media (max-width: 767px) {
+    .timeline-grid-wrapper { display: none; }
+    .timeline-mobile-list { display: block; }
+}
+@media (min-width: 768px) {
+    .timeline-grid-wrapper { display: block; }
+    .timeline-mobile-list { display: none; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Status badge + surface card + modal + toast + tabs + print
+ * --------------------------------------------------------------------------- */
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+}
+.status-chip::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+}
+
+.surface-card {
+    background: rgb(255 255 255);
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+.dark .surface-card {
+    background: rgb(30 41 59);
+    border-color: rgb(51 65 85);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.modal-backdrop {
+    background: rgb(15 23 42 / 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 60;
+    min-width: 280px;
+    max-width: 420px;
+    padding: 0.875rem 1.125rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+.toast-success {
+    background: rgb(220 252 231);
+    color: rgb(20 83 45);
+    border-left: 3px solid rgb(34 197 94);
+}
+.toast-error {
+    background: rgb(254 226 226);
+    color: rgb(127 29 29);
+    border-left: 3px solid rgb(239 68 68);
+}
+.dark .toast-success {
+    background: rgb(6 78 59 / 0.95);
+    color: rgb(167 243 208);
+}
+.dark .toast-error {
+    background: rgb(127 29 29 / 0.95);
+    color: rgb(254 202 202);
+}
+
+.tab-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(100 116 139);
+    border-bottom: 2px solid transparent;
+    transition: color 120ms ease, border-color 120ms ease;
+}
+.tab-button:hover {
+    color: rgb(37 99 235);
+}
+.tab-button[aria-selected="true"] {
+    color: rgb(37 99 235);
+    border-bottom-color: rgb(37 99 235);
+}
+.dark .tab-button {
+    color: rgb(148 163 184);
+}
+.dark .tab-button[aria-selected="true"] {
+    color: rgb(96 165 250);
+    border-bottom-color: rgb(96 165 250);
+}
+
+@media print {
+    header, footer, aside, .no-print, button { display: none !important; }
+    body { background: white !important; color: black !important; }
+    .surface-card, .kpi-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+    .timeline-wrap {
+        overflow: visible !important;
+        background: white !important;
+    }
+}

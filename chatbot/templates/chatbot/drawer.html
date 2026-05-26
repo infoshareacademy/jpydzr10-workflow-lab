@@ -1,0 +1,449 @@
+{# ==================================================================== #}
+{# chatbot/drawer.html — slide-in side drawer asystenta                  #}
+{# ==================================================================== #}
+{#                                                                       #}
+{# Renderowane w `base.html` w pętli `{% if user.is_authenticated %}`    #}
+{# z kontekstem dostarczanym przez `core.context_processors.chatbot_drawer`. #}
+{#                                                                       #}
+{# Zależności:                                                            #}
+{#   - Alpine 3.x  → state (open, draft, charCount, autogrow)              #}
+{#   - HTMX 2.x    → submit pytania → partial response                     #}
+{#   - Tailwind 3.x→ styling                                               #}
+{#                                                                       #}
+{# Brak Alpine focus-plugin (nie vendor'owany) — własny focus-trap przez #}
+{# `@keydown.tab.prevent` na granicy panelu.                              #}
+{# ==================================================================== #}
+
+{% load static %}
+
+<div x-data="chatbotDrawer()"
+     x-cloak
+     @keydown.escape.window="close()"
+     class="font-sans">
+
+    {# ============================================================== #}
+    {# Floating Action Button — sticky bottom-right                   #}
+    {# ============================================================== #}
+    <button @click="toggle()"
+            type="button"
+            :aria-expanded="open"
+            aria-controls="chatbot-drawer-panel"
+            aria-label="Otwórz asystenta"
+            class="fixed bottom-6 right-6 z-40
+                   inline-flex items-center justify-center
+                   w-14 h-14 rounded-full
+                   bg-gradient-to-br from-brand-500 to-brand-700
+                   text-white shadow-lg shadow-brand-600/30
+                   hover:scale-105 hover:shadow-xl hover:shadow-brand-600/40
+                   active:scale-95
+                   focus:outline-none focus:ring-2 focus:ring-offset-2
+                   focus:ring-brand-500 dark:focus:ring-offset-gray-900
+                   transition-transform duration-200 ease-out
+                   motion-reduce:transition-none motion-reduce:hover:scale-100">
+        {# Ikona chat-bubble (Heroicons outline). #}
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"
+             aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"/>
+        </svg>
+        {# Sr-only label — uzupełnia aria-label, np. dla screenreaderów IE. #}
+        <span class="sr-only">Asystent — czat</span>
+    </button>
+
+    {# ============================================================== #}
+    {# Backdrop — blur za drawerem                                    #}
+    {# ============================================================== #}
+    <div x-show="open"
+         x-cloak
+         @click="close()"
+         x-transition:enter="transition-opacity ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+         aria-hidden="true"></div>
+
+    {# ============================================================== #}
+    {# Drawer panel — slide-in z prawej                               #}
+    {# ============================================================== #}
+    <aside x-show="open"
+           x-cloak
+           x-ref="panel"
+           x-trap.noscroll="open"
+           x-transition:enter="transition transform ease-out duration-250"
+           x-transition:enter-start="translate-x-full"
+           x-transition:enter-end="translate-x-0"
+           x-transition:leave="transition transform ease-in duration-200"
+           x-transition:leave-start="translate-x-0"
+           x-transition:leave-end="translate-x-full"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="chatbot-drawer-title"
+           id="chatbot-drawer-panel"
+           class="fixed inset-y-0 right-0 z-50
+                  w-full sm:max-w-md
+                  flex flex-col
+                  bg-white dark:bg-gray-900
+                  shadow-2xl
+                  border-l border-gray-200 dark:border-gray-700">
+
+        {# -------------------------------------------------------- #}
+        {# Header                                                   #}
+        {# -------------------------------------------------------- #}
+        <header class="flex-shrink-0 flex items-center justify-between
+                       px-4 py-3
+                       border-b border-gray-200 dark:border-gray-700
+                       bg-gradient-to-r from-brand-50 to-white
+                       dark:from-gray-800 dark:to-gray-900">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="flex-shrink-0 h-9 w-9 rounded-full
+                            bg-gradient-to-br from-brand-500 to-brand-700
+                            text-white flex items-center justify-center shadow-sm"
+                     aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"/>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h2 id="chatbot-drawer-title"
+                        class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        Asystent
+                    </h2>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        Planer Maszyn · tylko odczyt
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1">
+                {# „Nowa konwersacja" — reset conversation_id w state. #}
+                <button @click="resetConversation()"
+                        type="button"
+                        x-ref="firstFocusable"
+                        aria-label="Nowa konwersacja"
+                        title="Nowa konwersacja"
+                        class="p-2 rounded-md
+                               text-gray-500 dark:text-gray-400
+                               hover:bg-gray-100 dark:hover:bg-gray-800
+                               hover:text-gray-900 dark:hover:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-brand-500
+                               transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+                    </svg>
+                    <span class="sr-only">Nowa konwersacja</span>
+                </button>
+
+                {# Close button — X. #}
+                <button @click="close()"
+                        type="button"
+                        aria-label="Zamknij asystenta"
+                        class="p-2 rounded-md
+                               text-gray-500 dark:text-gray-400
+                               hover:bg-gray-100 dark:hover:bg-gray-800
+                               hover:text-gray-900 dark:hover:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-brand-500
+                               transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        {# -------------------------------------------------------- #}
+        {# Messages container                                       #}
+        {# -------------------------------------------------------- #}
+        <div id="chatbot-stream"
+             role="log"
+             aria-live="polite"
+             aria-label="Historia konwersacji"
+             class="flex-1 overflow-y-auto px-4 py-4 space-y-3
+                    bg-gray-50 dark:bg-gray-950/40
+                    scroll-smooth">
+
+            {# Welcome state — pokazywane gdy brak konwersacji. #}
+            {% if conversations %}
+                <div class="rounded-lg bg-white dark:bg-gray-800
+                            border border-gray-200 dark:border-gray-700
+                            p-3 mb-2">
+                    <p class="text-[11px] uppercase tracking-wide
+                              text-gray-500 dark:text-gray-400 font-medium mb-2">
+                        Ostatnie konwersacje ({{ conversations|length }})
+                    </p>
+                    <ul class="space-y-1">
+                        {% for conv in conversations %}
+                            <li class="flex items-center gap-2 text-xs
+                                       text-gray-700 dark:text-gray-300">
+                                <span class="text-gray-400 dark:text-gray-500 tabular-nums">
+                                    #{{ conv.pk }}
+                                </span>
+                                <span class="truncate">{{ conv.title|default:"(bez tytułu)" }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="text-center py-8 px-2">
+                    <div class="mx-auto mb-3 h-12 w-12 rounded-full
+                                bg-brand-100 dark:bg-brand-900/30
+                                text-brand-600 dark:text-brand-400
+                                flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"
+                             aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Cześć! Jak mogę pomóc?
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">
+                        Sprawdzę dane bez modyfikowania rezerwacji.
+                    </p>
+                    <ul class="text-left text-[11px] text-gray-600 dark:text-gray-300
+                               space-y-1 max-w-[260px] mx-auto">
+                        <li class="flex gap-1.5">
+                            <span class="text-brand-500 dark:text-brand-400">·</span>
+                            status maszyny po UID (np. KOP-001)
+                        </li>
+                        <li class="flex gap-1.5">
+                            <span class="text-brand-500 dark:text-brand-400">·</span>
+                            dostępność w wybranym terminie
+                        </li>
+                        <li class="flex gap-1.5">
+                            <span class="text-brand-500 dark:text-brand-400">·</span>
+                            przeglądy nadchodzące i przeterminowane
+                        </li>
+                        <li class="flex gap-1.5">
+                            <span class="text-brand-500 dark:text-brand-400">·</span>
+                            koszty serwisowe per typ maszyny
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+
+        {# -------------------------------------------------------- #}
+        {# Input area — sticky bottom                                #}
+        {# -------------------------------------------------------- #}
+        <form hx-post="{% url 'chatbot:ask' %}"
+              hx-target="#chatbot-stream"
+              hx-swap="beforeend scroll:#chatbot-stream:bottom"
+              hx-indicator="#chatbot-loading"
+              x-on:htmx:after-request="onAfterSend($event)"
+              class="flex-shrink-0
+                     border-t border-gray-200 dark:border-gray-700
+                     bg-white dark:bg-gray-900
+                     px-3 pt-3 pb-3">
+            {% csrf_token %}
+            {{ form.conversation_id }}
+
+            {# Loading indicator — pulse dots (htmx-indicator class) #}
+            <div id="chatbot-loading"
+                 class="htmx-indicator flex items-center gap-2 mb-2
+                        text-xs text-gray-500 dark:text-gray-400"
+                 aria-live="polite">
+                <span class="flex gap-1" aria-hidden="true">
+                    <span class="chat-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+                    <span class="chat-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+                    <span class="chat-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+                </span>
+                <span>Asystent myśli…</span>
+            </div>
+
+            <label for="id_question" class="sr-only">{{ form.question.label }}</label>
+
+            {# Textarea — auto-grow via Alpine, char count via x-text. #}
+            <div class="relative">
+                <textarea name="question"
+                          id="id_question"
+                          x-ref="questionInput"
+                          x-model="draft"
+                          @input="autoGrow($event); updateChar()"
+                          @keydown.enter.prevent="onEnter($event)"
+                          rows="2"
+                          minlength="3"
+                          maxlength="2000"
+                          placeholder="Np. Czy KOP-001 jest dostępna od 1 do 5 czerwca?"
+                          aria-describedby="chatbot-char-count chatbot-hint"
+                          class="block w-full resize-none
+                                 rounded-lg
+                                 border border-gray-300 dark:border-gray-600
+                                 bg-white dark:bg-gray-800
+                                 text-sm text-gray-900 dark:text-gray-100
+                                 placeholder:text-gray-400 dark:placeholder:text-gray-500
+                                 px-3 py-2 pr-12
+                                 shadow-sm
+                                 focus:outline-none focus:ring-2 focus:ring-brand-500
+                                 focus:border-brand-500
+                                 disabled:opacity-50 disabled:cursor-not-allowed
+                                 min-h-[44px] max-h-40
+                                 transition-[height] duration-150"></textarea>
+
+                {# Send button — floating w prawym dolnym rogu textareay. #}
+                <button type="submit"
+                        :disabled="charCount < 3 || charCount > 2000"
+                        :aria-disabled="charCount < 3 || charCount > 2000"
+                        aria-label="Wyślij pytanie"
+                        class="absolute bottom-1.5 right-1.5
+                               inline-flex items-center justify-center
+                               h-9 w-9 rounded-md
+                               bg-brand-600 text-white
+                               hover:bg-brand-700
+                               focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1
+                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600
+                               transition-colors duration-150">
+                    {# Paper-plane icon. #}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+                    </svg>
+                </button>
+            </div>
+
+            {# Char count + helper. Min/max widoczne, fokus z aria-describedby. #}
+            <div class="flex items-center justify-between mt-1.5
+                        text-[10px] text-gray-400 dark:text-gray-500">
+                <span id="chatbot-hint" class="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+                    </svg>
+                    Asystent tylko czyta dane.
+                </span>
+                <span id="chatbot-char-count"
+                      class="tabular-nums"
+                      :class="{ 'text-red-500 dark:text-red-400': charCount > 2000 }"
+                      aria-live="polite">
+                    <span x-text="charCount"></span>/2000
+                </span>
+            </div>
+        </form>
+    </aside>
+
+    {# ============================================================== #}
+    {# Alpine state — inline żeby drawer.html był samodzielny.        #}
+    {# ============================================================== #}
+    <script nonce="{{ CSP_NONCE }}">
+        if (typeof window.chatbotDrawer === "undefined") {
+            window.chatbotDrawer = function () {
+                return {
+                    open: false,
+                    draft: "",
+                    charCount: 0,
+                    _previousActive: null,
+
+                    /** Otwórz drawer + focus na textarea + zapisz „previous" focus. */
+                    openDrawer() {
+                        this._previousActive = document.activeElement;
+                        this.open = true;
+                        this.$nextTick(() => {
+                            // Po slide-in transition (~250ms) ustaw focus.
+                            setTimeout(() => {
+                                this.$refs.questionInput && this.$refs.questionInput.focus();
+                            }, 260);
+                        });
+                    },
+
+                    /** Zamknij drawer + przywróć focus na trigger button. */
+                    close() {
+                        if (!this.open) return;
+                        this.open = false;
+                        // Restore focus → button trigger (a11y best practice).
+                        this.$nextTick(() => {
+                            if (this._previousActive && this._previousActive.focus) {
+                                this._previousActive.focus();
+                            }
+                        });
+                    },
+
+                    toggle() {
+                        this.open ? this.close() : this.openDrawer();
+                    },
+
+                    /** Auto-grow textarea: ustaw height = scrollHeight (cap 160px). */
+                    autoGrow(e) {
+                        const ta = e.target;
+                        ta.style.height = "auto";
+                        ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+                    },
+
+                    /** Aktualizuj licznik znaków (binding do `<span x-text="charCount">`). */
+                    updateChar() {
+                        this.charCount = (this.draft || "").length;
+                    },
+
+                    /** Enter = submit (bez shift). Shift+Enter zachowuje newline. */
+                    onEnter(e) {
+                        if (e.shiftKey) {
+                            // Insert newline manually (default został prevent'owany).
+                            const ta = e.target;
+                            const start = ta.selectionStart;
+                            const end = ta.selectionEnd;
+                            ta.value = ta.value.slice(0, start) + "\n" + ta.value.slice(end);
+                            ta.selectionStart = ta.selectionEnd = start + 1;
+                            this.draft = ta.value;
+                            this.updateChar();
+                            this.autoGrow({ target: ta });
+                            return;
+                        }
+                        // Nie submituj jeśli za krótkie/za długie.
+                        if (this.charCount < 3 || this.charCount > 2000) return;
+                        e.target.form && e.target.form.requestSubmit();
+                    },
+
+                    /** Po HTMX response: clear draft, reset autogrow height, refocus input. */
+                    onAfterSend(e) {
+                        if (e.detail && e.detail.successful) {
+                            this.draft = "";
+                            this.charCount = 0;
+                            if (this.$refs.questionInput) {
+                                this.$refs.questionInput.style.height = "auto";
+                                this.$refs.questionInput.focus();
+                            }
+                            // Scroll do dołu — najświeższa wiadomość widoczna.
+                            const stream = document.getElementById("chatbot-stream");
+                            if (stream) stream.scrollTop = stream.scrollHeight;
+                        }
+                    },
+
+                    /** „Nowa konwersacja" — wyczyść hidden input conversation_id. */
+                    resetConversation() {
+                        const hidden = document.querySelector(
+                            "#chatbot-drawer-panel input[name='conversation_id']"
+                        );
+                        if (hidden) hidden.value = "";
+                        // Powiadom usera przez system message.
+                        const stream = document.getElementById("chatbot-stream");
+                        if (stream) {
+                            const div = document.createElement("div");
+                            div.className = "flex justify-center py-1 animate-msg-in";
+                            div.setAttribute("role", "status");
+                            div.innerHTML = '<p class="text-[11px] italic text-gray-500 dark:text-gray-400 tracking-wide">— rozpoczęto nową konwersację —</p>';
+                            stream.appendChild(div);
+                            stream.scrollTop = stream.scrollHeight;
+                        }
+                        if (this.$refs.questionInput) this.$refs.questionInput.focus();
+                    },
+                };
+            };
+        }
+    </script>
+</div>

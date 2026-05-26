@@ -5,7 +5,17 @@ rows are self-explanatory and consistent with the ``machines`` app
 convention (``W magazynie``, ``Na budowie`` …).
 
 ``ConstructionSite`` uses the local Polish project numbering format
-``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT the 9-digit Belgian format.
+``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT the 9-digit Belgian format
+from WMS SEBASTIANA (which is a different business context).
+
+``Reservation`` ties a :class:`machines.Machine` to a date range, optionally
+referencing a :class:`ConstructionSite`. Status transitions are guarded in the
+service layer (:mod:`reservations.services`) — the model itself only stores
+the value; calling ``.save()`` directly does NOT trigger transition checks.
+
+All ``status`` values are picked so they import cleanly from the historical
+Milestone 1 JSON fixtures (``archive/milestone-1/data/reservations.json``)
+without a data migration.
 """
 
 from __future__ import annotations
@@ -20,7 +30,8 @@ from core.models import TimestampedModel
 
 from .managers import ReservationManager
 
-# Anchored regex — odrzuca ``BUD-2026-001-x`` i podobne przypadkowe prefiksy.
+# Regex for the local Polish project number format. Anchored to keep
+# accidental prefixes / suffixes out (``"BUD-2026-001-x"`` rejects).
 PROJECT_NUMBER_PATTERN = r"^BUD-\d{4}-\d{3}$"
 
 PROJECT_NUMBER_VALIDATOR = RegexValidator(
@@ -35,9 +46,22 @@ PROJECT_NUMBER_VALIDATOR = RegexValidator(
 
 
 class ConstructionSite(TimestampedModel):
-    """Budowa, do której rezerwujemy maszyny. Lifecycle: aktywna → zakończona / anulowana."""
+    """A construction site / project that machines are reserved for.
+
+    A site groups reservations together so the magazynier can see at a glance
+    "which machines are at job XY right now". It is optional on a reservation
+    (you can still book ad-hoc without a site), but recommended for reporting.
+
+    Lifecycle:
+
+    * ``aktywna`` — the default; new reservations can be created.
+    * ``zakończona`` — the project is finished; treated as read-only.
+    * ``anulowana`` — never started / cancelled mid-way.
+    """
 
     class Status(models.TextChoices):
+        """Lifecycle of the site. Values are Polish on purpose (ZASADA #2)."""
+
         AKTYWNA = "aktywna", "Aktywna"
         ZAKONCZONA = "zakończona", "Zakończona"
         ANULOWANA = "anulowana", "Anulowana"
@@ -75,23 +99,34 @@ class ConstructionSite(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.project_number} — {self.name}"
 
+    def __repr__(self) -> str:
+        return f"ConstructionSite(project_number={self.project_number!r}, status={self.status!r})"
+
+    # ------------------------------------------------------------------
+    # Convenience properties
+    # ------------------------------------------------------------------
+
     @property
     def is_active(self) -> bool:
+        """True when new reservations may be attached to the site."""
         return self.status == self.Status.AKTYWNA
 
     @property
     def active_reservation_count(self) -> int:
+        """Count of pending / confirmed reservations attached to the site."""
         return self.reservations.filter(
             status__in=(Reservation.Status.OCZEKUJACA, Reservation.Status.POTWIERDZONA)
         ).count()
 
     @property
     def has_active_reservations(self) -> bool:
+        """True when the site still has open reservations (blocks deletion)."""
         return self.reservations.filter(
             status__in=(Reservation.Status.OCZEKUJACA, Reservation.Status.POTWIERDZONA)
         ).exists()
 
     def clean(self) -> None:
+        """Cross-field validation — ``end_date`` must be ≥ ``start_date``."""
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError(
@@ -105,23 +140,49 @@ class ConstructionSite(TimestampedModel):
 
 
 class Reservation(TimestampedModel):
-    """Rezerwacja jednej maszyny na zakres dat. ``site`` opcjonalne (legacy M1)."""
+    """A reservation of a single :class:`machines.Machine` for a date range.
+
+    A reservation always references a machine; the construction site is
+    optional (legacy bookings from M1 may not have one). The ``person`` field
+    is a free-text label of the operator/foreman who booked the machine — in
+    Milestone 3 it will be replaced by an FK to ``accounts.EmployeeProfile``.
+
+    Status lifecycle:
+
+    * ``oczekująca`` (default) → ``potwierdzona`` via service ``confirm``;
+      ``potwierdzona`` is what ``run_daily_sync`` looks at when deciding
+      whether to flip a machine to ``Na budowie``.
+    * ``potwierdzona`` → ``zakończona`` via service ``complete`` (also
+      returns the machine to the warehouse).
+    * any non-terminal → ``anulowana`` via service ``cancel``.
+    """
 
     class Status(models.TextChoices):
-        OCZEKUJACA   = "oczekująca", "Oczekująca"
+        """Lifecycle of a reservation. Values are Polish (M1-compatible)."""
+
+        OCZEKUJACA = "oczekująca", "Oczekująca"
         POTWIERDZONA = "potwierdzona", "Potwierdzona"
-        ANULOWANA    = "anulowana", "Anulowana"
-        ZAKONCZONA   = "zakończona", "Zakończona"
+        ANULOWANA = "anulowana", "Anulowana"
+        ZAKONCZONA = "zakończona", "Zakończona"
 
     class CancellationReason(models.TextChoices):
-        """B-2 — powody anulowania (raporty miesięczne). DB ASCII, label PL."""
-        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", "Klient zrezygnował"
-        AWARIA             = "awaria", "Awaria maszyny"
-        ZMIANA_TERMINU     = "zmiana_terminu", "Zmiana terminu / przesunięcie"
-        BRAK_DOSTEPNOSCI   = "brak_dostepnosci", "Brak dostępności maszyny"
-        INNE               = "inne", "Inne (zobacz notatkę)"
+        """Powód anulowania rezerwacji (B-2) — używane do raportów miesięcznych.
 
-    # FK do machines.Machine — string reference żeby uniknąć import-time circular dep.
+        Wartości DB są ASCII snake_case (compatibility z fixturami), labele PL.
+        """
+
+        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", "Klient zrezygnował"
+        AWARIA = "awaria", "Awaria maszyny"
+        ZMIANA_TERMINU = "zmiana_terminu", "Zmiana terminu / przesunięcie"
+        BRAK_DOSTEPNOSCI = "brak_dostepnosci", "Brak dostępności maszyny"
+        INNE = "inne", "Inne (zobacz notatkę)"
+
+    # ------------------------------------------------------------------
+    # Fields
+    # ------------------------------------------------------------------
+
+    # FK to machines.Machine — string reference to avoid an import-time
+    # circular dependency (machines.services imports reservations lazily too).
     machine = models.ForeignKey(
         "machines.Machine",
         on_delete=models.PROTECT,
@@ -139,12 +200,21 @@ class Reservation(TimestampedModel):
     start_date = models.DateField(db_index=True, verbose_name=_("Data początku"))
     end_date = models.DateField(db_index=True, verbose_name=_("Data końca"))
     person = models.CharField(max_length=100, verbose_name=_("Osoba rezerwująca"))
-    # Wave 14-A Bundle 4 — adres dostawy wymagany w form, blank=True na modelu
-    # żeby legacy M1 fixtures bez tego pola importowały się czysto.
+    # Wave 14-A Bundle 4 -- Sebastian walkthrough 17 maja 2026:
+    # `address` jest teraz egzekwowany jako wymagany na poziomie formularza
+    # (zob. `ReservationForm.address`). Na modelu zostawiamy `blank=True` +
+    # `default=""` zeby istniejace fixtures M1 (legacy bez adresu) nie wymagaly
+    # data migration -- enforcement jest podnoszony tylko dla nowych rekordow
+    # przez form layer.
     address = models.CharField(
         max_length=300, blank=True, default="", verbose_name=_("Adres dostawy")
     )
-    # Wave 14-A Bundle 4 — kierownik / brygadzista na budowie (odrębny od ``person``).
+    # Wave 14-A Bundle 4 -- Sebastian walkthrough: osoba odpowiedzialna na
+    # budowie (kierownik/brygadzista). Rozdzielona od `person` (osoba ktora
+    # rezerwowala w biurze): `person` = ten kto wpisuje rezerwacje w systemie,
+    # `responsible_person` = ten kto odpowiada za maszyne fizycznie na budowie.
+    # Wymagane przez form (przy create + update). Default="" zeby istniejace
+    # M1 fixtures nie wymagaly data migration.
     responsible_person = models.CharField(
         max_length=100,
         blank=True,
@@ -163,7 +233,10 @@ class Reservation(TimestampedModel):
         verbose_name=_("Status"),
     )
 
-    # B-2: powód anulowania — required przy status=ANULOWANA (service-layer validation).
+    # B-2: Powód anulowania — wymagany przy status=ANULOWANA, ignored dla innych
+    # statusów (walidacja na poziomie service.cancel_reservation()). Pole jest
+    # blank=True na poziomie modelu żeby istniejące dane historyczne (M1
+    # fixtures) nie musiały być wstecznie wypełniane data migration'em.
     cancellation_reason = models.CharField(
         max_length=30,
         choices=CancellationReason.choices,
@@ -177,18 +250,29 @@ class Reservation(TimestampedModel):
         blank=True,
         default="",
         verbose_name=_("Notatka do powodu anulowania"),
+        help_text=_("Opcjonalna — dodatkowy kontekst (np. przyczyna awarii, kto odwołał)."),
     )
 
-    # B-3: wcześniejszy zwrot — używamy w ``has_conflict`` zamiast end_date jeśli ustawione.
+    # B-3: Faktyczna data zwrotu — wcześniejszy zwrot maszyny zwalnia ją
+    # dla następnego klienta. Jeśli ustawione, używane w ``has_conflict``
+    # zamiast ``end_date`` (planowana data). NULL = brak wcześniejszego zwrotu.
     actual_return_date = models.DateField(
         null=True,
         blank=True,
         db_index=True,
         verbose_name=_("Faktyczna data zwrotu"),
+        help_text=_(
+            "Wcześniejszy zwrot — jeśli ustawione, używamy do konfliktów "
+            "zamiast planowanej daty końca."
+        ),
     )
 
-    # B-6: wymiana mid-reservation — wskazuje na zastępczą rezerwację.
-    # SET_NULL żeby usunięcie zastępczej nie wymazało historycznej.
+    # B-6: Wymiana maszyny mid-reservation — jeśli rezerwacja została wymieniona
+    # na zastępczą maszynę w trakcie trwania, to pole wskazuje na nową rezerwację
+    # pokrywającą pozostały okres. ``on_delete=SET_NULL`` żeby usunięcie nowej
+    # rezerwacji (np. anulowanie zastępczej) nie wymazało historycznej.
+    # ``related_name="replaces"`` daje odwrotny dostęp: ``new.replaces.first()``
+    # zwraca rezerwację która została zastąpiona.
     replaced_by = models.ForeignKey(
         "self",
         null=True,
@@ -196,14 +280,28 @@ class Reservation(TimestampedModel):
         on_delete=models.SET_NULL,
         related_name="replaces",
         verbose_name=_("Zastąpiona przez"),
+        help_text=_(
+            "Jeśli rezerwacja została wymieniona mid-flight na inną maszynę — "
+            "wskazuje na zastępczą rezerwację."
+        ),
     )
 
-    # B-7: rezerwacja grupowa — wszystkie z batch dzielą ten sam UUID.
+    # B-7: Rezerwacja batch (multi-maszynowa) — wszystkie rezerwacje utworzone
+    # jednym kliknięciem w formularzu "Grupa rezerwacji" dzielą ten sam UUID,
+    # dzięki czemu widok ``batch_detail_view`` może zebrać je w jedną grupę
+    # i renderować akcje bulk (potwierdź wszystkie, anuluj wszystkie, zmień
+    # operatora na wszystkich). Opcjonalne — single-machine rezerwacje
+    # (legacy + indywidualne) zostają z ``batch_id=NULL``. ``db_index=True``
+    # bo query "wszystkie z tego batch'a" to hot path detail page.
     batch_id = models.UUIDField(
         null=True,
         blank=True,
         db_index=True,
         verbose_name=_("ID grupy rezerwacji"),
+        help_text=_(
+            "Jeśli rezerwacja należy do grupy (multi-maszynowa), "
+            "wszystkie rezerwacje w grupie mają ten sam UUID."
+        ),
     )
 
     history = HistoricalRecords()
@@ -215,7 +313,8 @@ class Reservation(TimestampedModel):
         verbose_name_plural = _("Rezerwacje")
         ordering = ["-start_date"]
         indexes = [
-            # Hot path: "all reservations for machine X newest-first" (detail + timeline).
+            # Hot path: "all reservations for machine X newest-first" — used
+            # by the machine detail page and the timeline grid (Sprint 7).
             models.Index(fields=["machine", "-start_date"]),
             # Hot path: dashboard widgets ("upcoming pending", "active today").
             models.Index(fields=["status", "start_date"]),
@@ -224,19 +323,47 @@ class Reservation(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.machine.uid} {self.start_date} - {self.end_date} ({self.person})"
 
+    def __repr__(self) -> str:
+        return (
+            f"Reservation(pk={self.pk!r}, machine_id={self.machine_id!r}, status={self.status!r})"
+        )
+
+    # ------------------------------------------------------------------
+    # Convenience properties / helpers
+    # ------------------------------------------------------------------
+
     @property
     def is_open(self) -> bool:
+        """True for reservations that should still affect machine status."""
         return self.status in (self.Status.OCZEKUJACA, self.Status.POTWIERDZONA)
 
     @property
+    def is_pending(self) -> bool:
+        """True dla rezerwacji oczekujących na potwierdzenie."""
+        return self.status == self.Status.OCZEKUJACA
+
+    @property
+    def is_confirmed(self) -> bool:
+        """True dla rezerwacji potwierdzonych (jeszcze nie zakończonych)."""
+        return self.status == self.Status.POTWIERDZONA
+
+    @property
+    def is_closed(self) -> bool:
+        """True dla rezerwacji zakończonych lub anulowanych — terminal states."""
+        return self.status in (self.Status.ZAKONCZONA, self.Status.ANULOWANA)
+
+    @property
     def duration_days(self) -> int:
+        """Length of the reservation in days (inclusive)."""
         return (self.end_date - self.start_date).days + 1
 
     @property
     def title(self) -> str:
+        """Short label for the timeline bar / detail header."""
         return f"{self.machine.uid} — {self.person}"
 
     def clean(self) -> None:
+        """Cross-field validation — ``end_date`` must be ≥ ``start_date``."""
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError({"end_date": "Data końca musi być >= data początku."})

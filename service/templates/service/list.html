@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% load planer_tags %}
+
+{% block title %}Serwis i przeglądy — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{# ------------------------------------------------------------------ #}
+{# Service records list — sticky filter bar (record_type chips +       #}
+{# machine select + date range + cost range), responsive table/card    #}
+{# fallback, bulk-select toolbar pojawia się gdy zaznaczono ≥1 wiersz. #}
+{# Alpine state: { selected: Set<pk>, view: chip filter, dirty }.      #}
+{# HTMX: filter form ma hx-get → list view (auto-rerender przez        #}
+{# get_template_names → _record_table.html fragment).                  #}
+{# ------------------------------------------------------------------ #}
+<div x-data="serviceListView()" x-init="init()" class="space-y-6">
+
+    {# ============================== HEADER ============================== #}
+    <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>Serwis</span>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Serwis i przeglądy</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                W bazie: <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ total_count }}</span>
+                {% if records %}<span class="text-gray-400 dark:text-gray-500"> · widocznych: <span class="tabular-nums">{{ records|length }}</span></span>{% endif %}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {# F-3: preset chip — quick link "Tylko przeglądy" (inspections() manager). #}
+            {# aria-pressed = informacja dla screen readera o tym że to filtr toggle. #}
+            <a href="{% url 'service:list' %}?only_inspections=on"
+               aria-pressed="{% if filter_form.only_inspections.value %}true{% else %}false{% endif %}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900
+                      {% if filter_form.only_inspections.value %}bg-brand-600 text-white border-brand-600{% else %}bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800 hover:bg-brand-100 dark:hover:bg-brand-900/40{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Tylko przeglądy</span>
+            </a>
+
+            <a href="{% url 'service:bulk_inspection' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span class="hidden sm:inline">Bulk inspekcja</span>
+                <span class="sm:hidden">Bulk</span>
+            </a>
+            <a href="{% url 'service:reports' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Raporty</span>
+            </a>
+            {% if perms.service.add_servicerecord %}
+            <a href="{% url 'service:create' %}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                <span class="hidden sm:inline">Dodaj wpis</span>
+                <span class="sm:hidden">Dodaj</span>
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    {# ============================== STICKY BULK TOOLBAR ============================== #}
+    {# Pojawia się tylko gdy `selectedCount > 0`. sticky top + slide-in. #}
+    <div x-show="selectedCount > 0" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="sticky top-16 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-lg bg-brand-50 dark:bg-brand-900/40 border border-brand-200 dark:border-brand-800 shadow-sm"
+         role="region"
+         aria-label="Akcje masowe">
+        <div class="flex items-center gap-2 text-sm">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-600 text-white text-xs font-bold tabular-nums"
+                  x-text="selectedCount"></span>
+            <span class="font-medium text-brand-900 dark:text-brand-100">
+                Zaznaczono <span x-text="selectedCount"></span>
+                <span x-text="pluralRecord(selectedCount)"></span>
+            </span>
+            <button type="button" @click="clearSelection()"
+                    class="ml-2 text-xs text-brand-700 dark:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                Wyczyść
+            </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {# Eksport zaznaczonych do XLSX — używamy global eksportu z params #}
+            {# Note: backend obecnie nie obsługuje "tylko zaznaczone" - link do raportów. #}
+            <a href="{% url 'service:reports' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-300 dark:border-brand-700 bg-white dark:bg-gray-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 text-brand-700 dark:text-brand-200 rounded-md text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Eksportuj XLSX
+            </a>
+            <a href="{% url 'service:reports' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-xs font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Generuj raport PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        {# ============================== FILTER SIDEBAR ============================== #}
+        <aside class="lg:sticky lg:top-24 lg:self-start">
+            <form method="get" action="{% url 'service:list' %}"
+                  x-data="{ open: true }"
+                  class="surface-card p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                            </svg>
+                        </span>
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Filtry</h2>
+                    </div>
+                    <button type="button" @click="open = !open"
+                            :aria-expanded="open"
+                            aria-controls="service-filters-body"
+                            class="lg:hidden text-xs text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                        <span x-text="open ? 'Zwiń' : 'Rozwiń'">Zwiń</span>
+                    </button>
+                </div>
+
+                <div id="service-filters-body" x-show="open"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 -translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     class="space-y-4">
+
+                    {# Record type — chipsy (Wszystkie / Przeglądy / Naprawy) jako pill toggle. #}
+                    <div>
+                        <span class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">{{ filter_form.record_type.label }}</span>
+                        {{ filter_form.record_type }}
+                        {% if filter_form.record_type.errors %}
+                        <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ filter_form.record_type.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+
+                    {# Machine select #}
+                    <div>
+                        <label for="{{ filter_form.machine.id_for_label }}"
+                               class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                            {{ filter_form.machine.label }}
+                        </label>
+                        {{ filter_form.machine }}
+                    </div>
+
+                    {# Performed after #}
+                    <div>
+                        <label for="{{ filter_form.performed_after.id_for_label }}"
+                               class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                            {{ filter_form.performed_after.label }}
+                        </label>
+                        {{ filter_form.performed_after }}
+                    </div>
+
+                    {# Performed before #}
+                    <div>
+                        <label for="{{ filter_form.performed_before.id_for_label }}"
+                               class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                            {{ filter_form.performed_before.label }}
+                        </label>
+                        {{ filter_form.performed_before }}
+                    </div>
+
+                    {# Cost min/max — 2-col grid w sidebarze. #}
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="{{ filter_form.cost_min.id_for_label }}"
+                                   class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                                {{ filter_form.cost_min.label }}
+                            </label>
+                            {{ filter_form.cost_min }}
+                        </div>
+                        <div>
+                            <label for="{{ filter_form.cost_max.id_for_label }}"
+                                   class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                                {{ filter_form.cost_max.label }}
+                            </label>
+                            {{ filter_form.cost_max }}
+                        </div>
+                    </div>
+
+                    {# F-2: preset "Drogie naprawy" — enables ServiceRecord.objects.expensive() #}
+                    <label class="flex items-start gap-2 cursor-pointer group">
+                        {{ filter_form.expensive_only }}
+                        <span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                            {{ filter_form.expensive_only.label }}
+                        </span>
+                    </label>
+
+                    {# F-3: preset "Tylko przeglądy" — enables ServiceRecord.objects.inspections() #}
+                    <label class="flex items-start gap-2 cursor-pointer group">
+                        {{ filter_form.only_inspections }}
+                        <span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                            {{ filter_form.only_inspections.label }}
+                        </span>
+                    </label>
+
+                    <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <button type="submit"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Filtruj
+                        </button>
+                        <a href="{% url 'service:list' %}"
+                           class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                            Wyczyść
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </aside>
+
+        {# ============================== LIST SECTION ============================== #}
+        <section>
+            {% if records %}
+                {# ============================== TABLE (md+) ============================== #}
+                <div class="hidden md:block surface-card overflow-hidden">
+                    <div class="overflow-x-auto scrollbar-thin">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                            <thead class="bg-gray-50 dark:bg-gray-900/50">
+                                <tr>
+                                    <th scope="col" class="px-3 py-3 w-10">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox"
+                                                   @change="toggleAll($event)"
+                                                   :checked="allSelected"
+                                                   :indeterminate="someSelected && !allSelected"
+                                                   class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                                                   aria-label="Zaznacz wszystkie wpisy">
+                                        </label>
+                                    </th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Data</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Maszyna</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Typ</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Wykonał</th>
+                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Koszt</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Następny</th>
+                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for record in records %}
+                                <tr class="group transition-colors"
+                                    :class="selected.has({{ record.pk }}) ? 'bg-brand-50/60 dark:bg-brand-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'">
+                                    <td class="px-3 py-2.5">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox"
+                                                   :value="{{ record.pk }}"
+                                                   @change="toggle({{ record.pk }})"
+                                                   :checked="selected.has({{ record.pk }})"
+                                                   class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                                                   aria-label="Zaznacz wpis #{{ record.pk }}">
+                                        </label>
+                                    </td>
+                                    <td class="px-3 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-200 tabular-nums">
+                                        <a href="{% url 'service:detail' pk=record.pk %}"
+                                           class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                                            {{ record.performed_date|date_pl }}
+                                        </a>
+                                    </td>
+                                    <td class="px-3 py-2.5 font-mono text-xs">
+                                        <a href="{% url 'machines:detail' uid=record.machine.uid %}"
+                                           class="text-brand-700 dark:text-brand-300 font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                                            {{ record.machine.uid }}
+                                        </a>
+                                        <span class="text-gray-500 dark:text-gray-400 hidden xl:inline ml-1">— {{ record.machine.name }}</span>
+                                    </td>
+                                    <td class="px-3 py-2.5">
+                                        {# Typ z badge'em zależnym od kategorii (przegląd vs naprawa). #}
+                                        {% if record.is_inspection %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                {{ record.get_record_type_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                                                {{ record.get_record_type_display }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-2.5 text-gray-600 dark:text-gray-300 text-xs">{{ record.performed_by|default:"—" }}</td>
+                                    <td class="px-3 py-2.5 text-right font-mono text-xs tabular-nums text-gray-700 dark:text-gray-200">
+                                        {{ record.cost }} <span class="text-gray-400 dark:text-gray-500">PLN</span>
+                                    </td>
+                                    <td class="px-3 py-2.5 text-xs">
+                                        {% if record.next_inspection %}
+                                            <span class="{% if record.is_overdue_followup %}text-rose-700 dark:text-rose-300 font-semibold{% else %}text-gray-600 dark:text-gray-300{% endif %} tabular-nums">
+                                                {{ record.next_inspection|date_pl }}
+                                            </span>
+                                            {% if record.is_overdue_followup %}
+                                            <span class="ml-1 text-rose-500" title="Przegląd zaległy" aria-label="Przegląd zaległy">!</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-gray-400 dark:text-gray-500">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                                        <a href="{% url 'service:detail' pk=record.pk %}"
+                                           class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                        {% if record.is_inspection %}
+                                            <span class="text-gray-300 dark:text-gray-600 mx-1" aria-hidden="true">·</span>
+                                            <a href="{% url 'service:pdf' pk=record.pk %}"
+                                               class="text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 hover:underline text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">PDF</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {# ============================== MOBILE CARD LIST ============================== #}
+                <div class="md:hidden space-y-3">
+                    {% for record in records %}
+                    <div class="surface-card p-3"
+                         :class="selected.has({{ record.pk }}) ? 'ring-2 ring-brand-500' : ''">
+                        <div class="flex items-start gap-3">
+                            <label class="inline-flex items-center cursor-pointer pt-1">
+                                <input type="checkbox"
+                                       :value="{{ record.pk }}"
+                                       @change="toggle({{ record.pk }})"
+                                       :checked="selected.has({{ record.pk }})"
+                                       class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                                       aria-label="Zaznacz wpis #{{ record.pk }}">
+                            </label>
+                            <a href="{% url 'service:detail' pk=record.pk %}"
+                               class="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                                <div class="flex items-start justify-between gap-2 mb-1">
+                                    <div class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold">{{ record.machine.uid }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{{ record.performed_date|date_pl }}</div>
+                                </div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-1.5">{{ record.machine.name }}</div>
+                                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    {% if record.is_inspection %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200">{{ record.get_record_type_display }}</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ record.get_record_type_display }}</span>
+                                    {% endif %}
+                                    <span class="font-mono">{{ record.cost }} PLN</span>
+                                    {% if record.is_overdue_followup %}
+                                        <span class="text-rose-600 dark:text-rose-300 font-semibold">Zaległy!</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {# ============================== PAGINATION ============================== #}
+                {% if is_paginated %}
+                <nav class="flex items-center justify-between mt-4 text-sm" aria-label="Stronicowanie">
+                    <span class="text-gray-500 dark:text-gray-400">
+                        Strona <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ page_obj.number }}</span>
+                        z <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ page_obj.paginator.num_pages }}</span>
+                    </span>
+                    <ul class="flex gap-1">
+                        {% if page_obj.has_previous %}
+                            <li><a href="?page={{ page_obj.previous_page_number }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                                Poprzednia
+                            </a></li>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <li><a href="?page={{ page_obj.next_page_number }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                Następna
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            </a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                {% include "service/_empty_state.html" %}
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ CSP_NONCE }}">
+    // ---------------------------------------------------------------------
+    // serviceListView() — Alpine state dla bulk selectu wpisów serwisowych.
+    //   * `selected` — Set z primary key wybranych rekordów (na stronie).
+    //   * `selectedCount` — reactive .size (proxy żeby x-text na to reagował).
+    //   * toggle/toggleAll/clearSelection — mutate Set + ręcznie reasignuje
+    //     by trigger reaktywności (Set mutation nie triggeruje Alpine).
+    //   * pluralRecord — polish plural ("1 wpis" / "2 wpisy" / "5 wpisów").
+    // ---------------------------------------------------------------------
+    function serviceListView() {
+        return {
+            selected: new Set(),
+            selectedCount: 0,
+            // Wszystkie rekordy widoczne na stronie — pobierane z checkboxów.
+            allPks: [],
+            allSelected: false,
+            someSelected: false,
+            init() {
+                var inputs = this.$root.querySelectorAll('input[type="checkbox"][aria-label^="Zaznacz wpis"]');
+                this.allPks = Array.from(inputs).map(function (i) { return parseInt(i.value, 10); });
+                this.refreshFlags();
+            },
+            refreshFlags() {
+                this.selectedCount = this.selected.size;
+                this.someSelected = this.selectedCount > 0;
+                this.allSelected = this.allPks.length > 0 && this.selectedCount === this.allPks.length;
+            },
+            toggle(pk) {
+                if (this.selected.has(pk)) { this.selected.delete(pk); }
+                else { this.selected.add(pk); }
+                this.selected = new Set(this.selected);  // trigger reactivity
+                this.refreshFlags();
+            },
+            toggleAll($event) {
+                var self = this;
+                if ($event.target.checked) {
+                    this.allPks.forEach(function (pk) { self.selected.add(pk); });
+                } else {
+                    this.selected.clear();
+                }
+                this.selected = new Set(this.selected);
+                this.refreshFlags();
+            },
+            clearSelection() {
+                this.selected.clear();
+                this.selected = new Set();
+                this.refreshFlags();
+            },
+            pluralRecord(n) {
+                if (n === 1) return "wpis";
+                var lastTwo = n % 100;
+                if (lastTwo >= 12 && lastTwo <= 14) return "wpisów";
+                var last = n % 10;
+                if (last >= 2 && last <= 4) return "wpisy";
+                return "wpisów";
+            },
+        };
+    }
+</script>
+{% endblock %}

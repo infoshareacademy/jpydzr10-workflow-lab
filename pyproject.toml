@@ -7,8 +7,8 @@ build-backend = "setuptools.build_meta"
 # =============================================================================
 [project]
 name = "planer-maszyn-kursowy"
-version = "2.0.0"
-description = "Planer Maszyn Budowlanych — aplikacja webowa Django (Milestone 2)"
+version = "0.1.0"
+description = "Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy budowlanej (Milestone 2)"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 requires-python = ">=3.14"
@@ -24,27 +24,44 @@ dependencies = [
     "psycopg[binary]>=3.3",            # PostgreSQL driver v3 (nie v2)
     "python-dotenv>=1.2",              # ładowanie .env w settings
     "python-dateutil>=2.9",            # relativedelta dla calculate_next_inspection
+
     # --- Frontend helpers (wszystkie static jest vendored w static/vendor/) ---
     "django-htmx>=1.27",               # request.htmx + HX-* shortcuts
     "django-widget-tweaks>=1.5",       # widget.attrs class injection w templates
     "django-unfold>=0.90",             # Tailwind admin theme (dashboard widgets)
+
     # --- Audit / Security ---
     "django-simple-history>=3.11",     # historia zmian każdego modelu
     "django-axes>=8.3",                # brute-force protection na login
     "django-csp>=4.0",                 # Content Security Policy headers
     "django-cleanup>=8.0",             # auto-delete orphan FileField uploads
+    "argon2-cffi>=23.1",               # Argon2id password hasher (NIST SP 800-63B Rev 4)
+    "pwned-passwords-django>=2.1",     # HIBP API check przy set_password (zapobiega znanym wyciekom)
+    "django-ratelimit>=4.1",           # rate limiting (chatbot endpoint przeciwko spam Gemini)
+
     # --- Files / Images / Reports ---
     "Pillow>=12.2",                    # upload zdjęć maszyn
     "openpyxl>=3.1",                   # Excel import/export (raporty + bulk import)
     "reportlab>=4.0",                  # PDF generation (rezerwacje, certyfikaty)
-    # --- Pomocnik chatbota (W4 bonus) ---
-    "pydantic-ai-slim>=0.1.7",         # framework agenta (provider deps dorabiamy w W4)
+
+    # --- Chatbot (W4 — Pydantic AI + Google Gemini) ---
+    # Pin >=1.97,<2: AgentRunResult API w 1.x różni się fundamentalnie od 0.x
+    # (drop ``.data``, ``.usage`` to property nie metoda — zobacz chatbot.services
+    # ``_extract_*`` helpers). Constraint ``>=0.1.7`` z W4 pozwalał na 0.1 fresh installs
+    # bez ``--frozen`` i crashował production extraction.
+    "pydantic-ai-slim[google]>=1.97,<2",  # framework agenta + Google Generative AI provider
 ]
 
 # =============================================================================
-# DEV DEPENDENCIES — pytest stack + linter + dev tools
+# DEV / PROD DEPENDENCIES — PEP 735 dependency groups (modern uv pattern)
 # =============================================================================
-[project.optional-dependencies]
+# Aplikacja jest prywatna (nie publikowana na PyPI), więc nie używamy
+# ``[project.optional-dependencies]`` (które jest dla wheel extras). PEP 735
+# ``[dependency-groups]`` to nowy standard dla narzędzi typu uv/pdm/hatch —
+# grupy NIE są instalowane przy ``pip install .`` (czego i tak nikt nie robi).
+# ``[tool.uv] default-groups = ["dev"]`` poniżej powoduje że ``uv sync`` bez
+# żadnych flag automatycznie instaluje grupę ``dev``.
+[dependency-groups]
 dev = [
     # --- Linter + formatter ---
     "ruff>=0.15",                      # pycodestyle + pyflakes + isort + black + bugbear w 1
@@ -71,6 +88,14 @@ prod = [
 ]
 
 # =============================================================================
+# UV CONFIG — auto-install dev group przy każdym ``uv sync``
+# =============================================================================
+[tool.uv]
+# Bez flag, ``uv sync`` instaluje runtime deps + grupy z ``default-groups``.
+# Prod group instalujesz explicit: ``uv sync --group prod`` (np. Dockerfile).
+default-groups = ["dev"]
+
+# =============================================================================
 # SETUPTOOLS — wskazanie które foldery to pakiety Pythona
 # =============================================================================
 [tool.setuptools.packages.find]
@@ -81,16 +106,21 @@ include = [
     "service*",
     "core*",
     "accounts*",
+    "chatbot*",
 ]
-exclude = ["archive*", "tests*", "media*", "static*"]
+exclude = ["tests*", "media*", "static*"]
 
 # =============================================================================
 # PYTEST CONFIG
 # =============================================================================
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "planer_config.settings.dev"
+DJANGO_SETTINGS_MODULE = "planer_config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_test.py"]
-addopts = "-v --tb=short --strict-markers --reuse-db"
+addopts = "-v --tb=short --strict-markers --reuse-db --ignore=archive"
+# pytest-bdd — wszystkie .feature żyją w tests/bdd/features/, step modules
+# w tests/bdd/steps/test_*.py. Bazowy katalog pozwala na ``scenarios(
+# "../features/X.feature")`` z dowolnego step modułu.
+bdd_features_base_dir = "tests/bdd/features/"
 markers = [
     "unit: testy jednostkowe (pure functions, bez DB)",
     "integration: testy integracyjne (z DB)",
@@ -100,6 +130,10 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:django.*",
+    # google-genai + Python 3.14: _UnionGenericAlias deprecation (zewn. library — uv update needed).
+    "ignore::DeprecationWarning:google.genai.*",
+    "ignore::DeprecationWarning:pydantic_ai.*",
+    "ignore:.*_UnionGenericAlias.*:DeprecationWarning",
 ]
 
 # =============================================================================
@@ -112,20 +146,25 @@ extend-exclude = ["archive", "*/migrations"]
 
 [tool.ruff.lint]
 select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort (sortowanie importów)
-    "N",    # pep8-naming
-    "UP",   # pyupgrade (modernizacja składni)
-    "B",    # flake8-bugbear (typowe bugi)
-    "SIM",  # flake8-simplify
-    "RUF",  # ruff-specific rules
-    "DJ",   # flake8-django (Django-specific)
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (sortowanie importów)
+    "N",     # pep8-naming
+    "UP",    # pyupgrade (modernizacja składni)
+    "B",     # flake8-bugbear (typowe bugi)
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific rules
+    "DJ",    # flake8-django (Django-specific)
+    "PERF",  # perflint — N+1 queries, costly list/set ops, generator hints
+    "PT",    # flake8-pytest-style — fixture naming, parametrize idioms
+    "LOG",   # logging idioms (.exception() vs str(exc), lazy %s formatting)
+    "ASYNC", # asyncio antipatterns (blocking sync calls w async, sleep(0))
 ]
 ignore = [
     "E501",   # line too long — ruff format zajmie się tym
     "SIM108", # ternary operator — czasem if/else jest czytelniejsze
+    "RUF012", # mutable class attrs — Django Meta lists/dicts to standardowy wzorzec
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -150,7 +189,7 @@ indent-style = "space"
 # COVERAGE — start z fail_under=60, ratchet do 80% docelowo
 # =============================================================================
 [tool.coverage.run]
-source = ["planer_config", "machines", "reservations", "service", "core", "accounts"]
+source = ["planer_config", "machines", "reservations", "service", "core", "accounts", "chatbot"]
 omit = [
     "*/migrations/*",
     "*/tests/*",
@@ -158,11 +197,19 @@ omit = [
     "*/wsgi.py",
     "*/asgi.py",
     "*/__init__.py",
+    # Per-env settings są importowane via DJANGO_SETTINGS_MODULE (test używa .test).
+    # Dev/prod nie są ładowane przez test runner → coverage 0% nie odzwierciedla
+    # rzeczywistego ryzyka (lint sprawdza ich poprawność w pre-commit).
+    "planer_config/settings/dev.py",
+    "planer_config/settings/prod.py",
 ]
 branch = true
 
 [tool.coverage.report]
-fail_under = 60.0
+# Wave 12: ratchet z 60 → 95 (faktycznie repo ma 98.76%).
+# fail_under odpalany przez ``--cov-fail-under=95`` na CI; tutaj jest też
+# default żeby lokalnie ``pytest --cov`` ostrzegał spójnie.
+fail_under = 95.0
 show_missing = true
 skip_covered = false
 exclude_lines = [
@@ -170,10 +217,4 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
-]
-
-[dependency-groups]
-dev = [
-    "django-debug-toolbar>=6.3.0",
-    "django-extensions>=4.1",
 ]

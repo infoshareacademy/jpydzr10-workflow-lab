@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Import maszyn z XLSX{% endblock %}
+
+{% block content %}
+<nav class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+    <a href="{% url 'machines:list' %}" class="hover:underline">Maszyny</a>
+    <span class="mx-1">/</span>
+    <span class="text-gray-900 dark:text-gray-200">Import XLSX</span>
+</nav>
+
+<h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Import maszyn z pliku XLSX</h1>
+<p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+    Wgraj plik XLSX z listą maszyn. Każdy wiersz tworzy jedną maszynę; duplikaty UID są pomijane.
+</p>
+
+<form method="post" enctype="multipart/form-data"
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4 max-w-xl">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.help_text %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>
+        {% endif %}
+        {% if field.errors %}
+        <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ field.errors|join:", " }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md p-4 text-xs text-gray-600 dark:text-gray-300">
+        <p class="font-semibold mb-1">Wymagane kolumny:</p>
+        <code class="block font-mono text-xs">uid, name, machine_type</code>
+        <p class="mt-2 font-semibold mb-1">Opcjonalne kolumny:</p>
+        <code class="block font-mono text-xs">
+            model, capacity, status, location, inspection_date, manufacturer,
+            serial_number, build_year, notes
+        </code>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-2">
+        <a href="{% url 'machines:list' %}"
+           class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
+            Anuluj
+        </a>
+        <button type="submit"
+                class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-sm font-medium">
+            Importuj
+        </button>
+    </div>
+</form>
+{% endblock %}

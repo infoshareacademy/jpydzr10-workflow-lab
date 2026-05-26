@@ -1,0 +1,61 @@
+{% load planer_tags %}
+{% comment %} Pojedynczy pasek rezerwacji. Pozycjonowany przez CSS variables
+   (--row, --col-start, --col-span) ustawiane inline z `bar.offset_days` +
+   `bar.length_days`. Klik -> link do detail, hover -> tooltip Alpine.
+
+   bar dict z TimelineView:
+       {id, machine_uid, site_number, site_name, person, status, status_display,
+        start_date (ISO), end_date (ISO), offset_days, length_days, url_detail}
+
+   UX wow: hover-lift + brightness boost (CSS), tooltip wjezdza w gore z fade,
+   keyboard-accessible (tabindex 0 + Enter). {% endcomment %}
+
+<div class="timeline-bar {% bar_class_for bar.status %}"
+     style="--row: {{ row_index|add:1 }}; --col-start: {{ bar.offset_days|add:2 }}; --col-span: {{ bar.length_days }};"
+     x-data="{ hover: false }"
+     @mouseenter="hover = true"
+     @mouseleave="hover = false"
+     @focus="hover = true"
+     @blur="hover = false"
+     tabindex="0"
+     role="button"
+     aria-label="Rezerwacja {{ machine_uid }} — {{ bar.person }} od {{ bar.start_date }} do {{ bar.end_date }}, status {{ bar.status_display|default:bar.status }} — kliknij aby otworzyc popup"
+     {# Wave 14-A Bundle 2 -- klik bar -> popup modal pelnej rezerwacji (HTMX). #}
+     hx-get="{% url 'reservations:modal' bar.id %}"
+     hx-target="#reservation-modal-body"
+     hx-swap="innerHTML"
+     @click="$dispatch('open-reservation-modal')"
+     @keydown.enter.prevent="$dispatch('open-reservation-modal'); htmx.trigger($el, 'manualGet')"
+     @keydown.space.prevent="$dispatch('open-reservation-modal'); htmx.trigger($el, 'manualGet')">
+
+    <span class="truncate flex items-center gap-1">
+        <span class="truncate">{{ bar.person }}</span>
+        {% if bar.site_number %}
+            <span class="opacity-75 text-[0.625rem] font-mono flex-shrink-0">· {{ bar.site_number }}</span>
+        {% endif %}
+    </span>
+
+    {# Tooltip — pokazuje sie nad barem na hover/focus #}
+    <div x-show="hover"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         x-cloak
+         class="timeline-tooltip"
+         role="tooltip">
+        <div class="font-semibold mb-1 flex items-center gap-1.5">
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-white/70" aria-hidden="true"></span>
+            {{ machine_uid }} — {{ bar.person }}
+        </div>
+        <div class="text-slate-300 space-y-0.5 text-[0.6875rem]">
+            <div class="font-mono tabular-nums">{{ bar.start_date }} → {{ bar.end_date }}</div>
+            {% if bar.site_number %}
+                <div>Budowa: <span class="font-mono">{{ bar.site_number }}</span>{% if bar.site_name %} · {{ bar.site_name }}{% endif %}</div>
+            {% endif %}
+            <div>Status: <span class="font-semibold text-white">{{ bar.status_display|default:bar.status }}</span></div>
+        </div>
+    </div>
+</div>

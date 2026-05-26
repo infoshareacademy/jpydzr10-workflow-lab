@@ -1,0 +1,301 @@
+{% load widget_tweaks %}
+
+{% comment %}
+    Reservation form partial — używany TAK SAMO w pełnej stronie form.html
+    jak i w HTMX modal (z poziomu timeline'a, quick reserve flow).
+
+    Sectioned card podzielona na 4 wizualne sekcje:
+        1. Maszyna (select z hint)
+        2. Daty (start_date + end_date side-by-side + live conflict indicator)
+        3. Osoba i budowa (person + site z inline „dodaj budowę" modal trigger)
+        4. Notatki (adres + textarea)
+
+    HTMX wiring:
+        - #conflict-warning HTMX target — fires `hx-get` na change of
+          #id_machine + #id_start_date + #id_end_date
+        - Inline site create button — hx-get hx-target=#modal-inner →
+          modal Alpine wrapper z @open-modal listener + @site-created
+          listener that reloads.
+
+    Pola formularza renderujemy ręcznie żeby kontrolować layout per pole.
+    `widget_tweaks |add_class:` nadpisuje INPUT_CSS z core/forms.py i daje
+    spójny look z resztą D-HAT stacka.
+
+    Date fields mają `.flatpickr` class — app.js auto-inicjuje datepicker
+    z PL locale po DOMContentLoaded.
+{% endcomment %}
+
+<form method="post"
+      action="{% if mode == 'edit' %}{% url 'reservations:update' reservation.pk %}{% else %}{% url 'reservations:create' %}{% endif %}"
+      class="space-y-5"
+      novalidate>
+    {% csrf_token %}
+
+    {# ============================== Non-field errors ============================== #}
+    {% if form.non_field_errors %}
+        <div role="alert" class="surface-card border-rose-200 dark:border-rose-800/40 bg-rose-50/60 dark:bg-rose-900/20 p-4 flex items-start gap-3">
+            <span class="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.71-3L13.71 4a2 2 0 00-3.42 0L3.36 16a2 2 0 001.71 3z"/>
+                </svg>
+            </span>
+            <div class="min-w-0 flex-1">
+                <h2 class="font-semibold text-rose-900 dark:text-rose-100">Nie można zapisać rezerwacji</h2>
+                <ul class="mt-1 space-y-0.5 text-sm text-rose-700 dark:text-rose-300 list-disc list-inside">
+                    {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    {# ============================== SECTION 1: MASZYNA ============================== #}
+    <section class="surface-card overflow-hidden">
+        <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+            <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">1</span>
+                <span>Maszyna</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Wybierz urządzenie, które ma zostać zarezerwowane.</p>
+        </header>
+        <div class="p-5">
+            <label for="{{ form.machine.id_for_label }}"
+                   class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                {{ form.machine.label }}{% if form.machine.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+            </label>
+            {{ form.machine|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+            {% if form.machine.help_text %}
+                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.machine.help_text }}</p>
+            {% endif %}
+            {% for err in form.machine.errors %}
+                <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {{ err }}
+                </p>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ============================== SECTION 2: DATY + LIVE CONFLICT ============================== #}
+    <section class="surface-card overflow-hidden">
+        <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+            <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">2</span>
+                <span>Termin</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Wybierz początek i koniec rezerwacji. Konflikty wykrywane automatycznie.</p>
+        </header>
+        <div class="p-5 space-y-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {# start_date #}
+                <div>
+                    <label for="{{ form.start_date.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.start_date.label }}{% if form.start_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    </label>
+                    {{ form.start_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% for err in form.start_date.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+
+                {# end_date #}
+                <div>
+                    <label for="{{ form.end_date.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.end_date.label }}{% if form.end_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    </label>
+                    {{ form.end_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% for err in form.end_date.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Live conflict indicator — HTMX target #}
+            {# Endpoint /reservations/check-konflikt/ zwraca 204 (no conflict) lub  #}
+            {# rendered partial z .surface-card error message — preserve dokładnie. #}
+            {# delay:300ms — debounce żeby rapid-cycling (flatpickr → machine → date) #}
+            {# nie wysyłał 3 requestów w 100ms (P.S. #17 — zapobiega request spam). #}
+            <div id="conflict-warning"
+                 hx-get="{% url 'reservations:check_conflict' %}"
+                 hx-trigger="change from:#id_machine delay:300ms, change from:#id_start_date delay:300ms, change from:#id_end_date delay:300ms"
+                 hx-target="this"
+                 hx-swap="innerHTML"
+                 hx-include="#id_machine, #id_start_date, #id_end_date{% if reservation %}, [name=exclude_pk]{% endif %}"
+                 aria-live="polite"
+                 class="empty:hidden">
+                {% if reservation %}
+                    <input type="hidden" name="exclude_pk" value="{{ reservation.pk }}">
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {# ============================== SECTION 3: OSOBA + BUDOWA ============================== #}
+    {% comment %} Wave 14-A Bundle 4 -- dodane responsible_person field (osoba odpowiedzialna
+       na budowie -- kierownik/brygadzista) jako oddzielne pole od `person`
+       (osoba rezerwujaca w biurze). {% endcomment %}
+    <section class="surface-card overflow-hidden">
+        <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+            <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">3</span>
+                <span>Osoby i budowa</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Kto rezerwuje, kto odpowiada na budowie, i dla jakiej budowy.</p>
+        </header>
+        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {# person -- biuro #}
+            <div>
+                <label for="{{ form.person.id_for_label }}"
+                       class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    {{ form.person.label }}{% if form.person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                </label>
+                {{ form.person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Kto wpisuje rezerwacje (biuro / magazynier).</p>
+                {% for err in form.person.errors %}
+                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                {% endfor %}
+            </div>
+
+            {# responsible_person -- budowa (Wave 14-A Bundle 4) #}
+            <div>
+                <label for="{{ form.responsible_person.id_for_label }}"
+                       class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    {{ form.responsible_person.label }}{% if form.responsible_person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                </label>
+                {{ form.responsible_person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Kierownik / brygadzista odpowiedzialny za maszyne na budowie.</p>
+                {% for err in form.responsible_person.errors %}
+                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                {% endfor %}
+            </div>
+
+            {# site + inline create modal trigger #}
+            <div class="sm:col-span-2">
+                <label for="{{ form.site.id_for_label }}"
+                       class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    {{ form.site.label }}{% if form.site.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                </label>
+                <div class="flex items-stretch gap-2">
+                    {{ form.site|add_class:"flex-1 block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    <button type="button"
+                            hx-get="{% url 'reservations:site_inline_create' %}"
+                            hx-target="#modal-inner"
+                            hx-swap="innerHTML"
+                            @click="$dispatch('open-modal')"
+                            class="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 whitespace-nowrap min-h-[44px]"
+                            aria-label="Dodaj nową budowę">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/>
+                        </svg>
+                        <span class="hidden sm:inline">Dodaj</span>
+                    </button>
+                </div>
+                {% for err in form.site.errors %}
+                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ============================== SECTION 4: NOTATKI + ADRES ============================== #}
+    <section class="surface-card overflow-hidden">
+        <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+            <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">4</span>
+                <span>Dodatkowe informacje</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Opcjonalne: adres dostawy maszyny + uwagi.</p>
+        </header>
+        <div class="p-5 space-y-4">
+
+            {# address -- Wave 14-A Bundle 4: required #}
+            <div>
+                <label for="{{ form.address.id_for_label }}"
+                       class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                </label>
+                {{ form.address|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                {% if form.address.help_text %}
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ form.address.help_text }}</p>
+                {% endif %}
+                {% for err in form.address.errors %}
+                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                {% endfor %}
+            </div>
+
+            {# notes (textarea) #}
+            <div>
+                <label for="{{ form.notes.id_for_label }}"
+                       class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    {{ form.notes.label }}
+                </label>
+                {{ form.notes|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors min-h-[6rem]" }}
+                {% for err in form.notes.errors %}
+                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ============================== BOTTOM ACTIONS ============================== #}
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+        <a href="{% if mode == 'edit' %}{% url 'reservations:detail' reservation.pk %}{% else %}{% url 'reservations:list' %}{% endif %}"
+           class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Anuluj
+        </a>
+        <button type="submit"
+                class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
+            {% if mode == 'edit' %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Zapisz zmiany
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Utwórz rezerwację
+            {% endif %}
+        </button>
+    </div>
+</form>
+
+{# ============================== INLINE SITE-CREATE MODAL ============================== #}
+{% comment %}
+    Alpine wrapper słuchający na `open-modal` (dispatch z guzika „Dodaj budowę")
+    + `keydown.escape.window` (zamknięcie) + `site-created` (HTMX HX-Trigger po
+    udanym POST z site_inline_create view). Modal-inner placeholder dla HTMX
+    swap; site_inline_create.html dostarcza content.
+{% endcomment %}
+<div x-data="{ openModal: false }"
+     @open-modal.window="openModal = true"
+     @keydown.escape.window="openModal = false"
+     @site-created.window="openModal = false"
+     @htmx:after-on-load.window="
+        const xhr = $event.detail.xhr;
+        const trigger = xhr && xhr.getResponseHeader('HX-Trigger');
+        if (trigger) {
+            try {
+                const t = JSON.parse(trigger);
+                if (t.siteCreated) { openModal = false; window.location.reload(); }
+            } catch (e) {}
+        }
+     ">
+    <div x-show="openModal"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4"
+         @click.self="openModal = false"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Nowa budowa">
+        <div id="modal-inner" class="max-w-2xl w-full max-h-[90vh] overflow-y-auto"></div>
+    </div>
+</div>

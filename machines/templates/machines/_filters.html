@@ -1,0 +1,76 @@
+{% load widget_tweaks %}
+{# ------------------------------------------------------------------ #}
+{# Filter sidebar — sticky on desktop, collapsible on mobile.         #}
+{# Alpine state: `open` controls expand/collapse; `dirty` indicates    #}
+{# pending form changes for the apply button.                          #}
+{# ------------------------------------------------------------------ #}
+<form method="get" action="{% url 'machines:list' %}"
+      x-data="{ open: true }"
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 space-y-4">
+
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+            </span>
+            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Filtry</h2>
+        </div>
+        <button type="button" @click="open = !open"
+                :aria-expanded="open"
+                aria-controls="filters-body"
+                class="lg:hidden text-xs text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 rounded">
+            <span x-text="open ? 'Zwiń' : 'Rozwiń'">Zwiń</span>
+        </button>
+    </div>
+
+    <div id="filters-body" x-show="open" x-transition.duration.200ms class="space-y-4">
+
+        {# Search — full-width, icon-prefixed #}
+        <div>
+            <label for="{{ filter_form.search.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                {{ filter_form.search.label }}
+            </label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                </span>
+                {{ filter_form.search|attr:"class:block w-full pl-9 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" }}
+            </div>
+        </div>
+
+        <div>
+            <label for="{{ filter_form.status.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                {{ filter_form.status.label }}
+            </label>
+            {{ filter_form.status }}
+        </div>
+
+        <div>
+            <label for="{{ filter_form.machine_type.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                {{ filter_form.machine_type.label }}
+            </label>
+            {{ filter_form.machine_type }}
+        </div>
+
+        <div>
+            <label for="{{ filter_form.inspection_status.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+                {{ filter_form.inspection_status.label }}
+            </label>
+            {{ filter_form.inspection_status }}
+        </div>
+
+        <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <button type="submit"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Filtruj
+            </button>
+            <a href="{% url 'machines:list' %}"
+               class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors">
+                Wyczyść
+            </a>
+        </div>
+    </div>
+</form>

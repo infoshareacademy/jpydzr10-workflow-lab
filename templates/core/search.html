@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if query %}{% blocktrans %}Wyniki: {{ query }}{% endblocktrans %}{% else %}{% trans "Wyszukiwanie" %}{% endif %} · {% trans "Planer Maszyn" %}{% endblock %}
+
+{% block content %}
+{# ============================================================ #}
+{# WAVE 14-D — Global search FULL PAGE                         #}
+{# Fallback gdy operator nacisnie Enter w topbar input zamiast  #}
+{# wybrac wynik z HTMX dropdown. Renderuje WSZYSTKIE kategorie  #}
+{# (do limit 5 per kategoria) z polnym hierarchical layoutem.   #}
+{# ============================================================ #}
+<div class="space-y-6">
+
+    {# === Header z form === #}
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1">
+            {% trans "Wyszukiwanie globalne" %}
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            {% trans "Szukaj po wszystkich modułach: maszyny, rezerwacje, budowy, serwis." %}
+        </p>
+    </div>
+
+    {# === Form (GET, server-rendered fallback do typeahead) === #}
+    <form action="{% url 'core:search' %}" method="get" role="search" class="max-w-2xl">
+        <label for="search-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            {% trans "Fraza wyszukiwania" %}
+        </label>
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 dark:text-slate-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </span>
+            <input id="search-input"
+                   type="search"
+                   name="q"
+                   value="{{ query }}"
+                   autofocus
+                   minlength="2"
+                   placeholder="{% trans 'Np. KOP-001, BUD-2026-014, Kowalski...' %}"
+                   aria-describedby="search-helper"
+                   class="block w-full pl-10 pr-24 py-3 text-base rounded-lg
+                          bg-white dark:bg-slate-800
+                          border border-slate-300 dark:border-slate-600
+                          text-slate-900 dark:text-slate-100
+                          placeholder:text-slate-400 dark:placeholder:text-slate-500
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500
+                          transition-colors">
+            <button type="submit"
+                    class="absolute inset-y-0 right-0 flex items-center px-4 my-1 mr-1 rounded-md
+                           bg-brand-600 hover:bg-brand-700
+                           text-white text-sm font-medium
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500
+                           transition-colors min-h-[44px]">
+                {% trans "Szukaj" %}
+            </button>
+        </div>
+        <p id="search-helper" class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {% trans "Minimum 2 znaki. Wyniki przeszukują UID, nazwy, osoby, adresy, opisy serwisowe." %}
+        </p>
+    </form>
+
+    {# === RESULTS === #}
+    {% if query %}
+        {% if total > 0 %}
+            <div class="space-y-1">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                    {% blocktrans count counter=total %}Znaleziono {{ total }} wynik dla{% plural %}Znaleziono {{ total }} wyników dla{% endblocktrans %}
+                    <strong class="text-slate-900 dark:text-slate-100">&laquo;{{ query }}&raquo;</strong>
+                </p>
+            </div>
+
+            {# Per kategoria sekcja #}
+            {% for category, items in results.items %}
+            <section aria-labelledby="cat-{{ forloop.counter }}" class="space-y-2">
+                <h2 id="cat-{{ forloop.counter }}" class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {{ category }}
+                    <span class="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {{ items|length }}
+                    </span>
+                </h2>
+                <ul class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700 overflow-hidden">
+                    {% for item in items %}
+                    <li>
+                        <a href="{{ item.url }}"
+                           class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset min-h-[44px]">
+                            <span class="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400" aria-hidden="true">
+                                {{ item.icon|safe }}
+                            </span>
+                            <span class="flex-1 min-w-0">
+                                <span class="block text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                    {{ item.title }}
+                                </span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">
+                                    {{ item.subtitle }}
+                                </span>
+                            </span>
+                            {% if item.badge %}
+                            <span class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                {{ item.badge }}
+                            </span>
+                            {% endif %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0 h-4 w-4 mt-1 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endfor %}
+
+        {% else %}
+            {# === Empty state === #}
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+                <div class="mx-auto w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    {% blocktrans %}Brak wyników dla &laquo;{{ query }}&raquo;{% endblocktrans %}
+                </h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    {% trans "Spróbuj innej frazy — np. UID maszyny (KOP-001), numer budowy (BUD-2026-001) lub imię osoby rezerwującej." %}
+                </p>
+            </div>
+        {% endif %}
+    {% else %}
+        {# === No query yet — hint state === #}
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                {% trans "Wpisz frazę powyżej, żeby zacząć przeszukiwać aplikację." %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

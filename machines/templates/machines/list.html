@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load planer_tags machines_tags widget_tweaks %}
+
+{% block title %}Maszyny — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{# ------------------------------------------------------------------ #}
+{# Page header — eyebrow + title + counter + top-right actions.       #}
+{# Alpine state `view` controls grid/table toggle (persisted in       #}
+{# localStorage). HTMX nie jest tu wymagany — toggle jest stricte UI. #}
+{# ------------------------------------------------------------------ #}
+<div x-data="machineListView()" x-init="init()" class="space-y-6">
+
+    <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <span>Park maszynowy</span>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Maszyny</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                W bazie: <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ total_count }}</span>
+                {% if machines %}<span class="text-gray-400 dark:text-gray-500"> · widocznych: <span class="tabular-nums">{{ machines|length }}</span></span>{% endif %}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {# Grid/table toggle — sticky control near the top-right. #}
+            <div role="group" aria-label="Widok listy"
+                 class="inline-flex rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm p-0.5">
+                <button type="button"
+                        @click="setView('table')"
+                        :aria-pressed="view === 'table'"
+                        :class="view === 'table' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        aria-label="Widok tabeli">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    <span class="hidden sm:inline">Tabela</span>
+                </button>
+                <button type="button"
+                        @click="setView('grid')"
+                        :aria-pressed="view === 'grid'"
+                        :class="view === 'grid' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        aria-label="Widok kafelków">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                    <span class="hidden sm:inline">Kafelki</span>
+                </button>
+            </div>
+
+            {% if perms.machines.add_machine %}
+                <a href="{% url 'machines:create' %}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    <span class="hidden sm:inline">Dodaj maszynę</span>
+                    <span class="sm:hidden">Dodaj</span>
+                </a>
+            {% endif %}
+            <a href="{% url 'machines:export_xlsx' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span class="hidden md:inline">Eksport XLSX</span>
+                <span class="md:hidden">Eksport</span>
+            </a>
+            {% if perms.machines.add_machine %}
+                <a href="{% url 'machines:import_xlsx' %}"
+                   class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span class="hidden md:inline">Import XLSX</span>
+                    <span class="md:hidden">Import</span>
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        <aside class="lg:sticky lg:top-24 lg:self-start">
+            {% include "machines/_filters.html" %}
+        </aside>
+
+        <section>
+            {% if machines %}
+
+                {# =============================== TABLE VIEW =============================== #}
+                <div x-show="view === 'table'" x-cloak class="space-y-4">
+                    <div class="hidden md:block surface-card overflow-hidden">
+                        <div class="overflow-x-auto scrollbar-thin">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                                    <tr>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">UID</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Nazwa</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Typ</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
+                                        <th scope="col" class="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Przegląd</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Lokalizacja</th>
+                                        <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {% for machine in machines %}
+                                    <tr class="group hover:bg-brand-50/40 dark:hover:bg-brand-900/10 transition-colors">
+                                        <td class="px-3 py-2.5 font-mono text-xs">
+                                            <a href="{% url 'machines:detail' uid=machine.uid %}"
+                                               class="text-brand-700 dark:text-brand-300 hover:underline font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                                                {{ machine.uid }}
+                                            </a>
+                                        </td>
+                                        <td class="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{{ machine.name }}</td>
+                                        <td class="px-3 py-2.5 text-gray-600 dark:text-gray-300">
+                                            {{ machine.get_machine_type_display }}
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            {% status_badge machine.status as css %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                        </td>
+                                        <td class="px-3 py-2.5 text-center" title="{{ machine.inspection_status_label }}">
+                                            <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                        </td>
+                                        <td class="px-3 py-2.5 text-gray-600 dark:text-gray-300 text-xs">{{ machine.location }}</td>
+                                        <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                                            <a href="{% url 'machines:detail' uid=machine.uid %}"
+                                               class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                            {% if perms.machines.change_machine %}
+                                                <span class="text-gray-300 dark:text-gray-600 mx-1" aria-hidden="true">·</span>
+                                                <a href="{% url 'machines:update' uid=machine.uid %}"
+                                                   class="text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 hover:underline text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Edytuj</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {# Mobile fallback — table is illegible <md, use card list. #}
+                    <div class="md:hidden space-y-3">
+                        {% for machine in machines %}
+                            <a href="{% url 'machines:detail' uid=machine.uid %}"
+                               class="block surface-card p-4 active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <div class="min-w-0">
+                                        <div class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold truncate">{{ machine.uid }}</div>
+                                        <div class="font-medium text-gray-900 dark:text-white truncate">{{ machine.name }}</div>
+                                    </div>
+                                    {% status_badge machine.status as css %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 {{ css }}">{{ machine.status }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>{{ machine.get_machine_type_display }}</span>
+                                    <span class="flex items-center gap-1">
+                                        <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                        <span>{{ machine.location }}</span>
+                                    </span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# =============================== GRID VIEW =============================== #}
+                <div x-show="view === 'grid'" x-cloak
+                     class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {% for machine in machines %}
+                        <a href="{% url 'machines:detail' uid=machine.uid %}"
+                           class="group block surface-card overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                            <div class="relative aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 overflow-hidden">
+                                {# Obrazek per typ z fallbackiem na uploaded ImageField. #}
+                                {# Tag zwraca zawsze URL — albo uploaded.url, albo static webp z Imagen 4 katalogu. #}
+                                {% machine_image_url machine as machine_img %}
+                                <img src="{{ machine_img }}"
+                                     alt="Zdjęcie maszyny {{ machine.name }}"
+                                     loading="lazy"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+
+                                {# Status badge floats top-right of the photo. #}
+                                <div class="absolute top-2 right-2 flex items-center gap-1.5">
+                                    {% status_badge machine.status as css %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur shadow-sm {{ css }}">{{ machine.status }}</span>
+                                </div>
+                                <div class="absolute top-2 left-2">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-white/85 dark:bg-gray-900/85 text-gray-700 dark:text-gray-200 backdrop-blur shadow-sm"
+                                          title="{{ machine.inspection_status_label }}">
+                                        <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                        <span class="hidden xs:inline">{{ machine.inspection_status_label }}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="p-4 space-y-1.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold">{{ machine.uid }}</span>
+                                    <span class="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ machine.get_machine_type_display }}</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ machine.name }}</h3>
+                                <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span class="truncate">{{ machine.location }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+
+                {# ================ Pagination — shared between both views ================ #}
+                {% if is_paginated %}
+                <nav class="flex items-center justify-between mt-2 text-sm" aria-label="Stronicowanie">
+                    <span class="text-gray-500 dark:text-gray-400">
+                        Strona <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ page_obj.number }}</span>
+                        z <span class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ page_obj.paginator.num_pages }}</span>
+                    </span>
+                    <ul class="flex gap-1">
+                        {% if page_obj.has_previous %}
+                            <li><a href="?page={{ page_obj.previous_page_number }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                                Poprzednia
+                            </a></li>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <li><a href="?page={{ page_obj.next_page_number }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                Następna
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            </a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                {% include "machines/_empty_state.html" %}
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ CSP_NONCE }}">
+    // Persisted grid/table toggle. Domyślnie 'table' bo gęstsze i lepsze do skanowania.
+    function machineListView() {
+        return {
+            view: "table",
+            init() {
+                try {
+                    var saved = localStorage.getItem("machines-list-view");
+                    if (saved === "grid" || saved === "table") {
+                        this.view = saved;
+                    }
+                } catch (e) { /* localStorage zablokowane */ }
+            },
+            setView(v) {
+                this.view = v;
+                try { localStorage.setItem("machines-list-view", v); } catch (e) {}
+            },
+        };
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% load planer_tags machines_tags %}
+{# Partial — pojedyncza karta maszyny do widoku grid (opcjonalny tryb). #}
+<article class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition">
+    {# Obrazek z uploaded ImageField z fallbackiem na typ (Imagen 4 katalog). #}
+    {% machine_image_url machine as machine_img %}
+    <img src="{{ machine_img }}" alt="{{ machine.name }}"
+         loading="lazy" class="w-full h-32 object-cover">
+    <div class="p-4">
+        <div class="flex items-start justify-between gap-2 mb-1">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                <a href="{% url 'machines:detail' uid=machine.uid %}" class="hover:underline">
+                    {{ machine.uid }}
+                </a>
+            </h3>
+            <span title="{{ machine.inspection_status_label }}">
+                {{ machine.inspection_status|inspection_icon }}
+            </span>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ machine.name }}</p>
+        {% status_badge machine.status as css %}
+        <span class="px-2 py-0.5 rounded text-xs {{ css }}">{{ machine.status }}</span>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ machine.location }}</p>
+    </div>
+</article>

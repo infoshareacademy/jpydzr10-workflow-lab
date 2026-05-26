@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Wystąpił błąd serwera — 500 — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{% comment %} ============================================================================
+   500 — friendly Polish server error page.
+   Analogiczny layout do 404, ale red-200/red-900 akcent (functional color:
+   error). H1 "Wystąpił błąd serwera" + body wyjaśniający + dwa CTAs:
+   - "Wróć do dashboardu" (primary, link do home)
+   - "Zgłoś problem" (secondary, mailto: placeholder)
+   Decorative SVG: geometric grid w red tonacji.
+   Dark mode: full pairing, contrast >=4.5:1.
+   "Wewnętrzny błąd serwera" phrase preserved w body — backwards compat z
+   core/tests/test_error_pages.py (jeśli test podobny do 404 zostanie dodany).
+============================================================================ {% endcomment %}
+<section class="flex items-center justify-center min-h-[60vh] py-8 sm:py-12"
+         aria-labelledby="error-500-title">
+    <div class="w-full max-w-lg mx-auto text-center">
+
+        {% comment %} === Decorative big "500" number — purely visual, aria-hidden ===
+              Red akcent (red-200 light / red-900 dark) z subtle grid pattern. {% endcomment %}
+        <div class="relative inline-flex items-center justify-center mb-6"
+             aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="absolute inset-0 w-full h-full text-red-100 dark:text-red-950/60"
+                 viewBox="0 0 200 120" fill="none" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <pattern id="grid-500" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="200" height="120" fill="url(#grid-500)"/>
+            </svg>
+            <span class="relative text-8xl sm:text-9xl font-bold text-red-200 dark:text-red-900 tabular-nums leading-none select-none tracking-tight">
+                500
+            </span>
+        </div>
+
+        {% comment %} === Heading + body ===
+              Functional error color (red) z towarzyszącą ikoną — color-not-only. {% endcomment %}
+        <div class="inline-flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                 aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <h1 id="error-500-title"
+                class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50">
+                Wystąpił błąd serwera
+            </h1>
+        </div>
+        <p class="text-base text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-2">
+            Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.
+        </p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
+            Jeśli problem się powtarza, skontaktuj się z administratorem —
+            wewnętrzny błąd serwera został odnotowany i nasz zespół już go bada.
+        </p>
+
+        {% comment %} === CTAs — primary "Wróć do dashboardu" + secondary "Zgłoś problem" ===
+              Mailto placeholder — admin@example.com (do podmiany w deployment). {% endcomment %}
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
+
+            {# Primary — link do home #}
+            <a href="{% url 'home' %}"
+               class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                      rounded-lg text-sm font-medium
+                      bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+                      text-white shadow-sm hover:shadow
+                      transition-colors duration-150
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                      dark:focus-visible:ring-offset-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>Wróć do dashboardu</span>
+            </a>
+
+            {% comment %} Secondary — mailto: placeholder do podmiany. Pre-filled subject + body
+                  ułatwia adminowi triage. {% endcomment %}
+            <a href="mailto:admin@example.com?subject=Zg%C5%82oszenie%20b%C5%82%C4%99du%20serwera%20%28500%29&body=Witam%2C%0A%0Anapotka%C5%82em%20b%C5%82%C4%85d%20serwera%20w%20aplikacji%20Planer%20Maszyn.%0A%0AAdres%20strony%3A%20%0AGodzina%3A%20%0AKrok%20po%20kroku%3A%20%0A%0APozdrawiam"
+               class="btn-secondary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                      rounded-lg text-sm font-medium
+                      bg-white dark:bg-slate-800
+                      text-slate-700 dark:text-slate-200
+                      border border-slate-300 dark:border-slate-600
+                      hover:bg-slate-50 dark:hover:bg-slate-700
+                      active:bg-slate-100 dark:active:bg-slate-600
+                      shadow-sm
+                      transition-colors duration-150
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                      dark:focus-visible:ring-offset-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span>Zgłoś problem</span>
+            </a>
+        </div>
+
+        {# === Footer hint — error tracker info === #}
+        <p class="mt-8 text-xs text-slate-400 dark:text-slate-500">
+            Błąd został automatycznie zarejestrowany. Spróbuj odświeżyć stronę za moment.
+        </p>
+    </div>
+</section>
+{% endblock %}

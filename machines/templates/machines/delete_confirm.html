@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń maszynę {{ machine.uid }}{% endblock %}
+
+{% block content %}
+<nav class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+    <a href="{% url 'machines:list' %}" class="hover:underline">Maszyny</a>
+    <span class="mx-1">/</span>
+    <a href="{% url 'machines:detail' uid=machine.uid %}" class="hover:underline">{{ machine.uid }}</a>
+    <span class="mx-1">/</span>
+    <span class="text-gray-900 dark:text-gray-200">Usuń</span>
+</nav>
+
+<div class="max-w-xl bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 rounded-lg p-6">
+    <h1 class="text-xl font-bold text-red-700 dark:text-red-300">Czy na pewno chcesz usunąć tę maszynę?</h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        Operacja jest <strong>nieodwracalna</strong>. Wszystkie powiązane rekordy (rezerwacje,
+        wpisy serwisowe) muszą zostać przeniesione lub usunięte osobno.
+    </p>
+
+    <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
+        <p><strong>UID:</strong> <span class="font-mono">{{ machine.uid }}</span></p>
+        <p><strong>Nazwa:</strong> {{ machine.name }}</p>
+        <p><strong>Typ:</strong> {{ machine.get_machine_type_display }}</p>
+        <p><strong>Status:</strong> {{ machine.status }}</p>
+    </div>
+
+    <form method="post" class="mt-6 flex items-center justify-end gap-3">
+        {% csrf_token %}
+        <a href="{% url 'machines:detail' uid=machine.uid %}"
+           class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
+            Anuluj
+        </a>
+        <button type="submit"
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium">
+            Tak, usuń
+        </button>
+    </form>
+</div>
+{% endblock %}
