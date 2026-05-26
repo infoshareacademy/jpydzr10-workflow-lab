@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Konto tymczasowo zablokowane — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{% comment %} ============================================================================
+   accounts/locked.html — strona pokazywana po lockout (django-axes).
+
+   Wyzwala się gdy user wpisze 5x złe hasło na to samo username — axes
+   blokuje konto na 1h i przekierowuje tutaj (AXES_LOCKOUT_URL).
+
+   Design notes (Design notes applied):
+   - Priority 1 (a11y): role=alert + aria-live=assertive (auto-anonsuje SR),
+     kontrast >=4.5:1 dla red text (rose-600 / rose-300), heading h1.
+   - Priority 4 (style): rose/red accent — to JEST error state (nie warning),
+     dlatego pełny red 600, nie amber. SVG lock icon (NIE emoji).
+   - Priority 5 (mobile-first): centered min-h-[60vh], CTA stack mobile,
+     side-by-side sm+.
+   - Priority 8 (forms): error-clarity (przyczyna + jak naprawić + ETA reset).
+   - Test constraints (test_locked_page_renders_polish_message): musi
+     zawierać "zablokowane" + "administratorem"; assertContains b"Milestone 2"
+     przychodzi z footera base.html.
+============================================================================ {% endcomment %}
+<section role="alert"
+         aria-live="assertive"
+         class="flex items-center justify-center min-h-[60vh] py-8 sm:py-12"
+         aria-labelledby="locked-title">
+    <div class="w-full max-w-md mx-auto">
+
+        {# === Card === #}
+        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800
+                    border border-slate-200 dark:border-slate-700
+                    shadow-sm
+                    px-6 py-8 sm:px-8 sm:py-10
+                    text-center">
+
+            {# Red accent stripe — error indicator #}
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 via-rose-500 to-rose-400"
+                 aria-hidden="true"></div>
+
+            {# === Hero lock icon — rose bubble === #}
+            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl
+                        bg-rose-100 dark:bg-rose-900/30
+                        text-rose-600 dark:text-rose-400"
+                 aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+
+            {# Status pill — "423 / Konto zablokowane" #}
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 mb-3 rounded-full
+                        bg-rose-50 dark:bg-rose-900/20
+                        text-rose-700 dark:text-rose-300
+                        text-xs font-semibold uppercase tracking-wider">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true"></span>
+                <span>Konto zablokowane</span>
+            </div>
+
+            {# === Heading — keyword "zablokowane" (test assertion) === #}
+            <h1 id="locked-title"
+                class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mb-3 tracking-tight">
+                Konto tymczasowo zablokowane
+            </h1>
+
+            {# === Body — przyczyna + ETA reset === #}
+            <p class="text-base text-slate-700 dark:text-slate-200 mb-3">
+                Wykryto zbyt wiele nieudanych prób logowania. Z powodów bezpieczeństwa
+                konto zostało tymczasowo zablokowane.
+            </p>
+
+            {# Reset ETA — tabular-nums dla 1 godziny #}
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-lg
+                        bg-slate-50 dark:bg-slate-900/50
+                        border border-slate-200 dark:border-slate-700
+                        text-slate-700 dark:text-slate-200 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 dark:text-slate-400" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Zostanie odblokowane automatycznie za <span class="font-semibold tabular-nums">1 godzinę</span></span>
+            </div>
+
+            {# === Body 2 — admin contact (test asserts "administratorem") === #}
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">
+                Jeśli to pomyłka lub potrzebujesz odblokować konto wcześniej —
+                skontaktuj się z administratorem systemu.
+            </p>
+
+            {# === CTAs — primary "Wróć do logowania" + secondary mailto === #}
+            <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3">
+
+                {# Primary — back to login (próbuj ponownie) #}
+                <a href="{% url 'accounts:login' %}"
+                   class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                          rounded-lg text-sm font-medium
+                          bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+                          text-white shadow-sm hover:shadow
+                          transition-colors duration-150
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                          dark:focus-visible:ring-offset-slate-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    <span>Wróć na stronę logowania</span>
+                </a>
+
+                {# Secondary — mailto admin #}
+                <a href="mailto:administrator@planer-maszyn.local?subject=Pro%C5%9Bba%20o%20odblokowanie%20konta"
+                   class="btn-secondary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                          rounded-lg text-sm font-medium
+                          bg-white dark:bg-slate-800
+                          text-slate-700 dark:text-slate-200
+                          border border-slate-300 dark:border-slate-600
+                          hover:bg-slate-50 dark:hover:bg-slate-700
+                          active:bg-slate-100 dark:active:bg-slate-600
+                          shadow-sm
+                          transition-colors duration-150
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                          dark:focus-visible:ring-offset-slate-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Skontaktuj się z administratorem</span>
+                </a>
+            </div>
+
+            {# Footer hint — security context #}
+            <p class="mt-6 text-xs text-slate-400 dark:text-slate-500">
+                Limit 5 nieudanych prób / godzinę chroni przed atakami brute-force.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

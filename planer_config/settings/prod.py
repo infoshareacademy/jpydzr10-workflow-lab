@@ -14,7 +14,7 @@ konfiguracją.
 
 import os
 
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F403
 
 # =============================================================================
 # DEBUG OFF + ścisła kontrola hostów
@@ -68,6 +68,20 @@ SECURE_REFERRER_POLICY = "same-origin"
 # Reverse proxy header (gdy za nginx/Caddy z X-Forwarded-Proto)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
+
+
+# =============================================================================
+# DATABASE — wymuszony SSL + krótki timeout połączenia (RDS / Cloud SQL / itp.)
+# =============================================================================
+# OWASP A05 (Security Misconfiguration): bez ``sslmode=require`` ruch DB
+# leci plaintextem nad WAN — wrażliwe na podsłuch w sieci dostawcy.
+# ``connect_timeout`` zapobiega gunicornom wiszącym w nieskończoność
+# podczas okresowych awarii sieci między app a DB.
+DATABASES["default"]["OPTIONS"] = {  # noqa: F405
+    **DATABASES["default"].get("OPTIONS", {}),  # noqa: F405
+    "sslmode": os.environ.get("DJANGO_DB_SSLMODE", "require"),
+    "connect_timeout": int(os.environ.get("DJANGO_DB_CONNECT_TIMEOUT", "10")),
+}
 
 
 # =============================================================================

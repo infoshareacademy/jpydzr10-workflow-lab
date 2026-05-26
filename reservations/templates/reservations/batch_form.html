@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% comment %}
+    B-7 — Batch reservation form (multi-machine).
+
+    Use case biznesowy: kierownik budowy potrzebuje N maszyn na 1 budowę,
+    1 okres, 1 osoba odpowiedzialna. Zamiast N osobnych klików magazynier
+    wybiera N maszyn (checkbox grid z search) + wpisuje wspólne pola RAZ.
+
+    Struktura:
+        1. Section "Maszyny" — search + counter + checkbox grid 3 kolumny
+           desktop / 1 kolumna mobile (responsive grid Tailwind).
+        2. Section "Termin" — start_date + end_date side-by-side.
+        3. Section "Wspólne dane" — osoba (required), budowa, adres, notatki.
+
+    Alpine.js state:
+        - `query` — search string filtrujący widoczne checkboxy (client-side).
+        - `selectedCount` — derived liczba zaznaczonych (live counter).
+
+    Design checklist:
+        - Touch targets ≥44px (py-3 px-4 na checkbox labelach)
+        - Focus rings (focus-visible:ring-2 focus-visible:ring-brand-500)
+        - ARIA: role="group" na fieldset, aria-live na counter
+        - Color contrast ≥4.5:1 (slate-900 on white, slate-100 on slate-900)
+        - One primary CTA (submit button — brand-600 bottom-right)
+        - Error placement near field (form.add_error per field)
+{% endcomment %}
+
+{% block title %}Nowa grupa rezerwacji — Planer Maszyn{% endblock %}
+
+{% block content %}
+<div class="space-y-5" x-data="batchForm()">
+
+    {# ============================== BREADCRUMB ============================== #}
+    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="Ścieżka">
+        <a href="{% url 'reservations:list' %}"
+           class="hover:text-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 -mx-1">
+            Rezerwacje
+        </a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-slate-700 dark:text-slate-200">Nowa grupa</span>
+    </nav>
+
+    {# ============================== HERO HEADER ============================== #}
+    <header class="space-y-1">
+        <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <span>Grupa rezerwacji</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Rezerwacja grupowa — wiele maszyn naraz
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+            Zaznacz maszyny i wypełnij wspólne pola raz. System utworzy osobną rezerwację dla każdej maszyny, wszystkie powiązane jednym ID grupy (przydatne do bulk-potwierdzania / anulowania).
+        </p>
+    </header>
+
+    <form method="post"
+          action="{% url 'reservations:batch_create' %}"
+          class="space-y-5 max-w-5xl"
+          novalidate>
+        {% csrf_token %}
+
+        {# ============================== Non-field errors ============================== #}
+        {% if form.non_field_errors %}
+            <div role="alert"
+                 class="surface-card border-rose-200 dark:border-rose-800/40 bg-rose-50/60 dark:bg-rose-900/20 p-4 flex items-start gap-3">
+                <span class="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.71-3L13.71 4a2 2 0 00-3.42 0L3.36 16a2 2 0 001.71 3z"/>
+                    </svg>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <h2 class="font-semibold text-rose-900 dark:text-rose-100">Nie można utworzyć grupy rezerwacji</h2>
+                    <ul class="mt-1 space-y-0.5 text-sm text-rose-700 dark:text-rose-300 list-disc list-inside">
+                        {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+
+        {# ============================== SECTION 1: MASZYNY (multi-select) ============================== #}
+        <section class="surface-card overflow-hidden">
+            <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">1</span>
+                        <span>Maszyny</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Zaznacz wszystkie maszyny dla tej grupy (każda dostanie osobny wpis).</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    {# Live counter — aria-live="polite" ogłasza zmianę screen readerom #}
+                    <span aria-live="polite"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-brand-200 dark:border-brand-800/50 bg-brand-50 dark:bg-brand-900/20 text-brand-800 dark:text-brand-200">
+                        <span aria-hidden="true">Wybrano:</span>
+                        <span class="font-mono tabular-nums" x-text="selectedCount"></span>
+                    </span>
+                </div>
+            </header>
+
+            <div class="p-5 space-y-4">
+
+                {# Search input — client-side filter checkbox listy. #}
+                <label class="block">
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Filtruj maszyny
+                    </span>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500 pointer-events-none" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                        <input type="search"
+                               x-model="query"
+                               placeholder="UID lub nazwa maszyny..."
+                               aria-label="Filtruj maszyny po UID lub nazwie"
+                               class="block w-full pl-10 pr-3 py-2.5 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors">
+                    </div>
+                </label>
+
+                {# Bulk select toggles — quick UX shortcut #}
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                            @click="selectAll($event)"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[36px]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Zaznacz widoczne
+                    </button>
+                    <button type="button"
+                            @click="clearAll()"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[36px]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Odznacz wszystkie
+                    </button>
+                </div>
+
+                {# Machine checkbox grid — responsive 1/2/3 columns by viewport #}
+                <fieldset role="group" aria-labelledby="machines-legend">
+                    <legend id="machines-legend" class="sr-only">Lista maszyn</legend>
+                    {% if form.machines.errors %}
+                        <div class="mb-3 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5" role="alert">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>{% for err in form.machines.errors %}{{ err }}{% if not forloop.last %}; {% endif %}{% endfor %}</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto scrollbar-thin pr-1"
+                         role="presentation"
+                         @change="updateCount()">
+                        {% for checkbox in form.machines %}
+                            {# Każdy checkbox to label-wrapped item z text uid + name (data-search dla Alpine) #}
+                            {# Sami konstruujemy <input> żeby uniknąć render-time attr filter (SafeString limitation widget_tweaks) #}
+                            <label class="batch-machine-item group flex items-center gap-3 px-3 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-brand-50/30 dark:hover:bg-brand-900/10 hover:border-brand-300 dark:hover:border-brand-700 cursor-pointer transition-colors min-h-[48px] focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-900"
+                                   data-search="{{ checkbox.choice_label|lower }}"
+                                   x-show="matchesQuery($el.dataset.search)"
+                                   style="display: flex;">
+                                <input type="checkbox"
+                                       name="{{ checkbox.data.name }}"
+                                       value="{{ checkbox.data.value }}"
+                                       id="{{ checkbox.id_for_label }}"
+                                       {% if checkbox.data.selected %}checked{% endif %}
+                                       class="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer">
+                                <span class="machine-text flex-1 min-w-0 text-sm text-slate-800 dark:text-slate-200 group-hover:text-brand-900 dark:group-hover:text-brand-100">
+                                    {{ checkbox.choice_label }}
+                                </span>
+                            </label>
+                        {% empty %}
+                            <p class="col-span-full text-sm text-slate-500 dark:text-slate-400 italic">
+                                Brak maszyn dostępnych do rezerwacji.
+                            </p>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            </div>
+        </section>
+
+        {# ============================== SECTION 2: TERMIN (daty) ============================== #}
+        <section class="surface-card overflow-hidden">
+            <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+                <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">2</span>
+                    <span>Termin (wspólny dla wszystkich maszyn)</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Każda rezerwacja w grupie ma te same daty.</p>
+            </header>
+            <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="{{ form.start_date.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.start_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                    </label>
+                    {{ form.start_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% for err in form.start_date.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+                <div>
+                    <label for="{{ form.end_date.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.end_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                    </label>
+                    {{ form.end_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% for err in form.end_date.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        {# ============================== SECTION 3: WSPÓLNE DANE ============================== #}
+        <section class="surface-card overflow-hidden">
+            <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+                <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">3</span>
+                    <span>Wspólne dane</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Te pola zostaną skopiowane do każdej rezerwacji w grupie.</p>
+            </header>
+            <div class="p-5 space-y-4">
+
+                {# Person (required) #}
+                <div>
+                    <label for="{{ form.person.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.person.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                    </label>
+                    {{ form.person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% if form.person.help_text %}
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.person.help_text }}</p>
+                    {% endif %}
+                    {% for err in form.person.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+
+                {# Site (optional) #}
+                <div>
+                    <label for="{{ form.site.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.site.label }}
+                    </label>
+                    {{ form.site|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% if form.site.help_text %}
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.site.help_text }}</p>
+                    {% endif %}
+                    {% for err in form.site.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+
+                {# Address (optional) #}
+                <div>
+                    <label for="{{ form.address.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.address.label }}
+                    </label>
+                    {{ form.address|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% if form.address.help_text %}
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.address.help_text }}</p>
+                    {% endif %}
+                    {% for err in form.address.errors %}
+                        <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
+                    {% endfor %}
+                </div>
+
+                {# Notes (optional) #}
+                <div>
+                    <label for="{{ form.notes.id_for_label }}"
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        {{ form.notes.label }}
+                    </label>
+                    {{ form.notes|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
+                    {% if form.notes.help_text %}
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.notes.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# ============================== SUBMIT BAR (sticky bottom CTA) ============================== #}
+        <div class="surface-card overflow-hidden">
+            <div class="p-5 flex flex-wrap items-center justify-between gap-3">
+                <a href="{% url 'reservations:list' %}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Anuluj
+                </a>
+                <button type="submit"
+                        x-bind:disabled="selectedCount === 0"
+                        x-bind:class="selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-brand-700 active:bg-brand-800'"
+                        class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-semibold bg-brand-600 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>
+                        Utwórz <span class="font-mono tabular-nums" x-text="selectedCount"></span>
+                        <span x-text="selectedCount === 1 ? 'rezerwację' : 'rezerwacji'"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script nonce="{{ CSP_NONCE }}">
+    function batchForm() {
+        return {
+            query: '',
+            selectedCount: 0,
+            init() {
+                // Inicjalna kalkulacja na case'y gdy form re-render po validation error
+                // (zaznaczenia powinny być zachowane z POST data).
+                this.updateCount();
+            },
+            updateCount() {
+                this.selectedCount = document.querySelectorAll(
+                    'input[name="machines"]:checked'
+                ).length;
+            },
+            matchesQuery(searchText) {
+                if (!this.query) return true;
+                const q = this.query.toLowerCase().trim();
+                return (searchText || '').includes(q);
+            },
+            selectAll(event) {
+                // Tylko widoczne (matching query) — żeby user mógł szybko
+                // wybrać "wszystkie KOP-*" filtując "kop" + Zaznacz widoczne.
+                event.preventDefault();
+                document.querySelectorAll('.batch-machine-item').forEach((item) => {
+                    if (item.style.display !== 'none' && this.matchesQuery(item.dataset.search)) {
+                        const cb = item.querySelector('input[type="checkbox"]');
+                        if (cb && !cb.checked) {
+                            cb.checked = true;
+                        }
+                    }
+                });
+                this.updateCount();
+            },
+            clearAll() {
+                document.querySelectorAll('input[name="machines"]').forEach((cb) => {
+                    cb.checked = false;
+                });
+                this.updateCount();
+            },
+        };
+    }
+</script>
+{% endblock %}

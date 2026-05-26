@@ -1,5 +1,5 @@
 # =============================================================================
-# Planer Maszyn Budowlanych — środowisko deweloperskie (kursowy repo)
+# Planer Maszyn Budowlanych — środowisko deweloperskie (reference app)
 # =============================================================================
 #
 # Uruchomienie:
@@ -11,10 +11,10 @@
 # macOS rekomendacja: OrbStack zamiast Docker Desktop (szybszy, lżejszy).
 # Linux: standardowe `docker` + `docker compose`.
 #
-# Port 5434 (zamiast standardowego 5432) — porty na MacOS Sebastian'a:
-#   - 5432 = isocab-postgres (WMS Sebastiana, inny projekt)
-#   - 5433 = planer-maszyn-reference (sandbox reference)
-#   - 5434 = ten kursowy repo (Django runserver na :8002 — patrz Makefile)
+# Port 5434 — porty na MacOS Sebastian'a (3 projekty równolegle):
+#   - 5432 = inny projekt na laptopie (NIE ruszać)
+#   - 5433 = sandbox lokalny (Django na :8001)
+#   - 5434 = ten projekt kursowy (Django na :8002)
 #
 # Po `docker compose up -d` PostgreSQL dostępny na localhost:5434
 # z credentialami z `.env` (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).

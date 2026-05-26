@@ -1,0 +1,13 @@
+{
+  "name": "planer-maszyn-kursowy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tailwind CLI build dla Planera Maszyn — zastępuje Play CDN (~407 KB runtime → ~30-50 KB static).",
+  "scripts": {
+    "css:build": "tailwindcss -i ./static/css/input.css -o ./static/css/tailwind.css --minify",
+    "css:watch": "tailwindcss -i ./static/css/input.css -o ./static/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -1,0 +1,40 @@
+/* ============================================================================
+ * Tailwind input — kompilowany przez `npm run css:build` do
+ * static/css/tailwind.css (minified). Nie używaj tego pliku w templatkach —
+ * w <link rel="stylesheet"> wpinaj zbudowany ``tailwind.css``.
+ * ============================================================================
+ *
+ * Ten plik zastępuje Tailwind Play CDN (407 KB runtime JS, wymagał
+ * ``'unsafe-eval'`` w CSP). CLI build daje ~30-50 KB static CSS,
+ * generowany w czasie buildu z dokładnie tymi klasami które są realnie
+ * używane (zob. ``tailwind.config.js`` → ``content``).
+ *
+ * Konwencja warstw (Tailwind):
+ *  - @tailwind base       — preflight reset + base styles
+ *  - @tailwind components — komponenty użytkownika
+ *  - @tailwind utilities  — utility classes (w-1/2, p-4 itd.)
+ * ============================================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------------------------------------------------------------------------
+ * Base layer — globalne body/font + a11y helpery, wcześniej inline w base.html
+ * <style> bloku. Po kompilacji wlatują do tailwind.css (jeden HTTP request
+ * mniej niż gdyby zostały w <head> inline).
+ * ---------------------------------------------------------------------------- */
+@layer base {
+    body {
+        font-family: "Inter", "ui-sans-serif", system-ui, sans-serif;
+    }
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
+    /* x-cloak — ukrywa elementy z atrybutem dopóki Alpine nie zainicjuje
+     * kontekstu (zapobiega FOUC migotaniu zawartości warunkowej). Musi być
+     * dostępne przed Alpine init. */
+    [x-cloak] {
+        display: none !important;
+    }
+}

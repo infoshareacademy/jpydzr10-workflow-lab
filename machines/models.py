@@ -1,3 +1,25 @@
+"""Models for the machines app — inventory of construction machinery.
+
+The :class:`Machine` model is ported 1:1 from the Milestone 1 console version
+(see ``archive/milestone-1/console/models.py`` in the kursowe repo) into Django:
+
+* string ``VALID_STATUSES`` tuple → :class:`Machine.Status` ``TextChoices``
+* string ``inspection_date`` → ``DateField``
+* hand-rolled ``check_inspection_status`` staticmethod → property
+  :attr:`Machine.inspection_status` that returns ``"ok" | "warning" | "overdue"
+  | "unknown"`` (we add ``"unknown"`` for the no-date case — M1 collapsed it
+  with overdue, which is unfair in the UI)
+
+The model exposes a custom manager (:class:`machines.managers.MachineManager`)
+with helpers used everywhere (``available()``, ``overdue_inspection()``,
+``upcoming_inspection()``, ``by_type()``) — see ``managers.py``.
+
+All ``Status.value`` / ``Type.value`` strings are Polish on purpose (Zasada
+#2 z dokumentu projektowego): value equals UI label, so we never have to
+translate in admin or templates, and historical M1 JSON fixtures import
+cleanly.
+"""
+
 from datetime import date
 
 from django.core.validators import MaxValueValidator, RegexValidator
@@ -10,8 +32,16 @@ from core.validators import validate_image_upload
 
 from .managers import MachineManager
 
+# Number of days before ``inspection_date`` at which a machine starts showing
+# the "warning" badge. Module-level constant — never use the bare ``14`` in
+# code (ZASADA #8: no magic numbers).
 INSPECTION_WARNING_DAYS = 14
 
+# UID format constraint — wielkie litery A-Z, cyfry 0-9, podkreślenie, myślnik.
+# Świadomie ODRZUCAMY kropki (`.`), żeby uniknąć path-traversal-podobnych
+# UID-ów typu ``M..0001`` (działają w URL `[\w.\-]+`, ale są niezamierzone).
+# Spacje/slashe są już odrzucane przez routing — to dodatkowa warstwa na
+# poziomie form validation i ``full_clean()`` w services.create_machine.
 UID_VALIDATOR = RegexValidator(
     regex=r"^[A-Z0-9_\-]+$",
     message="UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik.",
@@ -19,65 +49,108 @@ UID_VALIDATOR = RegexValidator(
 
 
 class Machine(TimestampedModel):
+    """A single piece of construction machinery owned by the company.
+
+    Lifecycle (status transitions):
+
+    * ``W magazynie`` ⇄ ``Zarezerwowana`` ⇄ ``Na budowie`` (reservation flow)
+    * any state → ``W serwisie`` (only when no future confirmed reservation)
+    * ``W serwisie`` → ``W magazynie`` (after the service is closed)
+
+    The model tracks an optional ``inspection_date`` (next mandatory periodic
+    inspection). :attr:`inspection_status` collapses the date into one of four
+    UI buckets (``ok``/``warning``/``overdue``/``unknown``) — the template tag
+    :func:`machines.templatetags.machines_tags.inspection_icon` turns those
+    into emoji.
+    """
+
     class Status(models.TextChoices):
-        W_MAGAZYNIE   = "W magazynie", "W magazynie"
-        NA_BUDOWIE    = "Na budowie", "Na budowie"
+        """Operational status of a machine. Values are Polish on purpose."""
+
+        W_MAGAZYNIE = "W magazynie", "W magazynie"
+        NA_BUDOWIE = "Na budowie", "Na budowie"
         ZAREZERWOWANA = "Zarezerwowana", "Zarezerwowana"
-        W_SERWISIE    = "W serwisie", "W serwisie"
-        WYCOFANA      = "Wycofana", "Wycofana z floty"
+        W_SERWISIE = "W serwisie", "W serwisie"
+        WYCOFANA = "Wycofana", "Wycofana z floty"
 
     class Type(models.TextChoices):
-        KOPARKA              = "koparka", "Koparka"
-        MINIKOPARKA          = "minikoparka", "Minikoparka"
-        PODNOSNIK_NOZYCOWY   = "podnośnik nożycowy", "Podnośnik nożycowy"
+        """Category of machine — drives filters and grouping in the UI."""
+
+        KOPARKA = "koparka", "Koparka"
+        MINIKOPARKA = "minikoparka", "Minikoparka"
+        PODNOSNIK_NOZYCOWY = "podnośnik nożycowy", "Podnośnik nożycowy"
         PODNOSNIK_TELESKOPOWY = "podnośnik teleskopowy", "Podnośnik teleskopowy"
-        AGREGAT              = "agregat prądotwórczy", "Agregat prądotwórczy"
-        WOZEK_WIDLOWY        = "wózek widłowy", "Wózek widłowy"
-        WALEC                = "walec", "Walec"
-        ZAGESZCZARKA         = "zagęszczarka", "Zagęszczarka"
-        SPAWARKA             = "spawarka", "Spawarka"
-        INNE                 = "inne", "Inne"
+        AGREGAT = "agregat prądotwórczy", "Agregat prądotwórczy"
+        WOZEK_WIDLOWY = "wózek widłowy", "Wózek widłowy"
+        WALEC = "walec", "Walec"
+        ZAGESZCZARKA = "zagęszczarka", "Zagęszczarka"
+        SPAWARKA = "spawarka", "Spawarka"
+        INNE = "inne", "Inne"
 
     uid = models.CharField(
-        max_length=20, unique=True, db_index=True,
+        max_length=20,
+        unique=True,
+        db_index=True,
         validators=[UID_VALIDATOR],
         verbose_name=_("UID maszyny"),
         help_text="Unikalny identyfikator firmowy (np. KOP-001).",
     )
     name = models.CharField(max_length=100, verbose_name=_("Nazwa"))
     machine_type = models.CharField(
-        max_length=30, choices=Type.choices, default=Type.INNE,
-        db_index=True, verbose_name=_("Typ"),
+        max_length=30,
+        choices=Type.choices,
+        default=Type.INNE,
+        db_index=True,
+        verbose_name=_("Typ"),
     )
     model = models.CharField(max_length=100, blank=True, default="", verbose_name=_("Model"))
     capacity = models.PositiveIntegerField(
-        default=0, verbose_name=_("Udźwig / wydajność"),
-        help_text="Wartość liczbowa (kg dla koparki, l/min dla agregatu).",
+        default=0,
+        verbose_name=_("Udźwig / wydajność"),
+        help_text="Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu).",
     )
     inspection_date = models.DateField(
-        null=True, blank=True, db_index=True,
+        null=True,
+        blank=True,
+        db_index=True,
         verbose_name=_("Data ostatniego przeglądu"),
+        help_text="Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd').",
     )
     location = models.CharField(
-        max_length=200, default="Magazyn", verbose_name=_("Lokalizacja"),
+        max_length=200,
+        default="Magazyn",
+        verbose_name=_("Lokalizacja"),
     )
     status = models.CharField(
-        max_length=20, choices=Status.choices,
-        default=Status.W_MAGAZYNIE, db_index=True,
+        max_length=20,
+        choices=Status.choices,
+        default=Status.W_MAGAZYNIE,
+        db_index=True,
+        verbose_name=_("Status"),
     )
-    manufacturer = models.CharField(max_length=100, blank=True, default="")
-    serial_number = models.CharField(max_length=50, blank=True, default="")
+    manufacturer = models.CharField(
+        max_length=100, blank=True, default="", verbose_name=_("Producent")
+    )
+    serial_number = models.CharField(
+        max_length=50, blank=True, default="", verbose_name=_("Numer seryjny")
+    )
     build_year = models.PositiveIntegerField(
-        default=0, validators=[MaxValueValidator(2100)],
+        default=0,
+        validators=[MaxValueValidator(2100)],
+        verbose_name=_("Rok produkcji"),
         help_text="0 = nieznany.",
     )
-    notes = models.TextField(blank=True, default="")
+    notes = models.TextField(blank=True, default="", verbose_name=_("Notatki"))
     image = models.ImageField(
-        upload_to="machines/", null=True, blank=True,
+        upload_to="machines/",
+        null=True,
+        blank=True,
         validators=[validate_image_upload],
+        verbose_name=_("Zdjęcie"),
     )
 
     history = HistoricalRecords()
+
     objects = MachineManager()
 
     class Meta:
@@ -88,9 +161,23 @@ class Machine(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.uid} — {self.name}"
 
+    def __repr__(self) -> str:
+        return f"Machine(uid={self.uid!r}, status={self.status!r})"
+
+    # ------------------------------------------------------------------
+    # Inspection helpers
+    # ------------------------------------------------------------------
+
     @property
     def inspection_status(self) -> str:
-        """Bucket: 'unknown' | 'overdue' | 'warning' | 'ok'."""
+        """One-word bucket for the inspection date.
+
+        * ``"unknown"`` — no ``inspection_date`` set yet
+        * ``"overdue"`` — ``inspection_date`` already in the past
+        * ``"warning"`` — ``inspection_date`` ≤ :data:`INSPECTION_WARNING_DAYS`
+          from today
+        * ``"ok"`` — anything further in the future
+        """
         if not self.inspection_date:
             return "unknown"
         days_left = (self.inspection_date - date.today()).days
@@ -119,4 +206,5 @@ class Machine(TimestampedModel):
 
     @property
     def is_available(self) -> bool:
+        """True when the machine is in the warehouse and ready to be reserved."""
         return self.status == self.Status.W_MAGAZYNIE

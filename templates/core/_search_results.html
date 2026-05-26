@@ -1,0 +1,87 @@
+{% load i18n %}
+{# ============================================================ #}
+{# WAVE 14-D — Global search HTMX PARTIAL (typeahead dropdown). #}
+{# Renderowany przez core.views.global_search_view gdy           #}
+{# request.htmx is True (django-htmx middleware). Swap'ie do     #}
+{# #search-dropdown w base.html topbar.                          #}
+{#                                                                #}
+{# UX:                                                            #}
+{#   * max 4 kategorie x max 5 wpisow per kategoria               #}
+{#   * empty state inside dropdown                                #}
+{#   * "Zobacz wszystkie wyniki" CTA do /szukaj/?q=...           #}
+{#   * klawisz Escape zamyka dropdown (Alpine handler w base)    #}
+{# ============================================================ #}
+
+{% if total > 0 %}
+    <div role="listbox" aria-label="{% trans 'Wyniki wyszukiwania' %}" class="py-1">
+        {% for category, items in results.items %}
+        <div class="px-3 pt-3 pb-1">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {{ category }}
+                </span>
+                <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                    {{ items|length }}
+                </span>
+            </div>
+        </div>
+        <ul class="pb-1">
+            {% for item in items %}
+            <li>
+                <a href="{{ item.url }}"
+                   role="option"
+                   class="flex items-start gap-3 px-3 py-2.5 mx-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 focus:outline-none focus-visible:bg-slate-100 dark:focus-visible:bg-slate-700/60 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset transition-colors min-h-[44px]">
+                    <span class="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-md bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400" aria-hidden="true">
+                        {{ item.icon|safe }}
+                    </span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                            {{ item.title }}
+                        </span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {{ item.subtitle }}
+                        </span>
+                    </span>
+                    {% if item.badge %}
+                    <span class="flex-shrink-0 mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        {{ item.badge }}
+                    </span>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% if not forloop.last %}
+        <div class="border-t border-slate-200 dark:border-slate-700 my-1" role="separator"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {# === Footer CTA — pełna strona === #}
+    <div class="border-t border-slate-200 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-800/60">
+        <a href="{% url 'core:search' %}?q={{ query|urlencode }}"
+           class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs font-medium text-brand-700 dark:text-brand-400 hover:bg-white dark:hover:bg-slate-700/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors min-h-[40px]">
+            <span>{% blocktrans %}Zobacz wszystkie wyniki dla &laquo;{{ query }}&raquo;{% endblocktrans %}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+        </a>
+    </div>
+{% else %}
+    {# Empty state — dropdown rendered tylko gdy query >= 2 znaki #}
+    {% if query and query|length >= 2 %}
+    <div class="px-4 py-6 text-center">
+        <div class="mx-auto w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+        <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {% blocktrans %}Brak wyników dla &laquo;{{ query }}&raquo;{% endblocktrans %}
+        </p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {% trans "Spróbuj inną frazę lub pełnego UID-u." %}
+        </p>
+    </div>
+    {% endif %}
+{% endif %}

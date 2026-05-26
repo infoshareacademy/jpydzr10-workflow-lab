@@ -1,0 +1,48 @@
+{% load planer_tags %}
+{% if records %}
+    <div class="overflow-x-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+                <tr>
+                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Data</th>
+                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Maszyna</th>
+                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Typ</th>
+                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Wykonawca</th>
+                    <th class="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300">Koszt</th>
+                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Następny</th>
+                    <th class="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300">Akcje</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for record in records %}
+                    {% include "service/_record_row.html" with record=record %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination #}
+    {% if is_paginated %}
+        <nav class="flex items-center justify-between mt-4 text-sm">
+            <span class="text-gray-500 dark:text-gray-400">
+                Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}
+            </span>
+            <ul class="flex gap-1">
+                {% if page_obj.has_previous %}
+                <li><a href="?page={{ page_obj.previous_page_number }}"
+                       class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Poprzednia
+                </a></li>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}"
+                       class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Następna
+                </a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    {% include "service/_empty_state.html" %}
+{% endif %}

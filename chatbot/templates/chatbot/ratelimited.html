@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Limit zapytań osiągnięty — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{% comment %} ============================================================================
+   chatbot/ratelimited.html — full-page fallback dla rate-limitu asystenta.
+
+   Wyzwala się gdy użytkownik wyśle 51-sze zapytanie tego samego dnia
+   (`@ratelimit(rate="50/d")` w `chatbot.views.ask`). Dla zapytań HTMX
+   middleware zwraca partial; bez HX-Request renderujemy ten pełny ekran
+   żeby user nie utknął na białej stronie 429.
+
+   Design notes (Design notes applied):
+   - Priority 1 (a11y): role=region + aria-labelledby, focus-visible rings,
+     icon a11y-hidden (decoration). Kontrast >=4.5:1 (amber-700 / amber-300
+     na bg amber-50 / amber-900/30).
+   - Priority 4 (style): amber accent (warning, NIE error red) — limit nie
+     jest błędem, tylko ograniczeniem. SVG icon, nigdy emoji.
+   - Priority 5 (mobile-first): centrowanie min-h-[60vh], stack columns mobile,
+     2-up CTAs desktop.
+   - Priority 8 (forms/feedback): error-clarity → komunikat mówi PRZYCZYNĘ
+     (limit 50/d) + JAK NAPRAWIĆ (reset o północy) + dlaczego (koszt).
+   - HTTP 429 status oznacza "429" w tytule meta (tytuł karty „429 — limit").
+============================================================================ {% endcomment %}
+<section class="flex items-center justify-center min-h-[60vh] py-8 sm:py-12"
+         aria-labelledby="ratelimit-title">
+    <div class="w-full max-w-md mx-auto">
+
+        {# === Card — centered, amber accent on left border (warning) === #}
+        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800
+                    border border-slate-200 dark:border-slate-700
+                    shadow-sm
+                    px-6 py-8 sm:px-8 sm:py-10
+                    text-center">
+
+            {# Subtle amber accent stripe on top — visual warning marker #}
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400"
+                 aria-hidden="true"></div>
+
+            {# === Hero icon — clock + warning glyph w amber bubble === #}
+            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl
+                        bg-amber-100 dark:bg-amber-900/30
+                        text-amber-600 dark:text-amber-400"
+                 aria-hidden="true">
+                {# Heroicons outline — clock (resetuje sie o północy) #}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+
+            {# Status pill — "429 / Limit dzienny" small, tabular #}
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 mb-3 rounded-full
+                        bg-amber-50 dark:bg-amber-900/20
+                        text-amber-700 dark:text-amber-300
+                        text-xs font-semibold uppercase tracking-wider">
+                <span class="tabular-nums">429</span>
+                <span aria-hidden="true">·</span>
+                <span>Limit dzienny</span>
+            </div>
+
+            {# === Heading === #}
+            <h1 id="ratelimit-title"
+                class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3 tracking-tight">
+                Osiągnąłeś dzienny limit
+            </h1>
+
+            {# === Body — przyczyna + reset === #}
+            <p class="text-base text-slate-600 dark:text-slate-300 mb-2">
+                Wykorzystałeś dzisiaj <span class="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">50 zapytań</span>
+                do asystenta. Limit resetuje się o północy
+                <span class="whitespace-nowrap">(00:00 czasu lokalnego)</span>.
+            </p>
+
+            {# === Sub-text — uzasadnienie biznesowe === #}
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">
+                Ten limit pomaga utrzymać niski koszt operacyjny systemu.
+            </p>
+
+            {% comment %} === CTAs — jeden primary (dashboard) + jeden secondary (kontakt) ===
+                  Stack mobile, side-by-side sm+. Touch min 44px. {% endcomment %}
+            <div class="flex flex-col sm:flex-row items-stretch justify-center gap-3">
+
+                {# Primary — Wróć do dashboardu (zawsze bezpieczny target) #}
+                <a href="{% url 'home' %}"
+                   class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                          rounded-lg text-sm font-medium
+                          bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+                          text-white shadow-sm hover:shadow
+                          transition-colors duration-150
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                          dark:focus-visible:ring-offset-slate-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Wróć do dashboardu</span>
+                </a>
+
+                {# Secondary — mailto placeholder do administratora (do M3 ⇒ /docs/) #}
+                <a href="mailto:administrator@planer-maszyn.local?subject=Limit%20asystenta"
+                   class="btn-secondary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                          rounded-lg text-sm font-medium
+                          bg-white dark:bg-slate-800
+                          text-slate-700 dark:text-slate-200
+                          border border-slate-300 dark:border-slate-600
+                          hover:bg-slate-50 dark:hover:bg-slate-700
+                          active:bg-slate-100 dark:active:bg-slate-600
+                          shadow-sm
+                          transition-colors duration-150
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                          dark:focus-visible:ring-offset-slate-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Skontaktuj się z administratorem</span>
+                </a>
+            </div>
+
+            {# === Tip — kiedy limit się resetuje (info-text mały) === #}
+            <p class="mt-6 text-xs text-slate-400 dark:text-slate-500">
+                Wskazówka: zapytania liczy się per użytkownik, nie per urządzenie.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

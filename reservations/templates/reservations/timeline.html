@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% load static planer_tags %}
+
+{% comment %}
+    Timeline rezerwacji — Gantt-style siatka (maszyna × dzien).
+
+    Kontekst z TimelineView:
+        period          : "week" | "2week" | "month"
+        days            : int — ile dni w okresie
+        start           : date — pierwszy dzien
+        end             : date — ostatni dzien
+        day_list        : list[date]
+        machine_rows    : list[dict{uid, name, machine_type, machine_type_display,
+                                    status, inspection_status, bars: list[dict]}]
+                          (Alpine.js hydratuje przez {% json_script %} tag → #machine-rows-data)
+        machine_types   : Machine.Type.choices
+        statuses        : Machine.Status.choices
+        sites           : queryset aktywnych ConstructionSite
+        prev_start      : ISO date
+        next_start      : ISO date
+        today_iso       : ISO date
+        filters_active  : bool
+        current_machine_type, current_status, current_site, current_person, current_search
+
+    bar dict: {id, machine_uid, site_number, site_name, person, status, status_display,
+               start_date, end_date, offset_days, length_days, url_detail}
+
+    UX wow-factor: sticky top control bar, status-colored bars z gradientem, today
+    indicator z box-shadow accent, hover-lift, segment view-type switcher,
+    quick-stats z badge alertem dla oczekujacych. Mobile-first; siatka chowa
+    sie pod 768px na rzecz listy w `_timeline_mobile.html`.
+{% endcomment %}
+
+{% block title %}Timeline rezerwacji — Planer Maszyn{% endblock %}
+
+{% block content %}
+{% url 'reservations:timeline' as timeline_url %}
+
+<div x-data="timelineShell()" x-cloak class="space-y-5">
+
+    {# ============================== HERO HEADER ============================== #}
+    <header class="surface-card overflow-hidden">
+        <div class="px-5 sm:px-6 py-5 bg-gradient-to-br from-white via-white to-brand-50/50 dark:from-slate-800 dark:via-slate-800 dark:to-brand-900/20">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-widest font-semibold text-brand-700 dark:text-brand-300">
+                        <span class="inline-flex items-center justify-center h-6 w-6 rounded-md bg-brand-100 dark:bg-brand-900/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </span>
+                        <span>Planowanie · Gantt</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-2">
+                        Timeline rezerwacji
+                    </h1>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 status-dot-pulse" aria-hidden="true"></span>
+                            <span class="font-semibold tabular-nums">{{ machine_rows|length }}</span> maszyn
+                        </span>
+                        <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                        <span class="font-mono tabular-nums text-xs">{{ start|date_pl }}</span>
+                        <span class="text-slate-400" aria-hidden="true">→</span>
+                        <span class="font-mono tabular-nums text-xs">{{ end|date_pl }}</span>
+                        {% if filters_active %}
+                            <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[0.6875rem] font-semibold uppercase tracking-wider">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>
+                                Filtry aktywne
+                            </span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                {# Primary CTA — najwazniejszy aktywny przycisk na ekranie #}
+                <a href="{% url 'reservations:create' %}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-lg shadow-brand-600/20 hover:shadow-xl hover:shadow-brand-600/30 hover:-translate-y-0.5 transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 self-start md:self-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    <span>Nowa rezerwacja</span>
+                </a>
+            </div>
+        </div>
+
+        {# ============================== STICKY CONTROL BAR ============================== #}
+        <div class="sticky top-0 z-20 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-800/80">
+            <div class="px-5 sm:px-6 py-3 flex flex-wrap items-center gap-2 sm:gap-3">
+
+                {# View type — segment control #}
+                <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900/60 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 text-xs sm:text-sm" role="group" aria-label="Wybór okresu">
+                    <a href="?period=week&start={{ start|date:'Y-m-d' }}"
+                       class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if period == 'week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
+                       aria-current="{% if period == 'week' %}page{% endif %}">7 dni</a>
+                    <a href="?period=2week&start={{ start|date:'Y-m-d' }}"
+                       class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if period == '2week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
+                       aria-current="{% if period == '2week' %}page{% endif %}">14 dni</a>
+                    <a href="?period=month&start={{ start|date:'Y-m-d' }}"
+                       class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if period == 'month' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
+                       aria-current="{% if period == 'month' %}page{% endif %}">Miesiąc</a>
+                </div>
+
+                {# Date navigation #}
+                <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm" role="group" aria-label="Nawigacja w czasie">
+                    <a href="?period={{ period }}&start={{ prev_start }}"
+                       class="p-1.5 sm:p-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+                       aria-label="Poprzedni okres">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </a>
+                    <a href="?period={{ period }}&start={{ today_iso }}"
+                       class="px-3 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500">
+                        Dziś
+                    </a>
+                    <a href="?period={{ period }}&start={{ next_start }}"
+                       class="p-1.5 sm:p-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+                       aria-label="Następny okres">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+                <div class="flex-1"></div>
+
+                {# Filters toggle #}
+                <button type="button" @click="filtersOpen = !filtersOpen"
+                        :aria-expanded="filtersOpen.toString()"
+                        aria-controls="timeline-filters-panel"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium border rounded-lg transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        :class="filtersOpen ? 'bg-brand-50 dark:bg-brand-900/30 border-brand-300 dark:border-brand-700 text-brand-700 dark:text-brand-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    <span>Filtry</span>
+                    {% if filters_active %}<span class="ml-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-brand-500" aria-label="filtry aktywne"></span>{% endif %}
+                </button>
+
+                <a href="{% url 'reservations:list' %}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                   aria-label="Widok listy">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                    <span class="hidden sm:inline">Lista</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    {# ============================== QUICK STATS ============================== #}
+    {% with total_bars=0 pending_bars=0 confirmed_bars=0 %}
+    {# Liczniki w Pythonie wymagaja inkrementacji przez {% with %} — zamiast tego policzmy w Alpine #}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="Statystyki okresu">
+        <div class="surface-card kpi-card px-4 py-3 text-slate-700 dark:text-slate-200">
+            <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14"/></svg>
+                Rezerwacji
+            </div>
+            <div class="mt-1 text-2xl font-bold tabular-nums" x-text="totalReservations">0</div>
+        </div>
+        <div class="surface-card kpi-card px-4 py-3 text-amber-700 dark:text-amber-300"
+             x-data="{ count: 0 }"
+             x-init="count = machineRows.reduce((s, m) => s + (m.bars||[]).filter(b => b.status === 'oczekująca').length, 0)">
+            <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-amber-600 dark:text-amber-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Oczekuje
+            </div>
+            <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
+        </div>
+        <div class="surface-card kpi-card px-4 py-3 text-brand-700 dark:text-brand-300"
+             x-data="{ count: 0 }"
+             x-init="count = machineRows.reduce((s, m) => s + (m.bars||[]).filter(b => b.status === 'potwierdzona').length, 0)">
+            <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-brand-600 dark:text-brand-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Potwierdzone
+            </div>
+            <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
+        </div>
+        <div class="surface-card kpi-card px-4 py-3"
+             x-data="{ count: 0 }"
+             x-init="count = totalMachines"
+             :class="count === 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'">
+            <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold"
+                 :class="count === 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                Maszyny
+            </div>
+            <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
+        </div>
+    </div>
+    {% endwith %}
+
+    {# ============================== HYDRATION (dla Alpine) ============================== #}
+    {{ machine_rows|json_script:"machine-rows-data" }}
+
+    {# ============================== LAYOUT ============================== #}
+    <div class="grid gap-4" :class="filtersOpen ? 'lg:grid-cols-[280px_1fr]' : 'lg:grid-cols-1'">
+
+        {# Filters sidebar (toggleable) #}
+        <aside id="timeline-filters-panel"
+               x-show="filtersOpen"
+               x-transition:enter="transition ease-out duration-200"
+               x-transition:enter-start="opacity-0 -translate-x-2"
+               x-transition:enter-end="opacity-100 translate-x-0"
+               x-transition:leave="transition ease-in duration-150"
+               x-transition:leave-start="opacity-100"
+               x-transition:leave-end="opacity-0"
+               class="space-y-3">
+            {% include "reservations/_timeline_filters.html" %}
+
+            {# Legend #}
+            <div class="surface-card p-4">
+                <h3 class="text-[0.6875rem] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Legenda
+                </h3>
+                <ul class="space-y-2.5 text-sm">
+                    <li class="flex items-center gap-2.5">
+                        <span class="inline-block h-3 w-5 rounded shadow-sm" style="background: linear-gradient(135deg, rgb(234 179 8) 0%, rgb(202 138 4) 100%)" aria-hidden="true"></span>
+                        <span class="text-slate-700 dark:text-slate-300">Oczekująca</span>
+                    </li>
+                    <li class="flex items-center gap-2.5">
+                        <span class="inline-block h-3 w-5 rounded shadow-sm" style="background: linear-gradient(135deg, rgb(37 99 235) 0%, rgb(29 78 216) 100%)" aria-hidden="true"></span>
+                        <span class="text-slate-700 dark:text-slate-300">Potwierdzona</span>
+                    </li>
+                    <li class="flex items-center gap-2.5">
+                        <span class="inline-block h-3 w-5 rounded shadow-sm" style="background: linear-gradient(135deg, rgb(16 185 129) 0%, rgb(5 150 105) 100%)" aria-hidden="true"></span>
+                        <span class="text-slate-700 dark:text-slate-300">Zakończona</span>
+                    </li>
+                </ul>
+                <p class="mt-4 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <span class="font-semibold text-slate-700 dark:text-slate-300">Wskazówka:</span>
+                    klik na pasek otwiera szczegóły, klik na pustą komórkę — szybką rezerwację na ten dzień.
+                </p>
+            </div>
+        </aside>
+
+        {# Timeline grid (desktop) + mobile fallback #}
+        <section aria-label="Siatka rezerwacji">
+            {% comment %} Wave 14-A Bundle 9 -- visible horizontal scroll buttons jako
+               fallback dla Comet browser (Perplexity) gdzie scrollbar nie
+               jest widoczny. Plus keyboard hint dla a11y. Klik <- / ->
+               scrolluje timeline-wrap o 200px. {% endcomment %}
+            <div class="timeline-grid-wrapper">
+                <div class="hidden md:flex items-center justify-between mb-2 px-1 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1.5">
+                        <kbd class="px-1.5 py-0.5 text-[0.625rem] font-mono rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">←</kbd>
+                        <span>/</span>
+                        <kbd class="px-1.5 py-0.5 text-[0.625rem] font-mono rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">→</kbd>
+                        <span class="ml-1">przewija oś czasu</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button type="button"
+                                @click="document.querySelector('.timeline-wrap').scrollBy({ left: -200, behavior: 'smooth' })"
+                                class="p-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                aria-label="Przewiń oś czasu w lewo">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                @click="document.querySelector('.timeline-wrap').scrollBy({ left: 200, behavior: 'smooth' })"
+                                class="p-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                aria-label="Przewiń oś czasu w prawo">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {% include "reservations/_timeline_grid.html" %}
+            </div>
+
+            <div class="timeline-mobile-list space-y-3">
+                {% include "reservations/_timeline_mobile.html" %}
+            </div>
+        </section>
+    </div>
+
+    {# ============================== MODAL (Wave 14-A Bundle 2+3) ============================== #}
+    {% comment %} Pelen ReservationForm modal -- otwiera sie po `open-reservation-modal`
+       eventcie (dispatched przez klik bara lub klik pustego cell). Backdrop
+       jest subtle gray (`bg-slate-500/30 backdrop-blur-sm`) zgodnie z
+       specyfikacja Sebastian'a -- pozwala widziec timeline w tle. {% endcomment %}
+    <div x-data="{
+            reservationModalOpen: false,
+            closeReservationModal() { this.reservationModalOpen = false; }
+         }"
+         x-cloak
+         @open-reservation-modal.window="reservationModalOpen = true"
+         @keydown.escape.window="reservationModalOpen = false"
+         @reservation-updated.window="reservationModalOpen = false; htmx.trigger('#timeline-grid', 'refreshTimeline')">
+
+        <div x-show="reservationModalOpen"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-500/30 backdrop-blur-sm"
+             @click.self="closeReservationModal()"
+             role="presentation">
+
+            {# HTMX swap target -- _reservation_full_modal.html laduje tutaj #}
+            <div id="reservation-modal-body"
+                 x-show="reservationModalOpen"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="w-full max-w-2xl"
+                 @click.stop></div>
+        </div>
+    </div>
+
+    {# ============================== LEGACY QUICK RESERVE (zachowane dla kompatybilnosci) ============================== #}
+    {% include "reservations/_quick_reserve_modal.html" %}
+
+    {# ============================== TOAST ============================== #}
+    <div x-data="toast()" x-cloak
+         x-show="visible"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         :class="kind === 'error' ? 'toast toast-error' : 'toast toast-success'"
+         class="toast"
+         role="status"
+         aria-live="polite">
+        <span x-text="message"></span>
+    </div>
+</div>
+{% endblock %}

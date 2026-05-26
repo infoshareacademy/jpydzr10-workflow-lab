@@ -1,0 +1,162 @@
+{% load planer_tags %}
+{% comment %} ============================================================================
+   machines/_inspections_due_modal.html — HTMX partial dla modala "Przeglady".
+
+   Wave 14-F D-3 — Sebastian walkthrough 17 maja: "klik KPI -> lista maszyn z
+   datami". Wstawiane do <div id="inspections-modal-content"> w home.html
+   przez hx-get z KPI card "Przeglądy techniczne".
+
+   Sekcje:
+   1. Przeterminowane (rose accent) — destructive emphasis, NAJPIERW (P1),
+      operator MUSI je widzieć — bez przeglądu maszyna nie może pracować.
+   2. Najbliższe 14 dni (amber accent) — uwaga, niedługo blok.
+
+   Design notes (Design notes applied):
+   - Priority 1 (a11y): role="alert" na overdue section, role="list" + role="listitem",
+     focus-visible rings, polish locale + tabular-nums.
+   - Priority 2 (touch): min-h-[44px] na każdym wierszu listy.
+   - Priority 4 (style): bento section card, SVG ikony, kolory semantic (rose=critical,
+     amber=warning), color-not-only (icon + text + kolor).
+   - Priority 5 (mobile-first): max-h scroll, sticky section headers.
+   - Priority 6 (typo): weight-hierarchy (700 numbers, 600 UID, 400 description),
+     tabular-nums dla dat i counterów dni.
+   - Priority 8 (forms): empty-state friendly gdy oba puste.
+============================================================================ {% endcomment %}
+<div class="space-y-5">
+
+    {% comment %} ============================================================
+       Sekcja 1 — Przeterminowane (overdue) — destructive emphasis.
+       Sortowane przez inspection_date asc (najstarsze przeterminowanie pierwsze).
+    ============================================================ {% endcomment %}
+    {% if machines_overdue %}
+        <section role="alert" aria-labelledby="overdue-title" class="space-y-3">
+            <header class="flex items-start gap-3 px-4 py-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <h3 id="overdue-title" class="text-sm font-semibold text-rose-900 dark:text-rose-100">
+                        Przeterminowane — wymaga natychmiastowej akcji
+                    </h3>
+                    <p class="text-xs text-rose-700 dark:text-rose-300 mt-0.5">
+                        {{ machines_overdue|length }} {% if machines_overdue|length == 1 %}maszyna{% else %}maszyn{% endif %}
+                        nie może legalnie pracować na budowie do czasu przeglądu.
+                    </p>
+                </div>
+            </header>
+
+            <ul class="space-y-1.5" role="list">
+                {% for machine in machines_overdue %}
+                    <li>
+                        <a href="{% url 'machines:detail' uid=machine.uid %}"
+                           class="group flex items-center gap-3 px-3 py-2.5 min-h-[44px]
+                                  rounded-lg border border-rose-200 dark:border-rose-800
+                                  bg-white dark:bg-slate-800
+                                  hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-sm
+                                  focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
+                                  transition-colors"
+                           aria-label="Maszyna {{ machine.uid }} {{ machine.name }} — przegląd przeterminowany {{ machine.inspection_date|date:'d.m.Y' }}">
+                            <span class="font-mono font-semibold text-sm text-rose-700 dark:text-rose-300 flex-shrink-0">{{ machine.uid }}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ machine.name }}</p>
+                                <p class="text-xs text-rose-700 dark:text-rose-300">
+                                    Przegląd <time datetime="{{ machine.inspection_date|date:'Y-m-d' }}" class="tabular-nums font-mono font-semibold">{{ machine.inspection_date|date:'d.m.Y' }}</time>
+                                    {% with days_ago=today|timesince:machine.inspection_date %}
+                                        {# Wave 14-F: timesince dla data w przeszłości — Django zwraca "X days, Y hours". Truncate do dni. #}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold uppercase tracking-wider bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/>
+                                    <circle cx="12" cy="12" r="9" stroke-width="2" fill="none"/>
+                                </svg>
+                                Po terminie
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% comment %} ============================================================
+       Sekcja 2 — Najblizsze 14 dni (upcoming) — amber accent.
+       Sortowane inspection_date asc (najblizsze pierwsze).
+    ============================================================ {% endcomment %}
+    {% if machines_upcoming %}
+        <section aria-labelledby="upcoming-title" class="space-y-3">
+            <header class="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <h3 id="upcoming-title" class="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                        W najbliższych 14 dniach
+                    </h3>
+                    <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                        {{ machines_upcoming|length }} {% if machines_upcoming|length == 1 %}maszyna ma{% else %}maszyn ma{% endif %} zaplanowany przegląd.
+                        Umów wizytę serwisanta zanim minie termin.
+                    </p>
+                </div>
+            </header>
+
+            <ul class="space-y-1.5" role="list">
+                {% for machine in machines_upcoming %}
+                    <li>
+                        <a href="{% url 'machines:detail' uid=machine.uid %}"
+                           class="group flex items-center gap-3 px-3 py-2.5 min-h-[44px]
+                                  rounded-lg border border-slate-200 dark:border-slate-700
+                                  bg-white dark:bg-slate-800
+                                  hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-sm
+                                  focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
+                                  transition-colors"
+                           aria-label="Maszyna {{ machine.uid }} {{ machine.name }} — przegląd {{ machine.inspection_date|date:'d.m.Y' }}">
+                            <span class="font-mono font-semibold text-sm text-amber-700 dark:text-amber-300 flex-shrink-0">{{ machine.uid }}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ machine.name }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Przegląd <time datetime="{{ machine.inspection_date|date:'Y-m-d' }}" class="tabular-nums font-mono">{{ machine.inspection_date|date:'d.m.Y' }}</time>
+                                </p>
+                            </div>
+                            {# Days-until counter — friendly "za N dni" format. #}
+                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 tabular-nums">
+                                {% with days_diff=machine.inspection_date|timeuntil:today %}
+                                    {# timeuntil zwraca string like "13 dni, 14 godzin" - shortenujemy do pierwszego słowa. #}
+                                    {{ days_diff|truncatewords:2 }}
+                                {% endwith %}
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% comment %} ============================================================
+       Empty state — gdy NIC nie ma (overdue=0, upcoming=0).
+    ============================================================ {% endcomment %}
+    {% if not machines_overdue and not machines_upcoming %}
+        <div class="text-center py-12 px-4">
+            <span class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
+            <h3 class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-50">Wszystko aktualne</h3>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                Żadna maszyna nie ma przeterminowanego przeglądu i żaden przegląd nie wypada w najbliższych 14 dniach.
+            </p>
+        </div>
+    {% endif %}
+</div>

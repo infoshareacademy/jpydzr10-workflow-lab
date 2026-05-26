@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load planer_tags %}
+
+{% block title %}Wpis serwisowy #{{ record.pk }} — {{ record.machine.uid }} — Planer Maszyn{% endblock %}
+
+{% block content %}
+{# ------------------------------------------------------------------ #}
+{# Breadcrumb — Serwis → konkretny wpis. Wzorzec identyczny jak       #}
+{# w machines/detail.html (deep linking + nav-back jasne).            #}
+{# ------------------------------------------------------------------ #}
+<nav class="text-sm text-gray-500 dark:text-gray-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
+    <a href="{% url 'service:list' %}"
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span class="text-gray-900 dark:text-gray-200">Wpis #{{ record.pk }}</span>
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+
+        {# ============================== HEADER ============================== #}
+        <header class="surface-card p-5 md:p-6">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <span>Wpis serwisowy</span>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                        Wpis #{{ record.pk }}
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5 tabular-nums flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        {{ record.performed_date|date_pl }}
+                        <span class="text-gray-400 dark:text-gray-500 mx-1">·</span>
+                        <a href="{% url 'machines:detail' uid=record.machine.uid %}"
+                           class="font-mono text-brand-700 dark:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
+                            {{ record.machine.uid }}
+                        </a>
+                        <span class="text-gray-500 dark:text-gray-400">— {{ record.machine.name }}</span>
+                    </p>
+                </div>
+
+                {# Type badge — przegląd vs naprawa. #}
+                <div class="flex-shrink-0">
+                    {% if record.is_inspection %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {{ record.get_record_type_display }}
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                            {{ record.get_record_type_display }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        {# ============================== Wykonane prace ============================== #}
+        <section class="surface-card p-5 md:p-6" aria-labelledby="section-work">
+            <h2 id="section-work" class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"/>
+                </svg>
+                Wykonane prace
+            </h2>
+
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                {# Opis — pełna szerokość w preformatted format. #}
+                <div class="sm:col-span-2">
+                    <dt class="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">Opis</dt>
+                    <dd class="text-gray-900 dark:text-gray-100 whitespace-pre-line leading-relaxed">
+                        {% if record.description %}{{ record.description }}{% else %}<span class="text-gray-400 dark:text-gray-500 italic">— brak opisu —</span>{% endif %}
+                    </dd>
+                </div>
+
+                {# Wykonawca. #}
+                <div>
+                    <dt class="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Wykonał</dt>
+                    <dd class="mt-0.5 text-gray-900 dark:text-gray-100 font-medium flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        {{ record.performed_by|default:"—" }}
+                    </dd>
+                </div>
+
+                {# Koszt — z waluta jako "secondary" obok liczby. #}
+                <div>
+                    <dt class="text-xs uppercase text-gray-500 dark:text-gray-400 tracking-wider">Koszt</dt>
+                    <dd class="mt-0.5">
+                        <span class="text-lg font-bold tabular-nums text-gray-900 dark:text-gray-100">{{ record.cost }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">PLN</span>
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        {# ============================== Następny przegląd ============================== #}
+        {# Tylko dla przeglądów (naprawa ma next_inspection = NULL). #}
+        {% if record.is_inspection %}
+        <section class="surface-card p-5 md:p-6" aria-labelledby="section-next">
+            <h2 id="section-next" class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Następny przegląd
+            </h2>
+
+            {% if record.next_inspection %}
+                {% if record.is_overdue_followup %}
+                    {# Overdue: czerwony alert z dniami zaległości. #}
+                    <div class="flex items-start gap-3 px-4 py-3 rounded-lg bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold">Przegląd zaległy</p>
+                            <p class="text-sm mt-0.5">Termin: <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold">Termin: <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
+                            <p class="text-xs mt-0.5 opacity-90">Maszyna jest pod aktualnym przeglądem.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak daty następnego przeglądu.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {# ============================== Załącznik ============================== #}
+        {% if record.inspection_document %}
+        <section class="surface-card p-5 md:p-6" aria-labelledby="section-attachment">
+            <h2 id="section-attachment" class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                </svg>
+                Załącznik
+            </h2>
+
+            <a href="{{ record.inspection_document.url }}"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 group transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
+               target="_blank" rel="noopener">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6h8v2H6v-2zm0 4h8v2H6v-2z" clip-rule="evenodd"/>
+                    </svg>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                        Protokół (PDF)
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ record.inspection_document.name|cut:"inspections/" }}
+                        {% if record.inspection_document.size %}
+                        <span class="text-gray-400 dark:text-gray-500"> · {{ record.inspection_document.size|filesizeformat }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-hover:text-brand-600 dark:group-hover:text-brand-300 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+            </a>
+        </section>
+        {% endif %}
+    </div>
+
+    {# ============================== SIDEBAR ============================== #}
+    <aside class="space-y-4">
+        {# Akcje. #}
+        <div class="surface-card p-4">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Akcje</h2>
+            <div class="space-y-2">
+                {% if record.is_inspection %}
+                <a href="{% url 'service:pdf' pk=record.pk %}"
+                   class="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    Drukuj protokół PDF
+                </a>
+                {% endif %}
+
+                <a href="{% url 'machines:detail' uid=record.machine.uid %}"
+                   class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Zobacz maszynę
+                </a>
+
+                {# F-1: "Zakończ serwis" — widoczne tylko dla naprawy, gdy maszyna #}
+                {# faktycznie jest w serwisie i operator ma perm change_machine. #}
+                {# Confirm-then-submit przez Alpine — bez przeładowania strony. #}
+                {% if record.record_type == "naprawa" and record.machine.status == "W serwisie" and perms.machines.change_machine %}
+                <form method="post" action="{% url 'service:close_service' record.pk %}"
+                      x-data="{ confirming: false }">
+                    {% csrf_token %}
+                    <button type="submit"
+                            x-show="confirming"
+                            x-cloak
+                            class="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Potwierdź zakończenie
+                    </button>
+                    <button type="button"
+                            @click="confirming = true"
+                            x-show="!confirming"
+                            class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Zakończ serwis
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if perms.service.delete_servicerecord %}
+                <form method="post" action="{% url 'service:delete' pk=record.pk %}"
+                      x-data="{ confirming: false }">
+                    {% csrf_token %}
+                    <button type="submit"
+                            x-show="confirming"
+                            x-cloak
+                            class="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Potwierdź usunięcie
+                    </button>
+                    <button type="button"
+                            @click="confirming = true"
+                            x-show="!confirming"
+                            class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 3h6a1 1 0 011 1v3H8V4a1 1 0 011-1z"/>
+                        </svg>
+                        Usuń wpis
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Historia zmian — last 5 changes z simple_history. #}
+        {% if record.history.exists %}
+        <div class="surface-card p-4">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                Historia zmian
+            </h2>
+            <ol class="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 space-y-4">
+                {% for entry in record.history.all|slice:":5" %}
+                <li class="ml-4">
+                    <span class="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full bg-brand-500 border-2 border-white dark:border-gray-800"></span>
+                    <time class="block text-xs text-gray-500 dark:text-gray-400 tabular-nums">{{ entry.history_date|date_pl }}</time>
+                    <p class="text-xs text-gray-700 dark:text-gray-300 mt-0.5">
+                        <strong class="text-gray-900 dark:text-gray-100">{{ entry.get_history_type_display }}</strong>
+                        <span class="text-gray-500 dark:text-gray-400">przez</span>
+                        <span class="font-mono text-[11px]">{{ entry.history_user|default:"system" }}</span>
+                    </p>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Dodaj pracownika — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+{% comment %} ============================================================================
+   accounts/employee_register.html — formularz rejestracji nowego pracownika.
+
+   Wave 14-F O-1 — UI dla ``register_employee`` service (audyt Wave 14-E
+   identyfikował że service istnial ale nie mial frontu).
+
+   Design notes (Design notes applied):
+   - Priority 1 (a11y): visible <label for=> dla kazdego pola, role=alert
+     na bledach, aria-live="polite" non-field errors, fieldset/legend
+     groupowanie semantyczne (login/dane/kontakt/haslo).
+   - Priority 2 (touch): min-h-[44px] na input/button.
+   - Priority 4 (style): bento card max-w-3xl, subtle gradient akcent,
+     SVG ikona user-plus, brand-color top stripe.
+   - Priority 5 (mobile-first): single col mobile -> 2-col md+, max-w-3xl.
+   - Priority 6 (typo): weight hierarchy (700 H1, 600 labels, 500 helpers).
+   - Priority 8 (forms): visible labels (NIE placeholder-only), inline
+     validation messages near field (NIE summary), helper text dla password
+     o HIBP, autocomplete attributes, required indicators, error-clarity.
+   - destructive-emphasis: brak (to NIE destructive action - to creation).
+   - one primary CTA: tylko "Utwórz konto pracownika" jest primary.
+============================================================================ {% endcomment %}
+<section class="max-w-3xl mx-auto space-y-6">
+
+    {# === Page header — breadcrumb + h1 === #}
+    <header class="space-y-1">
+        <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72M6 18.719a9.094 9.094 0 01-3.741-.479 3 3 0 014.682-2.72M15 6.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span>Administracja &middot; Pracownicy</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            Dodaj pracownika
+        </h1>
+        <p class="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
+            Zarejestruj nowego pracownika w systemie. Konto użytkownika i profil
+            pracownika powstają w jednej transakcji, hasło sprawdzane jest przez
+            Have I Been Pwned, a funkcja RBAC od razu nadaje odpowiednie uprawnienia.
+        </p>
+    </header>
+
+    {# === Card === #}
+    <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800
+                border border-slate-200 dark:border-slate-700
+                shadow-sm">
+
+        {# Brand top accent #}
+        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-600 to-brand-500"
+             aria-hidden="true"></div>
+
+        <form method="post" class="px-6 py-7 sm:px-8 sm:py-8 space-y-6" novalidate>
+            {% csrf_token %}
+
+            {# Non-field errors (np. „Hasło ujawnione w wyciekach") - aria-live alert #}
+            {% if form.non_field_errors %}
+                <div role="alert" aria-live="polite"
+                     class="flex items-start gap-3 px-3 py-2.5 rounded-lg
+                            bg-rose-50 dark:bg-rose-900/20
+                            border border-rose-200 dark:border-rose-800
+                            text-rose-800 dark:text-rose-200 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 mt-0.5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="flex-1">{{ form.non_field_errors }}</div>
+                </div>
+            {% endif %}
+
+            {% comment %} ============================================================
+               Sekcja 1 — Dane logowania (username) + email.
+               Fieldset/legend semantyczne grupowanie (a11y field-grouping).
+            ============================================================ {% endcomment %}
+            <fieldset class="space-y-4">
+                <legend class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Dane logowania
+                </legend>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {# Login (username) #}
+                    <div>
+                        <label for="{{ form.username.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.username.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        {% render_field form.username class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.username.help_text %}
+                            <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.username.help_text }}</p>
+                        {% endif %}
+                        {% if form.username.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.username.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    {# Email #}
+                    <div>
+                        <label for="{{ form.email.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.email.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        {% render_field form.email class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.email.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.email.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {% comment %} ============================================================
+               Sekcja 2 — Dane osobowe (imię, nazwisko).
+            ============================================================ {% endcomment %}
+            <fieldset class="space-y-4 pt-2">
+                <legend class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Dane osobowe
+                </legend>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.first_name.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        {% render_field form.first_name class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.first_name.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.first_name.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.last_name.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        {% render_field form.last_name class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.last_name.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.last_name.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {% comment %} ============================================================
+               Sekcja 3 — Funkcja w firmie + telefon.
+            ============================================================ {% endcomment %}
+            <fieldset class="space-y-4 pt-2">
+                <legend class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Funkcja i kontakt
+                </legend>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.function.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.function.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        {% render_field form.function class+="form-select block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.function.help_text %}
+                            <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ form.function.help_text }}</p>
+                        {% endif %}
+                        {% if form.function.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.function.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.phone.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.phone.label }}
+                            <span class="text-slate-400 text-xs font-normal ml-1">(opcjonalnie)</span>
+                        </label>
+                        {% render_field form.phone class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                        {% if form.phone.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.phone.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {% comment %} ============================================================
+               Sekcja 4 — Hasło + potwierdzenie + HIBP info box.
+            ============================================================ {% endcomment %}
+            <fieldset class="space-y-4 pt-2">
+                <legend class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    Hasło
+                </legend>
+
+                {# HIBP info banner — semantic info, NIE warning #}
+                <div class="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 p-3">
+                    <p class="flex items-start gap-2 text-xs text-brand-800 dark:text-brand-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5 text-brand-600 dark:text-brand-300"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>
+                            Hasło sprawdzane jest przez bazę <strong>Have I Been Pwned</strong> —
+                            jeśli pojawiło się kiedykolwiek w publicznym wycieku, system je odrzuci.
+                            Minimum <strong>10 znaków</strong>. Zalecane: 12+ znaków, mieszanka liter / cyfr / znaków specjalnych.
+                        </span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                     x-data="{ show1: false, show2: false }">
+                    {# Hasło 1 — z reveal toggle #}
+                    <div>
+                        <label for="{{ form.password1.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.password1.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        <div class="relative">
+                            {% render_field form.password1 class+="form-input block w-full pl-3 pr-11 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" x-ref="pwd1" %}
+                            <button type="button"
+                                    @click="show1 = !show1; $refs.pwd1.type = show1 ? 'text' : 'password'"
+                                    :aria-pressed="show1"
+                                    :aria-label="show1 ? 'Ukryj hasło' : 'Pokaż hasło'"
+                                    class="absolute inset-y-0 right-0 flex items-center justify-center px-3 min-w-[44px]
+                                           text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300
+                                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset rounded-r-lg
+                                           transition-colors">
+                                <svg x-show="show1" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                </svg>
+                                <svg x-show="!show1" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% if form.password1.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.password1.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    {# Hasło 2 (potwierdzenie) — z reveal toggle #}
+                    <div>
+                        <label for="{{ form.password2.id_for_label }}"
+                               class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                            {{ form.password2.label }}
+                            <span class="text-rose-500" aria-hidden="true">*</span>
+                        </label>
+                        <div class="relative">
+                            {% render_field form.password2 class+="form-input block w-full pl-3 pr-11 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" x-ref="pwd2" %}
+                            <button type="button"
+                                    @click="show2 = !show2; $refs.pwd2.type = show2 ? 'text' : 'password'"
+                                    :aria-pressed="show2"
+                                    :aria-label="show2 ? 'Ukryj hasło' : 'Pokaż hasło'"
+                                    class="absolute inset-y-0 right-0 flex items-center justify-center px-3 min-w-[44px]
+                                           text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300
+                                           focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset rounded-r-lg
+                                           transition-colors">
+                                <svg x-show="show2" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                </svg>
+                                <svg x-show="!show2" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% if form.password2.errors %}
+                            <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                {{ form.password2.errors|join:" " }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {# === Actions row — Cancel + Primary submit === #}
+            <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <a href="{% url 'home' %}"
+                   class="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
+                          rounded-lg text-sm font-medium
+                          text-slate-700 dark:text-slate-300
+                          hover:bg-slate-100 dark:hover:bg-slate-700/40
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
+                          transition-colors">
+                    Anuluj
+                </a>
+
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2
+                               px-5 py-2.5 min-h-[44px]
+                               rounded-lg text-sm font-semibold
+                               bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+                               text-white shadow-sm hover:shadow
+                               transition-colors duration-150
+                               focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                               dark:focus-visible:ring-offset-slate-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                    <span>Utwórz konto pracownika</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# === Footer hint === #}
+    <p class="text-center text-xs text-slate-500 dark:text-slate-400">
+        Po utworzeniu konta pracownik otrzyma uprawnienia zgodne z wybraną funkcją (RBAC).
+    </p>
+</section>
+{% endblock %}

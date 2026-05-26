@@ -1,0 +1,144 @@
+"""Business operations for the service app.
+
+All writes to :class:`service.models.ServiceRecord` and the side-effect on
+:attr:`machines.Machine.inspection_date` go through this module. Mirrors the
+:mod:`reservations.services` style:
+
+* every public function uses keyword-only arguments (the ``*`` after the
+  function name) so call sites are self-documenting,
+* every write is wrapped in :func:`django.db.transaction.atomic`,
+* every public function accepts an optional ``today`` for ``freezegun`` tests,
+* business-rule violations raise :class:`django.core.exceptions.ValidationError`
+  — views translate them to flash messages.
+
+The "auto-update :attr:`Machine.inspection_date`" behaviour is the *only*
+reason this layer exists; without it, an operator would have to manually
+keep the per-machine date in sync with the latest performed inspection.
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import date
+from decimal import Decimal
+
+from dateutil.relativedelta import relativedelta
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils.translation import gettext_lazy as _
+
+from .models import INSPECTION_INTERVALS, ServiceRecord
+
+logger = logging.getLogger("service")
+
+
+# =============================================================================
+# CREATE
+# =============================================================================
+
+
+def create_service_record(
+    *,
+    machine,
+    record_type: str,
+    performed_date: date,
+    performed_by: str = "",
+    description: str = "",
+    cost: Decimal | float | int = Decimal("0.00"),
+    inspection_document=None,
+    today: date | None = None,
+) -> ServiceRecord:
+    """Create a :class:`ServiceRecord` and (for inspections) update the machine.
+
+    Side-effect — when ``record_type`` is one of the ``przegląd_*`` values,
+    the helper calculates ``next_inspection = performed_date + N months`` via
+    :class:`dateutil.relativedelta.relativedelta` (so February → May is
+    exactly three months, not 90 days), then bumps
+    :attr:`machines.Machine.inspection_date` if the newly computed date is
+    strictly later than the current one. Earlier dates never overwrite the
+    machine's stored value — defensive against an operator backdating an
+    older inspection by accident.
+
+    Race-condition guard (C1-3 P1): ``select_for_update`` na maszynie chroni
+    przed lost-update gdy dwóch techników równolegle wpisuje przegląd dla
+    tej samej maszyny — bez locka jeden z bump'ów ``inspection_date``
+    zostałby nadpisany przez drugi (klasyczny TOCTOU).
+
+    Raises:
+        ValidationError: ``performed_date`` is strictly in the future
+            (auditability — we record only completed work).
+    """
+    today = today or date.today()
+    if performed_date > today:
+        raise ValidationError({"performed_date": _("Data wykonania nie może być w przyszłości.")})
+
+    next_inspection: date | None = None
+    if record_type in INSPECTION_INTERVALS:
+        months = INSPECTION_INTERVALS[record_type]
+        next_inspection = performed_date + relativedelta(months=months)
+
+    # Import lokalny żeby uniknąć cyklicznego importu (machines.services importuje
+    # service.models przez related_name w testach).
+    from machines.models import Machine
+
+    with transaction.atomic():
+        # Lock maszyny przed read inspection_date — bez tego dwa równoległe
+        # create_service_record dla tej samej maszyny mogłyby przeczytać starą
+        # inspection_date i bump'nąć ją na różne wartości (lost update).
+        machine = Machine.objects.select_for_update().get(pk=machine.pk)
+
+        record = ServiceRecord.objects.create(
+            machine=machine,
+            record_type=record_type,
+            performed_date=performed_date,
+            performed_by=performed_by.strip(),
+            description=description,
+            cost=Decimal(str(cost)),
+            inspection_document=inspection_document,
+            next_inspection=next_inspection,
+        )
+
+        # Bump Machine.inspection_date for przegląd_* (never for naprawa).
+        if record.is_inspection and next_inspection is not None:
+            current = machine.inspection_date
+            if current is None or next_inspection > current:
+                machine.inspection_date = next_inspection
+                machine.save(update_fields=["inspection_date", "updated_at"])
+
+        logger.info(
+            "Wpis serwisowy %s utworzony (maszyna=%s, typ=%s, koszt=%s)",
+            record.pk,
+            machine.uid,
+            record.record_type,
+            record.cost,
+        )
+    return record
+
+
+# =============================================================================
+# CLOSE SERVICE  (return machine from "W serwisie" to warehouse)
+# =============================================================================
+
+
+def close_service(machine, *, today: date | None = None):
+    """Return a machine from ``W serwisie`` to the warehouse.
+
+    Wave 11 M-1 fix: używa ``close_repair`` (z guard na ``status == W_SERWISIE``)
+    żeby zapobiec state corruption. Wcześniejszy ``return_machine_to_warehouse``
+    bezwarunkowo overwritował status — pozwalało to nadpisać NA_BUDOWIE
+    przez "Zakończ serwis" na orphan ServiceRecord, zostawiając active
+    rezerwację z maszyną fizycznie w magazynie.
+    """
+    from django.core.exceptions import ValidationError
+
+    from machines.models import Machine
+    from machines.services import return_machine_to_warehouse
+
+    if machine.status != Machine.Status.W_SERWISIE:
+        raise ValidationError(
+            f"Nie można zakończyć serwisu — maszyna {machine.uid} nie jest "
+            f"w stanie 'W serwisie' (obecny status: {machine.get_status_display()})."
+        )
+    # Po guardzie, deleguj do return_machine_to_warehouse — zamyka rezerwacje
+    # plus flip status. close_repair zwraca tylko Machine, NIE zamyka rezerwacji.
+    return return_machine_to_warehouse(machine, today=today)
