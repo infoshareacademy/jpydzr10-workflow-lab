@@ -4,12 +4,12 @@ help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
 	@echo ""
 	@echo "Porty (Sebastian's lokalny dev):"
-	@echo "  Postgres:  localhost:5433  (container: kursowe-repo-8002)"
+	@echo "  Postgres:  localhost:5434  (container: kursowe-repo-8002)"
 	@echo "  Django:    http://localhost:8002"
 	@echo ""
 	@echo "Setup:"
 	@echo "  make install      — uv sync (dev group auto-install via [tool.uv] default-groups)"
-	@echo "  make db-up        — docker compose up -d (Postgres na 5433)"
+	@echo "  make db-up        — docker compose up -d (Postgres na 5434)"
 	@echo "  make db-down      — docker compose down (dane zachowane)"
 	@echo "  make db-logs      — docker compose logs -f postgres"
 	@echo "  make migrate      — manage.py migrate"
@@ -41,7 +41,7 @@ dev: install
 db-up:
 	docker compose up -d
 	@echo ""
-	@echo "✓ Postgres uruchomiony: localhost:5433 (container: kursowe-repo-8002)"
+	@echo "✓ Postgres uruchomiony: localhost:5434 (container: kursowe-repo-8002)"
 
 db-down:
 	docker compose down
