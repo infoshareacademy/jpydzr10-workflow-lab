@@ -19,6 +19,7 @@
 <div x-data="chatbotDrawer()"
      x-cloak
      @keydown.escape.window="close()"
+     @htmx:before-swap.window="onBeforeSwap($event)"
      class="font-sans">
 
     {# ============================================================== #}
@@ -415,14 +416,63 @@
                     },
 
                     /** Przed wysłaniem (htmx:before-request): clear draft natychmiast +
-                     *  ustaw pending=true. Dzięki temu user widzi że Enter zadziałał
-                     *  (input pusty) i nie próbuje wysłać drugi raz. */
+                     *  ustaw pending=true + dorzuć OPTYMISTYCZNĄ wiadomość usera
+                     *  do streamu. Dzięki temu user widzi swoją wiadomość natychmiast,
+                     *  nie czeka aż agent odpowie. Optymistyczny bubble ma marker
+                     *  ``data-optimistic="true"`` — listener htmx:beforeSwap usuwa
+                     *  go przed wstawieniem rzeczywistej odpowiedzi (która zawiera
+                     *  user + assistant), żeby nie było duplikatu. */
                     onBeforeSend(e) {
+                        const userQuestion = this.draft.trim();
                         this.pending = true;
                         this.draft = "";
                         this.charCount = 0;
                         if (this.$refs.questionInput) {
                             this.$refs.questionInput.style.height = "auto";
+                        }
+                        // Optymistyczny render — markup zgodny z _message.html role=user.
+                        if (userQuestion) {
+                            const stream = document.getElementById("chatbot-stream");
+                            if (stream) {
+                                const wrap = document.createElement("div");
+                                wrap.setAttribute("data-optimistic", "true");
+                                wrap.className = "flex justify-end gap-2 animate-msg-in";
+                                const col = document.createElement("div");
+                                col.className = "flex flex-col items-end max-w-[85%]";
+                                const bubble = document.createElement("div");
+                                bubble.className = "bg-brand-600 text-white " +
+                                    "rounded-2xl rounded-tr-sm px-3.5 py-2 shadow-sm break-words";
+                                const p = document.createElement("p");
+                                p.className = "text-sm whitespace-pre-wrap break-words";
+                                p.textContent = userQuestion;  // auto-escape XSS
+                                bubble.appendChild(p);
+                                col.appendChild(bubble);
+                                const avatar = document.createElement("div");
+                                avatar.className = "flex-shrink-0 h-7 w-7 rounded-full " +
+                                    "bg-brand-100 dark:bg-brand-900/40 " +
+                                    "text-brand-700 dark:text-brand-300 " +
+                                    "text-[10px] font-semibold " +
+                                    "flex items-center justify-center " +
+                                    "border border-brand-200/60 dark:border-brand-800/60";
+                                avatar.setAttribute("aria-hidden", "true");
+                                avatar.textContent = "Ty";
+                                wrap.appendChild(col);
+                                wrap.appendChild(avatar);
+                                stream.appendChild(wrap);
+                                stream.scrollTop = stream.scrollHeight;
+                            }
+                        }
+                    },
+
+                    /** Przed swap'em odpowiedzi z serwera: usuń optymistyczny user
+                     *  message bubble (oznaczony data-optimistic="true"). Serwer
+                     *  zwraca pełny user+assistant render, więc nasz optymistyczny
+                     *  byłby duplikatem. */
+                    onBeforeSwap(e) {
+                        const stream = document.getElementById("chatbot-stream");
+                        if (stream) {
+                            stream.querySelectorAll('[data-optimistic="true"]')
+                                .forEach(el => el.remove());
                         }
                     },
 
@@ -436,6 +486,14 @@
                             // Scroll do dołu — najświeższa wiadomość widoczna.
                             const stream = document.getElementById("chatbot-stream");
                             if (stream) stream.scrollTop = stream.scrollHeight;
+                        } else {
+                            // Request failed (network error, 5xx etc.) — sprzątamy
+                            // pozostawione optymistyczne bubble.
+                            const stream = document.getElementById("chatbot-stream");
+                            if (stream) {
+                                stream.querySelectorAll('[data-optimistic="true"]')
+                                    .forEach(el => el.remove());
+                            }
                         }
                     },
 

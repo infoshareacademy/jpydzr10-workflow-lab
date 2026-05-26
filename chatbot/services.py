@@ -405,12 +405,21 @@ def ask_chatbot(
         # Lazy import zapobiega circular dependency z ``chatbot.agent`` (które
         # importuje ``django.contrib.auth.models.User`` — bezpieczne tylko po
         # bootstrapie app registry, czyli przy pierwszym wywołaniu serwisu).
+        from django.utils import timezone
+
         from .agent import ChatDeps
 
         wrapped = wrap_user_input(sanitized)
+        # ``timezone.localdate()`` i ``timezone.now()`` używają TIME_ZONE z
+        # settings (Europe/Warsaw) — dzięki temu agent zna polski dzień i
+        # godzinę nawet gdy serwer chodzi w UTC.
         result = agent.run_sync(
             wrapped,
-            deps=ChatDeps(user=user),
+            deps=ChatDeps(
+                user=user,
+                today=timezone.localdate(),
+                now=timezone.localtime(),
+            ),
             model_settings={"timeout": GEMINI_TIMEOUT_SECONDS},
         )
     except Exception as exc:

@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from datetime import date, datetime
 from typing import Any
 
 # Pydantic AI symbols są używane jako adnotacje wewnątrz dekorowanych funkcji
@@ -67,8 +68,13 @@ class ChatDeps:
 
     Pozwala narzędziom na user-aware logikę (per-user authorization,
     audit trail, scope'owanie zapytań do "własnych rezerwacji" itp.). Każde
-    wywołanie ``agent.run_sync(question, deps=ChatDeps(user=request.user))``
-    propaguje obiekt do wszystkich tooli przez ``ctx.deps.user``.
+    wywołanie ``agent.run_sync(question, deps=ChatDeps(user=..., today=...))``
+    propaguje obiekt do wszystkich tooli przez ``ctx.deps.user`` /
+    ``ctx.deps.today``.
+
+    ``today`` jest **wymagane** żeby agent wiedział co znaczy "jutro",
+    "w przyszłym tygodniu" itp. — bez tego pola Gemini zgaduje datę z
+    wewnętrznego znacznika modelu (często sprzed roku-dwóch).
 
     Obecnie tools (zobacz :mod:`chatbot.tools`) wciąż używają globalnych
     funkcji bez filtrowania per-user — ``user`` jest dostępny dla *przyszłej*
@@ -77,6 +83,8 @@ class ChatDeps:
     """
 
     user: User
+    today: date
+    now: datetime
 
 
 SYSTEM_PROMPT = """Jesteś asystentem w aplikacji Planer Maszyn Budowlanych.
@@ -174,6 +182,38 @@ def build_agent() -> Any | None:
         deps_type=ChatDeps,
         system_prompt=SYSTEM_PROMPT,
     )
+
+    @agent.system_prompt
+    def _inject_now(ctx: RunContext[ChatDeps]) -> str:
+        """Dorzuca aktualną datę i godzinę (TZ-aware, Europe/Warsaw) do system
+        promptu. Bez tego model zgaduje na podstawie własnego knowledge cutoff
+        (często sprzed roku-dwóch) i myli dzień jutrzejszy.
+
+        ``ctx.deps.today`` i ``ctx.deps.now`` są wstrzykiwane przez
+        ``chatbot.services.ask_chatbot`` z ``django.utils.timezone`` — czyli
+        używają TIME_ZONE z ``settings`` (Europe/Warsaw dla tego projektu).
+        """
+        from datetime import timedelta
+        today = ctx.deps.today
+        now = ctx.deps.now
+        tomorrow = (today + timedelta(days=1)).isoformat()
+        day_after = (today + timedelta(days=2)).isoformat()
+        weekdays_pl = [
+            "poniedziałek", "wtorek", "środa", "czwartek",
+            "piątek", "sobota", "niedziela",
+        ]
+        weekday = weekdays_pl[today.weekday()]
+        return (
+            f"\nKONTEKST CZASOWY (TZ Europe/Warsaw): "
+            f"dziś jest {weekday} {today.isoformat()}, godzina {now.strftime('%H:%M')}. "
+            f"Jutro to {tomorrow}, pojutrze {day_after}, "
+            f"za tydzień od {(today + timedelta(days=7)).isoformat()} "
+            f"do {(today + timedelta(days=13)).isoformat()}. "
+            "Używaj TYCH dat w wywołaniach narzędzi, NIE zgaduj na podstawie "
+            "własnej wiedzy modelu. Jeśli użytkownik prosi 'dziś' a jest po "
+            "godzinach pracy (>18:00), zwróć mu na to uwagę zanim utworzysz "
+            "rezerwację — to często pomyłka."
+        )
 
     @agent.tool
     def get_machine_status(ctx: RunContext[ChatDeps], uid: str) -> str:
