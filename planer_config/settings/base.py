@@ -74,7 +74,7 @@ LOCAL_APPS = [
     "core.apps.CoreConfig",
     "accounts.apps.AccountsConfig",
     "machines.apps.MachinesConfig",
-    "reservation.apps.ReservationConfig",
+    "reservations.apps.ReservationsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
