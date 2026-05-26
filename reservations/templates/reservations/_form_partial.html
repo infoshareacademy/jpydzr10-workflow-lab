@@ -247,8 +247,12 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
-            Anuluj
+            {% if mode == 'edit' %}Wstecz{% else %}Anuluj{% endif %}
         </a>
+        {# Terminal-state guard: zakonczone/anulowane rezerwacje sa immutable;
+           ukrywamy submit zeby user nie probowal edytowac, services.py i tak
+           odrzuci POST przez ValidationError (defense-in-depth). #}
+        {% if not reservation or not reservation.is_closed %}
         <button type="submit"
                 class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
             {% if mode == 'edit' %}
@@ -259,6 +263,12 @@
                 Utwórz rezerwację
             {% endif %}
         </button>
+        {% else %}
+        <p class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Rezerwacja {{ reservation.get_status_display|lower }} — tylko do odczytu
+        </p>
+        {% endif %}
     </div>
 </form>
 
