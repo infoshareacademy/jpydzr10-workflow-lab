@@ -94,30 +94,38 @@
         {% include "reservations/_form_partial.html" %}
     </div>
 
-    {# ============================== FOOTER: AKCJE (tylko w edit mode) ============================== #}
+    {# ============================== FOOTER: AKCJE TERMINALNE (zmieniaja status, NIE sa zwyklym zapisem!) ============================== #}
     {% if mode == 'edit' and reservation and not reservation.is_closed %}
-    <footer class="px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30 flex flex-wrap items-center gap-2">
-        <p class="text-xs text-slate-500 dark:text-slate-400 flex-1 min-w-0">
-            Szybkie akcje (nie wymagaja edycji formularza):
-        </p>
+    <footer class="px-6 py-3 border-t-2 border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-900/20 flex flex-wrap items-center gap-3">
+        <div class="flex items-start gap-2 flex-1 min-w-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+            </svg>
+            <p class="text-[11px] leading-tight text-amber-900 dark:text-amber-200">
+                <strong>Akcje terminalne</strong> — zmieniaja status rezerwacji.
+                Aby zapisac zmiany w formularzu uzyj <em>"Zapisz zmiany"</em> ponizej.
+            </p>
+        </div>
 
         {# Zmien status (confirm / complete -- zalezy od aktualnego statusu) #}
         {% if reservation.is_pending %}
             <form method="post" action="{% url 'reservations:confirm' reservation.pk %}" class="inline">
                 {% csrf_token %}
                 <button type="submit"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
+                        x-on:click.prevent="if (confirm('Potwierdzic rezerwacje #{{ reservation.pk }} ({{ reservation.machine.uid }})? Status zmieni sie z oczekujacej na potwierdzona.')) $event.target.closest('form').submit()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Potwierdz
+                    Potwierdz status
                 </button>
             </form>
         {% elif reservation.is_confirmed %}
             <form method="post" action="{% url 'reservations:complete' reservation.pk %}" class="inline">
                 {% csrf_token %}
                 <button type="submit"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Zakoncz
+                        x-on:click.prevent="if (confirm('Zakonczyc rezerwacje #{{ reservation.pk }} ({{ reservation.machine.uid }})? Maszyna wroci do magazynu, status zmieni sie na zakonczona. Tej operacji NIE da sie cofnac.')) $event.target.closest('form').submit()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9M3 7l9 6 9-6M3 7l9-4 9 4"/></svg>
+                    Zakoncz i zwroc maszyne
                 </button>
             </form>
         {% endif %}
