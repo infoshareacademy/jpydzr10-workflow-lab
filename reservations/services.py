@@ -291,6 +291,19 @@ def update_reservation(
             )
         )
 
+    # Terminal state guard — zakonczone i anulowane rezerwacje sa terminalne,
+    # NIE da sie ich edytowac. Bez tego guard'a user moglby edytowac
+    # zakonczona rezerwacje (np. skrocic end_date) co tworzy mylacy
+    # audit trail (history pokazuje 'edycja zwrocila maszyne' chociaz
+    # maszyna byla juz zwrocona przy complete).
+    if reservation.status in {Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA}:
+        raise ValidationError(
+            _(
+                "Nie można edytować rezerwacji o statusie %(status)s — jest terminalna. "
+                "Aby zmienić dane, utwórz nową rezerwację."
+            ) % {"status": reservation.get_status_display()}
+        )
+
     allowed = {
         "start_date",
         "end_date",

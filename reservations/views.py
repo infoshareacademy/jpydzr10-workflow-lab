@@ -363,7 +363,12 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
     raise_exception = True
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        # Terminal status filter — zakonczone i anulowane rezerwacje są
+        # immutable (`update_reservation` rzuca ValidationError). Front-door
+        # blokujemy tutaj — 404 zamiast cichej mutacji po POST.
+        qs = super().get_queryset().exclude(
+            status__in=[Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA]
+        )
         if self.request.user.is_superuser:
             return qs
         # Ownership check — non-superuser może edytować tylko swoje rezerwacje.

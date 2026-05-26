@@ -185,12 +185,26 @@
                     </p>
                     <ul class="space-y-1">
                         {% for conv in conversations %}
-                            <li class="flex items-center gap-2 text-xs
-                                       text-gray-700 dark:text-gray-300">
-                                <span class="text-gray-400 dark:text-gray-500 tabular-nums">
-                                    #{{ conv.pk }}
-                                </span>
-                                <span class="truncate">{{ conv.title|default:"(bez tytułu)" }}</span>
+                            <li>
+                                <button type="button"
+                                        hx-get="{% url 'chatbot:conversation_detail' conv.pk %}"
+                                        hx-target="#chatbot-stream"
+                                        hx-swap="innerHTML scroll:bottom"
+                                        class="w-full flex items-center gap-2 px-2 py-1.5 rounded
+                                               text-left text-xs
+                                               text-gray-700 dark:text-gray-300
+                                               hover:bg-brand-50 dark:hover:bg-brand-900/20
+                                               hover:text-brand-700 dark:hover:text-brand-300
+                                               focus:outline-none focus:ring-2 focus:ring-brand-500
+                                               transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                    </svg>
+                                    <span class="text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
+                                        #{{ conv.pk }}
+                                    </span>
+                                    <span class="truncate min-w-0">{{ conv.title|default:"(bez tytułu)" }}</span>
+                                </button>
                             </li>
                         {% endfor %}
                     </ul>

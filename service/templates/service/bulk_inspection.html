@@ -126,7 +126,13 @@
                 <label class="machine-option flex items-center gap-2 px-2.5 py-1.5 rounded text-sm bg-white dark:bg-gray-800 border border-transparent hover:border-brand-300 dark:hover:border-brand-700 cursor-pointer transition-colors"
                        data-label="{{ choice.choice_label|lower }}"
                        x-show="matches('{{ choice.choice_label|lower|escapejs }}')">
-                    {{ choice.tag|attr:"class:rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 flex-shrink-0"|attr:"@change:onCheck($event)" }}
+                    {# Manual input render — widget_tweaks |attr: nie dziala na choice.tag (BoundWidget zwraca SafeString, nie BoundField). #}
+                    <input type="checkbox"
+                           name="{{ choice.data.name }}"
+                           value="{{ choice.data.value }}"
+                           {% if choice.data.selected %}checked{% endif %}
+                           @change="onCheck($event)"
+                           class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 flex-shrink-0">
                     <span class="font-mono text-xs text-gray-700 dark:text-gray-200 truncate">{{ choice.choice_label }}</span>
                 </label>
                 {% endfor %}

@@ -36,6 +36,41 @@ DRAWER_MESSAGE_LIMIT = 50
 
 
 @login_required
+def conversation_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    """Render messages konkretnej konwersacji w drawer (HTMX partial).
+
+    Wywoływane po kliknieciu na konwersację w listingu drawer'a — zwraca
+    HTML listy wiadomości tej konwersacji + hidden input do swap'a
+    ``conversation_id`` (OOB) zeby kolejne pytania trafialy do tej samej
+    konwersacji.
+    """
+    conversation = Conversation.objects.filter(pk=pk, user=request.user).first()
+    if conversation is None:
+        return HttpResponse("", status=404)
+
+    messages_qs = conversation.messages.order_by("created_at")[:DRAWER_MESSAGE_LIMIT]
+    rendered_messages = [
+        {
+            "role": m.role,
+            "role_label": m.get_role_display(),
+            "content": m.content,
+            "tokens_used": m.tokens_used,
+            "created_at": m.created_at,
+        }
+        for m in messages_qs
+    ]
+    return render(
+        request,
+        "chatbot/_conversation_history.html",
+        {
+            "messages": rendered_messages,
+            "conversation": conversation,
+            "pending_action": conversation.pending_action,
+        },
+    )
+
+
+@login_required
 def drawer(request: HttpRequest) -> HttpResponse:
     """Render slide-out drawera asystenta (panel boczny w body).
 

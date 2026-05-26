@@ -152,10 +152,14 @@ class MachineDetailView(LoginRequiredMixin, DetailView):
         # Wave 4 P1: recent_reservations — Reservation.machine FK z
         # related_name="reservations". Limit 10, najnowsze ostatnich.
         # Lazy import — unikamy circular import (reservations importuje machines).
+        # Wykluczamy ANULOWANA — to były rezerwacje "odwołane" przed startem,
+        # nie reprezentują pracy maszyny. Bez exclude lista 10 zostawała by
+        # zdominowana przez anulowane, ważne historyczne by wypadły poza top-10.
         from reservations.models import Reservation
 
         context["recent_reservations"] = (
             Reservation.objects.filter(machine=machine)
+            .exclude(status=Reservation.Status.ANULOWANA)
             .select_related("site")
             .order_by("-start_date")[:10]
         )

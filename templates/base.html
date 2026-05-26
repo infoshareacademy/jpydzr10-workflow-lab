@@ -366,7 +366,7 @@
                                    hx-trigger="keyup changed delay:300ms[this.value.length>=2], search delay:200ms[this.value.length>=2]"
                                    hx-target="#search-dropdown"
                                    hx-swap="innerHTML"
-                                   hx-on::after-request="hasResults = $event.target.innerHTML.trim().length > 0; open = hasResults"
+                                   hx-on::after-request="hasResults = document.getElementById('search-dropdown').innerHTML.trim().length > 0; open = hasResults"
                                    @focus="if (hasResults) open = true"
                                    @input="if (!$event.target.value || $event.target.value.length < 2) { open = false; hasResults = false; document.getElementById('search-dropdown').innerHTML = ''; }"
                                    class="block w-full pl-9 pr-3 py-2 text-sm rounded-lg

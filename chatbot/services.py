@@ -180,7 +180,7 @@ def _extract_proposal_from_tool_calls(result) -> dict | None:
             if isinstance(raw_args, str):
                 try:
                     args_dict = json.loads(raw_args)
-                except json.JSONDecodeError, ValueError:
+                except (json.JSONDecodeError, ValueError):
                     args_dict = {}
             elif isinstance(raw_args, dict):
                 args_dict = raw_args
@@ -260,7 +260,7 @@ def _parse_proposal(response: str | None) -> dict | None:
         candidate = match.group(0)
         try:
             data = json.loads(candidate)
-        except json.JSONDecodeError, ValueError:
+        except (json.JSONDecodeError, ValueError):
             continue
         if not isinstance(data, dict):
             continue
