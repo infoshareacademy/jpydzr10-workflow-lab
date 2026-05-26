@@ -243,6 +243,8 @@
               hx-target="#chatbot-stream"
               hx-swap="beforeend scroll:#chatbot-stream:bottom"
               hx-indicator="#chatbot-loading"
+              hx-disabled-elt="textarea, button[type=submit]"
+              x-on:htmx:before-request="onBeforeSend($event)"
               x-on:htmx:after-request="onAfterSend($event)"
               class="flex-shrink-0
                      border-t border-gray-200 dark:border-gray-700
@@ -295,8 +297,8 @@
 
                 {# Send button — floating w prawym dolnym rogu textareay. #}
                 <button type="submit"
-                        :disabled="charCount < 3 || charCount > 2000"
-                        :aria-disabled="charCount < 3 || charCount > 2000"
+                        :disabled="charCount < 3 || charCount > 2000 || pending"
+                        :aria-disabled="charCount < 3 || charCount > 2000 || pending"
                         aria-label="Wyślij pytanie"
                         class="absolute bottom-1.5 right-1.5
                                inline-flex items-center justify-center
@@ -348,6 +350,7 @@
                     open: false,
                     draft: "",
                     charCount: 0,
+                    pending: false,
                     _previousActive: null,
 
                     /** Otwórz drawer + focus na textarea + zapisz „previous" focus. */
@@ -404,18 +407,30 @@
                             this.autoGrow({ target: ta });
                             return;
                         }
+                        // Anti-duplicate: jeśli poprzednie zapytanie nadal in-flight, ignoruj Enter.
+                        if (this.pending) return;
                         // Nie submituj jeśli za krótkie/za długie.
                         if (this.charCount < 3 || this.charCount > 2000) return;
                         e.target.form && e.target.form.requestSubmit();
                     },
 
-                    /** Po HTMX response: clear draft, reset autogrow height, refocus input. */
+                    /** Przed wysłaniem (htmx:before-request): clear draft natychmiast +
+                     *  ustaw pending=true. Dzięki temu user widzi że Enter zadziałał
+                     *  (input pusty) i nie próbuje wysłać drugi raz. */
+                    onBeforeSend(e) {
+                        this.pending = true;
+                        this.draft = "";
+                        this.charCount = 0;
+                        if (this.$refs.questionInput) {
+                            this.$refs.questionInput.style.height = "auto";
+                        }
+                    },
+
+                    /** Po HTMX response: zdejmij pending, refokus input. */
                     onAfterSend(e) {
+                        this.pending = false;
                         if (e.detail && e.detail.successful) {
-                            this.draft = "";
-                            this.charCount = 0;
                             if (this.$refs.questionInput) {
-                                this.$refs.questionInput.style.height = "auto";
                                 this.$refs.questionInput.focus();
                             }
                             // Scroll do dołu — najświeższa wiadomość widoczna.
