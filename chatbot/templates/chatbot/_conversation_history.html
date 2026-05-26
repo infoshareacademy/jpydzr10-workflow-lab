@@ -1,0 +1,24 @@
+{# ====================================================================== #}
+{# chatbot/_conversation_history.html                                      #}
+{# ====================================================================== #}
+{# Render listy wiadomosci wybranej konwersacji (klik z drawer sidebar).   #}
+{# OOB swap'uje hidden input conversation_id zeby kolejne pytania          #}
+{# trafialy do TEJ konwersacji (a nie zakladaly nowej).                    #}
+{# ====================================================================== #}
+
+{# OOB: hidden input conversation_id w form'ie — bedzie podmieniony po     #}
+{# stronie klienta przez HTMX (zachowanie swap-oob).                       #}
+<input type="hidden"
+       name="conversation_id"
+       value="{{ conversation.pk }}"
+       hx-swap-oob="true"
+       id="id_conversation_id">
+
+{% for message in messages %}
+    {% include "chatbot/_message.html" with message=message %}
+{% endfor %}
+
+{# Confirmation card jesli konwersacja ma pending_action (Wave 14-C). #}
+{% if pending_action %}
+    {% include "chatbot/_confirmation_card.html" with pending_action=pending_action conversation=conversation %}
+{% endif %}
