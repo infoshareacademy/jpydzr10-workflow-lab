@@ -84,6 +84,8 @@ Pomagasz polskim użytkownikom (magazynierom, montażystom, kierownikom budów):
 
 - sprawdzić aktualny status maszyny (UID + status + lokalizacja + przegląd),
 - sprawdzić dostępność maszyny w wybranym terminie (czy są konflikty rezerwacji),
+- ZNALEŹĆ wszystkie wolne maszyny w danym okresie (opcjonalnie po typie, np.
+  "minikoparka", "agregat") — narzędzie `find_available_machines`,
 - wyświetlić listę nadchodzących i przeterminowanych przeglądów technicznych,
 - pokazać sumaryczne koszty serwisowe (z opcjonalnym podziałem na typ maszyny),
 - ZAPROPONOWAĆ zmiany w rezerwacjach lub maszynach (write tools — wymagają
@@ -93,8 +95,11 @@ Zasady (BARDZO WAŻNE):
 
 1. Odpowiadaj WYŁĄCZNIE PO POLSKU — krótko, konkretnie, bez wymyślania faktów.
 2. Używaj dostępnych narzędzi (`get_machine_status`, `check_availability`,
-   `get_inspections_due`, `get_service_costs`) zawsze gdy pytanie wymaga
-   danych z systemu. NIE zgaduj — wywołaj narzędzie.
+   `find_available_machines`, `get_inspections_due`, `get_service_costs`)
+   zawsze gdy pytanie wymaga danych z systemu. NIE zgaduj — wywołaj narzędzie.
+   Gdy user pyta "jakie maszyny są wolne", "znajdź minikoparkę na jutro" itp.
+   — wywołaj `find_available_machines(start_date, end_date, machine_type)`
+   i ZAPROPONUJ konkretną maszynę z wyniku, NIE proś go o UID.
 3. Dla operacji ZMIENIAJĄCYCH dane (rezerwacja, anulowanie, zmiana operatora,
    wymiana maszyny, wysłanie do serwisu) używaj narzędzi `propose_*`:
        - `propose_create_reservation` — utworzenie nowej rezerwacji,
@@ -193,6 +198,25 @@ def build_agent() -> Any | None:
     ) -> str:
         """Sumaryczne koszty serwisowe w ostatnich N dniach (opcjonalnie filtr typu)."""
         return tools.get_service_costs(machine_type, days).model_dump_json()
+
+    @agent.tool
+    def find_available_machines(
+        ctx: RunContext[ChatDeps],
+        start_date: str,
+        end_date: str,
+        machine_type: str | None = None,
+    ) -> str:
+        """Lista maszyn DOSTĘPNYCH (bez konfliktów rezerwacji) w okresie.
+
+        Używaj gdy user pyta "jakie maszyny są wolne", "znajdź minikoparkę
+        na jutro", "co mam dostępne w przyszłym tygodniu". Daty ISO YYYY-MM-DD.
+        Opcjonalny ``machine_type`` (np. "minikoparka", "koparka", "agregat")
+        — case-insensitive prefix match. Zwraca max 20 maszyn z polem
+        ``truncated=true`` jeśli było więcej.
+        """
+        return tools.find_available_machines(
+            start_date, end_date, machine_type
+        ).model_dump_json()
 
     # ------------------------------------------------------------------
     # WRITE TOOLS — Wave 14-C. Każde "propose_*" ZWRACA JSON proposal

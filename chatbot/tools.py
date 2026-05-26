@@ -117,6 +117,33 @@ class ServiceCostResult(BaseModel):
     by_type: dict[str, float]
 
 
+class AvailableMachineItem(BaseModel):
+    """Pojedyncza maszyna na liście dostępnych w danym okresie."""
+
+    uid: str
+    name: str
+    machine_type: str
+    location: str
+
+
+class FindAvailableMachinesResult(BaseModel):
+    """Wynik :func:`find_available_machines`."""
+
+    start_date: str
+    end_date: str
+    machine_type: str | None = Field(
+        default=None,
+        description="Filtr typu jeśli podany (np. 'minikoparka'). None = wszystkie typy.",
+    )
+    total_found: int
+    machines: list[AvailableMachineItem]
+    truncated: bool = Field(
+        default=False,
+        description="True gdy lista została obcięta do limitu (zwykle 20).",
+    )
+    error: str | None = None
+
+
 # =============================================================================
 # TOOL IMPLEMENTATIONS — wszystkie READ-ONLY
 # =============================================================================
@@ -321,6 +348,127 @@ def get_service_costs(machine_type: str | None = None, days: int = 90) -> Servic
         total_cost=float(total),
         record_count=len(records),
         by_type=by_type,
+    )
+
+
+# Limit liczby maszyn zwracanych przez ``find_available_machines`` żeby
+# kontekst promptu nie urósł zbyt mocno (oszczędność tokenów). Przy 20+
+# wynikach lepiej żeby agent doradził użytkownikowi otwarcie strony
+# ``/maszyny/`` niż listował wszystkie.
+AVAILABLE_MACHINES_LIMIT = 20
+
+
+def find_available_machines(
+    start_date: str,
+    end_date: str,
+    machine_type: str | None = None,
+) -> FindAvailableMachinesResult:
+    """Zwraca listę maszyn dostępnych (bez konfliktów rezerwacji) w okresie
+    ``[start_date, end_date]``, opcjonalnie filtrowaną po typie maszyny.
+
+    Używaj tego narzędzia gdy user pyta "jakie maszyny są wolne", "znajdź
+    minikoparkę na jutro", "co mam dostępnego w przyszłym tygodniu" itp.
+
+    Args:
+        start_date: ISO YYYY-MM-DD (data początku okresu).
+        end_date: ISO YYYY-MM-DD (data końca okresu).
+        machine_type: Opcjonalny filtr typu — wartość z ``Machine.Type.choices``
+            (np. ``"koparka"``, ``"minikoparka"``, ``"agregat prądotwórczy"``,
+            ``"podnośnik nożycowy"``, ``"podnośnik teleskopowy"``,
+            ``"wózek widłowy"``, ``"walec"``, ``"zagęszczarka"``,
+            ``"spawarka"``, ``"inne"``). Akceptujemy też prefix match
+            case-insensitive ("minik" → "minikoparka") żeby agent nie musial
+            znać dokładnego stringu.
+
+    Returns:
+        :class:`FindAvailableMachinesResult` z listą do 20 maszyn. ``truncated=True``
+        jeśli było więcej niż 20 spełniających kryteria. Maszyny w statusie
+        ``"Wycofana"`` / ``"W serwisie"`` są wykluczone — nie da się ich
+        zarezerwować.
+    """
+    from machines.models import Machine
+    from reservations.services import has_conflict
+
+    try:
+        start = date.fromisoformat(start_date)
+        end = date.fromisoformat(end_date)
+    except ValueError as exc:
+        return FindAvailableMachinesResult(
+            start_date=start_date,
+            end_date=end_date,
+            machine_type=machine_type,
+            total_found=0,
+            machines=[],
+            error=f"Nieprawidłowy format daty: {exc}",
+        )
+
+    if end < start:
+        return FindAvailableMachinesResult(
+            start_date=start.isoformat(),
+            end_date=end.isoformat(),
+            machine_type=machine_type,
+            total_found=0,
+            machines=[],
+            error="Data końca musi być >= data początku.",
+        )
+
+    # Bazowy queryset: tylko maszyny które są w teorii rezerwowalne
+    # (W magazynie / Na budowie / Zarezerwowana — wszystkie poza WYCOFANA
+    # i W_SERWISIE które są niedostępne na nowe rezerwacje).
+    qs = Machine.objects.exclude(
+        status__in=[Machine.Status.WYCOFANA, Machine.Status.W_SERWISIE]
+    )
+
+    # Type filter — case-insensitive prefix match.
+    resolved_type = None
+    if machine_type:
+        type_lower = machine_type.strip().lower()
+        # Dopasuj do najlepszego z choices.
+        for value, _label in Machine.Type.choices:
+            if value.lower() == type_lower or value.lower().startswith(type_lower):
+                resolved_type = value
+                break
+        if resolved_type is None:
+            return FindAvailableMachinesResult(
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+                machine_type=machine_type,
+                total_found=0,
+                machines=[],
+                error=(
+                    f"Nieznany typ maszyny: '{machine_type}'. Dostępne: "
+                    + ", ".join(v for v, _ in Machine.Type.choices)
+                ),
+            )
+        qs = qs.filter(machine_type=resolved_type)
+
+    # Filtrujemy konflikty rezerwacji per maszyna. Wykonujemy w Pythonie,
+    # nie w SQL — has_conflict używa złożonej logiki (actual_return_date,
+    # legacy compatibility) trudnej do zsubquery'owania.
+    available: list[AvailableMachineItem] = []
+    truncated = False
+    for m in qs.order_by("uid"):
+        if has_conflict(machine_id=m.id, start=start, end=end):
+            continue
+        available.append(
+            AvailableMachineItem(
+                uid=m.uid,
+                name=m.name,
+                machine_type=m.get_machine_type_display(),
+                location=m.location,
+            )
+        )
+        if len(available) >= AVAILABLE_MACHINES_LIMIT:
+            truncated = True
+            break
+
+    return FindAvailableMachinesResult(
+        start_date=start.isoformat(),
+        end_date=end.isoformat(),
+        machine_type=resolved_type,
+        total_found=len(available),
+        machines=available,
+        truncated=truncated,
     )
 
 
