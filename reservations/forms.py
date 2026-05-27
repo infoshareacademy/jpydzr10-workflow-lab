@@ -111,7 +111,7 @@ class ReservationForm(forms.ModelForm):
         # już-nieistniejący sprzęt (regression z dodania statusu WYCOFANA).
         reservable = Machine.objects.exclude(
             status__in=[Machine.Status.W_SERWISIE, Machine.Status.WYCOFANA]
-        )
+        ).filter(is_reservable=True)
         if self.instance and self.instance.pk and self.instance.machine_id:
             reservable = reservable | Machine.objects.filter(pk=self.instance.machine_id)
         self.fields["machine"].queryset = reservable.distinct().order_by("uid")

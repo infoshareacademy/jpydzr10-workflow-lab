@@ -293,6 +293,53 @@
     background-color: rgb(30 58 138 / 0.2);
 }
 
+/* Maszyny magazynowe (is_reservable=False) — pasy lewej kolumny i komórki
+   dnia mają wyraźny "neutralny" styl. Klikanie wyłączone na poziomie HTML
+   (brak hx-get + aria-disabled), ten CSS dba o sygnał wizualny. */
+.timeline-machine-cell--warehouse {
+    background: repeating-linear-gradient(
+        45deg,
+        rgb(248 250 252),
+        rgb(248 250 252) 6px,
+        rgb(241 245 249) 6px,
+        rgb(241 245 249) 12px
+    );
+}
+.dark .timeline-machine-cell--warehouse {
+    background: repeating-linear-gradient(
+        45deg,
+        rgb(30 41 59),
+        rgb(30 41 59) 6px,
+        rgb(15 23 42) 6px,
+        rgb(15 23 42) 12px
+    );
+}
+.timeline-day-cell--locked {
+    cursor: not-allowed;
+    background-image: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 8px,
+        rgb(226 232 240 / 0.45) 8px,
+        rgb(226 232 240 / 0.45) 10px
+    );
+}
+.timeline-day-cell--locked:hover {
+    background-color: transparent;
+}
+.dark .timeline-day-cell--locked {
+    background-image: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 8px,
+        rgb(51 65 85 / 0.5) 8px,
+        rgb(51 65 85 / 0.5) 10px
+    );
+}
+.dark .timeline-day-cell--locked:hover {
+    background-color: transparent;
+}
+
 .timeline-bar {
     /* Bundle 1 (Wave 14-A) — Sebastian walkthrough: bary musza zajmowac
        pelna szerokosc cells (offset+span) zamiast ~1/3 day-cell.

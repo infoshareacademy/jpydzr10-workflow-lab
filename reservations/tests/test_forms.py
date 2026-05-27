@@ -219,6 +219,22 @@ class TestReservationFormQuerysetExclusions:
         uids = list(form.fields["machine"].queryset.values_list("uid", flat=True))
         assert "K-SVC" not in uids
 
+    def test_dropdown_excludes_warehouse_only(self, machine):
+        """Maszyna z is_reservable=False (magazynowa) jest niedostępna w dropdownie."""
+        from machines.models import Machine
+
+        Machine.objects.create(
+            uid="WID-X",
+            name="Wózek magazynowy",
+            machine_type=Machine.Type.WOZEK_WIDLOWY,
+            status=Machine.Status.W_MAGAZYNIE,
+            is_reservable=False,
+        )
+        form = ReservationForm()
+        uids = list(form.fields["machine"].queryset.values_list("uid", flat=True))
+        assert "WID-X" not in uids
+        assert machine.uid in uids
+
 
 @pytest.mark.django_db
 class TestReservationFilterForm:

@@ -30,6 +30,7 @@ class MachineForm(forms.ModelForm):
             "model",
             "capacity",
             "status",
+            "is_reservable",
             "location",
             "inspection_date",
             "manufacturer",
@@ -45,6 +46,7 @@ class MachineForm(forms.ModelForm):
             "model": _("Model"),
             "capacity": _("Pojemność"),
             "status": _("Status"),
+            "is_reservable": _("Dostępna do rezerwacji"),
             "location": _("Lokalizacja"),
             "inspection_date": _("Data przeglądu"),
             "manufacturer": _("Producent"),
@@ -60,6 +62,14 @@ class MachineForm(forms.ModelForm):
             "model": forms.TextInput(attrs={"class": INPUT_CSS}),
             "capacity": forms.NumberInput(attrs={"class": INPUT_CSS, "min": 0}),
             "status": forms.Select(attrs={"class": SELECT_CSS}),
+            "is_reservable": forms.CheckboxInput(
+                attrs={
+                    "class": (
+                        "h-4 w-4 rounded border-slate-300 dark:border-slate-600 "
+                        "text-brand-600 focus:ring-brand-500"
+                    )
+                }
+            ),
             "location": forms.TextInput(attrs={"class": INPUT_CSS}),
             "inspection_date": forms.DateInput(
                 format="%Y-%m-%d",

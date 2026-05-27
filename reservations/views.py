@@ -366,8 +366,10 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
         # Terminal status filter — zakonczone i anulowane rezerwacje są
         # immutable (`update_reservation` rzuca ValidationError). Front-door
         # blokujemy tutaj — 404 zamiast cichej mutacji po POST.
-        qs = super().get_queryset().exclude(
-            status__in=[Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA]
+        qs = (
+            super()
+            .get_queryset()
+            .exclude(status__in=[Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA])
         )
         if self.request.user.is_superuser:
             return qs
@@ -975,6 +977,8 @@ class TimelineView(LoginRequiredMixin, View):
                     "machine_type_display": machine.get_machine_type_display(),
                     "status": machine.status,
                     "inspection_status": machine.inspection_status,
+                    "inspection_status_label": machine.inspection_status_label,
+                    "is_reservable": machine.is_reservable,
                     "bars": bars,
                 }
             )
