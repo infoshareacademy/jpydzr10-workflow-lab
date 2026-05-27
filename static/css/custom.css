@@ -198,6 +198,14 @@
     min-width: 100%;
     position: relative;
 }
+/* Wave 14-J: period=month (30 dni) wymaga węższych kolumn żeby siatka
+   zmieściła się w viewport na 24"+ monitorach (~1920px). Inaczej user
+   musi scrollować w prawo, co Sebastian wyraźnie wytknął — większość
+   ekranów nie pokazuje natywnego scrollbara na poziomych pasach. */
+.timeline-grid[data-period="month"] {
+    grid-template-columns: 200px repeat(var(--days, 30), minmax(34px, 1fr));
+    grid-auto-rows: minmax(58px, auto);
+}
 
 .timeline-head-cell {
     position: sticky;
@@ -209,6 +217,16 @@
     text-align: center;
     font-size: 0.75rem;
     line-height: 1rem;
+}
+/* Kompaktowy head-cell dla period=month — mniejszy font + ciaśniejszy padding,
+   bo 30 kolumn po 34px nie zmieści "Pn 28.05" w pełnym formacie. */
+.timeline-grid[data-period="month"] .timeline-head-cell {
+    padding: 0.375rem 0.125rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+}
+.timeline-grid[data-period="month"] .timeline-head-cell > div:first-child {
+    font-size: 0.5625rem;
 }
 .dark .timeline-head-cell {
     background: rgb(15 23 42);
