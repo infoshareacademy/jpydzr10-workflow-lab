@@ -15,17 +15,24 @@ register = template.Library()
 
 
 # Klasy CSS Tailwind dla statusów (per ZASADA #2 — polskie statusy z M1).
+# Wave 14 design system: amber/emerald/rose zamiast yellow/green/red (chłodniejsze
+# tonacje, spójne z home / reservations / timeline). Slate dla terminalnych /
+# wycofanych statusów (cooler gray, ten sam co reszta UI).
 STATUS_COLOR_CLASSES = {
     # Statusy maszyn
-    "W magazynie": "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+    "W magazynie": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
     "Na budowie": "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-    "Zarezerwowana": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
-    "W serwisie": "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+    "Zarezerwowana": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+    "W serwisie": "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200",
+    "Wycofana": (
+        "bg-slate-200 text-slate-600 line-through "
+        "dark:bg-slate-700/60 dark:text-slate-400"
+    ),
     # Statusy rezerwacji
-    "oczekująca": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
-    "potwierdzona": "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
-    "anulowana": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
-    "zakończona": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+    "oczekująca": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+    "potwierdzona": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+    "anulowana": "bg-slate-200 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400",
+    "zakończona": "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 }
 
 
@@ -33,9 +40,11 @@ STATUS_COLOR_CLASSES = {
 def status_badge(status_value):
     """Zwraca klasy CSS Tailwind dla badge'a statusu.
 
-    Jeśli status nieznany — zwraca neutralne szare klasy.
+    Jeśli status nieznany — zwraca neutralne szare klasy z dark mode fallbackiem.
     """
-    return STATUS_COLOR_CLASSES.get(status_value, "bg-gray-100 text-gray-700")
+    return STATUS_COLOR_CLASSES.get(
+        status_value, "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+    )
 
 
 @register.filter
@@ -50,7 +59,7 @@ def date_pl(value):
 
 
 @register.simple_tag(takes_context=True)
-def active_link(context, url_path, css_class="bg-gray-100 dark:bg-gray-700"):
+def active_link(context, url_path, css_class="bg-slate-100 dark:bg-slate-700"):
     """Zwraca klasę CSS jeśli current_path zaczyna się od `url_path`.
 
     Helper do oznaczania aktywnego linku w nawigacji. Wymaga context processora

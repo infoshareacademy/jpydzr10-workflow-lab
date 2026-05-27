@@ -42,7 +42,7 @@
                 Wymagane potwierdzenie
             </p>
             {% if pending.preview %}
-                <p class="text-sm text-gray-900 dark:text-gray-100 mt-0.5 break-words">
+                <p class="text-sm text-slate-900 dark:text-slate-100 mt-0.5 break-words">
                     {{ pending.preview }}
                 </p>
             {% endif %}
@@ -52,14 +52,14 @@
     {# Lista key:value parametrów — debug / transparentność, magazynier #}
     {# widzi DOKŁADNIE co zostanie wykonane (anti-LLM-hallucination guard). #}
     {% if pending.params %}
-        <dl class="text-xs text-gray-700 dark:text-gray-300
-                   bg-white/60 dark:bg-gray-900/30
+        <dl class="text-xs text-slate-700 dark:text-slate-300
+                   bg-white/60 dark:bg-slate-900/30
                    rounded-lg px-2.5 py-1.5 mb-3
                    border border-yellow-200/50 dark:border-yellow-700/30
                    max-h-32 overflow-y-auto">
             {% for key, value in pending.params.items %}
                 <div class="flex gap-2 py-0.5">
-                    <dt class="font-mono font-medium text-gray-500 dark:text-gray-400 min-w-0 truncate">
+                    <dt class="font-mono font-medium text-slate-500 dark:text-slate-400 min-w-0 truncate">
                         {{ key }}:
                     </dt>
                     <dd class="font-mono break-all min-w-0">{{ value|default:"—" }}</dd>
@@ -90,7 +90,7 @@
                            dark:bg-emerald-500 dark:hover:bg-emerald-600
                            text-white shadow-sm
                            focus:outline-none focus:ring-2 focus:ring-emerald-500
-                           focus:ring-offset-2 dark:focus:ring-offset-gray-900
+                           focus:ring-offset-2 dark:focus:ring-offset-slate-900
                            transition-colors"
                     aria-label="Potwierdź akcję chatbota">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
@@ -116,13 +116,13 @@
             <button type="submit"
                     class="w-full inline-flex items-center justify-center gap-1.5
                            px-3 py-2 rounded-lg text-sm font-medium
-                           bg-white hover:bg-gray-50
-                           dark:bg-gray-800 dark:hover:bg-gray-700
-                           text-gray-700 dark:text-gray-200
-                           border border-gray-300 dark:border-gray-600
+                           bg-white hover:bg-slate-50
+                           dark:bg-slate-800 dark:hover:bg-slate-700
+                           text-slate-700 dark:text-slate-200
+                           border border-slate-300 dark:border-slate-600
                            shadow-sm
-                           focus:outline-none focus:ring-2 focus:ring-gray-400
-                           focus:ring-offset-2 dark:focus:ring-offset-gray-900
+                           focus:outline-none focus:ring-2 focus:ring-slate-400
+                           focus:ring-offset-2 dark:focus:ring-offset-slate-900
                            transition-colors"
                     aria-label="Anuluj proponowaną akcję">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
@@ -137,7 +137,7 @@
     </div>
 
     {# Pomocniczy hint — można też pisać po klawiaturze. #}
-    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-2 text-center">
+    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2 text-center">
         Możesz też wpisać „tak" lub „nie" w polu wiadomości.
     </p>
 </div>

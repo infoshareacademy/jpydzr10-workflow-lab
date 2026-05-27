@@ -7,29 +7,29 @@
 {# ------------------------------------------------------------------ #}
 {# Breadcrumb. #}
 {# ------------------------------------------------------------------ #}
-<nav class="text-sm text-gray-500 dark:text-gray-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
+<nav class="text-sm text-slate-500 dark:text-slate-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
     <a href="{% url 'service:list' %}"
        class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24"
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24"
          stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-gray-900 dark:text-gray-200 font-medium">Raporty</span>
+    <span class="text-slate-900 dark:text-slate-200 font-medium">Raporty</span>
 </nav>
 
 {# ------------------------------------------------------------------ #}
 {# Header. #}
 {# ------------------------------------------------------------------ #}
 <header class="mb-6">
-    <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium mb-1">
+    <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-1">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
         <span>Statystyki i eksport</span>
     </div>
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Raporty serwisowe</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Raporty serwisowe</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
         Pobierz zbiorcze zestawienia kosztów i przeglądów wykonanych przez serwis.
     </p>
 </header>
@@ -46,7 +46,7 @@
 
     {# ============================== Date / range selector ============================== #}
     <section class="surface-card p-5 md:p-6">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -57,7 +57,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label for="{{ form.year.id_for_label }}"
-                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                       class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {{ form.year.label }}
                 </label>
                 {{ form.year|attr:"x-model:year" }}
@@ -68,7 +68,7 @@
 
             <div>
                 <label for="{{ form.quarter.id_for_label }}"
-                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                       class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {{ form.quarter.label }}
                 </label>
                 {{ form.quarter|attr:"x-model:quarter" }}
@@ -81,7 +81,7 @@
 
     {# ============================== Report type cards ============================== #}
     <section class="surface-card p-5 md:p-6">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -94,8 +94,8 @@
              aria-label="Wybierz typ raportu">
 
             {# Card 1 — Kwartalny XLSX (jedyna obecnie zaimplementowana opcja). #}
-            <label class="relative cursor-pointer rounded-lg border-2 p-4 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-gray-800"
-                   :class="reportType === 'quarterly_xlsx' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+            <label class="relative cursor-pointer rounded-lg border-2 p-4 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800"
+                   :class="reportType === 'quarterly_xlsx' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
                 <input type="radio" name="report_type" value="quarterly_xlsx"
                        x-model="reportType"
                        class="sr-only peer">
@@ -106,8 +106,8 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white">Kwartalny XLSX</div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Kwartalny XLSX</div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Wszystkie wpisy z wybranego kwartału, posortowane po UID maszyny i dacie. Z sumą RAZEM.
                         </p>
                         <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
@@ -122,7 +122,7 @@
 
             {# Card 2 — Roczny PDF (preview / wkrótce). #}
             <label class="relative rounded-lg border-2 p-4 transition-all cursor-not-allowed opacity-60"
-                   :class="'border-gray-200 dark:border-gray-700'"
+                   :class="'border-slate-200 dark:border-slate-700'"
                    title="Raport roczny — dostępny wkrótce">
                 <input type="radio" name="report_type" value="yearly_pdf" disabled class="sr-only">
                 <div class="flex items-start gap-3">
@@ -132,11 +132,11 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white">Roczny PDF</div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Roczny PDF</div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Zbiorczy raport roczny — koszty, statystyki, przeglądy zaległe.
                         </p>
-                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                             Wkrótce
                         </span>
                     </div>
@@ -145,7 +145,7 @@
 
             {# Card 3 — Per-machine PDF (preview / wkrótce). #}
             <label class="relative rounded-lg border-2 p-4 transition-all cursor-not-allowed opacity-60"
-                   :class="'border-gray-200 dark:border-gray-700'"
+                   :class="'border-slate-200 dark:border-slate-700'"
                    title="Raport per maszyna — dostępny wkrótce">
                 <input type="radio" name="report_type" value="per_machine_pdf" disabled class="sr-only">
                 <div class="flex items-start gap-3">
@@ -155,11 +155,11 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white">Per maszyna PDF</div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Per maszyna PDF</div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Karta serwisowa pojedynczej maszyny — kompletna historia w PDF.
                         </p>
-                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                             Wkrótce
                         </span>
                     </div>
@@ -171,16 +171,16 @@
     {# ============================== Generate / download button ============================== #}
     <section class="surface-card p-5 md:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
+            <div class="text-sm text-slate-600 dark:text-slate-300">
                 <p>
                     Pobierzesz raport za:
                     <strong class="tabular-nums" x-text="`Q${quarter} ${year}`"></strong>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Plik zostanie zapisany na dysku.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Plik zostanie zapisany na dysku.</p>
             </div>
             <a id="downloadBtn"
                :href="`{% url 'service:report_xlsx' year=0 quarter=1 %}`.replace('/0/', `/${year}/`).replace(/\/1\/$/, `/${quarter}/`)"
-               class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors">
+               class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
