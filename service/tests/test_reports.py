@@ -201,3 +201,32 @@ def test_generate_inspection_pdf_handles_empty_optional_fields(machine):
     record = InspectionFactory(machine=machine, performed_by="", description="")
     payload = generate_inspection_pdf(service_record=record)
     assert payload.startswith(b"%PDF-")
+
+
+@pytest.mark.django_db
+def test_generate_inspection_pdf_uses_planer_sans_font_for_polish_chars(machine):
+    """Po refaktorze fontów PDF używa PlanerSans (DejaVu) zamiast Helvetica.
+
+    Helvetica jest Latin-1 i nie renderuje polskich znaków. Sprawdzamy że
+    po generacji font ``PlanerSans`` jest zarejestrowany w globalnym
+    rejestrze reportlab — dzięki temu znaki ą/ę/ł/ó/ś/ż/ź/ć/ń pokazują się
+    w gotowym PDFie.
+    """
+    from reportlab.pdfbase import pdfmetrics
+
+    record = InspectionFactory(
+        machine=machine,
+        performed_date=date(2026, 5, 16),
+        performed_by="Łukasz Żółć",
+        description="Naprawa układu hydraulicznego — wymiana łożyska, ząbkowanie.",
+        cost=Decimal("900.00"),
+    )
+    payload = generate_inspection_pdf(service_record=record)
+    assert payload.startswith(b"%PDF-")
+    # PlanerSans (alias na DejaVu Sans) musi być w rejestrze fontów
+    # reportlab po wygenerowaniu PDF — gwarantuje że TableStyle / Paragraph
+    # nie spadły do Helvetica fallback.
+    registered_fonts = pdfmetrics.getRegisteredFontNames()
+    assert "PlanerSans" in registered_fonts, (
+        f"PlanerSans nie zarejestrowany, dostępne fonty: {registered_fonts}"
+    )

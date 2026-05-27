@@ -22,15 +22,11 @@ from __future__ import annotations
 import io
 import logging
 from datetime import date
-from pathlib import Path
 
-from django.conf import settings
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     Paragraph,
     SimpleDocTemplate,
@@ -39,66 +35,11 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from core.pdf import font_name as _font_name
+from core.pdf import register_pdf_fonts as _register_fonts
 from reservations.models import Reservation
 
 logger = logging.getLogger("reservations.pdf")
-
-# Wave 14-A Bundle 8 — DejaVu Sans fonts bundled w static/fonts/. Aliasy
-# 'PlanerSans' / 'PlanerSans-Bold' uzywane w stylach ParagraphStyle ponizej.
-# Rejestracja idempotent: idziemy w try/except bo pdfmetrics rzuca jesli
-# font o tej nazwie juz zostal zarejestrowany.
-_FONT_NAME_REGULAR = "PlanerSans"
-_FONT_NAME_BOLD = "PlanerSans-Bold"
-_FONTS_REGISTERED = False
-
-
-def _register_fonts() -> None:
-    """Rejestruje DejaVu Sans z bundled static/fonts/ jako PlanerSans/Bold.
-
-    Idempotent -- safe call multiple times. Jesli pliki TTF nie istnieja
-    (np. environment bez static/fonts/), loguje warning + uzywa fallbacku
-    Helvetica (PDF wtedy nie pokaze polskich znakow ale przynajmniej nie
-    crashnie -- defensive degradation, lepsze od 500).
-    """
-    global _FONTS_REGISTERED
-    if _FONTS_REGISTERED:
-        return
-
-    # Pliki TTF leza w static/fonts/ -- BASE_DIR jest root projektu.
-    fonts_dir = Path(settings.BASE_DIR) / "static" / "fonts"
-    regular_path = fonts_dir / "DejaVuSans.ttf"
-    bold_path = fonts_dir / "DejaVuSans-Bold.ttf"
-
-    if not regular_path.exists():
-        logger.warning(
-            "DejaVuSans.ttf nie znaleziony w %s -- PDF bedzie uzywal Helvetica "
-            "(polskie znaki nie zostana zrenderowane poprawnie).",
-            regular_path,
-        )
-        return
-
-    try:
-        pdfmetrics.registerFont(TTFont(_FONT_NAME_REGULAR, str(regular_path)))
-        if bold_path.exists():
-            pdfmetrics.registerFont(TTFont(_FONT_NAME_BOLD, str(bold_path)))
-        else:
-            # Bold fallback -- alias na Regular (lepiej niz crash).
-            pdfmetrics.registerFont(TTFont(_FONT_NAME_BOLD, str(regular_path)))
-        _FONTS_REGISTERED = True
-        logger.debug("Fonts DejaVu zarejestrowane: %s + %s", regular_path, bold_path)
-    except Exception as exc:
-        logger.warning("Nie udalo sie zarejestrowac fontow DejaVu: %s", exc)
-
-
-def _font_name(weight: str = "regular") -> str:
-    """Zwraca nazwe zarejestrowanego fontu (PlanerSans) lub fallback (Helvetica).
-
-    `weight` = 'regular' | 'bold'. Jesli rejestracja sie nie udala (brak TTF),
-    zwracamy Helvetica zeby reportlab nie crashnal na unknown font.
-    """
-    if not _FONTS_REGISTERED:
-        return "Helvetica-Bold" if weight == "bold" else "Helvetica"
-    return _FONT_NAME_BOLD if weight == "bold" else _FONT_NAME_REGULAR
 
 
 def generate_reservation_pdf(reservation: Reservation) -> bytes:

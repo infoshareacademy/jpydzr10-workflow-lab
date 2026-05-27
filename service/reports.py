@@ -29,6 +29,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from core.pdf import font_name, register_pdf_fonts
+
 # ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------
@@ -177,6 +179,10 @@ def generate_inspection_pdf(*, service_record) -> bytes:
     Returns:
         PDF file bytes.
     """
+    # Bez rejestracji bundled DejaVu Sans reportlab uzywa Helvetica (Latin-1),
+    # ktora nie wspiera polskich znakow. Idempotentne — drugie wywolanie noop.
+    register_pdf_fonts()
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -191,9 +197,18 @@ def generate_inspection_pdf(*, service_record) -> bytes:
     title_style = ParagraphStyle(
         name="ProtokolTitle",
         parent=styles["Title"],
+        fontName=font_name("bold"),
         fontSize=18,
         alignment=1,  # center
         spaceAfter=20,
+    )
+    # Override stylow Normal/Bold zeby uzywaly DejaVu (polskie znaki).
+    body_style = ParagraphStyle(
+        name="ProtokolBody",
+        parent=styles["Normal"],
+        fontName=font_name(),
+        fontSize=11,
+        leading=14,
     )
 
     machine = service_record.machine
@@ -224,8 +239,8 @@ def generate_inspection_pdf(*, service_record) -> bytes:
     table.setStyle(
         TableStyle(
             [
-                ("FONT", (0, 0), (-1, -1), "Helvetica", 11),
-                ("FONT", (0, 0), (0, -1), "Helvetica-Bold", 11),
+                ("FONT", (0, 0), (-1, -1), font_name(), 11),
+                ("FONT", (0, 0), (0, -1), font_name("bold"), 11),
                 ("BOX", (0, 0), (-1, -1), 1, colors.black),
                 ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -240,12 +255,14 @@ def generate_inspection_pdf(*, service_record) -> bytes:
     elements.append(Spacer(1, 1 * cm))
 
     if service_record.description:
-        elements.append(Paragraph("<b>Opis prac:</b>", styles["Normal"]))
+        elements.append(
+            Paragraph(f'<font name="{font_name("bold")}">Opis prac:</font>', body_style)
+        )
         elements.append(Spacer(1, 0.2 * cm))
         # H2 fix: escape user input — reportlab Paragraph parses pseudo-HTML
         # (<a href>, <font>, <img>), więc nieprzetworzony description z user input
         # = phishing/markup injection vector w generowanym PDF.
-        elements.append(Paragraph(saxutils.escape(service_record.description), styles["Normal"]))
+        elements.append(Paragraph(saxutils.escape(service_record.description), body_style))
 
     elements.append(Spacer(1, 2 * cm))
     elements.append(
@@ -253,7 +270,7 @@ def generate_inspection_pdf(*, service_record) -> bytes:
             "_________________________<br/>Podpis wykonawcy",
             ParagraphStyle(
                 name="Signature",
-                parent=styles["Normal"],
+                parent=body_style,
                 alignment=2,  # right
             ),
         )
