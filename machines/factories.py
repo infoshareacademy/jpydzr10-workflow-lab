@@ -21,13 +21,19 @@ class MachineFactory(DjangoModelFactory):
         django_get_or_create = ("uid",)
 
     uid = factory.Sequence(lambda n: f"M-{n:04d}")
-    name = factory.LazyAttribute(lambda o: f"{o.machine_type.title()} {o.uid}")
+    name = factory.LazyAttribute(lambda o: f"{o.machine_type.capitalize()} {o.uid}")
     machine_type = factory.Iterator(
         [
             Machine.Type.KOPARKA,
             Machine.Type.MINIKOPARKA,
             Machine.Type.PODNOSNIK_NOZYCOWY,
+            Machine.Type.PODNOSNIK_TELESKOPOWY,
             Machine.Type.AGREGAT,
+            Machine.Type.WOZEK_WIDLOWY,
+            Machine.Type.WALEC,
+            Machine.Type.ZAGESZCZARKA,
+            Machine.Type.SPAWARKA,
+            Machine.Type.INNE,
         ]
     )
     model = factory.Faker("bothify", text="Model ###-??", locale="pl_PL")
