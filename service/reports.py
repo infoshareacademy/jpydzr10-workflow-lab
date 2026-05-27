@@ -164,6 +164,136 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
     return buffer.getvalue()
 
 
+_XLSX_HEADERS_FULL: tuple[str, ...] = (
+    "UID maszyny",
+    "Nazwa",
+    "Data",
+    "Typ",
+    "Wykonawca",
+    "Opis",
+    "Koszt (PLN)",
+    "Następny przegląd",
+)
+
+
+def _write_records_sheet(ws, records, sheet_title: str, headers: tuple[str, ...]) -> Decimal:
+    """Pisze pełne pole rekordów do otwartego arkusza openpyxl + zwraca total.
+
+    Layout: header (bold biały na niebieskim tle), wiersze danych, pusty separator,
+    wiersz "RAZEM" z sumą kosztów. Stała szerokość kolumn = 18 (auto-fit jest
+    drogi, a dla 8 kolumn 18 dobrze pasuje do typowych dat / cen / UID).
+
+    Args:
+        ws: openpyxl ``Worksheet`` (już otwarty).
+        records: queryset lub iterable ``ServiceRecord``.
+        sheet_title: nazwa arkusza (do ``ws.title``).
+        headers: lista kolumn — kontroluje który layout (kwartalny vs pełny).
+
+    Returns:
+        Suma kosztów (Decimal) — caller może użyć do dalszych obliczeń.
+    """
+    ws.title = sheet_title
+    ws.append(list(headers))
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="2563EB")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+
+    total = Decimal("0")
+    has_next = "Następny przegląd" in headers
+    for record in records:
+        row = [
+            _sanitize(record.machine.uid),
+            _sanitize(record.machine.name),
+            record.performed_date.strftime("%d.%m.%Y"),
+            record.get_record_type_display(),
+            _sanitize(record.performed_by),
+            _sanitize(record.description),
+            float(record.cost),
+        ]
+        if has_next:
+            row.append(
+                record.next_inspection.strftime("%d.%m.%Y")
+                if record.next_inspection
+                else "—"
+            )
+        ws.append(row)
+        total += record.cost
+
+    # Pusty wiersz separujący + RAZEM.
+    ws.append([])
+    summary_row_idx = ws.max_row + 1
+    summary_row = ["", "", "", "", "", "RAZEM:", float(total)]
+    if has_next:
+        summary_row.append("")
+    ws.append(summary_row)
+    ws.cell(row=summary_row_idx, column=6).font = Font(bold=True)
+    ws.cell(row=summary_row_idx, column=7).font = Font(bold=True)
+
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = 18
+
+    return total
+
+
+def generate_machine_service_xlsx(*, machine) -> bytes:
+    """Wygeneruj XLSX z całą historią serwisu jednej maszyny.
+
+    Wszystkie ``ServiceRecord`` przypisane do podanej ``machine`` posortowane
+    chronologicznie (od najnowszych). Layout zawiera dodatkową kolumnę
+    ``Następny przegląd`` (przydatne na karcie maszyny — operator widzi
+    kiedy maszyna ma kolejny obowiązkowy serwis).
+
+    Polskie znaki w nagłówkach i treści są zachowane dzięki natywnej obsłudze
+    UTF-8 przez openpyxl (XLSX = ZIP archive z XML w UTF-8).
+    """
+    from service.models import ServiceRecord
+
+    records = (
+        ServiceRecord.objects.select_related("machine")
+        .filter(machine=machine)
+        .order_by("-performed_date")
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    sheet_title = f"{machine.uid} - Serwis"[:31]  # XLSX limit nazwy arkusza = 31 znaków
+    _write_records_sheet(ws, records, sheet_title, _XLSX_HEADERS_FULL)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()
+
+
+def generate_all_service_records_xlsx() -> bytes:
+    """Wygeneruj XLSX ze WSZYSTKIMI wpisami serwisowymi w bazie.
+
+    Wpisy posortowane: najpierw po UID maszyny rosnąco, potem po dacie
+    wykonania malejąco (najnowsze pierwsze w obrębie maszyny). Plus dodatkowa
+    kolumna ``Następny przegląd`` jak w wariancie per-maszynowym.
+
+    Używane przez globalny eksport (link "Pobierz wszystkie wpisy" na liście
+    serwisów). Operator wyciąga pełną historię floty dla księgowości /
+    inspekcji okresowej.
+    """
+    from service.models import ServiceRecord
+
+    records = ServiceRecord.objects.select_related("machine").order_by(
+        "machine__uid", "-performed_date"
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    _write_records_sheet(ws, records, "Pełna historia serwisu", _XLSX_HEADERS_FULL)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()
+
+
 # ----------------------------------------------------------------------------
 # PDF — pojedynczy protokół przeglądu
 # ----------------------------------------------------------------------------

@@ -58,7 +58,12 @@ from .forms import (
     ServiceRecordForm,
 )
 from .models import ServiceRecord
-from .reports import generate_inspection_pdf, generate_quarterly_report_xlsx
+from .reports import (
+    generate_all_service_records_xlsx,
+    generate_inspection_pdf,
+    generate_machine_service_xlsx,
+    generate_quarterly_report_xlsx,
+)
 from .services import close_service, create_service_record
 
 logger = logging.getLogger("service")
@@ -287,6 +292,39 @@ class ReportXlsxView(LoginRequiredMixin, View):
             return redirect("service:reports")
 
         filename = slugify(f"raport-q{quarter}-{year}") + ".xlsx"
+        response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class MachineServiceXlsxView(LoginRequiredMixin, View):
+    """Stream historię serwisu pojedynczej maszyny jako XLSX attachment.
+
+    URL: ``/serwis/eksport/maszyna/<uid>/`` — pobierany z karty maszyny
+    (machines/detail.html → tab "Historia serwisu" → button "Pobierz Excel").
+    """
+
+    def get(self, request: HttpRequest, uid: str) -> HttpResponse:
+        from machines.models import Machine
+
+        machine = get_object_or_404(Machine, uid=uid)
+        payload = generate_machine_service_xlsx(machine=machine)
+        filename = slugify(f"serwis-{machine.uid}-{date.today().isoformat()}") + ".xlsx"
+        response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
+    """Stream pełną historię serwisu (wszystkie maszyny) jako XLSX attachment.
+
+    URL: ``/serwis/eksport/wszystkie/`` — pobierany z listy serwisów
+    (service/list.html → button "Pobierz Excel — wszystkie wpisy").
+    """
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        payload = generate_all_service_records_xlsx()
+        filename = slugify(f"serwis-wszystkie-{date.today().isoformat()}") + ".xlsx"
         response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response

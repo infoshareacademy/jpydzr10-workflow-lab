@@ -18,6 +18,16 @@ urlpatterns = [
         views.ReportXlsxView.as_view(),
         name="report_xlsx",
     ),
+    path(
+        "eksport/wszystkie.xlsx",
+        views.AllServiceRecordsXlsxView.as_view(),
+        name="export_all_xlsx",
+    ),
+    path(
+        "eksport/maszyna/<str:uid>.xlsx",
+        views.MachineServiceXlsxView.as_view(),
+        name="export_machine_xlsx",
+    ),
     path("<int:pk>/", views.ServiceRecordDetailView.as_view(), name="detail"),
     path("<int:pk>/pdf/", views.InspectionPdfView.as_view(), name="pdf"),
     path("<int:pk>/usun/", views.ServiceRecordDeleteView.as_view(), name="delete"),
