@@ -228,6 +228,21 @@ def create_reservation(
             }
         )
 
+    # Maszyny magazynowe (np. wózki widłowe obsługujące magazyn) zostają w
+    # bazie i są widoczne na timeline (śledzimy przegląd), ale nie można ich
+    # rezerwować na budowę. Form wyklucza je z dropdownu — to defence-in-depth
+    # dla wywołań z chatbota / admin / API.
+    if not machine.is_reservable:
+        raise ValidationError(
+            {
+                "machine": _(
+                    "Maszyna %(uid)s jest oznaczona jako magazynowa "
+                    "— nie można jej rezerwować na budowę."
+                )
+                % {"uid": machine.uid}
+            }
+        )
+
     if has_conflict(machine_id=machine_id, start=start_date, end=end_date):
         conflicts = get_conflicting_reservations(
             machine_id=machine_id, start=start_date, end=end_date
@@ -301,7 +316,8 @@ def update_reservation(
             _(
                 "Nie można edytować rezerwacji o statusie %(status)s — jest terminalna. "
                 "Aby zmienić dane, utwórz nową rezerwację."
-            ) % {"status": reservation.get_status_display()}
+            )
+            % {"status": reservation.get_status_display()}
         )
 
     allowed = {
@@ -929,6 +945,16 @@ def swap_machine(
             {
                 "new_machine": _(
                     "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
+                )
+                % {"uid": new_machine.uid}
+            }
+        )
+    if not new_machine.is_reservable:
+        raise ValidationError(
+            {
+                "new_machine": _(
+                    "Maszyna %(uid)s jest oznaczona jako magazynowa "
+                    "— nie może być zastępcą na budowie."
                 )
                 % {"uid": new_machine.uid}
             }

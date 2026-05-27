@@ -3,9 +3,9 @@
 {% block title %}Usuń wpis serwisowy #{{ record.pk }}{% endblock %}
 
 {% block content %}
-<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 max-w-md">
+<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 max-w-md">
     <h1 class="text-xl font-bold text-red-700 dark:text-red-300 mb-2">Usuń wpis serwisowy</h1>
-    <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
         Na pewno usunąć wpis <span class="font-mono">#{{ record.pk }}</span>
         dla maszyny <span class="font-mono">{{ record.machine.uid }}</span>
         z dnia {{ record.performed_date }}?
@@ -17,7 +17,7 @@
             Tak, usuń
         </button>
         <a href="{% url 'service:detail' pk=record.pk %}"
-           class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+           class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
             Anuluj
         </a>
     </form>

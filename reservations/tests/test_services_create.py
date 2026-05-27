@@ -167,6 +167,28 @@ class TestCreateReservation:
                 today=date(2030, 5, 1),
             )
 
+    def test_rejects_warehouse_only_machine(self, db):
+        """Maszyna z is_reservable=False (magazynowa, np. wózek widłowy) nie
+        może być rezerwowana na budowę. UI ją wyklucza z dropdownu, ten test
+        pilnuje defence-in-depth na poziomie service layer (chatbot / admin
+        bezpośrednie wywołanie)."""
+        warehouse_only = Machine.objects.create(
+            uid="WID-001",
+            name="Wózek magazynowy",
+            machine_type=Machine.Type.WOZEK_WIDLOWY,
+            status=Machine.Status.W_MAGAZYNIE,
+            is_reservable=False,
+        )
+        with pytest.raises(ValidationError, match="magazynowa"):
+            create_reservation(
+                machine_id=warehouse_only.pk,
+                site_id=None,
+                start_date=date(2030, 6, 1),
+                end_date=date(2030, 6, 5),
+                person="Anna Test",
+                today=date(2030, 5, 1),
+            )
+
 
 # =============================================================================
 # update_reservation

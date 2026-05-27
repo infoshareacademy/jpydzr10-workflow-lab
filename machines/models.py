@@ -148,6 +148,16 @@ class Machine(TimestampedModel):
         validators=[validate_image_upload],
         verbose_name=_("Zdjęcie"),
     )
+    is_reservable = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name=_("Dostępna do rezerwacji"),
+        help_text=(
+            "Maszyna magazynowa (np. wózek widłowy obsługujący magazyn) zostaje "
+            "w bazie i jest widoczna na timeline (śledzimy przegląd), ale nie "
+            "można jej rezerwować na budowę."
+        ),
+    )
 
     history = HistoricalRecords()
 

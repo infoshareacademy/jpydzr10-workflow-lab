@@ -14,20 +14,20 @@ def _render(template_str: str, context: dict | None = None) -> str:
 def test_status_badge_known_status():
     """status_badge zwraca odpowiednie klasy dla znanego statusu."""
     result = _render('{% status_badge "W magazynie" %}')
-    assert "bg-green-100" in result
-    assert "text-green-800" in result
+    assert "bg-emerald-100" in result
+    assert "text-emerald-800" in result
 
 
 def test_status_badge_unknown_status_uses_neutral():
     """Nieznany status dostaje neutralne szare klasy."""
     result = _render('{% status_badge "Nieznany" %}')
-    assert "bg-gray-100" in result
+    assert "bg-slate-100" in result
 
 
 def test_status_badge_reservation_statuses():
     """Statusy rezerwacji też mają zdefiniowane klasy."""
-    assert "bg-yellow-100" in _render('{% status_badge "oczekująca" %}')
-    assert "bg-green-100" in _render('{% status_badge "potwierdzona" %}')
+    assert "bg-amber-100" in _render('{% status_badge "oczekująca" %}')
+    assert "bg-emerald-100" in _render('{% status_badge "potwierdzona" %}')
 
 
 def test_date_pl_formats_dd_mm_yyyy():
@@ -48,7 +48,7 @@ def test_active_link_returns_class_when_path_matches():
         '{% active_link "/machines/" %}',
         {"current_path": "/machines/list/"},
     )
-    assert "bg-gray-100" in result
+    assert "bg-slate-100" in result
 
 
 def test_active_link_returns_empty_when_path_differs():

@@ -15,7 +15,7 @@
 {% if message.role == "system" %}
     <div class="flex justify-center py-1 animate-msg-in"
          role="status">
-        <p class="text-[11px] italic text-gray-500 dark:text-gray-400 tracking-wide">
+        <p class="text-[11px] italic text-slate-500 dark:text-slate-400 tracking-wide">
             {{ message.content }}
         </p>
     </div>
@@ -57,7 +57,7 @@
                 <p class="text-sm whitespace-pre-wrap break-words">{{ message.content|linebreaksbr }}</p>
             </div>
             {% if message.created_at %}
-                <time class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 tabular-nums"
+                <time class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 tabular-nums"
                       datetime="{{ message.created_at|date:'c' }}">
                     {{ message.created_at|date:'H:i' }}
                 </time>
@@ -91,21 +91,21 @@
             </svg>
         </div>
         <div class="flex flex-col items-start max-w-[85%]">
-            <div class="bg-slate-100 dark:bg-gray-700
-                        text-gray-900 dark:text-gray-100
+            <div class="bg-slate-100 dark:bg-slate-700
+                        text-slate-900 dark:text-slate-100
                         rounded-2xl rounded-tl-sm px-3.5 py-2 shadow-sm
                         break-words">
                 <p class="text-sm whitespace-pre-wrap break-words">{{ message.content|linebreaksbr }}</p>
             </div>
             <div class="flex items-center gap-2 mt-0.5">
                 {% if message.created_at %}
-                    <time class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums"
+                    <time class="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums"
                           datetime="{{ message.created_at|date:'c' }}">
                         {{ message.created_at|date:'H:i' }}
                     </time>
                 {% endif %}
                 {% if message.tokens_used and message.tokens_used > 0 %}
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums"
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums"
                           aria-label="Zużyte tokeny">
                         · {{ message.tokens_used }} tok.
                     </span>

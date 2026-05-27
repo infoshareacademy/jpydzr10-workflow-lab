@@ -21,15 +21,28 @@ class MachineAdmin(PlanerHistoryAdmin):
         "machine_type",
         "status_badge_admin",
         "inspection_status_admin",
+        "is_reservable",
         "location",
     )
-    list_filter = ("status", "machine_type")
+    list_filter = ("status", "machine_type", "is_reservable")
     search_fields = ("uid", "name", "manufacturer", "serial_number")
     list_per_page = 25
     ordering = ("uid",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("Podstawowe", {"fields": ("uid", "name", "machine_type", "status", "location")}),
+        (
+            "Podstawowe",
+            {
+                "fields": (
+                    "uid",
+                    "name",
+                    "machine_type",
+                    "status",
+                    "is_reservable",
+                    "location",
+                )
+            },
+        ),
         (
             "Specyfikacja",
             {"fields": ("model", "capacity", "manufacturer", "serial_number", "build_year")},

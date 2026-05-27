@@ -342,7 +342,26 @@
                     {# ============================================================ #}
                     {% if user.is_authenticated %}
                     <form action="{% url 'core:search' %}" method="get" role="search"
-                          x-data="{ open: false, hasResults: false }"
+                          x-data="{
+                              open: false,
+                              hasResults: false,
+                              init() {
+                                  const dd = document.getElementById('search-dropdown');
+                                  if (!dd) return;
+                                  /* HTMX zwraca fragment HTML do #search-dropdown. Alpine
+                                     nasłuchuje globalnego afterSwap i otwiera panel gdy
+                                     swap trafił właśnie w nasz dropdown. Wcześniejszy
+                                     hx-on::after-request na inpucie miał scope na DOM
+                                     element a nie Alpine — przypisanie do hasResults
+                                     wpadało w window, nie w komponent. */
+                                  document.body.addEventListener('htmx:afterSwap', (ev) => {
+                                      if (ev.detail && ev.detail.target && ev.detail.target.id === 'search-dropdown') {
+                                          this.hasResults = dd.innerHTML.trim().length > 0;
+                                          this.open = this.hasResults;
+                                      }
+                                  });
+                              }
+                          }"
                           @keydown.escape.window="open = false"
                           class="flex-1 max-w-lg hidden md:block relative">
                         <label for="topbar-search" class="sr-only">{% trans "Szukaj w aplikacji" %}</label>
@@ -366,7 +385,6 @@
                                    hx-trigger="keyup changed delay:300ms[this.value.length>=2], search delay:200ms[this.value.length>=2]"
                                    hx-target="#search-dropdown"
                                    hx-swap="innerHTML"
-                                   hx-on::after-request="hasResults = document.getElementById('search-dropdown').innerHTML.trim().length > 0; open = hasResults"
                                    @focus="if (hasResults) open = true"
                                    @input="if (!$event.target.value || $event.target.value.length < 2) { open = false; hasResults = false; document.getElementById('search-dropdown').innerHTML = ''; }"
                                    class="block w-full pl-9 pr-3 py-2 text-sm rounded-lg
