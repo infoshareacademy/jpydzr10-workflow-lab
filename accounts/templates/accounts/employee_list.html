@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load planer_tags %}
+
+{% block title %}Pracownicy — Planer Maszyn{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+    {# ============================== HEADER ============================== #}
+    <header class="surface-card overflow-hidden">
+        <div class="px-5 sm:px-6 py-4 bg-gradient-to-br from-white via-white to-brand-50/50 dark:from-slate-800 dark:via-slate-800 dark:to-brand-900/20">
+            <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+                <div class="min-w-0 flex-shrink-0">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                        <span class="inline-flex items-center justify-center h-7 w-7 rounded-md bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 014-4h1m4-9a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </span>
+                        <span>Pracownicy</span>
+                    </h1>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 ml-9">
+                        Zarządzaj zatrudnieniem: dodawanie, zwalnianie, anonimizacja (RODO).
+                    </p>
+                </div>
+
+                {% if perms.accounts.add_employeeprofile %}
+                    <a href="{% url 'accounts:employee_register' %}"
+                       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        Dodaj pracownika
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ============================== FILTRY: status chip tabs + search + funkcja ============================== #}
+        <div class="px-5 sm:px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2 sm:gap-3">
+            <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900/60 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 text-xs sm:text-sm" role="group" aria-label="Filtr statusu">
+                {% with f=current_filter %}
+                <a href="?filter=active" class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if f == 'active' %}bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}">
+                    Aktywni <span class="ml-1 font-mono tabular-nums text-[0.625rem] {% if f == 'active' %}text-emerald-600 dark:text-emerald-400{% else %}text-slate-400{% endif %}">{{ counts.active }}</span>
+                </a>
+                <a href="?filter=terminated" class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if f == 'terminated' %}bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}">
+                    Zwolnieni <span class="ml-1 font-mono tabular-nums text-[0.625rem] {% if f == 'terminated' %}text-amber-600 dark:text-amber-400{% else %}text-slate-400{% endif %}">{{ counts.terminated }}</span>
+                </a>
+                <a href="?filter=anonymized" class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if f == 'anonymized' %}bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}">
+                    Zanonimizowani <span class="ml-1 font-mono tabular-nums text-[0.625rem] {% if f == 'anonymized' %}text-slate-700 dark:text-slate-300{% else %}text-slate-400{% endif %}">{{ counts.anonymized }}</span>
+                </a>
+                <a href="?filter=all" class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition {% if f == 'all' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}">
+                    Wszyscy <span class="ml-1 font-mono tabular-nums text-[0.625rem] {% if f == 'all' %}text-brand-600 dark:text-brand-400{% else %}text-slate-400{% endif %}">{{ counts.all }}</span>
+                </a>
+                {% endwith %}
+            </div>
+
+            <form method="get" class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                <input type="hidden" name="filter" value="{{ current_filter }}">
+                <div class="relative flex-1 min-w-[140px] max-w-xs">
+                    <label for="employee-search" class="sr-only">Szukaj pracownika</label>
+                    <span class="pointer-events-none absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input id="employee-search" type="search" name="q" value="{{ current_q }}"
+                           placeholder="Szukaj: imię / username / email / telefon…"
+                           class="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition">
+                </div>
+                <select name="function" class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[140px]">
+                    <option value="">— funkcja —</option>
+                    {% for value, label in function_choices %}
+                        <option value="{{ value }}" {% if value == current_function %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    Filtruj
+                </button>
+            </form>
+        </div>
+    </header>
+
+    {# ============================== LISTA ============================== #}
+    {% if profiles %}
+        <div class="surface-card overflow-hidden">
+            <ul class="divide-y divide-slate-100 dark:divide-slate-700">
+                {% for profile in profiles %}
+                    <li class="px-4 py-3 sm:px-5 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                {# Avatar placeholder — pierwsze litery imienia/nazwiska #}
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-semibold text-sm flex-shrink-0">
+                                    {% if profile.user.first_name %}{{ profile.user.first_name|first|upper }}{% endif %}{% if profile.user.last_name %}{{ profile.user.last_name|first|upper }}{% else %}{{ profile.user.username|first|upper }}{% endif %}
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center flex-wrap gap-2">
+                                        <span class="font-semibold text-slate-900 dark:text-slate-50 truncate">
+                                            {% if profile.user.get_full_name %}{{ profile.user.get_full_name }}{% else %}{{ profile.user.username }}{% endif %}
+                                        </span>
+                                        <span class="font-mono text-[0.6875rem] text-slate-500 dark:text-slate-400">@{{ profile.user.username }}</span>
+
+                                        {% if profile.is_anonymized %}
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" title="Zanonimizowany RODO Art.17">
+                                                Anonimowy
+                                            </span>
+                                        {% elif not profile.is_active_employee %}
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.625rem] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                                Zwolniony
+                                            </span>
+                                            {% if profile.termination_date %}
+                                                <span class="font-mono text-[0.6875rem] text-slate-400">{{ profile.termination_date|date:"d.m.Y" }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.625rem] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                                Aktywny
+                                            </span>
+                                        {% endif %}
+
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[0.625rem] font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                                            {{ profile.get_function_display }}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                        {% if profile.user.email %}
+                                            <span class="truncate max-w-xs">{{ profile.user.email }}</span>
+                                        {% endif %}
+                                        {% if profile.phone %}
+                                            <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                                            <span class="font-mono">{{ profile.phone }}</span>
+                                        {% endif %}
+                                        {% if profile.employee_id %}
+                                            <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+                                            <span class="font-mono text-[0.6875rem]">ID: {{ profile.employee_id }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {# Akcje — termination + anonymize. Dwustopniowe confirm przez Alpine. #}
+                            {% if not profile.is_anonymized and profile.user != user %}
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    {% if profile.is_active_employee and perms.accounts.change_employeeprofile %}
+                                        <form method="post" action="{% url 'accounts:employee_terminate' pk=profile.pk %}"
+                                              x-data="{ confirming: false }" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" x-show="confirming" x-cloak
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
+                                                Potwierdź zwolnienie
+                                            </button>
+                                            <button type="button" @click="confirming = true" x-show="!confirming"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:outline-none focus:ring-2 focus:ring-amber-500 transition"
+                                                    title="Zakończ zatrudnienie — deaktywuje konto, czyści sesje + grupy.">
+                                                Zwolnij
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if perms.accounts.delete_employeeprofile %}
+                                        <form method="post" action="{% url 'accounts:employee_anonymize' pk=profile.pk %}"
+                                              x-data="{ confirming: false }" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" x-show="confirming" x-cloak
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
+                                                Potwierdź anonimizację
+                                            </button>
+                                            <button type="button" @click="confirming = true" x-show="!confirming"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+                                                    title="Anonimizacja RODO Art.17 — nieodwracalne, kasuje PII (imię/email/telefon).">
+                                                Anonimizuj
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% elif profile.user == user %}
+                                <span class="text-[0.6875rem] uppercase tracking-wider text-slate-400 dark:text-slate-500" title="Nie można modyfikować swojego konta">
+                                    To Ty
+                                </span>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {# ============================== PAGINACJA ============================== #}
+        {% if is_paginated %}
+            <nav class="flex items-center justify-between" aria-label="Paginacja">
+                <div class="text-xs text-slate-600 dark:text-slate-400">
+                    Strona <strong>{{ page_obj.number }}</strong> z {{ page_obj.paginator.num_pages }}
+                    · <span class="font-mono tabular-nums">{{ page_obj.paginator.count }}</span> rekordów
+                </div>
+                <div class="flex items-center gap-1">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&filter={{ current_filter }}{% if current_function %}&function={{ current_function }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}"
+                           class="px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                            ← Poprzednia
+                        </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&filter={{ current_filter }}{% if current_function %}&function={{ current_function }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}"
+                           class="px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                            Następna →
+                        </a>
+                    {% endif %}
+                </div>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="surface-card px-6 py-16 text-center">
+            <div class="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-4 ring-4 ring-white dark:ring-slate-800 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 014-4h1m4-9a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">Brak pracowników</h3>
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Żaden profil nie pasuje do bieżących filtrów. Zmień kryteria lub dodaj pierwszego pracownika.
+            </p>
+            {% if perms.accounts.add_employeeprofile %}
+                <a href="{% url 'accounts:employee_register' %}"
+                   class="inline-flex items-center gap-1.5 mt-5 px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    Dodaj pracownika
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

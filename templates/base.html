@@ -247,7 +247,7 @@
                     Heroicons: users (multiple people, stroke 1.5). Mounted at
                     /accounts/pracownicy/dodaj/ per accounts/urls.py.
                     {% endcomment %}
-                    <a href="{% url 'accounts:employee_register' %}"
+                    <a href="{% url 'accounts:employee_list' %}"
                        @click="sidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px] {% if '/pracownicy' in request.path %}bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300{% else %}text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50{% endif %}"
                        {% if '/pracownicy' in request.path %}aria-current="page"{% endif %}>

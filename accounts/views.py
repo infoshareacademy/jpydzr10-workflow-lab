@@ -1,20 +1,25 @@
-"""Widoki aplikacji accounts (login, logout, profile)."""
+"""Widoki aplikacji accounts (login, logout, profile, employee management)."""
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.exceptions import ValidationError
-from django.shortcuts import redirect, render
+from django.db.models import Q
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from django.views.generic import TemplateView
+from django.views.decorators.http import require_POST
+from django.views.generic import ListView, TemplateView
 from django_ratelimit.decorators import ratelimit
 
 from core.service_errors import add_form_errors
 
 from .forms import ProfileForm, RegisterEmployeeForm
-from .services import register_employee, update_profile
+from .models import EmployeeProfile
+from .services import anonymize_employee, register_employee, terminate_employee, update_profile
 
 
 @method_decorator(
@@ -134,3 +139,134 @@ def employee_register_view(request):
         "accounts/employee_register.html",
         {"form": form},
     )
+
+
+# =============================================================================
+# EMPLOYEE LIST + LIFECYCLE ACTIONS (terminate / anonymize)
+# =============================================================================
+
+
+class EmployeeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """Lista pracowników z filtrami status (aktywni / zwolnieni / wszyscy) + funkcja.
+
+    Filtry GET:
+      * ``filter=active`` (default) — tylko aktywni (``is_active_employee=True``).
+      * ``filter=terminated`` — zwolnieni (``is_active_employee=False`` lub
+        ``termination_date IS NOT NULL``), wykluczając zanonimizowanych.
+      * ``filter=anonymized`` — zanonimizowani (GDPR Art.17 erasure).
+      * ``filter=all`` — wszyscy.
+      * ``function`` — filtr po :class:`EmployeeProfile.Function`.
+      * ``q`` — search po username / imię / nazwisko / email / phone.
+    """
+
+    model = EmployeeProfile
+    template_name = "accounts/employee_list.html"
+    context_object_name = "profiles"
+    paginate_by = 25
+    permission_required = "accounts.view_employeeprofile"
+    raise_exception = True
+
+    def get_queryset(self):
+        qs = EmployeeProfile.objects.select_related("user").order_by(
+            "-is_active_employee", "user__last_name", "user__username"
+        )
+        filter_value = self.request.GET.get("filter", "active")
+        if filter_value == "active":
+            qs = qs.filter(is_active_employee=True, is_anonymized=False)
+        elif filter_value == "terminated":
+            qs = qs.filter(is_active_employee=False, is_anonymized=False)
+        elif filter_value == "anonymized":
+            qs = qs.filter(is_anonymized=True)
+        # "all" — bez filtra
+
+        function = self.request.GET.get("function")
+        if function:
+            qs = qs.filter(function=function)
+
+        q = (self.request.GET.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(user__username__icontains=q)
+                | Q(user__first_name__icontains=q)
+                | Q(user__last_name__icontains=q)
+                | Q(user__email__icontains=q)
+                | Q(phone__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["current_filter"] = self.request.GET.get("filter", "active")
+        ctx["current_function"] = self.request.GET.get("function", "")
+        ctx["current_q"] = self.request.GET.get("q", "")
+        ctx["function_choices"] = EmployeeProfile.Function.choices
+        ctx["counts"] = {
+            "active": EmployeeProfile.objects.filter(
+                is_active_employee=True, is_anonymized=False
+            ).count(),
+            "terminated": EmployeeProfile.objects.filter(
+                is_active_employee=False, is_anonymized=False
+            ).count(),
+            "anonymized": EmployeeProfile.objects.filter(is_anonymized=True).count(),
+            "all": EmployeeProfile.objects.count(),
+        }
+        return ctx
+
+
+@login_required
+@permission_required("accounts.change_employeeprofile", raise_exception=True)
+@require_POST
+def employee_terminate_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """POST endpoint: kończy zatrudnienie pracownika (``terminate_employee`` service).
+
+    Confirm w UI — template list ma 2-step button (Alpine confirming flag).
+    Po sukcesie redirect do listy z filtrem ``terminated``.
+    """
+    profile = get_object_or_404(EmployeeProfile.objects.select_related("user"), pk=pk)
+
+    if profile.user == request.user:
+        messages.error(request, _("Nie możesz zakończyć własnego zatrudnienia."))
+        return redirect("accounts:employee_list")
+
+    reason = (request.POST.get("reason") or "").strip()
+    try:
+        terminate_employee(profile, reason=reason, actor=request.user)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+        return redirect("accounts:employee_list")
+
+    messages.success(
+        request,
+        _("Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone.")
+        % {"name": profile.user.get_full_name() or profile.user.username},
+    )
+    return redirect(reverse_lazy("accounts:employee_list") + "?filter=terminated")
+
+
+@login_required
+@permission_required("accounts.delete_employeeprofile", raise_exception=True)
+@require_POST
+def employee_anonymize_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """POST endpoint: anonimizuje pracownika (GDPR Art.17 erasure).
+
+    Wymaga ``delete_employeeprofile`` permission (nie change_) — anonimizacja
+    jest nieodwracalna. Wywołuje ``anonymize_employee`` service który najpierw
+    terminate'uje konto jeśli aktywne, potem zamienia PII na hash.
+    """
+    profile = get_object_or_404(EmployeeProfile.objects.select_related("user"), pk=pk)
+
+    if profile.user == request.user:
+        messages.error(request, _("Nie możesz zanonimizować własnego profilu."))
+        return redirect("accounts:employee_list")
+
+    try:
+        anonymize_employee(profile, actor=request.user)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+        return redirect("accounts:employee_list")
+
+    messages.success(
+        request,
+        _("Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."),
+    )
+    return redirect(reverse_lazy("accounts:employee_list") + "?filter=anonymized")
