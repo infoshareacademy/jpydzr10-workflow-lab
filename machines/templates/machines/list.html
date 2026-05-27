@@ -112,7 +112,15 @@
                                         </td>
                                         <td class="px-3 py-2.5">
                                             {% status_badge machine.status as css %}
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                            <div class="flex flex-wrap items-center gap-1">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                                {% if not machine.is_reservable %}
+                                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="Maszyna magazynowa — nie podlega rezerwacjom.">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                        Magazyn
+                                                    </span>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                         <td class="px-3 py-2.5 text-center" title="{{ machine.inspection_status_label }}">
                                             <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
@@ -144,8 +152,15 @@
                                         <div class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold truncate">{{ machine.uid }}</div>
                                         <div class="font-medium text-slate-900 dark:text-white truncate">{{ machine.name }}</div>
                                     </div>
-                                    {% status_badge machine.status as css %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 {{ css }}">{{ machine.status }}</span>
+                                    <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                        {% status_badge machine.status as css %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                        {% if not machine.is_reservable %}
+                                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                                Magazyn
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     <span>{{ machine.get_machine_type_display }}</span>
@@ -175,9 +190,15 @@
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
 
                                 {# Status badge floats top-right of the photo. #}
-                                <div class="absolute top-2 right-2 flex items-center gap-1.5">
+                                <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
                                     {% status_badge machine.status as css %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur shadow-sm {{ css }}">{{ machine.status }}</span>
+                                    {% if not machine.is_reservable %}
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-100/95 text-slate-700 dark:bg-slate-800/95 dark:text-slate-200 backdrop-blur shadow-sm" title="Maszyna magazynowa">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            Magazyn
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 <div class="absolute top-2 left-2">
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-white/85 dark:bg-slate-900/85 text-slate-700 dark:text-slate-200 backdrop-blur shadow-sm"

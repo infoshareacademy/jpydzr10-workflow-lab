@@ -83,6 +83,10 @@ class MachineListView(LoginRequiredMixin, ListView):
                 queryset = queryset.filter(machine_type=data["machine_type"])
             if data.get("inspection_status"):
                 queryset = _apply_inspection_filter(queryset, data["inspection_status"])
+            if data.get("is_reservable") == "yes":
+                queryset = queryset.filter(is_reservable=True)
+            elif data.get("is_reservable") == "no":
+                queryset = queryset.filter(is_reservable=False)
         elif self.request.GET:
             # User wpisał ?status=nonsense albo podobne — silently rezygnujemy
             # z filtrowania, ale informujemy o tym przez messages.warning.

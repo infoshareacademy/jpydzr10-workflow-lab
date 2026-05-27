@@ -46,6 +46,7 @@ from django.views.generic import (
     FormView,
     ListView,
     TemplateView,
+    UpdateView,
     View,
 )
 
@@ -58,8 +59,13 @@ from .forms import (
     ServiceRecordForm,
 )
 from .models import ServiceRecord
-from .reports import generate_inspection_pdf, generate_quarterly_report_xlsx
-from .services import close_service, create_service_record
+from .reports import (
+    generate_all_service_records_xlsx,
+    generate_inspection_pdf,
+    generate_machine_service_xlsx,
+    generate_quarterly_report_xlsx,
+)
+from .services import close_service, create_service_record, update_service_record
 
 logger = logging.getLogger("service")
 
@@ -168,6 +174,48 @@ class ServiceRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["mode"] = "create"
+        return ctx
+
+
+class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """Edycja istniejacego wpisu serwisowego (poprawa bledu operatora).
+
+    Reuse ServiceRecordForm — UpdateView automatycznie wypelnia instance.
+    Wywoluje update_service_record() ze service'u, ktory walidates
+    performed_date <= today i recalculuje next_inspection.
+    """
+
+    model = ServiceRecord
+    form_class = ServiceRecordForm
+    template_name = "service/form.html"
+    permission_required = "service.change_servicerecord"
+    raise_exception = True
+
+    def form_valid(self, form):
+        try:
+            record = update_service_record(
+                self.object,
+                record_type=form.cleaned_data["record_type"],
+                performed_date=form.cleaned_data["performed_date"],
+                performed_by=form.cleaned_data.get("performed_by", ""),
+                description=form.cleaned_data.get("description", ""),
+                cost=form.cleaned_data.get("cost") or Decimal("0.00"),
+                inspection_document=form.cleaned_data.get("inspection_document"),
+            )
+        except ValidationError as exc:
+            add_form_errors(form, exc)
+            return self.form_invalid(form)
+
+        messages.success(
+            self.request,
+            f"Wpis serwisowy #{record.pk} dla maszyny {record.machine.uid} zaktualizowany.",
+        )
+        return redirect("service:detail", pk=record.pk)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["mode"] = "update"
+        ctx["record"] = self.object
         return ctx
 
 
@@ -287,6 +335,39 @@ class ReportXlsxView(LoginRequiredMixin, View):
             return redirect("service:reports")
 
         filename = slugify(f"raport-q{quarter}-{year}") + ".xlsx"
+        response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class MachineServiceXlsxView(LoginRequiredMixin, View):
+    """Stream historię serwisu pojedynczej maszyny jako XLSX attachment.
+
+    URL: ``/serwis/eksport/maszyna/<uid>/`` — pobierany z karty maszyny
+    (machines/detail.html → tab "Historia serwisu" → button "Pobierz Excel").
+    """
+
+    def get(self, request: HttpRequest, uid: str) -> HttpResponse:
+        from machines.models import Machine
+
+        machine = get_object_or_404(Machine, uid=uid)
+        payload = generate_machine_service_xlsx(machine=machine)
+        filename = slugify(f"serwis-{machine.uid}-{date.today().isoformat()}") + ".xlsx"
+        response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
+    """Stream pełną historię serwisu (wszystkie maszyny) jako XLSX attachment.
+
+    URL: ``/serwis/eksport/wszystkie/`` — pobierany z listy serwisów
+    (service/list.html → button "Pobierz Excel — wszystkie wpisy").
+    """
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        payload = generate_all_service_records_xlsx()
+        filename = slugify(f"serwis-wszystkie-{date.today().isoformat()}") + ".xlsx"
         response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response

@@ -302,6 +302,29 @@
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.inspection_date.errors|join:", " }}</p>
                 {% endif %}
             </div>
+
+            {# is_reservable -- maszyna magazynowa (np. wozek widlowy magazynu) nie #}
+            {# pojawia sie w dropdownie rezerwacji, ale jest na timeline (sledzimy #}
+            {# przegladow). Default = True. Edycja przez ten checkbox.            #}
+            <div class="sm:col-span-2">
+                <div class="flex items-start gap-3 px-3 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
+                    <div class="flex h-6 items-center">
+                        {{ form.is_reservable }}
+                    </div>
+                    <div class="text-sm flex-1 min-w-0">
+                        <label for="{{ form.is_reservable.id_for_label }}"
+                               class="font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            {{ form.is_reservable.label }}
+                        </label>
+                        {% if form.is_reservable.help_text %}
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{{ form.is_reservable.help_text }}</p>
+                        {% endif %}
+                        {% if form.is_reservable.errors %}
+                        <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.is_reservable.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </fieldset>
 

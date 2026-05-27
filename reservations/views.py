@@ -62,6 +62,7 @@ from .services import (
     delete_site,
     get_conflicting_reservations,
     report_breakdown,
+    run_daily_sync,
     swap_machine,
     update_reservation,
     update_site,
@@ -1317,3 +1318,38 @@ def batch_bulk_change_operator(request: HttpRequest, batch_id: uuid.UUID) -> Htt
             % {"n": result["changed_count"], "s": result["skipped_count"]},
         )
     return redirect("reservations:batch_detail", batch_id=batch_id)
+
+
+# =============================================================================
+# DAILY SYNC — ręczne uruchomienie z UI (staff only)
+# =============================================================================
+
+
+@login_required
+@require_POST
+def daily_sync_now_view(request: HttpRequest) -> HttpResponse:
+    """Ręczny trigger :func:`services.run_daily_sync` z UI (tylko staff).
+
+    Daily-sync normalnie jest cronem (``manage.py run_daily_sync``), ale dla
+    prezentacji / debugowania operator może go odpalić jednym kliknięciem.
+    Buton "Synchronizuj statusy" w home.html (widoczny tylko dla
+    ``user.is_staff``).
+    """
+    if not request.user.is_staff:
+        messages.error(request, _("Tylko personel administracyjny może synchronizować statusy."))
+        return redirect("core:home")
+
+    result = run_daily_sync()
+    messages.success(
+        request,
+        _(
+            "Synchronizacja statusów wykonana: %(updated)d 'Na budowie', "
+            "%(extended)d przedłużono (Hard Return), %(reserved)d 'Zarezerwowana'."
+        )
+        % {
+            "updated": result["updated"],
+            "extended": result["extended"],
+            "reserved": result["reserved"],
+        },
+    )
+    return redirect("core:home")

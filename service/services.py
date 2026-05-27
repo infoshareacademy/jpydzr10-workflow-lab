@@ -116,6 +116,73 @@ def create_service_record(
 
 
 # =============================================================================
+# UPDATE
+# =============================================================================
+
+
+def update_service_record(record: ServiceRecord, **changes) -> ServiceRecord:
+    """Aktualizuje :class:`ServiceRecord` po stworzeniu (poprawa błędnego wpisu).
+
+    Operator wpisuje czasem niewłaściwą datę / koszt / opis. UpdateView w UI
+    wywołuje tę funkcję z ``form.cleaned_data`` — pola spoza ``allowed_fields``
+    są ignorowane (machine nie wolno migrować — to inny rekord historyczny).
+
+    Jeśli ``performed_date`` lub ``record_type`` się zmieni, zaktualizowane
+    zostanie też ``next_inspection`` (recalculate na podstawie aktualnego
+    ``record_type``).
+
+    Raises:
+        ValidationError: nowa ``performed_date`` jest w przyszłości lub
+            ``record_type`` nielegalny.
+    """
+    allowed_fields = {
+        "record_type",
+        "performed_date",
+        "performed_by",
+        "description",
+        "cost",
+        "inspection_document",
+    }
+    today = date.today()
+
+    with transaction.atomic():
+        locked = ServiceRecord.objects.select_for_update().get(pk=record.pk)
+
+        for field, value in changes.items():
+            if field not in allowed_fields:
+                continue
+            if field == "cost" and value is not None:
+                value = Decimal(str(value))
+            if field == "performed_by" and isinstance(value, str):
+                value = value.strip()
+            setattr(locked, field, value)
+
+        if locked.performed_date > today:
+            raise ValidationError(
+                {"performed_date": _("Data wykonania nie może być w przyszłości.")}
+            )
+
+        # Re-calculate next_inspection — uwzględnia nową date + record_type.
+        if locked.record_type in INSPECTION_INTERVALS:
+            months = INSPECTION_INTERVALS[locked.record_type]
+            locked.next_inspection = locked.performed_date + relativedelta(months=months)
+        else:
+            locked.next_inspection = None
+
+        locked.full_clean()
+        locked.save()
+
+        logger.info(
+            "Wpis serwisowy %s zaktualizowany (maszyna=%s, typ=%s, koszt=%s)",
+            locked.pk,
+            locked.machine.uid,
+            locked.record_type,
+            locked.cost,
+        )
+    return locked
+
+
+# =============================================================================
 # CLOSE SERVICE  (return machine from "W serwisie" to warehouse)
 # =============================================================================
 

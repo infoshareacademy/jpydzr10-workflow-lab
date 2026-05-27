@@ -18,7 +18,7 @@
      aria-label="Siatka rezerwacji maszyn">
 
     {% if machine_rows %}
-        <div class="timeline-grid" style="--days: {{ day_list|length }}" role="rowgroup">
+        <div class="timeline-grid" data-period="{{ period }}" style="--days: {{ day_list|length }}" role="rowgroup">
 
             {# ROW 1: header — sticky day labels (col 1 = corner, col 2+ = days) #}
             <div class="timeline-corner" role="columnheader">
@@ -41,10 +41,11 @@
             {% for row in machine_rows %}
                 {# Col 1 sticky — machine info #}
                 <div class="timeline-machine-cell{% if not row.is_reservable %} timeline-machine-cell--warehouse{% endif %}" style="grid-row: {{ forloop.counter|add:1 }}; grid-column: 1;" role="rowheader">
+                    {# Klikalna nazwa (primary) — UID jako subtitle font-mono. #}
                     <a href="{% url 'machines:detail' uid=row.uid %}"
                        class="font-semibold text-brand-700 dark:text-brand-300 hover:underline truncate text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-sm"
-                       title="{{ row.name }}">{{ row.uid }}</a>
-                    <span class="text-xs text-slate-500 dark:text-slate-400 truncate" title="{{ row.name }}">{{ row.name }}</span>
+                       title="{{ row.name }} ({{ row.uid }})">{{ row.name }}</a>
+                    <span class="font-mono text-[0.6875rem] text-slate-500 dark:text-slate-400 tracking-tight">{{ row.uid }}</span>
                     {% status_badge row.status as cls %}
                     <div class="flex flex-wrap items-center gap-1 mt-0.5">
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[0.625rem] font-medium uppercase tracking-wider {{ cls }}">

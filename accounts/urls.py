@@ -17,5 +17,16 @@ urlpatterns = [
     # zidentyfikował że service istniał ale nie miał view'a — operator
     # mógł tworzyć pracowników tylko przez /admin/auth/user/add/ (raw
     # Django form bez HIBP + bez profile setup w jednym kroku).
+    path("pracownicy/", views.EmployeeListView.as_view(), name="employee_list"),
     path("pracownicy/dodaj/", views.employee_register_view, name="employee_register"),
+    path(
+        "pracownicy/<int:pk>/zwolnij/",
+        views.employee_terminate_view,
+        name="employee_terminate",
+    ),
+    path(
+        "pracownicy/<int:pk>/anonimizuj/",
+        views.employee_anonymize_view,
+        name="employee_anonymize",
+    ),
 ]

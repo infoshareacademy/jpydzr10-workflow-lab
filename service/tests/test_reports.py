@@ -201,3 +201,89 @@ def test_generate_inspection_pdf_handles_empty_optional_fields(machine):
     record = InspectionFactory(machine=machine, performed_by="", description="")
     payload = generate_inspection_pdf(service_record=record)
     assert payload.startswith(b"%PDF-")
+
+
+@pytest.mark.django_db
+def test_generate_machine_service_xlsx_returns_xlsx_with_records(machine):
+    """Excel per maszyna zawiera tylko wpisy danej maszyny + polskie znaki."""
+    from openpyxl import load_workbook
+
+    from service.reports import generate_machine_service_xlsx
+
+    InspectionFactory(
+        machine=machine,
+        performed_date=date(2026, 5, 16),
+        performed_by="Łukasz Żółć",
+        description="Smarowanie łożysk + wymiana złącz hydraulicznych.",
+        cost=Decimal("450.00"),
+    )
+    RepairFactory(
+        machine=machine,
+        performed_date=date(2026, 4, 10),
+        description="Naprawa układu sterowania (ząbkowanie).",
+    )
+
+    payload = generate_machine_service_xlsx(machine=machine)
+    assert isinstance(payload, bytes)
+    assert payload[:2] == b"PK"  # XLSX = ZIP
+
+    wb = load_workbook(BytesIO(payload))
+    ws = wb.active
+    assert ws.title.startswith(machine.uid[:31])
+    # Header w wierszu 1
+    assert ws.cell(1, 1).value == "UID maszyny"
+    assert ws.cell(1, 8).value == "Następny przegląd"
+    # Wpisy są — sprawdzamy polskie znaki w opisach
+    all_text = " ".join(str(c.value or "") for row in ws.iter_rows() for c in row)
+    assert "Łukasz" in all_text
+    assert "ząbkowanie" in all_text
+    assert "RAZEM:" in all_text
+
+
+@pytest.mark.django_db
+def test_generate_all_service_records_xlsx_includes_every_machine(machine):
+    """Globalny eksport zawiera wpisy ze wszystkich maszyn."""
+    from openpyxl import load_workbook
+
+    from machines.factories import MachineFactory
+    from service.reports import generate_all_service_records_xlsx
+
+    second = MachineFactory(uid="K-SECOND", name="Inna koparka")
+    InspectionFactory(machine=machine, performed_date=date(2026, 5, 1))
+    RepairFactory(machine=second, performed_date=date(2026, 5, 5))
+
+    payload = generate_all_service_records_xlsx()
+    wb = load_workbook(BytesIO(payload))
+    ws = wb.active
+    uids = {ws.cell(row, 1).value for row in range(2, ws.max_row + 1)}
+    assert machine.uid in uids
+    assert "K-SECOND" in uids
+
+
+@pytest.mark.django_db
+def test_generate_inspection_pdf_uses_planer_sans_font_for_polish_chars(machine):
+    """Po refaktorze fontów PDF używa PlanerSans (DejaVu) zamiast Helvetica.
+
+    Helvetica jest Latin-1 i nie renderuje polskich znaków. Sprawdzamy że
+    po generacji font ``PlanerSans`` jest zarejestrowany w globalnym
+    rejestrze reportlab — dzięki temu znaki ą/ę/ł/ó/ś/ż/ź/ć/ń pokazują się
+    w gotowym PDFie.
+    """
+    from reportlab.pdfbase import pdfmetrics
+
+    record = InspectionFactory(
+        machine=machine,
+        performed_date=date(2026, 5, 16),
+        performed_by="Łukasz Żółć",
+        description="Naprawa układu hydraulicznego — wymiana łożyska, ząbkowanie.",
+        cost=Decimal("900.00"),
+    )
+    payload = generate_inspection_pdf(service_record=record)
+    assert payload.startswith(b"%PDF-")
+    # PlanerSans (alias na DejaVu Sans) musi być w rejestrze fontów
+    # reportlab po wygenerowaniu PDF — gwarantuje że TableStyle / Paragraph
+    # nie spadły do Helvetica fallback.
+    registered_fonts = pdfmetrics.getRegisteredFontNames()
+    assert "PlanerSans" in registered_fonts, (
+        f"PlanerSans nie zarejestrowany, dostępne fonty: {registered_fonts}"
+    )

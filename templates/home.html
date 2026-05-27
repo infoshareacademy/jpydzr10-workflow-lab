@@ -277,17 +277,33 @@
     {# touch-target ≥44px na card-linkach.                                  #}
     {# ==================================================================== #}
     <section aria-labelledby="morning-checklist-title" class="space-y-4 animate-fade-in">
-        <header class="space-y-1">
-            <h2 id="morning-checklist-title" class="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-50 inline-flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                </svg>
-                <span>Dziś w magazynie</span>
-            </h2>
-            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                Plan operacyjny na <time datetime="{{ today|date:'Y-m-d' }}" class="font-medium">{{ today|date:'d.m.Y' }}</time>
-                — kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie.
-            </p>
+        <header class="flex items-end justify-between gap-3 flex-wrap">
+            <div class="space-y-1 min-w-0">
+                <h2 id="morning-checklist-title" class="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-50 inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <span>Dziś w magazynie</span>
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    Plan operacyjny na <time datetime="{{ today|date:'Y-m-d' }}" class="font-medium">{{ today|date:'d.m.Y' }}</time>
+                    — kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie.
+                </p>
+            </div>
+            {% if user.is_staff %}
+                {# Ręczne odpalenie daily-sync. Cron lata raz dziennie (4 rano),     #}
+                {# button daje operatorowi mozliwosc wymuszenia reconcile statusow  #}
+                {# w trakcie demonstracji / kiedy fixture dropped.                  #}
+                <form method="post" action="{% url 'reservations:daily_sync_now' %}" class="flex-shrink-0">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                            title="Wymuś teraz daily-sync — zaktualizuje status maszyn na podstawie aktywnych rezerwacji (normalnie cron, raz dziennie).">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Synchronizuj statusy
+                    </button>
+                </form>
+            {% endif %}
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
