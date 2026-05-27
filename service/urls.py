@@ -29,6 +29,7 @@ urlpatterns = [
         name="export_machine_xlsx",
     ),
     path("<int:pk>/", views.ServiceRecordDetailView.as_view(), name="detail"),
+    path("<int:pk>/edytuj/", views.ServiceRecordUpdateView.as_view(), name="update"),
     path("<int:pk>/pdf/", views.InspectionPdfView.as_view(), name="pdf"),
     path("<int:pk>/usun/", views.ServiceRecordDeleteView.as_view(), name="delete"),
     path("<int:pk>/zakoncz-serwis/", views.close_service_view, name="close_service"),
