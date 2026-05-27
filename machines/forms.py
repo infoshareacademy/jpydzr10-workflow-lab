@@ -117,6 +117,16 @@ class MachineFilterForm(forms.Form):
         choices=INSPECTION_CHOICES,
         widget=forms.Select(attrs={"class": SELECT_CSS}),
     )
+    is_reservable = forms.ChoiceField(
+        required=False,
+        label=_("Rezerwowalność"),
+        choices=(
+            ("", _("Wszystkie")),
+            ("yes", _("Tylko rezerwowalne")),
+            ("no", _("Tylko magazynowe (bez rezerwacji)")),
+        ),
+        widget=forms.Select(attrs={"class": SELECT_CSS}),
+    )
 
 
 # Magic bytes XLSX = nagłówek ZIP (PK\x03\x04). Wszystkie pliki .xlsx są

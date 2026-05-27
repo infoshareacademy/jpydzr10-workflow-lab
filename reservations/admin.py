@@ -94,23 +94,32 @@ class ReservationAdmin(PlanerHistoryAdmin):
         "start_date",
         "end_date",
         "person",
+        "responsible_person",
         "status",
+        "cancellation_reason",
         "created_at",
     )
-    list_filter = ("status", "machine__machine_type", "site__status")
-    list_select_related = ("machine", "site")
+    list_filter = (
+        "status",
+        "machine__machine_type",
+        "site__status",
+        "cancellation_reason",
+    )
+    list_select_related = ("machine", "site", "replaced_by")
     search_fields = (
         "machine__uid",
         "machine__name",
         "person",
+        "responsible_person",
         "address",
         "site__project_number",
         "site__name",
+        "batch_id",
     )
-    autocomplete_fields = ("machine", "site")
+    autocomplete_fields = ("machine", "site", "replaced_by")
     ordering = ("-start_date",)
     date_hierarchy = "start_date"
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "batch_id")
     actions = ("action_confirm", "action_cancel", "action_complete")
     fieldsets = (
         (
@@ -126,13 +135,46 @@ class ReservationAdmin(PlanerHistoryAdmin):
         (
             "Termin",
             {
-                "fields": ("start_date", "end_date"),
+                "fields": ("start_date", "end_date", "actual_return_date"),
+                "description": (
+                    "<code>actual_return_date</code> — faktyczny zwrot maszyny "
+                    "(B-3). Jeśli ustawiony i &lt; end_date, rezerwacja zwolniła "
+                    "maszynę wcześniej."
+                ),
             },
         ),
         (
-            "Osoba i adres",
+            "Personel",
             {
-                "fields": ("person", "address"),
+                "fields": ("person", "responsible_person", "address"),
+                "description": (
+                    "<code>person</code> = osoba w biurze, która utworzyła rezerwację. "
+                    "<code>responsible_person</code> (B-4) = kierownik/brygadzista "
+                    "fizycznie odpowiedzialny za maszynę na budowie."
+                ),
+            },
+        ),
+        (
+            "Anulowanie (B-2)",
+            {
+                "fields": ("cancellation_reason", "cancellation_note"),
+                "classes": ("collapse",),
+                "description": (
+                    "Wypełniane automatycznie przez <code>cancel_reservation</code> "
+                    "service gdy status zmienia się na <em>anulowana</em>."
+                ),
+            },
+        ),
+        (
+            "Wymiana maszyny i batch (B-6 / B-7)",
+            {
+                "fields": ("replaced_by", "batch_id"),
+                "classes": ("collapse",),
+                "description": (
+                    "<code>replaced_by</code> — FK do rezerwacji-następczyni po "
+                    "<em>swap_machine</em>. <code>batch_id</code> (UUID) grupuje "
+                    "rezerwacje utworzone jednym kliknięciem 'Grupa rezerwacji'."
+                ),
             },
         ),
         (
