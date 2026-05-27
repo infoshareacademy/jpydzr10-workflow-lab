@@ -84,7 +84,10 @@
         </div>
 
         {# ============================== STICKY CONTROL BAR — period + nawigacja ============================== #}
-        <div class="sticky top-0 z-20 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-800/80">
+        {# id=tl-controls oraz z-30 wymagane przez script na koncu tego templatu  #}
+        {# — mierzy offsetHeight i ustawia --tl-ctrl-h na <html>, zeby naglowek   #}
+        {# dni siatki sticky'owal sie DOKLADNIE pod ta paskiem zamiast na 0px.   #}
+        <div id="tl-controls" class="sticky top-0 z-30 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-800/80">
             <div class="px-5 sm:px-6 py-2.5 flex flex-wrap items-center gap-2 sm:gap-3">
 
                 {# View type — segment control #}
@@ -269,4 +272,27 @@
         <span x-text="message"></span>
     </div>
 </div>
+
+{# ============================== STICKY OFFSET COORDINATOR ============================== #}
+{# 8-linijkowy IIFE mierzy offsetHeight paska kontrolnego (#tl-controls)         #}
+{# i zapisuje wartosc do CSS var --tl-ctrl-h na <html>. Naglowek dni siatki      #}
+{# uzywa tej zmiennej w `top: var(--tl-ctrl-h)` dla CSS sticky — przykleja sie   #}
+{# DOKLADNIE pod paskiem zamiast na top viewportu. Po resize licznik leci pono- #}
+{# wnie. Pure CSS sticky + 1 numer z JS = zero scroll listenerow, zero IntObs.  #}
+<script>
+(function () {
+    var ctrl = document.getElementById('tl-controls');
+    if (!ctrl) return;
+    function setHeight() {
+        document.documentElement.style.setProperty('--tl-ctrl-h', ctrl.offsetHeight + 'px');
+    }
+    setHeight();
+    window.addEventListener('resize', setHeight);
+    // HTMX swap moze podmienic content w obrebie timeline, ale #tl-controls
+    // pozostaje (jest poza zakresem hx-target). Mimo to robimy refresh po
+    // afterSwap zeby sticky header dni dostal swiezy offset jesli pasek
+    // urosl o jeden wiersz (np. po dodaniu filtra-chipa).
+    document.body.addEventListener('htmx:afterSwap', setHeight);
+})();
+</script>
 {% endblock %}

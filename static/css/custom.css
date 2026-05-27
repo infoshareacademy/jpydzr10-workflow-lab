@@ -208,9 +208,13 @@
 }
 
 .timeline-head-cell {
+    /* Wave 14-J sticky scroll (wzorowany na WMS): header row z dniami
+       przykleja sie POD paskiem kontrolnym (#tl-controls). JS w timeline.html
+       mierzy offsetHeight paska i wpisuje --tl-ctrl-h na <html>. Fallback
+       0px = sticky do top viewportu jesli JS nie zadzialal. */
     position: sticky;
-    top: 0;
-    z-index: 30;
+    top: var(--tl-ctrl-h, 0px);
+    z-index: 20;
     background: rgb(255 255 255);
     border-bottom: 1px solid rgb(229 231 235);
     padding: 0.5rem 0.25rem;
@@ -234,10 +238,14 @@
 }
 
 .timeline-corner {
+    /* Rog siatki (col=1, row=1) — sticky w obu osiach: pionowo pod
+       paskiem kontrolnym (--tl-ctrl-h), poziomo do lewej krawedzi
+       scroll-wrappera. Wyzszy z-index niz day-header zeby przykrywal
+       nazwy dni przy horizontal scroll. */
     position: sticky;
-    top: 0;
+    top: var(--tl-ctrl-h, 0px);
     left: 0;
-    z-index: 40;
+    z-index: 25;
     background: rgb(255 255 255);
     border-right: 1px solid rgb(229 231 235);
     border-bottom: 1px solid rgb(229 231 235);
