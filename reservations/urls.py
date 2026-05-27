@@ -26,6 +26,8 @@ urlpatterns = [
     path("check-konflikt/", views.CheckConflictView.as_view(), name="check_conflict"),
     # ---------------------------------------------------------------- timeline
     path("timeline/", views.TimelineView.as_view(), name="timeline"),
+    # Ręczne uruchomienie daily-sync z UI (staff only — sprawdzane w view).
+    path("sync-statusy/", views.daily_sync_now_view, name="daily_sync_now"),
     path("szybka-rezerwacja/", views.QuickReserveView.as_view(), name="quick_reserve"),
     # Wave 14-A Bundle 3 -- timeline klik PUSTY cell -> pelen ReservationForm modal.
     # MUSI byc PRZED `<int:pk>/modal/` zeby /quick-modal/ nie zostal sparsowany
