@@ -79,6 +79,46 @@ def test_drawer_hides_other_users_conversations(client_logged):
 
 
 # =============================================================================
+# GET /asystent/historia/  (welcome partial)
+# =============================================================================
+
+
+@pytest.mark.django_db
+def test_welcome_requires_login(client):
+    response = client.get(reverse("chatbot:welcome"))
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
+def test_welcome_renders_empty_state_when_no_conversations(client_logged):
+    response = client_logged.get(reverse("chatbot:welcome"))
+    assert response.status_code == 200
+    body = response.content.decode("utf-8")
+    assert "Cześć! Jak mogę pomóc?" in body
+    assert "za zgodą" in body  # potwierdzenie że bullety wymieniają write actions
+
+
+@pytest.mark.django_db
+def test_welcome_lists_user_conversations(client_logged, user):
+    ConversationFactory(user=user, title="Welcome konwersacja 1")
+    ConversationFactory(user=user, title="Welcome konwersacja 2")
+    response = client_logged.get(reverse("chatbot:welcome"))
+    assert response.status_code == 200
+    assert b"Welcome konwersacja 1" in response.content
+    assert b"Welcome konwersacja 2" in response.content
+
+
+@pytest.mark.django_db
+def test_welcome_hides_other_users_conversations(client_logged):
+    from django.contrib.auth import get_user_model
+
+    other = get_user_model().objects.create_user(username="welcome-inny", password="x")
+    ConversationFactory(user=other, title="Tajne welcome")
+    response = client_logged.get(reverse("chatbot:welcome"))
+    assert b"Tajne welcome" not in response.content
+
+
+# =============================================================================
 # POST /asystent/zapytaj/
 # =============================================================================
 
