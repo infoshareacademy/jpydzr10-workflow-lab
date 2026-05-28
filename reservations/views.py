@@ -1364,7 +1364,7 @@ def daily_sync_now_view(request: HttpRequest) -> HttpResponse:
     """
     if not request.user.is_staff:
         messages.error(request, _("Tylko personel administracyjny może synchronizować statusy."))
-        return redirect("core:home")
+        return redirect("home")
 
     result = run_daily_sync()
     messages.success(
@@ -1379,4 +1379,4 @@ def daily_sync_now_view(request: HttpRequest) -> HttpResponse:
             "reserved": result["reserved"],
         },
     )
-    return redirect("core:home")
+    return redirect("home")
