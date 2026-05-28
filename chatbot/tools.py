@@ -513,6 +513,11 @@ WRITE_ACTION_PERMS: dict[str, tuple[str, ...]] = {
         "reservations.add_reservation",
     ),
     "set_machine_to_service": ("machines.change_machine",),
+    # Faza A — serwis: agent moze wpisac przeglad/naprawe + edytowac istniejacy
+    # wpis + przesunac date przegladu maszyny bez tworzenia recordu.
+    "create_service_record": ("service.add_servicerecord",),
+    "update_service_record": ("service.change_servicerecord",),
+    "update_machine_inspection_date": ("machines.change_machine",),
 }
 
 
@@ -658,6 +663,111 @@ class SetMachineToServiceParams(BaseModel):
         max_length=_MACHINE_UID_MAX,
         pattern=_MACHINE_UID_PATTERN,
         description="UID maszyny do wysłania do serwisu",
+    )
+
+
+# ----------------------------------------------------------------- service
+# Limit dla opisu wpisu serwisowego — TextField w DB wytrzyma wiecej, ale
+# 2000 znakow to praktyczna granica dla agent-generated content (LLM rzadko
+# pisze dluzsze opisy techniczne; jesli user chce — niech uzyje formularza).
+_SERVICE_DESCRIPTION_MAX = 2000
+
+
+class CreateServiceRecordParams(BaseModel):
+    """Parametry :func:`propose_create_service_record`.
+
+    ``record_type`` musi byc jedna z 4 wartosci ``ServiceRecord.RecordType``
+    (Literal enforce'uje przez Pydantic). Dla typow ``przeglad_*`` serwis
+    layer automatycznie liczy ``next_inspection`` (3/6/12 mc od
+    ``performed_date``) i bumpuje ``Machine.inspection_date`` — agent NIE
+    przekazuje next_inspection osobno.
+    """
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny (np. KOP-001)",
+    )
+    record_type: Literal[
+        "przegląd_kwartalny",
+        "przegląd_polroczny",
+        "przegląd_roczny",
+        "naprawa",
+    ] = Field(
+        description=(
+            "Typ wpisu — jedno z: przegląd_kwartalny (3 mc), "
+            "przegląd_polroczny (6 mc), przegląd_roczny (12 mc), naprawa"
+        ),
+    )
+    performed_date: str = Field(
+        pattern=_ISO_DATE_PATTERN,
+        description="Data wykonania (ISO YYYY-MM-DD)",
+    )
+    performed_by: str = Field(
+        default="",
+        max_length=_PERSON_NAME_MAX,
+        description="Imię i nazwisko technika / serwisanta",
+    )
+    description: str = Field(
+        default="",
+        max_length=_SERVICE_DESCRIPTION_MAX,
+        description="Opis pracy (np. 'wymiana baterii', 'wymiana oleju')",
+    )
+    cost: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=10**9,
+        description="Koszt w EUR (>= 0). Dla 0 zostawia puste.",
+    )
+
+
+class UpdateServiceRecordParams(BaseModel):
+    """Parametry :func:`propose_update_service_record` — korekta istniejacego wpisu.
+
+    Wszystkie pola opcjonalne — agent przekazuje TYLKO te ktore zmieniaja sie.
+    Brak update'u jest valid (no-op).
+    """
+
+    record_id: int = Field(
+        gt=0,
+        lt=10**9,
+        description="PK wpisu serwisowego do edycji",
+    )
+    description: str | None = Field(
+        default=None,
+        max_length=_SERVICE_DESCRIPTION_MAX,
+        description="Nowy opis (None = bez zmiany)",
+    )
+    cost: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=10**9,
+        description="Nowy koszt w EUR (None = bez zmiany)",
+    )
+    performed_by: str | None = Field(
+        default=None,
+        max_length=_PERSON_NAME_MAX,
+        description="Nowa osoba wykonujaca (None = bez zmiany)",
+    )
+
+
+class UpdateMachineInspectionDateParams(BaseModel):
+    """Parametry :func:`propose_update_machine_inspection_date`.
+
+    Uzywane gdy user mowi "przesun przeglad koparki 3 na za 3 miesiace" BEZ
+    tworzenia formalnego wpisu serwisowego — tylko korekta daty w maszynie.
+    Dla przegladow z wpisem serwisowym lepiej uzyc create_service_record
+    (auto-calc next_inspection).
+    """
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny (np. KOP-003)",
+    )
+    next_inspection_date: str = Field(
+        pattern=_ISO_DATE_PATTERN,
+        description="Nowa data nastepnego przegladu (ISO YYYY-MM-DD)",
     )
 
 
@@ -966,6 +1076,190 @@ def propose_set_machine_to_service(params: SetMachineToServiceParams, user) -> s
     return _proposal("set_machine_to_service", payload, preview)
 
 
+# ----------------------------------------------------------------- service
+# Faza A: trzy narzedzia pozwalajace agentowi w pelni zarzadzac wpisami
+# serwisowymi + data nastepnego przegladu maszyny.
+
+
+def propose_create_service_record(params: CreateServiceRecordParams, user) -> str:
+    """Proponuje utworzenie nowego wpisu serwisowego (przeglad lub naprawa).
+
+    Dla typow ``przeglad_*`` serwis layer automatycznie liczy ``next_inspection``
+    (3/6/12 mc od ``performed_date``) i bumpuje ``Machine.inspection_date``.
+    Dla ``naprawa`` ``next_inspection`` zostaje NULL i ``Machine`` nie jest
+    dotykany.
+    """
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "create_service_record")
+    if auth_err:
+        return auth_err
+
+    try:
+        performed = date.fromisoformat(params.performed_date)
+    except ValueError:
+        return _error_json(
+            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): {params.performed_date}."
+        )
+    if performed > date.today():
+        return _error_json("Data wykonania nie może być w przyszłości.")
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    type_label = dict(
+        [
+            ("przegląd_kwartalny", "Przegląd kwartalny (3 mc)"),
+            ("przegląd_polroczny", "Przegląd półroczny (6 mc)"),
+            ("przegląd_roczny", "Przegląd roczny (12 mc)"),
+            ("naprawa", "Naprawa"),
+        ]
+    )[params.record_type]
+
+    payload = {
+        "machine_id": machine.pk,
+        "machine_uid": machine.uid,
+        "record_type": params.record_type,
+        "performed_date": params.performed_date,
+        "performed_by": params.performed_by,
+        "description": params.description,
+        "cost": float(params.cost),
+    }
+    cost_str = f"{params.cost:.2f} EUR" if params.cost > 0 else "bez kosztu"
+    preview_lines = [
+        f"Dopiszę wpis serwisowy do {machine.uid} ({machine.name}):",
+        f"  • typ: {type_label}",
+        f"  • wykonano: {params.performed_date}",
+    ]
+    if params.performed_by:
+        preview_lines.append(f"  • technik: {params.performed_by}")
+    if params.description:
+        preview_lines.append(f"  • opis: {params.description}")
+    preview_lines.append(f"  • koszt: {cost_str}")
+    if params.record_type != "naprawa":
+        # Konsystentny z service.services.INSPECTION_INTERVAL_MONTHS.
+        months = {"przegląd_kwartalny": 3, "przegląd_polroczny": 6, "przegląd_roczny": 12}[
+            params.record_type
+        ]
+        preview_lines.append(
+            f"Po wykonaniu data następnego przeglądu maszyny zostanie "
+            f"przesunięta o {months} mc od {params.performed_date}."
+        )
+    preview = "\n".join(preview_lines)
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE create_service_record user=%s machine=%s type=%s cost=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+        params.record_type,
+        params.cost,
+    )
+    return _proposal("create_service_record", payload, preview)
+
+
+def propose_update_service_record(params: UpdateServiceRecordParams, user) -> str:
+    """Proponuje edycję istniejącego wpisu serwisowego (opis / koszt / technik)."""
+    from service.models import ServiceRecord
+
+    auth_err = _check_user_can(user, "update_service_record")
+    if auth_err:
+        return auth_err
+
+    try:
+        record = ServiceRecord.objects.select_related("machine").get(pk=params.record_id)
+    except ServiceRecord.DoesNotExist:
+        return _error_json(f"Wpis serwisowy #{params.record_id} nie istnieje.")
+
+    changes: list[str] = []
+    if params.description is not None and params.description != record.description:
+        changes.append(f"opis: '{record.description[:60]}' → '{params.description[:60]}'")
+    if params.cost is not None and float(params.cost) != float(record.cost):
+        changes.append(f"koszt: {record.cost} EUR → {params.cost:.2f} EUR")
+    if params.performed_by is not None and params.performed_by != record.performed_by:
+        changes.append(f"technik: '{record.performed_by}' → '{params.performed_by}'")
+
+    if not changes:
+        return _error_json(
+            f"Brak zmian do wykonania na wpisie #{params.record_id} (przekazane wartości "
+            f"są identyczne z aktualnymi)."
+        )
+
+    payload = {
+        "record_id": params.record_id,
+        "description": params.description,
+        "cost": float(params.cost) if params.cost is not None else None,
+        "performed_by": params.performed_by,
+    }
+    preview = (
+        f"Zaktualizuję wpis #{params.record_id} ({record.machine.uid}):\n  • "
+        + "\n  • ".join(changes)
+    )
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE update_service_record user=%s record=%s changes=%s",
+        getattr(user, "pk", None),
+        params.record_id,
+        len(changes),
+    )
+    return _proposal("update_service_record", payload, preview)
+
+
+def propose_update_machine_inspection_date(
+    params: UpdateMachineInspectionDateParams, user
+) -> str:
+    """Proponuje przesunięcie daty następnego przeglądu maszyny BEZ tworzenia
+    wpisu serwisowego.
+
+    Use-case: przegląd był wykonany off-system (np. przez zewnętrznego
+    serwisanta bez wystawienia papierów) i operator chce tylko zaktualizować
+    przypomnienie o następnym przeglądzie. Dla typowego flow (przegląd + auto
+    przesunięcie daty) lepiej użyć :func:`propose_create_service_record`.
+    """
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "update_machine_inspection_date")
+    if auth_err:
+        return auth_err
+
+    try:
+        new_date = date.fromisoformat(params.next_inspection_date)
+    except ValueError:
+        return _error_json(
+            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): "
+            f"{params.next_inspection_date}."
+        )
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    old_date_str = machine.inspection_date.isoformat() if machine.inspection_date else "brak"
+
+    payload = {
+        "machine_id": machine.pk,
+        "machine_uid": machine.uid,
+        "next_inspection_date": params.next_inspection_date,
+    }
+    preview = (
+        f"Przesunę datę następnego przeglądu maszyny {machine.uid} ({machine.name}):\n"
+        f"  • obecna: {old_date_str}\n"
+        f"  • nowa: {params.next_inspection_date}"
+    )
+    if new_date < date.today():
+        preview += "\n⚠ Nowa data jest w przeszłości — maszyna od razu będzie przeterminowana."
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE update_machine_inspection_date user=%s machine=%s new_date=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+        params.next_inspection_date,
+    )
+    return _proposal("update_machine_inspection_date", payload, preview)
+
+
 # =============================================================================
 # EXECUTOR — finalne wykonanie po potwierdzeniu usera
 # =============================================================================
@@ -1017,6 +1311,12 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
             return _execute_swap_machine(params, user)
         if action == "set_machine_to_service":
             return _execute_set_machine_to_service(params)
+        if action == "create_service_record":
+            return _execute_create_service_record(params)
+        if action == "update_service_record":
+            return _execute_update_service_record(params)
+        if action == "update_machine_inspection_date":
+            return _execute_update_machine_inspection_date(params)
     except ValidationError as exc:
         # Polski string z listą message'y (bez wycieku class name / tracebacka).
         messages = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
@@ -1147,6 +1447,83 @@ def _execute_set_machine_to_service(params: dict) -> str:
     return f"Maszyna {machine.uid} wysłana do serwisu."
 
 
+def _execute_create_service_record(params: dict) -> str:
+    """Tworzy wpis serwisowy (przegląd/naprawa) — wywoła service layer ktory dla
+    typow przeglad_* automatycznie liczy next_inspection i bumpuje Machine."""
+    from decimal import Decimal
+
+    from machines.models import Machine
+    from service.services import create_service_record
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+
+    record = create_service_record(
+        machine=machine,
+        record_type=params["record_type"],
+        performed_date=date.fromisoformat(params["performed_date"]),
+        performed_by=params.get("performed_by", ""),
+        description=params.get("description", ""),
+        cost=Decimal(str(params.get("cost", 0))),
+    )
+    cost_str = f"{record.cost} EUR" if record.cost else "bez kosztu"
+    if record.next_inspection:
+        next_str = f", nast. przegląd: {record.next_inspection.isoformat()}"
+    else:
+        next_str = ""
+    return (
+        f"Wpis serwisowy #{record.pk} utworzony dla {machine.uid}: "
+        f"{record.get_record_type_display()} ({cost_str}){next_str}."
+    )
+
+
+def _execute_update_service_record(params: dict) -> str:
+    """Edytuje istniejacy wpis serwisowy (opis/koszt/technik)."""
+    from decimal import Decimal
+
+    from service.models import ServiceRecord
+    from service.services import update_service_record
+
+    record = ServiceRecord.objects.select_related("machine").get(pk=params["record_id"])
+    changes: dict = {}
+    if params.get("description") is not None:
+        changes["description"] = params["description"]
+    if params.get("cost") is not None:
+        changes["cost"] = Decimal(str(params["cost"]))
+    if params.get("performed_by") is not None:
+        changes["performed_by"] = params["performed_by"]
+
+    update_service_record(record, **changes)
+    return (
+        f"Wpis #{record.pk} ({record.machine.uid}) zaktualizowany "
+        f"({', '.join(changes.keys())})."
+    )
+
+
+def _execute_update_machine_inspection_date(params: dict) -> str:
+    """Aktualizuje Machine.inspection_date bez tworzenia ServiceRecord."""
+    from machines.models import Machine
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+
+    new_date = date.fromisoformat(params["next_inspection_date"])
+    machine.inspection_date = new_date
+    machine.save(update_fields=["inspection_date", "updated_at"])
+    return (
+        f"Data przeglądu maszyny {machine.uid} zaktualizowana na "
+        f"{params['next_inspection_date']}."
+    )
+
+
 # =============================================================================
 # Pomocniczy registry — używany przez ``agent.py`` do rejestracji w Agent
 # =============================================================================
@@ -1162,4 +1539,8 @@ ALL_TOOLS: dict[str, Any] = {
     "propose_change_operator": propose_change_operator,
     "propose_swap_machine": propose_swap_machine,
     "propose_set_machine_to_service": propose_set_machine_to_service,
+    # Faza A — service write tools.
+    "propose_create_service_record": propose_create_service_record,
+    "propose_update_service_record": propose_update_service_record,
+    "propose_update_machine_inspection_date": propose_update_machine_inspection_date,
 }

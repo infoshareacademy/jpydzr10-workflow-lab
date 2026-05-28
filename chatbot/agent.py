@@ -52,8 +52,11 @@ from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
     CreateReservationParams,
+    CreateServiceRecordParams,
     SetMachineToServiceParams,
     SwapMachineParams,
+    UpdateMachineInspectionDateParams,
+    UpdateServiceRecordParams,
 )
 
 logger = logging.getLogger("chatbot")
@@ -108,16 +111,44 @@ Zasady (BARDZO WAŻNE):
    Gdy user pyta "jakie maszyny są wolne", "znajdź minikoparkę na jutro" itp.
    — wywołaj `find_available_machines(start_date, end_date, machine_type)`
    i ZAPROPONUJ konkretną maszynę z wyniku, NIE proś go o UID.
-3. Dla operacji ZMIENIAJĄCYCH dane (rezerwacja, anulowanie, zmiana operatora,
-   wymiana maszyny, wysłanie do serwisu) używaj narzędzi `propose_*`:
+3. Dla operacji ZMIENIAJĄCYCH dane używaj narzędzi `propose_*`:
+
+   Rezerwacje:
        - `propose_create_reservation` — utworzenie nowej rezerwacji,
        - `propose_cancel_reservation` — anulowanie rezerwacji (wymagany powód),
        - `propose_change_operator` — zmiana osoby przypisanej do rezerwacji,
-       - `propose_swap_machine` — wymiana maszyny mid-reservation,
-       - `propose_set_machine_to_service` — wysłanie maszyny do serwisu.
+       - `propose_swap_machine` — wymiana maszyny mid-reservation.
+
+   Maszyny:
+       - `propose_set_machine_to_service` — wysłanie maszyny do serwisu,
+       - `propose_update_machine_inspection_date` — przesunięcie daty
+         następnego przeglądu BEZ wpisu serwisowego (np. po przeglądzie
+         u zewnętrznego serwisanta off-system).
+
+   Serwis (przeglądy i naprawy):
+       - `propose_create_service_record` — wpis serwisowy (przegląd lub
+         naprawa). Dla typu `przegląd_*` data następnego przeglądu jest
+         liczona AUTOMATYCZNIE (3/6/12 mc od `performed_date`) — NIE
+         przekazuj jej osobno, NIE wywołuj `propose_update_machine_inspection_date`
+         dodatkowo. Typ wybierz zgodnie z interwałem: "kwartalny=3 mc",
+         "polroczny=6 mc", "roczny=12 mc", "naprawa" gdy to nie przegląd.
+       - `propose_update_service_record` — korekta istniejącego wpisu
+         (popraw koszt, opis, technika). Tylko zmienione pola, reszta None.
+
    Te narzędzia ZWRACAJĄ JSON z `confirmation_required: true` i NIE wykonują
    zmiany od razu. System sam zapisze proponowaną akcję i zapyta użytkownika
    o potwierdzenie ("tak"/"potwierdzam"/"nie"/"anuluj").
+
+   PRZYKŁADY mapowania user → tool:
+   - "koparka KOP-007, dzisiaj wymieniliśmy baterię, koszt 308 EUR"
+     → `propose_create_service_record(machine_uid="KOP-007", record_type="naprawa",
+        performed_date=DZISIAJ, description="wymiana baterii", cost=308.0)`
+   - "KOP-003 przeszła dziś przegląd kwartalny, koszt 120 EUR"
+     → `propose_create_service_record(machine_uid="KOP-003",
+        record_type="przegląd_kwartalny", performed_date=DZISIAJ, cost=120.0)`
+     (data następnego przeglądu = dziś + 3 mc, auto)
+   - "popraw koszt wpisu #42 na 350 EUR" → `propose_update_service_record(
+        record_id=42, cost=350.0)`
 4. NIGDY nie próbuj samodzielnie wykonać zmiany bez wywołania `propose_*` —
    nie masz takiej możliwości i nie wolno Ci jej szukać. Jeśli narzędzie
    zwróci `{"error": "Brak uprawnień ..."}`, **powtórz tę informację**
@@ -312,6 +343,50 @@ def build_agent() -> Any | None:
         Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
         """
         return tools.propose_set_machine_to_service(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_service_record(
+        ctx: RunContext[ChatDeps], params: CreateServiceRecordParams
+    ) -> str:
+        """Proponuje wpis serwisowy (przegląd lub naprawa) dla maszyny.
+
+        Użyj gdy user mówi "koparka 7 — naprawa, wymiana baterii, 308 EUR" lub
+        "koparka 3 — dzisiaj przegląd kwartalny". Dla typów ``przeglad_*``
+        następna data przeglądu jest liczona automatycznie z performed_date
+        (3/6/12 mc) — NIE przekazuj jej osobno.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_service_record(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_service_record(
+        ctx: RunContext[ChatDeps], params: UpdateServiceRecordParams
+    ) -> str:
+        """Proponuje edycję istniejącego wpisu serwisowego (opis/koszt/technik).
+
+        Użyj gdy user mówi "popraw koszt naprawy #42 na 350 EUR" lub
+        "dopisz do wpisu #15 że wymieniliśmy też filtr". Tylko pola które
+        zmieniają się — None oznacza "bez zmiany".
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_service_record(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_machine_inspection_date(
+        ctx: RunContext[ChatDeps], params: UpdateMachineInspectionDateParams
+    ) -> str:
+        """Proponuje przesunięcie daty następnego przeglądu maszyny BEZ tworzenia wpisu.
+
+        Użyj gdy user mówi "przesun przegląd koparki 3 na 15 sierpnia" bez
+        wzmianki o wykonanej pracy serwisowej. Dla standardowego flow
+        "wykonano przegląd → przesuń datę" lepiej użyj propose_create_service_record
+        — robi obie rzeczy w jednej akcji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_machine_inspection_date(params, user=ctx.deps.user)
 
     return agent
 

@@ -21,12 +21,19 @@ from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
     CreateReservationParams,
+    CreateServiceRecordParams,
     SetMachineToServiceParams,
     SwapMachineParams,
+    UpdateMachineInspectionDateParams,
+    UpdateServiceRecordParams,
     execute_confirmed_action,
+    propose_create_service_record,
+    propose_update_machine_inspection_date,
+    propose_update_service_record,
 )
 from machines.models import Machine
 from reservations.models import ConstructionSite, Reservation
+from service.models import ServiceRecord
 
 # =============================================================================
 # Fixtures
@@ -823,3 +830,282 @@ class TestPydanticSchemaConstraints:
         )
         assert params.machine_uid == "KOP-001"
         assert params.responsible_person == "Anna Nowak"
+
+
+# =============================================================================
+# Faza A — service write tools (przegląd / naprawa / przesunięcie daty)
+# =============================================================================
+
+
+@pytest.fixture
+def user_service_perms(db):
+    """User z PEŁNYMI uprawnieniami serwisowymi + machine change (dla
+    update_machine_inspection_date)."""
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="service-write-tester", password="x")
+    perms = [
+        ("service", "add_servicerecord"),
+        ("service", "change_servicerecord"),
+        ("service", "view_servicerecord"),
+        ("machines", "change_machine"),
+        ("machines", "view_machine"),
+    ]
+    for app_label, codename in perms:
+        perm = Permission.objects.get(content_type__app_label=app_label, codename=codename)
+        u.user_permissions.add(perm)
+    return user_model.objects.get(pk=u.pk)
+
+
+@pytest.mark.django_db
+class TestProposeCreateServiceRecord:
+    """Wpis serwisowy (przegląd lub naprawa) z opcjonalnym kosztem."""
+
+    def _params(self, **overrides):
+        defaults = {
+            "machine_uid": "KOP-001",
+            "record_type": "naprawa",
+            "performed_date": date.today().isoformat(),
+            "performed_by": "Jan Serwisant",
+            "description": "Wymiana baterii",
+            "cost": 308.0,
+        }
+        defaults.update(overrides)
+        return CreateServiceRecordParams(**defaults)
+
+    def test_returns_proposal_json_with_action(self, user_service_perms, koparka_001):
+        result = propose_create_service_record(self._params(), user=user_service_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "create_service_record"
+        assert payload["confirmation_required"] is True
+        assert payload["params"]["machine_uid"] == "KOP-001"
+        assert payload["params"]["record_type"] == "naprawa"
+        assert payload["params"]["cost"] == 308.0
+        assert "Wymiana baterii" in payload["preview"]
+
+    def test_inspection_type_preview_mentions_auto_next_date(
+        self, user_service_perms, koparka_001
+    ):
+        """Dla typów przeglad_* preview MUSI wspomnieć o auto-przesunięciu daty."""
+        result = propose_create_service_record(
+            self._params(record_type="przegląd_kwartalny", cost=120.0),
+            user=user_service_perms,
+        )
+        payload = json.loads(result)
+        assert "3 mc" in payload["preview"]
+
+    def test_naprawa_preview_does_not_mention_inspection_shift(
+        self, user_service_perms, koparka_001
+    ):
+        """Dla naprawy preview NIE wspomina o przesunięciu daty przeglądu."""
+        result = propose_create_service_record(self._params(), user=user_service_perms)
+        payload = json.loads(result)
+        assert "mc od" not in payload["preview"]
+
+    def test_rejects_user_without_perm(self, user_view_only, koparka_001):
+        result = propose_create_service_record(self._params(), user=user_view_only)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "uprawnień" in payload["error"]
+
+    def test_rejects_nonexistent_machine(self, user_service_perms):
+        result = propose_create_service_record(
+            self._params(machine_uid="ZZZ-999"), user=user_service_perms
+        )
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "ZZZ-999" in payload["error"]
+
+    def test_rejects_future_performed_date(self, user_service_perms, koparka_001):
+        future = (date.today() + timedelta(days=5)).isoformat()
+        result = propose_create_service_record(
+            self._params(performed_date=future), user=user_service_perms
+        )
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "przyszłości" in payload["error"]
+
+    def test_zero_cost_renders_bez_kosztu(self, user_service_perms, koparka_001):
+        result = propose_create_service_record(
+            self._params(cost=0.0), user=user_service_perms
+        )
+        payload = json.loads(result)
+        assert "bez kosztu" in payload["preview"]
+
+
+@pytest.mark.django_db
+class TestProposeUpdateServiceRecord:
+    """Korekta istniejącego wpisu serwisowego."""
+
+    @pytest.fixture
+    def existing_record(self, koparka_001):
+        from decimal import Decimal
+
+        return ServiceRecord.objects.create(
+            machine=koparka_001,
+            record_type=ServiceRecord.RecordType.NAPRAWA,
+            performed_date=date.today() - timedelta(days=2),
+            performed_by="Tomek",
+            description="Stary opis",
+            cost=Decimal("100.00"),
+        )
+
+    def test_proposes_cost_change(self, user_service_perms, existing_record):
+        params = UpdateServiceRecordParams(record_id=existing_record.pk, cost=350.0)
+        result = propose_update_service_record(params, user=user_service_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "update_service_record"
+        assert "350.00 EUR" in payload["preview"]
+
+    def test_rejects_when_no_changes(self, user_service_perms, existing_record):
+        """Przekazanie pustych zmian → error (avoid no-op write)."""
+        params = UpdateServiceRecordParams(record_id=existing_record.pk)
+        result = propose_update_service_record(params, user=user_service_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "Brak zmian" in payload["error"]
+
+    def test_rejects_nonexistent_record(self, user_service_perms):
+        params = UpdateServiceRecordParams(record_id=99999, cost=200.0)
+        result = propose_update_service_record(params, user=user_service_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "99999" in payload["error"]
+
+    def test_rejects_user_without_perm(self, user_view_only, existing_record):
+        params = UpdateServiceRecordParams(record_id=existing_record.pk, cost=200.0)
+        result = propose_update_service_record(params, user=user_view_only)
+        payload = json.loads(result)
+        assert "error" in payload
+
+
+@pytest.mark.django_db
+class TestProposeUpdateMachineInspectionDate:
+    """Samo przesunięcie Machine.inspection_date bez tworzenia ServiceRecord."""
+
+    def test_proposes_new_date(self, user_service_perms, koparka_001):
+        koparka_001.inspection_date = date.today() + timedelta(days=30)
+        koparka_001.save(update_fields=["inspection_date", "updated_at"])
+        new_date = (date.today() + timedelta(days=90)).isoformat()
+        params = UpdateMachineInspectionDateParams(
+            machine_uid="KOP-001", next_inspection_date=new_date
+        )
+        result = propose_update_machine_inspection_date(params, user=user_service_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "update_machine_inspection_date"
+        assert new_date in payload["preview"]
+
+    def test_warns_when_new_date_in_past(self, user_service_perms, koparka_001):
+        past = (date.today() - timedelta(days=5)).isoformat()
+        params = UpdateMachineInspectionDateParams(
+            machine_uid="KOP-001", next_inspection_date=past
+        )
+        result = propose_update_machine_inspection_date(params, user=user_service_perms)
+        payload = json.loads(result)
+        assert "przeszłości" in payload["preview"]
+
+    def test_rejects_user_without_perm(self, user_view_only, koparka_001):
+        params = UpdateMachineInspectionDateParams(
+            machine_uid="KOP-001", next_inspection_date="2026-12-01"
+        )
+        result = propose_update_machine_inspection_date(params, user=user_view_only)
+        payload = json.loads(result)
+        assert "error" in payload
+
+
+@pytest.mark.django_db
+class TestExecuteServiceActions:
+    """Pełna ścieżka: execute_confirmed_action → faktyczna mutacja DB."""
+
+    def test_execute_create_service_record(self, user_service_perms, koparka_001):
+        params = {
+            "machine_id": koparka_001.pk,
+            "machine_uid": koparka_001.uid,
+            "record_type": "naprawa",
+            "performed_date": date.today().isoformat(),
+            "performed_by": "Jan Serwisant",
+            "description": "Wymiana baterii",
+            "cost": 308.0,
+        }
+        result = execute_confirmed_action(
+            "create_service_record", params, user=user_service_perms
+        )
+        assert "Wpis serwisowy" in result
+        assert "KOP-001" in result
+        # DB stan się zmienił.
+        assert ServiceRecord.objects.filter(machine=koparka_001).count() == 1
+        record = ServiceRecord.objects.get(machine=koparka_001)
+        assert record.record_type == "naprawa"
+        assert record.description == "Wymiana baterii"
+        assert float(record.cost) == 308.0
+
+    def test_execute_create_inspection_bumps_machine_date(
+        self, user_service_perms, koparka_001
+    ):
+        """Przegląd kwartalny → Machine.inspection_date = performed + 3 mc."""
+        today = date.today()
+        params = {
+            "machine_id": koparka_001.pk,
+            "machine_uid": koparka_001.uid,
+            "record_type": "przegląd_kwartalny",
+            "performed_date": today.isoformat(),
+            "performed_by": "",
+            "description": "",
+            "cost": 120.0,
+        }
+        execute_confirmed_action("create_service_record", params, user=user_service_perms)
+        koparka_001.refresh_from_db()
+        # +3 mc → liczone przez relativedelta w service warstwie.
+        expected_min = today + timedelta(days=85)  # ~3 mc
+        expected_max = today + timedelta(days=95)
+        assert koparka_001.inspection_date is not None
+        assert expected_min <= koparka_001.inspection_date <= expected_max
+
+    def test_execute_update_service_record(self, user_service_perms, koparka_001):
+        from decimal import Decimal
+
+        record = ServiceRecord.objects.create(
+            machine=koparka_001,
+            record_type=ServiceRecord.RecordType.NAPRAWA,
+            performed_date=date.today() - timedelta(days=1),
+            performed_by="Tomek",
+            description="Stary opis",
+            cost=Decimal("100.00"),
+        )
+        result = execute_confirmed_action(
+            "update_service_record",
+            {"record_id": record.pk, "cost": 350.0, "description": "Nowy opis"},
+            user=user_service_perms,
+        )
+        assert "zaktualizowany" in result
+        record.refresh_from_db()
+        assert float(record.cost) == 350.0
+        assert record.description == "Nowy opis"
+
+    def test_execute_update_machine_inspection_date(self, user_service_perms, koparka_001):
+        new_date = (date.today() + timedelta(days=60)).isoformat()
+        result = execute_confirmed_action(
+            "update_machine_inspection_date",
+            {
+                "machine_id": koparka_001.pk,
+                "machine_uid": koparka_001.uid,
+                "next_inspection_date": new_date,
+            },
+            user=user_service_perms,
+        )
+        assert "zaktualizowana" in result
+        koparka_001.refresh_from_db()
+        assert koparka_001.inspection_date == date.fromisoformat(new_date)
+
+    def test_execute_rejects_user_without_perm(self, user_view_only, koparka_001):
+        result = execute_confirmed_action(
+            "create_service_record",
+            {
+                "machine_id": koparka_001.pk,
+                "machine_uid": koparka_001.uid,
+                "record_type": "naprawa",
+                "performed_date": date.today().isoformat(),
+                "cost": 50.0,
+            },
+            user=user_view_only,
+        )
+        assert "Brak uprawnień" in result

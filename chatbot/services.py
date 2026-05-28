@@ -90,6 +90,10 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
         "propose_change_operator",
         "propose_swap_machine",
         "propose_set_machine_to_service",
+        # Faza A — serwis.
+        "propose_create_service_record",
+        "propose_update_service_record",
+        "propose_update_machine_inspection_date",
     }
 )
 
@@ -239,6 +243,34 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
     if action == "set_machine_to_service":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         return f"Proponowana akcja: wysłanie maszyny {uid} do serwisu."
+    if action == "create_service_record":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        rtype = params.get("record_type", "?")
+        performed = params.get("performed_date", "?")
+        cost = params.get("cost", 0)
+        desc = params.get("description", "")
+        type_pl = {
+            "przegląd_kwartalny": "przegląd kwartalny",
+            "przegląd_polroczny": "przegląd półroczny",
+            "przegląd_roczny": "przegląd roczny",
+            "naprawa": "naprawa",
+        }.get(rtype, rtype)
+        cost_str = f"{float(cost):.2f} EUR" if cost else "bez kosztu"
+        desc_str = f" — „{desc}”" if desc else ""
+        return (
+            f"Proponowana akcja: wpis serwisowy dla maszyny {uid} "
+            f"({type_pl}, {performed}{desc_str}, {cost_str})."
+        )
+    if action == "update_service_record":
+        rid = params.get("record_id", "?")
+        return f"Proponowana akcja: aktualizacja wpisu serwisowego #{rid}."
+    if action == "update_machine_inspection_date":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        new_date = params.get("next_inspection_date", "?")
+        return (
+            f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} "
+            f"na {new_date}."
+        )
     return f"Proponowana akcja: {action}."
 
 

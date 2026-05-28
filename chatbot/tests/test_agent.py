@@ -89,14 +89,24 @@ def test_system_prompt_lists_all_read_tools():
 
 
 def test_system_prompt_lists_all_write_tools():
-    """Wave 14-C: System prompt musi wymienić wszystkie 5 propose_* narzędzi."""
+    """System prompt musi wymienić wszystkie propose_* narzędzia.
+
+    Wave 14-C: 5 podstawowych write tools (rezerwacje + machine to service).
+    Faza A (2026-05-29): +3 dla serwisu (create/update record, inspection date).
+    """
     p = agent_module.SYSTEM_PROMPT
     for tool_name in (
+        # Rezerwacje
         "propose_create_reservation",
         "propose_cancel_reservation",
         "propose_change_operator",
         "propose_swap_machine",
+        # Maszyny
         "propose_set_machine_to_service",
+        "propose_update_machine_inspection_date",
+        # Serwis
+        "propose_create_service_record",
+        "propose_update_service_record",
     ):
         assert tool_name in p, f"System prompt nie zawiera write tool: {tool_name}"
 
