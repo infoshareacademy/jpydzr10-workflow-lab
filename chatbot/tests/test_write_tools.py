@@ -20,15 +20,23 @@ from chatbot import tools as chatbot_tools
 from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
+    CompleteReservationParams,
+    ConfirmReservationParams,
     CreateReservationParams,
     CreateServiceRecordParams,
+    ReportBreakdownParams,
     SetMachineToServiceParams,
     SwapMachineParams,
     UpdateMachineInspectionDateParams,
+    UpdateReservationParams,
     UpdateServiceRecordParams,
     execute_confirmed_action,
+    propose_complete_reservation,
+    propose_confirm_reservation,
     propose_create_service_record,
+    propose_report_breakdown,
     propose_update_machine_inspection_date,
+    propose_update_reservation,
     propose_update_service_record,
 )
 from machines.models import Machine
@@ -1109,3 +1117,245 @@ class TestExecuteServiceActions:
             user=user_view_only,
         )
         assert "Brak uprawnień" in result
+
+
+# =============================================================================
+# Faza B — rezerwacje extras (confirm / complete / update / breakdown)
+# =============================================================================
+
+
+@pytest.fixture
+def user_all_write_perms(db):
+    """User z wszystkimi write permissions — testy ktore krzyzuja apps
+    (np. report_breakdown wymaga reservations + service + machines)."""
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="all-write-tester", password="x")
+    perms = [
+        ("reservations", "add_reservation"),
+        ("reservations", "change_reservation"),
+        ("reservations", "view_reservation"),
+        ("service", "add_servicerecord"),
+        ("service", "change_servicerecord"),
+        ("service", "view_servicerecord"),
+        ("machines", "change_machine"),
+        ("machines", "view_machine"),
+    ]
+    for app_label, codename in perms:
+        perm = Permission.objects.get(content_type__app_label=app_label, codename=codename)
+        u.user_permissions.add(perm)
+    return user_model.objects.get(pk=u.pk)
+
+
+@pytest.fixture
+def reservation_confirmed(db, koparka_001):
+    """POTWIERDZONA rezerwacja — baza dla complete_reservation."""
+    today = date.today()
+    return Reservation.objects.create(
+        machine=koparka_001,
+        start_date=today,
+        end_date=today + timedelta(days=5),
+        person="Operator Test",
+        status=Reservation.Status.POTWIERDZONA,
+    )
+
+
+@pytest.mark.django_db
+class TestProposeConfirmReservation:
+    def test_proposes_confirmation_for_pending(self, user_full_perms, reservation_pending):
+        params = ConfirmReservationParams(reservation_id=reservation_pending.pk)
+        result = propose_confirm_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "confirm_reservation"
+        assert "Oczekująca → Potwierdzona" in payload["preview"]
+
+    def test_rejects_non_pending(self, user_full_perms, reservation_confirmed):
+        params = ConfirmReservationParams(reservation_id=reservation_confirmed.pk)
+        result = propose_confirm_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "tylko OCZEKUJACA" in payload["error"]
+
+    def test_rejects_nonexistent_reservation(self, user_full_perms):
+        params = ConfirmReservationParams(reservation_id=99999)
+        result = propose_confirm_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+
+    def test_rejects_user_without_perm(self, user_view_only, reservation_pending):
+        params = ConfirmReservationParams(reservation_id=reservation_pending.pk)
+        result = propose_confirm_reservation(params, user=user_view_only)
+        payload = json.loads(result)
+        assert "error" in payload
+
+
+@pytest.mark.django_db
+class TestProposeCompleteReservation:
+    def test_proposes_completion_for_confirmed(self, user_full_perms, reservation_confirmed):
+        params = CompleteReservationParams(reservation_id=reservation_confirmed.pk)
+        result = propose_complete_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "complete_reservation"
+        assert "Potwierdzona → Zakończona" in payload["preview"]
+
+    def test_accepts_actual_return_date(self, user_full_perms, reservation_confirmed):
+        actual = date.today().isoformat()
+        params = CompleteReservationParams(
+            reservation_id=reservation_confirmed.pk, actual_return_date=actual
+        )
+        result = propose_complete_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "proposed_action" in payload
+        assert actual in payload["preview"]
+
+    def test_rejects_future_actual_return(self, user_full_perms, reservation_confirmed):
+        future = (date.today() + timedelta(days=10)).isoformat()
+        params = CompleteReservationParams(
+            reservation_id=reservation_confirmed.pk, actual_return_date=future
+        )
+        result = propose_complete_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "przyszłości" in payload["error"]
+
+    def test_rejects_non_confirmed(self, user_full_perms, reservation_pending):
+        params = CompleteReservationParams(reservation_id=reservation_pending.pk)
+        result = propose_complete_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "tylko POTWIERDZONA" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeUpdateReservation:
+    def test_proposes_date_change(self, user_full_perms, reservation_pending):
+        new_end = (reservation_pending.end_date + timedelta(days=2)).isoformat()
+        params = UpdateReservationParams(
+            reservation_id=reservation_pending.pk, end_date=new_end
+        )
+        result = propose_update_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "update_reservation"
+        assert new_end in payload["preview"]
+
+    def test_rejects_end_before_start(self, user_full_perms, reservation_pending):
+        # end_date < start_date po proponowanej zmianie.
+        new_end = (reservation_pending.start_date - timedelta(days=1)).isoformat()
+        params = UpdateReservationParams(
+            reservation_id=reservation_pending.pk, end_date=new_end
+        )
+        result = propose_update_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "Data końca musi być >= data początku" in payload["error"]
+
+    def test_rejects_when_no_changes(self, user_full_perms, reservation_pending):
+        params = UpdateReservationParams(reservation_id=reservation_pending.pk)
+        result = propose_update_reservation(params, user=user_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "Brak zmian" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeReportBreakdown:
+    def test_proposes_breakdown_for_open_reservation(
+        self, user_all_write_perms, reservation_confirmed
+    ):
+        params = ReportBreakdownParams(
+            reservation_id=reservation_confirmed.pk,
+            description="Silnik dymi, nagła awaria hydrauliki.",
+        )
+        result = propose_report_breakdown(params, user=user_all_write_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "report_breakdown"
+        assert "Silnik dymi" in payload["preview"]
+        assert "W serwisie" in payload["preview"]
+
+    def test_rejects_short_description_at_pydantic_level(self):
+        from pydantic import ValidationError as PydanticValidationError
+
+        with pytest.raises(PydanticValidationError):
+            ReportBreakdownParams(reservation_id=1, description="abc")  # < 5 chars
+
+    def test_rejects_closed_reservation(self, user_all_write_perms, koparka_001):
+        from reservations.models import Reservation
+
+        today = date.today()
+        closed = Reservation.objects.create(
+            machine=koparka_001,
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=5),
+            person="Test",
+            status=Reservation.Status.ZAKONCZONA,
+        )
+        params = ReportBreakdownParams(
+            reservation_id=closed.pk, description="Cokolwiek opis."
+        )
+        result = propose_report_breakdown(params, user=user_all_write_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "zamknięta" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestExecuteReservationExtras:
+    """Pełna ścieżka execute dla 4 nowych akcji rezerwacyjnych."""
+
+    def test_execute_confirm_reservation(self, user_full_perms, reservation_pending):
+        result = execute_confirmed_action(
+            "confirm_reservation",
+            {"reservation_id": reservation_pending.pk},
+            user=user_full_perms,
+        )
+        assert "potwierdzona" in result
+        reservation_pending.refresh_from_db()
+        assert reservation_pending.status == Reservation.Status.POTWIERDZONA
+
+    def test_execute_complete_reservation(self, user_full_perms, reservation_confirmed):
+        result = execute_confirmed_action(
+            "complete_reservation",
+            {"reservation_id": reservation_confirmed.pk, "actual_return_date": None},
+            user=user_full_perms,
+        )
+        assert "zakończona" in result
+        reservation_confirmed.refresh_from_db()
+        assert reservation_confirmed.status == Reservation.Status.ZAKONCZONA
+
+    def test_execute_update_reservation_changes_person(
+        self, user_full_perms, reservation_pending
+    ):
+        result = execute_confirmed_action(
+            "update_reservation",
+            {
+                "reservation_id": reservation_pending.pk,
+                "person": "Nowa Osoba",
+                "start_date": None,
+                "end_date": None,
+                "notes": None,
+            },
+            user=user_full_perms,
+        )
+        assert "zaktualizowana" in result
+        reservation_pending.refresh_from_db()
+        assert reservation_pending.person == "Nowa Osoba"
+
+    def test_execute_report_breakdown(self, user_all_write_perms, reservation_confirmed):
+        result = execute_confirmed_action(
+            "report_breakdown",
+            {
+                "reservation_id": reservation_confirmed.pk,
+                "description": "Pompa hydrauliki padła w trakcie pracy.",
+            },
+            user=user_all_write_perms,
+        )
+        assert "zgłoszona" in result
+        reservation_confirmed.refresh_from_db()
+        assert reservation_confirmed.status == Reservation.Status.ZAKONCZONA
+        # Maszyna powinna być w serwisie.
+        reservation_confirmed.machine.refresh_from_db()
+        assert reservation_confirmed.machine.status == Machine.Status.W_SERWISIE
+        # ServiceRecord typu naprawa powstał.
+        assert ServiceRecord.objects.filter(
+            machine=reservation_confirmed.machine,
+            record_type=ServiceRecord.RecordType.NAPRAWA,
+        ).exists()

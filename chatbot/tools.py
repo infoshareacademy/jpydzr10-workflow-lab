@@ -518,6 +518,17 @@ WRITE_ACTION_PERMS: dict[str, tuple[str, ...]] = {
     "create_service_record": ("service.add_servicerecord",),
     "update_service_record": ("service.change_servicerecord",),
     "update_machine_inspection_date": ("machines.change_machine",),
+    # Faza B — rezerwacje extras: confirm (pending → confirmed), complete
+    # (confirmed → zakonczona + zwrot maszyny), report_breakdown (awaria
+    # → zamknij + service entry + maszyna do serwisu), update (zmiana dat).
+    "confirm_reservation": ("reservations.change_reservation",),
+    "complete_reservation": ("reservations.change_reservation",),
+    "update_reservation": ("reservations.change_reservation",),
+    "report_breakdown": (
+        "reservations.change_reservation",
+        "service.add_servicerecord",
+        "machines.change_machine",
+    ),
 }
 
 
@@ -768,6 +779,97 @@ class UpdateMachineInspectionDateParams(BaseModel):
     next_inspection_date: str = Field(
         pattern=_ISO_DATE_PATTERN,
         description="Nowa data nastepnego przegladu (ISO YYYY-MM-DD)",
+    )
+
+
+# ------------------------------------------------------------ faza B params
+
+
+class ConfirmReservationParams(BaseModel):
+    """Parametry :func:`propose_confirm_reservation` (OCZEKUJACA → POTWIERDZONA)."""
+
+    reservation_id: int = Field(
+        gt=0,
+        lt=10**9,
+        description="PK rezerwacji do potwierdzenia",
+    )
+
+
+class CompleteReservationParams(BaseModel):
+    """Parametry :func:`propose_complete_reservation` (POTWIERDZONA → ZAKONCZONA).
+
+    Maszyna wraca do magazynu w tej samej transakcji. Opcjonalne
+    ``actual_return_date`` gdy klient zwraca wczesniej niz planowal
+    (Hard Return — date < end_date).
+    """
+
+    reservation_id: int = Field(
+        gt=0,
+        lt=10**9,
+        description="PK rezerwacji do zamkniecia",
+    )
+    actual_return_date: str | None = Field(
+        default=None,
+        pattern=_ISO_DATE_PATTERN,
+        description=(
+            "Faktyczna data zwrotu (ISO YYYY-MM-DD), opcjonalna. "
+            "Jesli None — zwrot wpisany jako planowany end_date."
+        ),
+    )
+
+
+class UpdateReservationParams(BaseModel):
+    """Parametry :func:`propose_update_reservation`.
+
+    Wszystkie pola opcjonalne — agent przekazuje tylko zmienione. Brak
+    pol = error (avoid no-op). Status NIE jest edytowalny — uzyj
+    dedykowanych confirm/cancel/complete tools.
+    """
+
+    reservation_id: int = Field(
+        gt=0,
+        lt=10**9,
+        description="PK rezerwacji do edycji",
+    )
+    start_date: str | None = Field(
+        default=None,
+        pattern=_ISO_DATE_PATTERN,
+        description="Nowa data od (ISO YYYY-MM-DD), None = bez zmiany",
+    )
+    end_date: str | None = Field(
+        default=None,
+        pattern=_ISO_DATE_PATTERN,
+        description="Nowa data do (ISO YYYY-MM-DD), None = bez zmiany",
+    )
+    person: str | None = Field(
+        default=None,
+        max_length=_PERSON_NAME_MAX,
+        description="Nowa osoba rezerwujaca (None = bez zmiany)",
+    )
+    notes: str | None = Field(
+        default=None,
+        max_length=_NOTES_MAX,
+        description="Nowe notatki (None = bez zmiany)",
+    )
+
+
+class ReportBreakdownParams(BaseModel):
+    """Parametry :func:`propose_report_breakdown` (one-click awaria flow).
+
+    Zamyka rezerwacje dzisiaj, ustawia maszyne na W_SERWISIE, tworzy
+    ServiceRecord typu naprawa z opisem awarii. Wszystko w jednej
+    transakcji.
+    """
+
+    reservation_id: int = Field(
+        gt=0,
+        lt=10**9,
+        description="PK otwartej rezerwacji (OCZEKUJACA lub POTWIERDZONA)",
+    )
+    description: str = Field(
+        min_length=5,
+        max_length=_SERVICE_DESCRIPTION_MAX,
+        description="Opis awarii (min 5 znakow)",
     )
 
 
@@ -1260,6 +1362,201 @@ def propose_update_machine_inspection_date(
     return _proposal("update_machine_inspection_date", payload, preview)
 
 
+# ------------------------------------------------------------ faza B propose
+# Cztery propose dla rezerwacji: confirm (pending → confirmed), complete
+# (confirmed → zakonczona + zwrot maszyny), update (zmiana dat/osoby/notes),
+# report_breakdown (awaria → zamknij + service entry).
+
+
+def propose_confirm_reservation(params: ConfirmReservationParams, user) -> str:
+    """Proponuje potwierdzenie rezerwacji (OCZEKUJACA → POTWIERDZONA)."""
+    from reservations.models import Reservation
+
+    auth_err = _check_user_can(user, "confirm_reservation")
+    if auth_err:
+        return auth_err
+
+    try:
+        reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
+    except Reservation.DoesNotExist:
+        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+
+    if reservation.status != Reservation.Status.OCZEKUJACA:
+        return _error_json(
+            f"Rezerwacja #{reservation.pk} ma status "
+            f"'{reservation.get_status_display()}' — można potwierdzić tylko OCZEKUJACA."
+        )
+
+    payload = {"reservation_id": reservation.pk}
+    preview = (
+        f"Potwierdzę rezerwację #{reservation.pk}: maszyna {reservation.machine.uid} "
+        f"({reservation.machine.name}) od {reservation.start_date} "
+        f"do {reservation.end_date} dla '{reservation.person}'.\n"
+        f"Status: Oczekująca → Potwierdzona."
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE confirm_reservation user=%s reservation=%s",
+        getattr(user, "pk", None),
+        reservation.pk,
+    )
+    return _proposal("confirm_reservation", payload, preview)
+
+
+def propose_complete_reservation(params: CompleteReservationParams, user) -> str:
+    """Proponuje zakonczenie rezerwacji (POTWIERDZONA → ZAKONCZONA) + zwrot maszyny."""
+    from reservations.models import Reservation
+
+    auth_err = _check_user_can(user, "complete_reservation")
+    if auth_err:
+        return auth_err
+
+    try:
+        reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
+    except Reservation.DoesNotExist:
+        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+
+    if reservation.status != Reservation.Status.POTWIERDZONA:
+        return _error_json(
+            f"Rezerwacja #{reservation.pk} ma status "
+            f"'{reservation.get_status_display()}' — można zakończyć tylko POTWIERDZONA."
+        )
+
+    actual_str = ""
+    if params.actual_return_date:
+        try:
+            actual = date.fromisoformat(params.actual_return_date)
+        except ValueError:
+            return _error_json(
+                f"Nieprawidłowy format daty: {params.actual_return_date}."
+            )
+        if actual < reservation.start_date:
+            return _error_json("Faktyczna data zwrotu nie może być wcześniejsza niż start.")
+        if actual > date.today():
+            return _error_json("Faktyczna data zwrotu nie może być w przyszłości.")
+        actual_str = f", faktyczny zwrot: {params.actual_return_date}"
+
+    payload = {
+        "reservation_id": reservation.pk,
+        "actual_return_date": params.actual_return_date,
+    }
+    preview = (
+        f"Zakończę rezerwację #{reservation.pk}: maszyna {reservation.machine.uid} "
+        f"({reservation.machine.name}) wraca do magazynu{actual_str}.\n"
+        f"Status: Potwierdzona → Zakończona."
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE complete_reservation user=%s reservation=%s actual=%s",
+        getattr(user, "pk", None),
+        reservation.pk,
+        params.actual_return_date,
+    )
+    return _proposal("complete_reservation", payload, preview)
+
+
+def propose_update_reservation(params: UpdateReservationParams, user) -> str:
+    """Proponuje edycje rezerwacji (daty/osoba/notes — NIE status)."""
+    from reservations.models import Reservation
+
+    auth_err = _check_user_can(user, "update_reservation")
+    if auth_err:
+        return auth_err
+
+    try:
+        reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
+    except Reservation.DoesNotExist:
+        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+
+    if reservation.status in {
+        Reservation.Status.ZAKONCZONA,
+        Reservation.Status.ANULOWANA,
+    }:
+        return _error_json(
+            f"Rezerwacja #{reservation.pk} jest terminalna "
+            f"({reservation.get_status_display()}) — nie można edytować."
+        )
+
+    changes: list[str] = []
+    if params.start_date is not None and params.start_date != reservation.start_date.isoformat():
+        changes.append(f"data od: {reservation.start_date} → {params.start_date}")
+    if params.end_date is not None and params.end_date != reservation.end_date.isoformat():
+        changes.append(f"data do: {reservation.end_date} → {params.end_date}")
+    if params.person is not None and params.person != reservation.person:
+        changes.append(f"osoba: '{reservation.person}' → '{params.person}'")
+    if params.notes is not None and params.notes != reservation.notes:
+        changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
+
+    if not changes:
+        return _error_json(
+            f"Brak zmian do wykonania na rezerwacji #{reservation.pk}."
+        )
+
+    # Walidacja dat — start/end musi być sensowne nawet PRZED execute.
+    new_start = (
+        date.fromisoformat(params.start_date) if params.start_date else reservation.start_date
+    )
+    new_end = date.fromisoformat(params.end_date) if params.end_date else reservation.end_date
+    if new_end < new_start:
+        return _error_json("Data końca musi być >= data początku.")
+
+    payload = {
+        "reservation_id": reservation.pk,
+        "start_date": params.start_date,
+        "end_date": params.end_date,
+        "person": params.person,
+        "notes": params.notes,
+    }
+    preview = (
+        f"Zaktualizuję rezerwację #{reservation.pk} ({reservation.machine.uid}):\n  • "
+        + "\n  • ".join(changes)
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE update_reservation user=%s reservation=%s changes=%s",
+        getattr(user, "pk", None),
+        reservation.pk,
+        len(changes),
+    )
+    return _proposal("update_reservation", payload, preview)
+
+
+def propose_report_breakdown(params: ReportBreakdownParams, user) -> str:
+    """Proponuje zgloszenie awarii rezerwacji (zamkniecie + service entry + maszyna do serwisu)."""
+    from reservations.models import Reservation
+
+    auth_err = _check_user_can(user, "report_breakdown")
+    if auth_err:
+        return auth_err
+
+    try:
+        reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
+    except Reservation.DoesNotExist:
+        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+
+    if reservation.is_closed:
+        return _error_json(
+            f"Rezerwacja #{reservation.pk} jest już zamknięta "
+            f"({reservation.get_status_display()}) — nie można zgłosić awarii."
+        )
+
+    payload = {
+        "reservation_id": reservation.pk,
+        "description": params.description,
+    }
+    preview = (
+        f"Zgłoszę awarię rezerwacji #{reservation.pk} ({reservation.machine.uid}):\n"
+        f"  • opis: {params.description[:200]}{'…' if len(params.description) > 200 else ''}\n"
+        f"  • rezerwacja zostanie zamknięta dzisiejszą datą\n"
+        f"  • maszyna {reservation.machine.uid} → status W serwisie\n"
+        f"  • zostanie utworzony wpis serwisowy typu Naprawa"
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE report_breakdown user=%s reservation=%s desc_len=%s",
+        getattr(user, "pk", None),
+        reservation.pk,
+        len(params.description),
+    )
+    return _proposal("report_breakdown", payload, preview)
+
+
 # =============================================================================
 # EXECUTOR — finalne wykonanie po potwierdzeniu usera
 # =============================================================================
@@ -1317,6 +1614,14 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
             return _execute_update_service_record(params)
         if action == "update_machine_inspection_date":
             return _execute_update_machine_inspection_date(params)
+        if action == "confirm_reservation":
+            return _execute_confirm_reservation(params)
+        if action == "complete_reservation":
+            return _execute_complete_reservation(params)
+        if action == "update_reservation":
+            return _execute_update_reservation(params)
+        if action == "report_breakdown":
+            return _execute_report_breakdown(params, user)
     except ValidationError as exc:
         # Polski string z listą message'y (bez wycieku class name / tracebacka).
         messages = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
@@ -1524,6 +1829,62 @@ def _execute_update_machine_inspection_date(params: dict) -> str:
     )
 
 
+def _execute_confirm_reservation(params: dict) -> str:
+    from reservations.models import Reservation
+    from reservations.services import confirm_reservation
+
+    reservation = Reservation.objects.get(pk=params["reservation_id"])
+    confirm_reservation(reservation)
+    return f"Rezerwacja #{reservation.pk} potwierdzona."
+
+
+def _execute_complete_reservation(params: dict) -> str:
+    from reservations.models import Reservation
+    from reservations.services import complete_reservation
+
+    reservation = Reservation.objects.get(pk=params["reservation_id"])
+    actual = (
+        date.fromisoformat(params["actual_return_date"])
+        if params.get("actual_return_date")
+        else None
+    )
+    complete_reservation(reservation, actual_return_date=actual)
+    actual_str = f" (zwrot: {actual.isoformat()})" if actual else ""
+    return f"Rezerwacja #{reservation.pk} zakończona, maszyna wraca do magazynu{actual_str}."
+
+
+def _execute_update_reservation(params: dict) -> str:
+    from reservations.models import Reservation
+    from reservations.services import update_reservation
+
+    reservation = Reservation.objects.get(pk=params["reservation_id"])
+    fields: dict = {}
+    if params.get("start_date") is not None:
+        fields["start_date"] = date.fromisoformat(params["start_date"])
+    if params.get("end_date") is not None:
+        fields["end_date"] = date.fromisoformat(params["end_date"])
+    if params.get("person") is not None:
+        fields["person"] = params["person"]
+    if params.get("notes") is not None:
+        fields["notes"] = params["notes"]
+
+    update_reservation(reservation, **fields)
+    return f"Rezerwacja #{reservation.pk} zaktualizowana ({', '.join(fields.keys())})."
+
+
+def _execute_report_breakdown(params: dict, user) -> str:
+    from reservations.models import Reservation
+    from reservations.services import report_breakdown
+
+    reservation = Reservation.objects.get(pk=params["reservation_id"])
+    result = report_breakdown(reservation, description=params["description"], actor=user)
+    return (
+        f"Awaria zgłoszona: rezerwacja #{result['reservation_id']} zamknięta, "
+        f"maszyna {result['machine_uid']} → W serwisie, "
+        f"wpis serwisowy #{result['service_record_id']} utworzony."
+    )
+
+
 # =============================================================================
 # Pomocniczy registry — używany przez ``agent.py`` do rejestracji w Agent
 # =============================================================================
@@ -1543,4 +1904,9 @@ ALL_TOOLS: dict[str, Any] = {
     "propose_create_service_record": propose_create_service_record,
     "propose_update_service_record": propose_update_service_record,
     "propose_update_machine_inspection_date": propose_update_machine_inspection_date,
+    # Faza B — reservation extras.
+    "propose_confirm_reservation": propose_confirm_reservation,
+    "propose_complete_reservation": propose_complete_reservation,
+    "propose_update_reservation": propose_update_reservation,
+    "propose_report_breakdown": propose_report_breakdown,
 }

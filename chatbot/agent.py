@@ -51,11 +51,15 @@ from django.contrib.auth.models import User
 from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
+    CompleteReservationParams,
+    ConfirmReservationParams,
     CreateReservationParams,
     CreateServiceRecordParams,
+    ReportBreakdownParams,
     SetMachineToServiceParams,
     SwapMachineParams,
     UpdateMachineInspectionDateParams,
+    UpdateReservationParams,
     UpdateServiceRecordParams,
 )
 
@@ -116,8 +120,15 @@ Zasady (BARDZO WAŻNE):
    Rezerwacje:
        - `propose_create_reservation` — utworzenie nowej rezerwacji,
        - `propose_cancel_reservation` — anulowanie rezerwacji (wymagany powód),
+       - `propose_confirm_reservation` — potwierdzenie OCZEKUJACA → POTWIERDZONA,
+       - `propose_complete_reservation` — zamknięcie POTWIERDZONA → ZAKONCZONA
+         (maszyna wraca do magazynu, opcjonalny actual_return_date),
+       - `propose_update_reservation` — zmiana dat / osoby / notatek
+         (NIE statusu — użyj dedykowanych),
        - `propose_change_operator` — zmiana osoby przypisanej do rezerwacji,
-       - `propose_swap_machine` — wymiana maszyny mid-reservation.
+       - `propose_swap_machine` — wymiana maszyny mid-reservation,
+       - `propose_report_breakdown` — one-click awaria: zamyka rezerwację,
+         wysyła maszynę do serwisu, tworzy ServiceRecord typu Naprawa.
 
    Maszyny:
        - `propose_set_machine_to_service` — wysłanie maszyny do serwisu,
@@ -387,6 +398,62 @@ def build_agent() -> Any | None:
         Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
         """
         return tools.propose_update_machine_inspection_date(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_confirm_reservation(
+        ctx: RunContext[ChatDeps], params: ConfirmReservationParams
+    ) -> str:
+        """Proponuje potwierdzenie rezerwacji (OCZEKUJACA → POTWIERDZONA).
+
+        Użyj gdy user mówi "potwierdź rezerwację #42" lub "zatwierdź booking 13".
+        Tylko rezerwacje w statusie OCZEKUJACA mogą być potwierdzone.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_confirm_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_complete_reservation(
+        ctx: RunContext[ChatDeps], params: CompleteReservationParams
+    ) -> str:
+        """Proponuje zakończenie rezerwacji (POTWIERDZONA → ZAKONCZONA) + zwrot maszyny.
+
+        Użyj gdy user mówi "zamknij rezerwację #42, maszyna wróciła do magazynu"
+        lub "klient zwrócił maszynę z rezerwacji #15 wczoraj — zakończ". Opcjonalny
+        `actual_return_date` gdy klient zwraca wcześniej niż planowano.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_complete_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_reservation(
+        ctx: RunContext[ChatDeps], params: UpdateReservationParams
+    ) -> str:
+        """Proponuje edycję rezerwacji (daty / osoba / notatki — NIE status).
+
+        Użyj gdy user mówi "przesun rezerwację #42 o dzień do przodu" lub
+        "zmień osobę w rez. #13 na Jan Kowalski". Pola None oznaczają "bez zmiany".
+        Dla zmiany statusu użyj dedykowanych: confirm/cancel/complete.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_report_breakdown(
+        ctx: RunContext[ChatDeps], params: ReportBreakdownParams
+    ) -> str:
+        """Proponuje zgłoszenie awarii rezerwacji (one-click flow).
+
+        Użyj gdy user mówi "maszyna w rez. #42 padła — silnik dymi" lub
+        "awaria koparki na budowie, w rezerwacji #15, hydraulika nie działa".
+        Atomic: zamknie rezerwację dziś, ustawi maszynę na W serwisie, utworzy
+        ServiceRecord typu Naprawa z opisem awarii. Opis min 5 znaków.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_report_breakdown(params, user=ctx.deps.user)
 
     return agent
 

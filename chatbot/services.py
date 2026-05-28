@@ -94,6 +94,11 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
         "propose_create_service_record",
         "propose_update_service_record",
         "propose_update_machine_inspection_date",
+        # Faza B — rezerwacje extras.
+        "propose_confirm_reservation",
+        "propose_complete_reservation",
+        "propose_update_reservation",
+        "propose_report_breakdown",
     }
 )
 
@@ -270,6 +275,24 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
         return (
             f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} "
             f"na {new_date}."
+        )
+    if action == "confirm_reservation":
+        rid = params.get("reservation_id", "?")
+        return f"Proponowana akcja: potwierdzenie rezerwacji #{rid}."
+    if action == "complete_reservation":
+        rid = params.get("reservation_id", "?")
+        actual = params.get("actual_return_date")
+        actual_str = f" (zwrot: {actual})" if actual else ""
+        return f"Proponowana akcja: zakończenie rezerwacji #{rid}{actual_str}."
+    if action == "update_reservation":
+        rid = params.get("reservation_id", "?")
+        return f"Proponowana akcja: edycja rezerwacji #{rid}."
+    if action == "report_breakdown":
+        rid = params.get("reservation_id", "?")
+        desc = (params.get("description") or "")[:80]
+        return (
+            f"Proponowana akcja: zgłoszenie awarii rezerwacji #{rid} "
+            f"(opis: „{desc}{'…' if len(params.get('description', '')) > 80 else ''}”)."
         )
     return f"Proponowana akcja: {action}."
 
