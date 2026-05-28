@@ -55,6 +55,16 @@ chip w h1 meta, nie tutaj.
         {% endfor %}
     </select>
 
+    <select name="inspection"
+            aria-label="Status przeglądu"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[150px]">
+        <option value="">— przegląd —</option>
+        <option value="ok" {% if current_inspection == 'ok' %}selected{% endif %}>Aktualny</option>
+        <option value="warning" {% if current_inspection == 'warning' %}selected{% endif %}>Wkrótce (≤14 dni)</option>
+        <option value="overdue" {% if current_inspection == 'overdue' %}selected{% endif %}>Po terminie</option>
+        <option value="unknown" {% if current_inspection == 'unknown' %}selected{% endif %}>Brak daty</option>
+    </select>
+
     <select name="site"
             aria-label="Budowa"
             class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[170px]">

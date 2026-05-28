@@ -211,16 +211,21 @@
     /* Wave 14-J sticky scroll (wzorowany na WMS): header row z dniami
        przykleja sie POD paskiem kontrolnym (#tl-controls). JS w timeline.html
        mierzy offsetHeight paska i wpisuje --tl-ctrl-h na <html>. Fallback
-       0px = sticky do top viewportu jesli JS nie zadzialal. */
+       0px = sticky do top viewportu jesli JS nie zadzialal.
+
+       Wave 14-K: padding+font zmniejszone (~50px → ~36px) zeby pierwsza
+       maszyna nie chowala sie kompletnie pod sticky stack. Plus subtelny
+       shadow zeby wizualnie odroznic sticky boundary. */
     position: sticky;
     top: var(--tl-ctrl-h, 0px);
     z-index: 20;
     background: rgb(255 255 255);
     border-bottom: 1px solid rgb(229 231 235);
-    padding: 0.5rem 0.25rem;
+    box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+    padding: 0.25rem 0.25rem;
     text-align: center;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.6875rem;
+    line-height: 0.875rem;
 }
 /* Kompaktowy head-cell dla period=month — mniejszy font + ciaśniejszy padding,
    bo 30 kolumn po 34px nie zmieści "Pn 28.05" w pełnym formacie. */
@@ -281,9 +286,15 @@
 }
 
 .timeline-machine-cell {
+    /* Wave 14-K: z-index 20 → 15 zeby gdy wiersz scrolluje pionowo POD sticky
+       header dni (z-20) — header czysto przykrywal komorke maszyny (no double
+       overlap z barem rezerwacji). scroll-margin-top zapewnia ze gdy ktos
+       skleja smooth-scroll do nazwy maszyny (np. anchor link) — landuje
+       PODSTICKY stackem, a nie chowa sie pod nim. */
     position: sticky;
     left: 0;
-    z-index: 20;
+    z-index: 15;
+    scroll-margin-top: calc(var(--tl-ctrl-h, 0px) + 60px);
     background: rgb(255 255 255);
     border-right: 1px solid rgb(229 231 235);
     border-bottom: 1px solid rgb(241 245 249);

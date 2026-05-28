@@ -249,9 +249,13 @@
             </svg>
             {% if mode == 'edit' %}Wstecz{% else %}Anuluj{% endif %}
         </a>
-        {# Terminal-state guard: zakonczone/anulowane rezerwacje sa immutable;
-           ukrywamy submit zeby user nie probowal edytowac, services.py i tak
-           odrzuci POST przez ValidationError (defense-in-depth). #}
+        {% comment %}
+            Terminal-state guard: zakonczone/anulowane rezerwacje sa immutable;
+            ukrywamy submit zeby user nie probowal edytowac, services.py i tak
+            odrzuci POST przez ValidationError (defense-in-depth).
+            Django {# #} to single-line comment — przy multi-line tekst po
+            pierwszej linii lekko do template renderowania (visible bug).
+        {% endcomment %}
         {% if not reservation or not reservation.is_closed %}
         <button type="submit"
                 class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">

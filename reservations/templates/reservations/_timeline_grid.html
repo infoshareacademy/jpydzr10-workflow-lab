@@ -46,6 +46,12 @@
                        class="font-semibold text-brand-700 dark:text-brand-300 hover:underline truncate text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-sm"
                        title="{{ row.name }} ({{ row.uid }})">{{ row.name }}</a>
                     <span class="font-mono text-[0.6875rem] text-slate-500 dark:text-slate-400 tracking-tight">{{ row.uid }}</span>
+                    {% if row.inspection_date_pl %}
+                        <span class="text-[0.625rem] leading-tight {% if row.inspection_status == 'overdue' %}text-rose-700 dark:text-rose-300 font-semibold{% elif row.inspection_status == 'warning' %}text-amber-700 dark:text-amber-300 font-medium{% else %}text-slate-500 dark:text-slate-400{% endif %}"
+                              title="{{ row.inspection_status_label }}">
+                            przegląd ważny do <span class="font-mono tabular-nums">{{ row.inspection_date_pl }}</span>
+                        </span>
+                    {% endif %}
                     {% status_badge row.status as cls %}
                     <div class="flex flex-wrap items-center gap-1 mt-0.5">
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[0.625rem] font-medium uppercase tracking-wider {{ cls }}">

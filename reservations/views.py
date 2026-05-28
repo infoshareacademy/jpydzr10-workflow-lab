@@ -921,6 +921,23 @@ class TimelineView(LoginRequiredMixin, View):
         if search:
             machines_qs = machines_qs.filter(Q(name__icontains=search) | Q(uid__icontains=search))
 
+        # Filtr po statusie przeglądu (ok/warning/overdue/unknown) — odpowiada
+        # bucketom z Machine.inspection_status. 14-dniowy próg = INSPECTION_WARNING_DAYS.
+        inspection = request.GET.get("inspection")
+        if inspection in ("ok", "warning", "overdue", "unknown"):
+            today = date.today()
+            warning_until = today + timedelta(days=14)
+            if inspection == "overdue":
+                machines_qs = machines_qs.filter(inspection_date__lt=today)
+            elif inspection == "warning":
+                machines_qs = machines_qs.filter(
+                    inspection_date__gte=today, inspection_date__lte=warning_until
+                )
+            elif inspection == "ok":
+                machines_qs = machines_qs.filter(inspection_date__gt=warning_until)
+            else:  # unknown
+                machines_qs = machines_qs.filter(inspection_date__isnull=True)
+
         # ----------------------------- bar filter (reservations) -------------
         reservations_qs = (
             Reservation.objects.for_period(start, end)
@@ -979,6 +996,14 @@ class TimelineView(LoginRequiredMixin, View):
                     "status": machine.status,
                     "inspection_status": machine.inspection_status,
                     "inspection_status_label": machine.inspection_status_label,
+                    "inspection_date": (
+                        machine.inspection_date.isoformat() if machine.inspection_date else None
+                    ),
+                    "inspection_date_pl": (
+                        machine.inspection_date.strftime("%d.%m.%Y")
+                        if machine.inspection_date
+                        else None
+                    ),
                     "is_reservable": machine.is_reservable,
                     "bars": bars,
                 }
@@ -999,7 +1024,8 @@ class TimelineView(LoginRequiredMixin, View):
             )
 
         filters_active = any(
-            request.GET.get(k) for k in ("machine_type", "status", "site", "person", "search")
+            request.GET.get(k)
+            for k in ("machine_type", "status", "site", "person", "search", "inspection")
         )
 
         context = {
@@ -1024,6 +1050,7 @@ class TimelineView(LoginRequiredMixin, View):
             "current_site": site_number or "",
             "current_person": person_q,
             "current_search": search,
+            "current_inspection": inspection or "",
         }
 
         template = (
