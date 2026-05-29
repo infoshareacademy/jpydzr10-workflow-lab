@@ -529,6 +529,15 @@ WRITE_ACTION_PERMS: dict[str, tuple[str, ...]] = {
         "service.add_servicerecord",
         "machines.change_machine",
     ),
+    # Faza C — machine CRUD + state transitions: create (nowa maszyna w
+    # flocie), update (edycja podstawowych pól), return (z budowy/serwisu
+    # do magazynu + zamkniecie aktywnych rezerwacji), close_repair
+    # (W_SERWISIE → W_MAGAZYNIE), retire (soft delete na WYCOFANA).
+    "create_machine": ("machines.add_machine",),
+    "update_machine": ("machines.change_machine",),
+    "return_machine": ("machines.change_machine",),
+    "close_repair_machine": ("machines.change_machine",),
+    "retire_machine": ("machines.change_machine",),
 }
 
 
@@ -870,6 +879,144 @@ class ReportBreakdownParams(BaseModel):
         min_length=5,
         max_length=_SERVICE_DESCRIPTION_MAX,
         description="Opis awarii (min 5 znakow)",
+    )
+
+
+# ------------------------------------------------------------ faza C params
+
+
+_MACHINE_NAME_MAX = 100
+_MACHINE_LOCATION_MAX = 200
+_MACHINE_MANUFACTURER_MAX = 100
+_MACHINE_SERIAL_MAX = 100
+
+
+class CreateMachineParams(BaseModel):
+    """Parametry :func:`propose_create_machine` (nowa maszyna w flocie).
+
+    Minimum: ``uid`` + ``name``. Reszta opcjonalna z sensownymi defaultami.
+    Typ ``inne`` jako default jesli agent nie zna kategorii.
+    """
+
+    uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny (np. KOP-099, M-0050) — unikalny",
+    )
+    name: str = Field(
+        max_length=_MACHINE_NAME_MAX,
+        description="Nazwa maszyny (np. 'Koparka CAT 320D')",
+    )
+    machine_type: Literal[
+        "koparka",
+        "minikoparka",
+        "podnośnik nożycowy",
+        "podnośnik teleskopowy",
+        "agregat prądotwórczy",
+        "wózek widłowy",
+        "walec",
+        "zagęszczarka",
+        "spawarka",
+        "inne",
+    ] = Field(
+        default="inne",
+        description="Typ maszyny — jedno z choices Machine.Type. Default 'inne'.",
+    )
+    model: str = Field(
+        default="",
+        max_length=_MACHINE_NAME_MAX,
+        description="Model (np. 'CAT 320D'), opcjonalnie",
+    )
+    location: str = Field(
+        default="Magazyn",
+        max_length=_MACHINE_LOCATION_MAX,
+        description="Lokalizacja startowa (default 'Magazyn')",
+    )
+    manufacturer: str = Field(
+        default="",
+        max_length=_MACHINE_MANUFACTURER_MAX,
+        description="Producent (np. 'Caterpillar'), opcjonalnie",
+    )
+    serial_number: str = Field(
+        default="",
+        max_length=_MACHINE_SERIAL_MAX,
+        description="Numer seryjny producenta, opcjonalnie",
+    )
+
+
+class UpdateMachineParams(BaseModel):
+    """Parametry :func:`propose_update_machine` — edycja istniejacej maszyny.
+
+    Tylko bezpieczny subset (nazwa/lokalizacja/notatki/producent/SN). UID
+    NIE jest edytowalny (zlamałoby audit trail + URL routing). Status
+    edytowany przez dedykowane tools (set_machine_to_service,
+    return_machine, close_repair_machine, retire_machine).
+    """
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny do edycji",
+    )
+    name: str | None = Field(
+        default=None,
+        max_length=_MACHINE_NAME_MAX,
+        description="Nowa nazwa (None = bez zmiany)",
+    )
+    location: str | None = Field(
+        default=None,
+        max_length=_MACHINE_LOCATION_MAX,
+        description="Nowa lokalizacja (None = bez zmiany)",
+    )
+    notes: str | None = Field(
+        default=None,
+        max_length=_NOTES_MAX,
+        description="Nowe notatki (None = bez zmiany)",
+    )
+    manufacturer: str | None = Field(
+        default=None,
+        max_length=_MACHINE_MANUFACTURER_MAX,
+        description="Nowy producent (None = bez zmiany)",
+    )
+    serial_number: str | None = Field(
+        default=None,
+        max_length=_MACHINE_SERIAL_MAX,
+        description="Nowy numer seryjny (None = bez zmiany)",
+    )
+
+
+class ReturnMachineParams(BaseModel):
+    """Parametry :func:`propose_return_machine` (zwrot z budowy lub serwisu)."""
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny do zwrotu",
+    )
+
+
+class CloseRepairMachineParams(BaseModel):
+    """Parametry :func:`propose_close_repair_machine` (W_SERWISIE → W_MAGAZYNIE)."""
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny w serwisie",
+    )
+
+
+class RetireMachineParams(BaseModel):
+    """Parametry :func:`propose_retire_machine` (soft delete — status WYCOFANA)."""
+
+    machine_uid: str = Field(
+        max_length=_MACHINE_UID_MAX,
+        pattern=_MACHINE_UID_PATTERN,
+        description="UID maszyny do wycofania z floty",
+    )
+    reason: str = Field(
+        default="",
+        max_length=_NOTES_MAX,
+        description="Powod wycofania (opcjonalne, idzie do notes jako [WYCOFANA] <reason>)",
     )
 
 
@@ -1622,6 +1769,16 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
             return _execute_update_reservation(params)
         if action == "report_breakdown":
             return _execute_report_breakdown(params, user)
+        if action == "create_machine":
+            return _execute_create_machine(params)
+        if action == "update_machine":
+            return _execute_update_machine(params)
+        if action == "return_machine":
+            return _execute_return_machine(params)
+        if action == "close_repair_machine":
+            return _execute_close_repair_machine(params)
+        if action == "retire_machine":
+            return _execute_retire_machine(params)
     except ValidationError as exc:
         # Polski string z listą message'y (bez wycieku class name / tracebacka).
         messages = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
@@ -1872,6 +2029,84 @@ def _execute_update_reservation(params: dict) -> str:
     return f"Rezerwacja #{reservation.pk} zaktualizowana ({', '.join(fields.keys())})."
 
 
+def _execute_create_machine(params: dict) -> str:
+    from machines.services import create_machine
+
+    machine = create_machine(
+        uid=params["uid"],
+        name=params["name"],
+        machine_type=params.get("machine_type", "inne"),
+        model=params.get("model", ""),
+        location=params.get("location", "Magazyn"),
+        manufacturer=params.get("manufacturer", ""),
+        serial_number=params.get("serial_number", ""),
+    )
+    return f"Maszyna {machine.uid} ({machine.name}) utworzona w flocie."
+
+
+def _execute_update_machine(params: dict) -> str:
+    from machines.models import Machine
+    from machines.services import update_machine
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+
+    changes: dict = {}
+    for field in ("name", "location", "notes", "manufacturer", "serial_number"):
+        if params.get(field) is not None:
+            changes[field] = params[field]
+    update_machine(machine, **changes)
+    return f"Maszyna {machine.uid} zaktualizowana ({', '.join(changes.keys())})."
+
+
+def _execute_return_machine(params: dict) -> str:
+    from machines.models import Machine
+    from machines.services import return_machine_to_warehouse
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+    result = return_machine_to_warehouse(machine)
+    closed = result.get("closed", 0)
+    closed_str = f" + zamknięto {closed} aktywnych rezerwacji" if closed else ""
+    return f"Maszyna {machine.uid} wróciła do magazynu{closed_str}."
+
+
+def _execute_close_repair_machine(params: dict) -> str:
+    from machines.models import Machine
+    from machines.services import close_repair
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+    close_repair(machine)
+    return f"Naprawa maszyny {machine.uid} zakończona, status: W magazynie."
+
+
+def _execute_retire_machine(params: dict) -> str:
+    from machines.models import Machine
+    from machines.services import retire_machine
+
+    machine_id = params.get("machine_id")
+    machine_uid = params.get("machine_uid")
+    if machine_id:
+        machine = Machine.objects.get(pk=machine_id)
+    else:
+        machine = Machine.objects.get(uid=machine_uid)
+    retire_machine(machine, reason=params.get("reason", ""))
+    return f"Maszyna {machine.uid} wycofana z floty."
+
+
 def _execute_report_breakdown(params: dict, user) -> str:
     from reservations.models import Reservation
     from reservations.services import report_breakdown
@@ -1883,6 +2118,215 @@ def _execute_report_breakdown(params: dict, user) -> str:
         f"maszyna {result['machine_uid']} → W serwisie, "
         f"wpis serwisowy #{result['service_record_id']} utworzony."
     )
+
+
+# ------------------------------------------------------------ faza C propose
+# Pelen cykl zarzadzania flotą maszyn: create / update / state transitions.
+
+
+def propose_create_machine(params: CreateMachineParams, user) -> str:
+    """Proponuje utworzenie nowej maszyny w flocie."""
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "create_machine")
+    if auth_err:
+        return auth_err
+
+    if Machine.objects.filter(uid=params.uid).exists():
+        return _error_json(
+            f"Maszyna o UID '{params.uid}' juz istnieje w flocie."
+        )
+
+    payload = {
+        "uid": params.uid,
+        "name": params.name,
+        "machine_type": params.machine_type,
+        "model": params.model,
+        "location": params.location,
+        "manufacturer": params.manufacturer,
+        "serial_number": params.serial_number,
+    }
+    preview_lines = [
+        f"Utworzę nową maszynę:",
+        f"  • UID: {params.uid}",
+        f"  • nazwa: {params.name}",
+        f"  • typ: {params.machine_type}",
+    ]
+    if params.model:
+        preview_lines.append(f"  • model: {params.model}")
+    if params.manufacturer:
+        preview_lines.append(f"  • producent: {params.manufacturer}")
+    if params.serial_number:
+        preview_lines.append(f"  • nr seryjny: {params.serial_number}")
+    preview_lines.append(f"  • lokalizacja: {params.location}")
+    preview_lines.append("Status startowy: W magazynie.")
+    preview = "\n".join(preview_lines)
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE create_machine user=%s uid=%s type=%s",
+        getattr(user, "pk", None),
+        params.uid,
+        params.machine_type,
+    )
+    return _proposal("create_machine", payload, preview)
+
+
+def propose_update_machine(params: UpdateMachineParams, user) -> str:
+    """Proponuje edycję maszyny (bezpieczny subset bez statusu/UID)."""
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "update_machine")
+    if auth_err:
+        return auth_err
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    changes: list[str] = []
+    if params.name is not None and params.name != machine.name:
+        changes.append(f"nazwa: '{machine.name}' → '{params.name}'")
+    if params.location is not None and params.location != machine.location:
+        changes.append(f"lokalizacja: '{machine.location}' → '{params.location}'")
+    if params.notes is not None and params.notes != machine.notes:
+        changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
+    if params.manufacturer is not None and params.manufacturer != machine.manufacturer:
+        changes.append(f"producent: '{machine.manufacturer}' → '{params.manufacturer}'")
+    if params.serial_number is not None and params.serial_number != machine.serial_number:
+        changes.append(
+            f"nr seryjny: '{machine.serial_number}' → '{params.serial_number}'"
+        )
+
+    if not changes:
+        return _error_json(f"Brak zmian do wykonania na maszynie {machine.uid}.")
+
+    payload = {
+        "machine_id": machine.pk,
+        "machine_uid": machine.uid,
+        "name": params.name,
+        "location": params.location,
+        "notes": params.notes,
+        "manufacturer": params.manufacturer,
+        "serial_number": params.serial_number,
+    }
+    preview = (
+        f"Zaktualizuję maszynę {machine.uid}:\n  • " + "\n  • ".join(changes)
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE update_machine user=%s machine=%s changes=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+        len(changes),
+    )
+    return _proposal("update_machine", payload, preview)
+
+
+def propose_return_machine(params: ReturnMachineParams, user) -> str:
+    """Proponuje zwrot maszyny z budowy/serwisu do magazynu."""
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "return_machine")
+    if auth_err:
+        return auth_err
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    if machine.status == Machine.Status.W_MAGAZYNIE:
+        return _error_json(f"Maszyna {machine.uid} juz jest w magazynie.")
+    if machine.status == Machine.Status.WYCOFANA:
+        return _error_json(f"Maszyna {machine.uid} jest wycofana z floty.")
+
+    payload = {"machine_id": machine.pk, "machine_uid": machine.uid}
+    preview = (
+        f"Zwrócę maszynę {machine.uid} ({machine.name}) do magazynu:\n"
+        f"  • obecny status: {machine.get_status_display()} → W magazynie\n"
+        f"  • aktywne rezerwacje pokrywające dzisiaj zostaną zamknięte"
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE return_machine user=%s machine=%s from_status=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+        machine.status,
+    )
+    return _proposal("return_machine", payload, preview)
+
+
+def propose_close_repair_machine(params: CloseRepairMachineParams, user) -> str:
+    """Proponuje zakonczenie naprawy maszyny (W_SERWISIE → W_MAGAZYNIE)."""
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "close_repair_machine")
+    if auth_err:
+        return auth_err
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    if machine.status != Machine.Status.W_SERWISIE:
+        return _error_json(
+            f"Maszyna {machine.uid} ma status '{machine.get_status_display()}' "
+            f"— można zakończyć naprawę tylko dla 'W serwisie'."
+        )
+
+    payload = {"machine_id": machine.pk, "machine_uid": machine.uid}
+    preview = (
+        f"Zakończę naprawę maszyny {machine.uid} ({machine.name}):\n"
+        f"  • status: W serwisie → W magazynie"
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE close_repair_machine user=%s machine=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+    )
+    return _proposal("close_repair_machine", payload, preview)
+
+
+def propose_retire_machine(params: RetireMachineParams, user) -> str:
+    """Proponuje wycofanie maszyny z floty (soft delete — status WYCOFANA)."""
+    from machines.models import Machine
+
+    auth_err = _check_user_can(user, "retire_machine")
+    if auth_err:
+        return auth_err
+
+    try:
+        machine = Machine.objects.get(uid=params.machine_uid)
+    except Machine.DoesNotExist:
+        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+
+    if machine.status == Machine.Status.WYCOFANA:
+        return _error_json(f"Maszyna {machine.uid} jest juz wycofana z floty.")
+
+    payload = {
+        "machine_id": machine.pk,
+        "machine_uid": machine.uid,
+        "reason": params.reason,
+    }
+    preview_lines = [
+        f"Wycofam maszynę {machine.uid} ({machine.name}) z floty:",
+        f"  • obecny status: {machine.get_status_display()} → Wycofana",
+    ]
+    if params.reason:
+        preview_lines.append(f"  • powód: {params.reason}")
+    preview_lines.append(
+        "⚠ Wycofana maszyna nie pojawia się na liście dostępnych — "
+        "soft delete (rekord pozostaje w DB dla historii rezerwacji/serwisu)."
+    )
+    preview = "\n".join(preview_lines)
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE retire_machine user=%s machine=%s reason_len=%s",
+        getattr(user, "pk", None),
+        machine.uid,
+        len(params.reason),
+    )
+    return _proposal("retire_machine", payload, preview)
 
 
 # =============================================================================
@@ -1909,4 +2353,10 @@ ALL_TOOLS: dict[str, Any] = {
     "propose_complete_reservation": propose_complete_reservation,
     "propose_update_reservation": propose_update_reservation,
     "propose_report_breakdown": propose_report_breakdown,
+    # Faza C — machine CRUD + state transitions.
+    "propose_create_machine": propose_create_machine,
+    "propose_update_machine": propose_update_machine,
+    "propose_return_machine": propose_return_machine,
+    "propose_close_repair_machine": propose_close_repair_machine,
+    "propose_retire_machine": propose_retire_machine,
 }

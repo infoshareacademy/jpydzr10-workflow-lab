@@ -20,21 +20,31 @@ from chatbot import tools as chatbot_tools
 from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
+    CloseRepairMachineParams,
     CompleteReservationParams,
     ConfirmReservationParams,
+    CreateMachineParams,
     CreateReservationParams,
     CreateServiceRecordParams,
     ReportBreakdownParams,
+    RetireMachineParams,
+    ReturnMachineParams,
     SetMachineToServiceParams,
     SwapMachineParams,
     UpdateMachineInspectionDateParams,
+    UpdateMachineParams,
     UpdateReservationParams,
     UpdateServiceRecordParams,
     execute_confirmed_action,
+    propose_close_repair_machine,
     propose_complete_reservation,
     propose_confirm_reservation,
+    propose_create_machine,
     propose_create_service_record,
     propose_report_breakdown,
+    propose_retire_machine,
+    propose_return_machine,
+    propose_update_machine,
     propose_update_machine_inspection_date,
     propose_update_reservation,
     propose_update_service_record,
@@ -1359,3 +1369,229 @@ class TestExecuteReservationExtras:
             machine=reservation_confirmed.machine,
             record_type=ServiceRecord.RecordType.NAPRAWA,
         ).exists()
+
+
+# =============================================================================
+# Faza C — machine CRUD + state transitions
+# =============================================================================
+
+
+@pytest.fixture
+def user_machine_full_perms(db):
+    """User z PEŁNYMI uprawnieniami machine (add + change + view)."""
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="machine-full-tester", password="x")
+    perms = [
+        ("machines", "add_machine"),
+        ("machines", "change_machine"),
+        ("machines", "view_machine"),
+    ]
+    for app_label, codename in perms:
+        perm = Permission.objects.get(content_type__app_label=app_label, codename=codename)
+        u.user_permissions.add(perm)
+    return user_model.objects.get(pk=u.pk)
+
+
+@pytest.fixture
+def koparka_in_service(db):
+    """Maszyna ze statusem W serwisie — baza dla close_repair testów."""
+    return Machine.objects.create(
+        uid="SVC-001",
+        name="Maszyna w serwisie",
+        machine_type=Machine.Type.KOPARKA,
+        status=Machine.Status.W_SERWISIE,
+    )
+
+
+@pytest.fixture
+def koparka_on_site(db):
+    """Maszyna ze statusem Na budowie — baza dla return testów."""
+    return Machine.objects.create(
+        uid="SITE-001",
+        name="Maszyna na budowie",
+        machine_type=Machine.Type.KOPARKA,
+        status=Machine.Status.NA_BUDOWIE,
+        location="Budowa testowa",
+    )
+
+
+@pytest.mark.django_db
+class TestProposeCreateMachine:
+    def test_proposes_new_machine(self, user_machine_full_perms):
+        params = CreateMachineParams(
+            uid="NEW-100",
+            name="Nowa testowa koparka",
+            machine_type="koparka",
+            model="CAT 320D",
+            manufacturer="Caterpillar",
+        )
+        result = propose_create_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "create_machine"
+        assert "NEW-100" in payload["preview"]
+        assert "Caterpillar" in payload["preview"]
+
+    def test_rejects_duplicate_uid(self, user_machine_full_perms, koparka_001):
+        params = CreateMachineParams(uid="KOP-001", name="Duplikat")
+        result = propose_create_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "juz istnieje" in payload["error"]
+
+    def test_rejects_user_without_perm(self, user_view_only):
+        params = CreateMachineParams(uid="NEW-200", name="Bez uprawnien")
+        result = propose_create_machine(params, user=user_view_only)
+        payload = json.loads(result)
+        assert "error" in payload
+
+
+@pytest.mark.django_db
+class TestProposeUpdateMachine:
+    def test_proposes_name_change(self, user_machine_full_perms, koparka_001):
+        params = UpdateMachineParams(machine_uid="KOP-001", name="Nowa nazwa")
+        result = propose_update_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "update_machine"
+        assert "Nowa nazwa" in payload["preview"]
+
+    def test_rejects_when_no_changes(self, user_machine_full_perms, koparka_001):
+        params = UpdateMachineParams(machine_uid="KOP-001")
+        result = propose_update_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "Brak zmian" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeReturnMachine:
+    def test_proposes_return_from_site(self, user_machine_full_perms, koparka_on_site):
+        params = ReturnMachineParams(machine_uid="SITE-001")
+        result = propose_return_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "return_machine"
+        assert "W magazynie" in payload["preview"]
+
+    def test_rejects_already_in_warehouse(self, user_machine_full_perms, koparka_001):
+        # koparka_001 ma status W_MAGAZYNIE z fixture.
+        params = ReturnMachineParams(machine_uid="KOP-001")
+        result = propose_return_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "juz jest w magazynie" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeCloseRepairMachine:
+    def test_proposes_close_for_in_service(
+        self, user_machine_full_perms, koparka_in_service
+    ):
+        params = CloseRepairMachineParams(machine_uid="SVC-001")
+        result = propose_close_repair_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "close_repair_machine"
+        assert "W serwisie → W magazynie" in payload["preview"]
+
+    def test_rejects_machine_not_in_service(self, user_machine_full_perms, koparka_001):
+        params = CloseRepairMachineParams(machine_uid="KOP-001")
+        result = propose_close_repair_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "tylko dla 'W serwisie'" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeRetireMachine:
+    def test_proposes_retire_with_reason(self, user_machine_full_perms, koparka_001):
+        params = RetireMachineParams(
+            machine_uid="KOP-001", reason="Naprawa za droga"
+        )
+        result = propose_retire_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "retire_machine"
+        assert "Wycofana" in payload["preview"]
+        assert "Naprawa za droga" in payload["preview"]
+
+    def test_rejects_already_retired(self, user_machine_full_perms, koparka_001):
+        koparka_001.status = Machine.Status.WYCOFANA
+        koparka_001.save(update_fields=["status", "updated_at"])
+        params = RetireMachineParams(machine_uid="KOP-001")
+        result = propose_retire_machine(params, user=user_machine_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "juz wycofana" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestExecuteMachineActions:
+    """Pełna ścieżka execute dla 5 nowych akcji maszyn."""
+
+    def test_execute_create_machine(self, user_machine_full_perms):
+        result = execute_confirmed_action(
+            "create_machine",
+            {
+                "uid": "EXE-001",
+                "name": "Exec test koparka",
+                "machine_type": "koparka",
+                "model": "Test 1",
+                "location": "Magazyn",
+                "manufacturer": "TestCo",
+                "serial_number": "SN-001",
+            },
+            user=user_machine_full_perms,
+        )
+        assert "utworzona" in result
+        assert Machine.objects.filter(uid="EXE-001").exists()
+
+    def test_execute_update_machine(self, user_machine_full_perms, koparka_001):
+        result = execute_confirmed_action(
+            "update_machine",
+            {
+                "machine_id": koparka_001.pk,
+                "machine_uid": koparka_001.uid,
+                "name": "Zaktualizowana",
+                "location": "Nowy magazyn",
+                "notes": None,
+                "manufacturer": None,
+                "serial_number": None,
+            },
+            user=user_machine_full_perms,
+        )
+        assert "zaktualizowana" in result
+        koparka_001.refresh_from_db()
+        assert koparka_001.name == "Zaktualizowana"
+        assert koparka_001.location == "Nowy magazyn"
+
+    def test_execute_return_machine(self, user_machine_full_perms, koparka_on_site):
+        result = execute_confirmed_action(
+            "return_machine",
+            {"machine_id": koparka_on_site.pk, "machine_uid": koparka_on_site.uid},
+            user=user_machine_full_perms,
+        )
+        assert "wróciła do magazynu" in result
+        koparka_on_site.refresh_from_db()
+        assert koparka_on_site.status == Machine.Status.W_MAGAZYNIE
+
+    def test_execute_close_repair(self, user_machine_full_perms, koparka_in_service):
+        result = execute_confirmed_action(
+            "close_repair_machine",
+            {"machine_id": koparka_in_service.pk, "machine_uid": koparka_in_service.uid},
+            user=user_machine_full_perms,
+        )
+        assert "zakończona" in result
+        koparka_in_service.refresh_from_db()
+        assert koparka_in_service.status == Machine.Status.W_MAGAZYNIE
+
+    def test_execute_retire(self, user_machine_full_perms, koparka_001):
+        result = execute_confirmed_action(
+            "retire_machine",
+            {
+                "machine_id": koparka_001.pk,
+                "machine_uid": koparka_001.uid,
+                "reason": "Stara",
+            },
+            user=user_machine_full_perms,
+        )
+        assert "wycofana" in result
+        koparka_001.refresh_from_db()
+        assert koparka_001.status == Machine.Status.WYCOFANA
+        assert "Stara" in koparka_001.notes

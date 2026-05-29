@@ -99,6 +99,12 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
         "propose_complete_reservation",
         "propose_update_reservation",
         "propose_report_breakdown",
+        # Faza C — machine CRUD + state transitions.
+        "propose_create_machine",
+        "propose_update_machine",
+        "propose_return_machine",
+        "propose_close_repair_machine",
+        "propose_retire_machine",
     }
 )
 
@@ -294,6 +300,25 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
             f"Proponowana akcja: zgłoszenie awarii rezerwacji #{rid} "
             f"(opis: „{desc}{'…' if len(params.get('description', '')) > 80 else ''}”)."
         )
+    if action == "create_machine":
+        uid = params.get("uid", "?")
+        name = params.get("name", "?")
+        mtype = params.get("machine_type", "?")
+        return f"Proponowana akcja: utworzenie maszyny {uid} ({name}, typ: {mtype})."
+    if action == "update_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: edycja maszyny {uid}."
+    if action == "return_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: zwrot maszyny {uid} do magazynu."
+    if action == "close_repair_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: zakończenie naprawy maszyny {uid}."
+    if action == "retire_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        reason = params.get("reason", "")
+        reason_str = f" (powód: {reason[:60]})" if reason else ""
+        return f"Proponowana akcja: wycofanie maszyny {uid} z floty{reason_str}."
     return f"Proponowana akcja: {action}."
 
 

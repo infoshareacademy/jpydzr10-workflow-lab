@@ -94,6 +94,7 @@ def test_system_prompt_lists_all_write_tools():
     Wave 14-C: 5 podstawowych write tools (rezerwacje + machine to service).
     Faza A (2026-05-29): +3 dla serwisu (create/update record, inspection date).
     Faza B (2026-05-29): +4 dla rezerwacji extras (confirm/complete/update/breakdown).
+    Faza C (2026-05-29): +5 dla machine CRUD (create/update/return/close_repair/retire).
     """
     p = agent_module.SYSTEM_PROMPT
     for tool_name in (
@@ -107,7 +108,12 @@ def test_system_prompt_lists_all_write_tools():
         "propose_update_reservation",
         "propose_report_breakdown",
         # Maszyny
+        "propose_create_machine",
+        "propose_update_machine",
         "propose_set_machine_to_service",
+        "propose_return_machine",
+        "propose_close_repair_machine",
+        "propose_retire_machine",
         "propose_update_machine_inspection_date",
         # Serwis
         "propose_create_service_record",

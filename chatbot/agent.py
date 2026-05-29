@@ -51,14 +51,19 @@ from django.contrib.auth.models import User
 from chatbot.tools import (
     CancelReservationParams,
     ChangeOperatorParams,
+    CloseRepairMachineParams,
     CompleteReservationParams,
     ConfirmReservationParams,
+    CreateMachineParams,
     CreateReservationParams,
     CreateServiceRecordParams,
     ReportBreakdownParams,
+    RetireMachineParams,
+    ReturnMachineParams,
     SetMachineToServiceParams,
     SwapMachineParams,
     UpdateMachineInspectionDateParams,
+    UpdateMachineParams,
     UpdateReservationParams,
     UpdateServiceRecordParams,
 )
@@ -131,7 +136,17 @@ Zasady (BARDZO WAŻNE):
          wysyła maszynę do serwisu, tworzy ServiceRecord typu Naprawa.
 
    Maszyny:
+       - `propose_create_machine` — utworzenie nowego egzemplarza w flocie
+         (UID musi być unikalny, status startowy = W magazynie),
+       - `propose_update_machine` — edycja nazwy/lokalizacji/notatek/
+         producenta/SN. Status edytowany przez dedykowane tools.
        - `propose_set_machine_to_service` — wysłanie maszyny do serwisu,
+       - `propose_return_machine` — zwrot z budowy/serwisu do magazynu
+         (atomic: + zamknięcie aktywnych rezerwacji),
+       - `propose_close_repair_machine` — zakończenie naprawy
+         (W serwisie → W magazynie),
+       - `propose_retire_machine` — soft delete (status Wycofana, rekord
+         pozostaje dla historii),
        - `propose_update_machine_inspection_date` — przesunięcie daty
          następnego przeglądu BEZ wpisu serwisowego (np. po przeglądzie
          u zewnętrznego serwisanta off-system).
@@ -454,6 +469,76 @@ def build_agent() -> Any | None:
         Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
         """
         return tools.propose_report_breakdown(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_machine(
+        ctx: RunContext[ChatDeps], params: CreateMachineParams
+    ) -> str:
+        """Proponuje utworzenie nowej maszyny w flocie.
+
+        Użyj gdy user mówi "dodaj nową koparkę KOP-099, model CAT 320D"
+        lub "wprowadź minikoparkę MIN-005 producent Bobcat". UID musi być
+        unikalny. Status startowy zawsze 'W magazynie'.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_machine(
+        ctx: RunContext[ChatDeps], params: UpdateMachineParams
+    ) -> str:
+        """Proponuje edycję podstawowych pól maszyny (nazwa/lokalizacja/notatki).
+
+        Użyj gdy user mówi "zmień nazwę KOP-001 na 'Koparka stara'" lub
+        "wpisz producenta KOP-005 na Caterpillar". Status NIE jest edytowalny
+        — użyj dedykowanych: set_machine_to_service, return_machine,
+        close_repair_machine, retire_machine. UID też nie da się zmienić.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_return_machine(
+        ctx: RunContext[ChatDeps], params: ReturnMachineParams
+    ) -> str:
+        """Proponuje zwrot maszyny z budowy lub serwisu do magazynu.
+
+        Użyj gdy user mówi "wróciła KOP-003 z budowy" lub "klient zwrócił
+        minikoparkę MIN-002 wczoraj". Atomic: zmienia status + zamyka
+        aktywne rezerwacje pokrywające dzisiaj.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_return_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_close_repair_machine(
+        ctx: RunContext[ChatDeps], params: CloseRepairMachineParams
+    ) -> str:
+        """Proponuje zakończenie naprawy maszyny (W serwisie → W magazynie).
+
+        Użyj gdy user mówi "skończona naprawa KOP-005" lub "serwis KOP-007
+        gotowy, wraca do magazynu". Tylko dla maszyn ze statusem 'W serwisie'.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_close_repair_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_retire_machine(
+        ctx: RunContext[ChatDeps], params: RetireMachineParams
+    ) -> str:
+        """Proponuje wycofanie maszyny z floty (soft delete — status Wycofana).
+
+        Użyj gdy user mówi "wycofujemy KOP-003 — kapitał za drogo naprawić"
+        lub "usuń M-0050 z floty". Maszyna pozostaje w DB (historia rezerwacji/
+        serwisu zachowana), ale nie pojawia się jako dostępna do rezerwacji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_retire_machine(params, user=ctx.deps.user)
 
     return agent
 
