@@ -286,14 +286,24 @@
 }
 
 .timeline-machine-cell {
-    /* Wave 14-K: z-index 20 → 15 zeby gdy wiersz scrolluje pionowo POD sticky
-       header dni (z-20) — header czysto przykrywal komorke maszyny (no double
-       overlap z barem rezerwacji). scroll-margin-top zapewnia ze gdy ktos
-       skleja smooth-scroll do nazwy maszyny (np. anchor link) — landuje
-       PODSTICKY stackem, a nie chowa sie pod nim. */
+    /* Wave 14-K: machine-cell jest sticky tylko poziomo (left: 0) — pionowo
+       scrolluje z wierszem. scroll-margin-top zapewnia ze gdy ktos skleja
+       smooth-scroll do nazwy maszyny (np. anchor link) — landuje PODSTICKY
+       stackem, a nie chowa sie pod nim.
+
+       Bug 2026-05-29 — z-index 15 → 22: gdy filter zostawia maly liczbe
+       maszyn, pierwsza maszyna jest WIZUALNIE pod sticky day-header
+       (day-header z-20 wygrywal stacking nad machine z-15 w overlap zone
+       — tj. zaraz po naturalnym położeniu pierwszej maszyny). Z z-22
+       (powyzej day-header z-20, ponizej corner z-25) machine-cell wygrywa
+       stacking. Trade-off: gdy scroll-down, machine row pływa pod sticky
+       day-header — w jego Y range, machine pokrywa header. To akceptowalne
+       bo day-header jest widoczny pomiędzy wierszami (gap między machine
+       cells nie jest pokryty), a user nadal widzi dni nad nieprzylegającą
+       częścią siatki. */
     position: sticky;
     left: 0;
-    z-index: 15;
+    z-index: 22;
     scroll-margin-top: calc(var(--tl-ctrl-h, 0px) + 60px);
     background: rgb(255 255 255);
     border-right: 1px solid rgb(229 231 235);

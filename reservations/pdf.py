@@ -101,17 +101,25 @@ def generate_reservation_pdf(reservation: Reservation) -> bytes:
     story.append(Paragraph("Rezerwacja maszyny", h1))
     story.append(Spacer(1, 12))
 
+    # Bug 2026-05-29: pdfplumber extract_text() sklejał label+value bez spacji
+    # ("rezerwującap:an" zamiast "rezerwująca: pan"). Wizualnie PDF OK
+    # (table padding 12pt rozdzielał komórki), ale copy-paste z PDF dawał
+    # zlepione tokeny. Dodanie leading non-breaking space ( ) do każdej
+    # value cell zapewnia że extract zawsze ma separator, bez wpływu na wizual.
+    def _val(s):
+        return f" {s}"
+
     table_data = [
-        ["Numer rezerwacji:", str(reservation.pk)],
-        ["Maszyna:", f"{reservation.machine.uid} — {reservation.machine.name}"],
-        ["Data od:", reservation.start_date.strftime("%d.%m.%Y")],
-        ["Data do:", reservation.end_date.strftime("%d.%m.%Y")],
-        ["Status:", reservation.get_status_display()],
-        ["Osoba rezerwująca:", reservation.person or "—"],
+        ["Numer rezerwacji:", _val(str(reservation.pk))],
+        ["Maszyna:", _val(f"{reservation.machine.uid} — {reservation.machine.name}")],
+        ["Data od:", _val(reservation.start_date.strftime("%d.%m.%Y"))],
+        ["Data do:", _val(reservation.end_date.strftime("%d.%m.%Y"))],
+        ["Status:", _val(reservation.get_status_display())],
+        ["Osoba rezerwująca:", _val(reservation.person or "—")],
         # Wave 14-A Bundle 4 + 8 -- responsible_person field (kierownik/brygadzista).
-        ["Osoba na budowie:", reservation.responsible_person or "—"],
-        ["Adres dostawy:", reservation.address or "—"],
-        ["Budowa:", str(reservation.site) if reservation.site else "—"],
+        ["Osoba na budowie:", _val(reservation.responsible_person or "—")],
+        ["Adres dostawy:", _val(reservation.address or "—")],
+        ["Budowa:", _val(str(reservation.site) if reservation.site else "—")],
     ]
     table = Table(table_data, colWidths=[5 * cm, 11 * cm])
     table.setStyle(
