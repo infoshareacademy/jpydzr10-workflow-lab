@@ -425,6 +425,11 @@ timeline-snapshot.yml
 # --- Pliki backup tworzone przez aplikację konsolową M1 (zachowane lokalnie, nie do repo) ---
 **/*.bak
 
+# --- Lokalne backup bazy danych (pg_dump). Zawieraja prawdziwe dane uzytkownikow ---
+backups/
+*.sql
+*.dump
+
 # --- Django — pliki generowane w runtime ---
 staticfiles/                 # output collectstatic
 media/                       # uploadowane przez użytkowników (zdjęcia maszyn, PDF protokoły)

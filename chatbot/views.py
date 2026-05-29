@@ -70,6 +70,17 @@ def conversation_detail(request: HttpRequest, pk: int) -> HttpResponse:
     )
 
 
+def _recent_conversations_for(user):
+    """Queryset 5 ostatnich (niezarchiwizowanych) konwersacji usera.
+
+    Wspólne dla :func:`drawer` (full render) i :func:`welcome` (HTMX partial)
+    żeby limit i sort były single source of truth.
+    """
+    return Conversation.objects.filter(user=user, is_archived=False).order_by("-created_at")[
+        :DRAWER_CONVERSATION_LIMIT
+    ]
+
+
 @login_required
 def drawer(request: HttpRequest) -> HttpResponse:
     """Render slide-out drawera asystenta (panel boczny w body).
@@ -78,14 +89,26 @@ def drawer(request: HttpRequest) -> HttpResponse:
     :data:`DRAWER_CONVERSATION_LIMIT` ostatnich (niezarchiwizowanych)
     konwersacji użytkownika.
     """
-    conversations = Conversation.objects.filter(user=request.user, is_archived=False).order_by(
-        "-created_at"
-    )[:DRAWER_CONVERSATION_LIMIT]
     form = ChatMessageForm()
     return render(
         request,
         "chatbot/drawer.html",
-        {"conversations": conversations, "form": form},
+        {"conversations": _recent_conversations_for(request.user), "form": form},
+    )
+
+
+@login_required
+def welcome(request: HttpRequest) -> HttpResponse:
+    """Render welcome state (lista konwersacji + bullety) jako HTMX partial.
+
+    Wywoływany po klik "Wszystkie konwersacje" w widoku konwersacji
+    lub "Nowa konwersacja" w headerze drawer'a — pozwala wrócić do listy
+    historii bez zamykania/otwierania drawera.
+    """
+    return render(
+        request,
+        "chatbot/_welcome.html",
+        {"conversations": _recent_conversations_for(request.user)},
     )
 
 

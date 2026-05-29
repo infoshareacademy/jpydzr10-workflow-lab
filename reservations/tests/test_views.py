@@ -358,3 +358,35 @@ class TestReservationQuickModalView:
     def test_quick_modal_redirects_when_not_logged_in(self, client):
         response = client.get(reverse("reservations:quick_modal"))
         assert response.status_code == 302
+
+
+@pytest.mark.django_db
+class TestDailySyncNowView:
+    """Smoke testy dla ``daily_sync_now_view`` — guard przeciw NoReverseMatch.
+
+    Bug 2026-05-29: view robił ``redirect("core:home")`` ale URL ``home``
+    jest top-level (bez namespace ``core:``), więc każdy POST wybuchał
+    NoReverseMatch — w produkcji zamiast cichego 302/redirect user widział
+    pełen Django error page. Te testy gwarantują że to nie wróci.
+    """
+
+    def test_post_redirects_when_not_logged_in(self, client):
+        response = client.post(reverse("reservations:daily_sync_now"))
+        assert response.status_code == 302
+        assert "/accounts/login/" in response.url or "/login/" in response.url
+
+    def test_post_by_non_staff_redirects_to_home_with_error(self, client_logged):
+        """Non-staff — nie ma uprawnień. Redirect do home BEZ NoReverseMatch."""
+        response = client_logged.post(reverse("reservations:daily_sync_now"))
+        assert response.status_code == 302  # NIE 500 (NoReverseMatch)
+        # Trafia na "/" (URL name "home" → top-level path "")
+        assert response.url == "/"
+
+    def test_post_by_staff_runs_sync_and_redirects_to_home(self, client, user):
+        """Staff — sync wykonany, redirect do home."""
+        user.is_staff = True
+        user.save()
+        client.force_login(user)
+        response = client.post(reverse("reservations:daily_sync_now"))
+        assert response.status_code == 302
+        assert response.url == "/"

@@ -90,6 +90,28 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
         "propose_change_operator",
         "propose_swap_machine",
         "propose_set_machine_to_service",
+        # Faza A — serwis.
+        "propose_create_service_record",
+        "propose_update_service_record",
+        "propose_update_machine_inspection_date",
+        # Faza B — rezerwacje extras.
+        "propose_confirm_reservation",
+        "propose_complete_reservation",
+        "propose_update_reservation",
+        "propose_report_breakdown",
+        # Faza C — machine CRUD + state transitions.
+        "propose_create_machine",
+        "propose_update_machine",
+        "propose_return_machine",
+        "propose_close_repair_machine",
+        "propose_retire_machine",
+        # Faza D — construction sites CRUD.
+        "propose_create_site",
+        "propose_update_site",
+        "propose_delete_site",
+        # Faza E — accounts (GDPR-careful).
+        "propose_terminate_employee",
+        "propose_anonymize_employee",
     }
 )
 
@@ -180,7 +202,7 @@ def _extract_proposal_from_tool_calls(result) -> dict | None:
             if isinstance(raw_args, str):
                 try:
                     args_dict = json.loads(raw_args)
-                except (json.JSONDecodeError, ValueError):
+                except json.JSONDecodeError, ValueError:
                     args_dict = {}
             elif isinstance(raw_args, dict):
                 args_dict = raw_args
@@ -239,6 +261,85 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
     if action == "set_machine_to_service":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         return f"Proponowana akcja: wysłanie maszyny {uid} do serwisu."
+    if action == "create_service_record":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        rtype = params.get("record_type", "?")
+        performed = params.get("performed_date", "?")
+        cost = params.get("cost", 0)
+        desc = params.get("description", "")
+        type_pl = {
+            "przegląd_kwartalny": "przegląd kwartalny",
+            "przegląd_polroczny": "przegląd półroczny",
+            "przegląd_roczny": "przegląd roczny",
+            "naprawa": "naprawa",
+        }.get(rtype, rtype)
+        cost_str = f"{float(cost):.2f} EUR" if cost else "bez kosztu"
+        desc_str = f" — „{desc}”" if desc else ""
+        return (
+            f"Proponowana akcja: wpis serwisowy dla maszyny {uid} "
+            f"({type_pl}, {performed}{desc_str}, {cost_str})."
+        )
+    if action == "update_service_record":
+        rid = params.get("record_id", "?")
+        return f"Proponowana akcja: aktualizacja wpisu serwisowego #{rid}."
+    if action == "update_machine_inspection_date":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        new_date = params.get("next_inspection_date", "?")
+        return f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} na {new_date}."
+    if action == "confirm_reservation":
+        rid = params.get("reservation_id", "?")
+        return f"Proponowana akcja: potwierdzenie rezerwacji #{rid}."
+    if action == "complete_reservation":
+        rid = params.get("reservation_id", "?")
+        actual = params.get("actual_return_date")
+        actual_str = f" (zwrot: {actual})" if actual else ""
+        return f"Proponowana akcja: zakończenie rezerwacji #{rid}{actual_str}."
+    if action == "update_reservation":
+        rid = params.get("reservation_id", "?")
+        return f"Proponowana akcja: edycja rezerwacji #{rid}."
+    if action == "report_breakdown":
+        rid = params.get("reservation_id", "?")
+        desc = (params.get("description") or "")[:80]
+        return (
+            f"Proponowana akcja: zgłoszenie awarii rezerwacji #{rid} "
+            f"(opis: „{desc}{'…' if len(params.get('description', '')) > 80 else ''}”)."
+        )
+    if action == "create_machine":
+        uid = params.get("uid", "?")
+        name = params.get("name", "?")
+        mtype = params.get("machine_type", "?")
+        return f"Proponowana akcja: utworzenie maszyny {uid} ({name}, typ: {mtype})."
+    if action == "update_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: edycja maszyny {uid}."
+    if action == "return_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: zwrot maszyny {uid} do magazynu."
+    if action == "close_repair_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        return f"Proponowana akcja: zakończenie naprawy maszyny {uid}."
+    if action == "retire_machine":
+        uid = params.get("machine_uid") or params.get("machine_id") or "?"
+        reason = params.get("reason", "")
+        reason_str = f" (powód: {reason[:60]})" if reason else ""
+        return f"Proponowana akcja: wycofanie maszyny {uid} z floty{reason_str}."
+    if action == "create_site":
+        pn = params.get("project_number", "?")
+        name = params.get("name", "?")
+        return f"Proponowana akcja: utworzenie budowy {pn} ({name})."
+    if action == "update_site":
+        pn = params.get("project_number", "?")
+        return f"Proponowana akcja: edycja budowy {pn}."
+    if action == "delete_site":
+        pn = params.get("project_number", "?")
+        return f"Proponowana akcja: usunięcie budowy {pn}."
+    if action == "terminate_employee":
+        username = params.get("username", "?")
+        reason = params.get("reason", "")[:80]
+        return f"Proponowana akcja: zakończenie zatrudnienia '{username}' (powód: {reason})."
+    if action == "anonymize_employee":
+        username = params.get("username", "?")
+        return f"Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR pracownika '{username}'."
     return f"Proponowana akcja: {action}."
 
 
@@ -260,7 +361,7 @@ def _parse_proposal(response: str | None) -> dict | None:
         candidate = match.group(0)
         try:
             data = json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
+        except json.JSONDecodeError, ValueError:
             continue
         if not isinstance(data, dict):
             continue

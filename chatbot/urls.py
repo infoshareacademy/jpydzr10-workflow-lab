@@ -14,6 +14,7 @@ app_name = "chatbot"
 
 urlpatterns = [
     path("drawer/", views.drawer, name="drawer"),
+    path("historia/", views.welcome, name="welcome"),
     path("zapytaj/", views.ask, name="ask"),
     path("konwersacja/<int:pk>/", views.conversation_detail, name="conversation_detail"),
 ]

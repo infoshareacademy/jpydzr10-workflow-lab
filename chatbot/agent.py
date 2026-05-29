@@ -49,11 +49,28 @@ from django.contrib.auth.models import User
 # ``NameError: name 'CreateReservationParams' is not defined`` przy
 # rejestracji ``@agent.tool``.
 from chatbot.tools import (
+    AnonymizeEmployeeParams,
     CancelReservationParams,
     ChangeOperatorParams,
+    CloseRepairMachineParams,
+    CompleteReservationParams,
+    ConfirmReservationParams,
+    CreateMachineParams,
     CreateReservationParams,
+    CreateServiceRecordParams,
+    CreateSiteParams,
+    DeleteSiteParams,
+    ReportBreakdownParams,
+    RetireMachineParams,
+    ReturnMachineParams,
     SetMachineToServiceParams,
     SwapMachineParams,
+    TerminateEmployeeParams,
+    UpdateMachineInspectionDateParams,
+    UpdateMachineParams,
+    UpdateReservationParams,
+    UpdateServiceRecordParams,
+    UpdateSiteParams,
 )
 
 logger = logging.getLogger("chatbot")
@@ -108,16 +125,75 @@ Zasady (BARDZO WAŻNE):
    Gdy user pyta "jakie maszyny są wolne", "znajdź minikoparkę na jutro" itp.
    — wywołaj `find_available_machines(start_date, end_date, machine_type)`
    i ZAPROPONUJ konkretną maszynę z wyniku, NIE proś go o UID.
-3. Dla operacji ZMIENIAJĄCYCH dane (rezerwacja, anulowanie, zmiana operatora,
-   wymiana maszyny, wysłanie do serwisu) używaj narzędzi `propose_*`:
+3. Dla operacji ZMIENIAJĄCYCH dane używaj narzędzi `propose_*`:
+
+   Rezerwacje:
        - `propose_create_reservation` — utworzenie nowej rezerwacji,
        - `propose_cancel_reservation` — anulowanie rezerwacji (wymagany powód),
+       - `propose_confirm_reservation` — potwierdzenie OCZEKUJACA → POTWIERDZONA,
+       - `propose_complete_reservation` — zamknięcie POTWIERDZONA → ZAKONCZONA
+         (maszyna wraca do magazynu, opcjonalny actual_return_date),
+       - `propose_update_reservation` — zmiana dat / osoby / notatek
+         (NIE statusu — użyj dedykowanych),
        - `propose_change_operator` — zmiana osoby przypisanej do rezerwacji,
        - `propose_swap_machine` — wymiana maszyny mid-reservation,
-       - `propose_set_machine_to_service` — wysłanie maszyny do serwisu.
+       - `propose_report_breakdown` — one-click awaria: zamyka rezerwację,
+         wysyła maszynę do serwisu, tworzy ServiceRecord typu Naprawa.
+
+   Maszyny:
+       - `propose_create_machine` — utworzenie nowego egzemplarza w flocie
+         (UID musi być unikalny, status startowy = W magazynie),
+       - `propose_update_machine` — edycja nazwy/lokalizacji/notatek/
+         producenta/SN. Status edytowany przez dedykowane tools.
+       - `propose_set_machine_to_service` — wysłanie maszyny do serwisu,
+       - `propose_return_machine` — zwrot z budowy/serwisu do magazynu
+         (atomic: + zamknięcie aktywnych rezerwacji),
+       - `propose_close_repair_machine` — zakończenie naprawy
+         (W serwisie → W magazynie),
+       - `propose_retire_machine` — soft delete (status Wycofana, rekord
+         pozostaje dla historii),
+       - `propose_update_machine_inspection_date` — przesunięcie daty
+         następnego przeglądu BEZ wpisu serwisowego (np. po przeglądzie
+         u zewnętrznego serwisanta off-system).
+
+   Budowy (construction sites):
+       - `propose_create_site` — nowa budowa (BUD-RRRR-NNN + nazwa + adres),
+       - `propose_update_site` — edycja nazwy/adresu/klienta/miasta/notes,
+       - `propose_delete_site` — usunięcie budowy (reject jeśli ma aktywne
+         rezerwacje — najpierw zamknij rezerwacje).
+
+   Pracownicy (accounts — UWAŻAJ z GDPR):
+       - `propose_terminate_employee` — koniec zatrudnienia (username +
+         powód min 3 znaki). Atomic: deactivate konto, revoke RBAC,
+         kasacja sesji.
+       - `propose_anonymize_employee` — GDPR Art.17 (right to erasure).
+         **NIEODWRACALNE** — wymazuje PII (imię/nazwisko/email/telefon).
+         UI pokaże duży warning.
+
+   Serwis (przeglądy i naprawy):
+       - `propose_create_service_record` — wpis serwisowy (przegląd lub
+         naprawa). Dla typu `przegląd_*` data następnego przeglądu jest
+         liczona AUTOMATYCZNIE (3/6/12 mc od `performed_date`) — NIE
+         przekazuj jej osobno, NIE wywołuj `propose_update_machine_inspection_date`
+         dodatkowo. Typ wybierz zgodnie z interwałem: "kwartalny=3 mc",
+         "polroczny=6 mc", "roczny=12 mc", "naprawa" gdy to nie przegląd.
+       - `propose_update_service_record` — korekta istniejącego wpisu
+         (popraw koszt, opis, technika). Tylko zmienione pola, reszta None.
+
    Te narzędzia ZWRACAJĄ JSON z `confirmation_required: true` i NIE wykonują
    zmiany od razu. System sam zapisze proponowaną akcję i zapyta użytkownika
    o potwierdzenie ("tak"/"potwierdzam"/"nie"/"anuluj").
+
+   PRZYKŁADY mapowania user → tool:
+   - "koparka KOP-007, dzisiaj wymieniliśmy baterię, koszt 308 EUR"
+     → `propose_create_service_record(machine_uid="KOP-007", record_type="naprawa",
+        performed_date=DZISIAJ, description="wymiana baterii", cost=308.0)`
+   - "KOP-003 przeszła dziś przegląd kwartalny, koszt 120 EUR"
+     → `propose_create_service_record(machine_uid="KOP-003",
+        record_type="przegląd_kwartalny", performed_date=DZISIAJ, cost=120.0)`
+     (data następnego przeglądu = dziś + 3 mc, auto)
+   - "popraw koszt wpisu #42 na 350 EUR" → `propose_update_service_record(
+        record_id=42, cost=350.0)`
 4. NIGDY nie próbuj samodzielnie wykonać zmiany bez wywołania `propose_*` —
    nie masz takiej możliwości i nie wolno Ci jej szukać. Jeśli narzędzie
    zwróci `{"error": "Brak uprawnień ..."}`, **powtórz tę informację**
@@ -194,13 +270,19 @@ def build_agent() -> Any | None:
         używają TIME_ZONE z ``settings`` (Europe/Warsaw dla tego projektu).
         """
         from datetime import timedelta
+
         today = ctx.deps.today
         now = ctx.deps.now
         tomorrow = (today + timedelta(days=1)).isoformat()
         day_after = (today + timedelta(days=2)).isoformat()
         weekdays_pl = [
-            "poniedziałek", "wtorek", "środa", "czwartek",
-            "piątek", "sobota", "niedziela",
+            "poniedziałek",
+            "wtorek",
+            "środa",
+            "czwartek",
+            "piątek",
+            "sobota",
+            "niedziela",
         ]
         weekday = weekdays_pl[today.weekday()]
         return (
@@ -254,9 +336,7 @@ def build_agent() -> Any | None:
         — case-insensitive prefix match. Zwraca max 20 maszyn z polem
         ``truncated=true`` jeśli było więcej.
         """
-        return tools.find_available_machines(
-            start_date, end_date, machine_type
-        ).model_dump_json()
+        return tools.find_available_machines(start_date, end_date, machine_type).model_dump_json()
 
     # ------------------------------------------------------------------
     # WRITE TOOLS — Wave 14-C. Każde "propose_*" ZWRACA JSON proposal
@@ -312,6 +392,234 @@ def build_agent() -> Any | None:
         Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
         """
         return tools.propose_set_machine_to_service(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_service_record(
+        ctx: RunContext[ChatDeps], params: CreateServiceRecordParams
+    ) -> str:
+        """Proponuje wpis serwisowy (przegląd lub naprawa) dla maszyny.
+
+        Użyj gdy user mówi "koparka 7 — naprawa, wymiana baterii, 308 EUR" lub
+        "koparka 3 — dzisiaj przegląd kwartalny". Dla typów ``przeglad_*``
+        następna data przeglądu jest liczona automatycznie z performed_date
+        (3/6/12 mc) — NIE przekazuj jej osobno.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_service_record(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_service_record(
+        ctx: RunContext[ChatDeps], params: UpdateServiceRecordParams
+    ) -> str:
+        """Proponuje edycję istniejącego wpisu serwisowego (opis/koszt/technik).
+
+        Użyj gdy user mówi "popraw koszt naprawy #42 na 350 EUR" lub
+        "dopisz do wpisu #15 że wymieniliśmy też filtr". Tylko pola które
+        zmieniają się — None oznacza "bez zmiany".
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_service_record(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_machine_inspection_date(
+        ctx: RunContext[ChatDeps], params: UpdateMachineInspectionDateParams
+    ) -> str:
+        """Proponuje przesunięcie daty następnego przeglądu maszyny BEZ tworzenia wpisu.
+
+        Użyj gdy user mówi "przesun przegląd koparki 3 na 15 sierpnia" bez
+        wzmianki o wykonanej pracy serwisowej. Dla standardowego flow
+        "wykonano przegląd → przesuń datę" lepiej użyj propose_create_service_record
+        — robi obie rzeczy w jednej akcji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_machine_inspection_date(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_confirm_reservation(
+        ctx: RunContext[ChatDeps], params: ConfirmReservationParams
+    ) -> str:
+        """Proponuje potwierdzenie rezerwacji (OCZEKUJACA → POTWIERDZONA).
+
+        Użyj gdy user mówi "potwierdź rezerwację #42" lub "zatwierdź booking 13".
+        Tylko rezerwacje w statusie OCZEKUJACA mogą być potwierdzone.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_confirm_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_complete_reservation(
+        ctx: RunContext[ChatDeps], params: CompleteReservationParams
+    ) -> str:
+        """Proponuje zakończenie rezerwacji (POTWIERDZONA → ZAKONCZONA) + zwrot maszyny.
+
+        Użyj gdy user mówi "zamknij rezerwację #42, maszyna wróciła do magazynu"
+        lub "klient zwrócił maszynę z rezerwacji #15 wczoraj — zakończ". Opcjonalny
+        `actual_return_date` gdy klient zwraca wcześniej niż planowano.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_complete_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_reservation(
+        ctx: RunContext[ChatDeps], params: UpdateReservationParams
+    ) -> str:
+        """Proponuje edycję rezerwacji (daty / osoba / notatki — NIE status).
+
+        Użyj gdy user mówi "przesun rezerwację #42 o dzień do przodu" lub
+        "zmień osobę w rez. #13 na Jan Kowalski". Pola None oznaczają "bez zmiany".
+        Dla zmiany statusu użyj dedykowanych: confirm/cancel/complete.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_reservation(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_report_breakdown(ctx: RunContext[ChatDeps], params: ReportBreakdownParams) -> str:
+        """Proponuje zgłoszenie awarii rezerwacji (one-click flow).
+
+        Użyj gdy user mówi "maszyna w rez. #42 padła — silnik dymi" lub
+        "awaria koparki na budowie, w rezerwacji #15, hydraulika nie działa".
+        Atomic: zamknie rezerwację dziś, ustawi maszynę na W serwisie, utworzy
+        ServiceRecord typu Naprawa z opisem awarii. Opis min 5 znaków.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_report_breakdown(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_machine(ctx: RunContext[ChatDeps], params: CreateMachineParams) -> str:
+        """Proponuje utworzenie nowej maszyny w flocie.
+
+        Użyj gdy user mówi "dodaj nową koparkę KOP-099, model CAT 320D"
+        lub "wprowadź minikoparkę MIN-005 producent Bobcat". UID musi być
+        unikalny. Status startowy zawsze 'W magazynie'.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_machine(ctx: RunContext[ChatDeps], params: UpdateMachineParams) -> str:
+        """Proponuje edycję podstawowych pól maszyny (nazwa/lokalizacja/notatki).
+
+        Użyj gdy user mówi "zmień nazwę KOP-001 na 'Koparka stara'" lub
+        "wpisz producenta KOP-005 na Caterpillar". Status NIE jest edytowalny
+        — użyj dedykowanych: set_machine_to_service, return_machine,
+        close_repair_machine, retire_machine. UID też nie da się zmienić.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_return_machine(ctx: RunContext[ChatDeps], params: ReturnMachineParams) -> str:
+        """Proponuje zwrot maszyny z budowy lub serwisu do magazynu.
+
+        Użyj gdy user mówi "wróciła KOP-003 z budowy" lub "klient zwrócił
+        minikoparkę MIN-002 wczoraj". Atomic: zmienia status + zamyka
+        aktywne rezerwacje pokrywające dzisiaj.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_return_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_close_repair_machine(
+        ctx: RunContext[ChatDeps], params: CloseRepairMachineParams
+    ) -> str:
+        """Proponuje zakończenie naprawy maszyny (W serwisie → W magazynie).
+
+        Użyj gdy user mówi "skończona naprawa KOP-005" lub "serwis KOP-007
+        gotowy, wraca do magazynu". Tylko dla maszyn ze statusem 'W serwisie'.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_close_repair_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_retire_machine(ctx: RunContext[ChatDeps], params: RetireMachineParams) -> str:
+        """Proponuje wycofanie maszyny z floty (soft delete — status Wycofana).
+
+        Użyj gdy user mówi "wycofujemy KOP-003 — kapitał za drogo naprawić"
+        lub "usuń M-0050 z floty". Maszyna pozostaje w DB (historia rezerwacji/
+        serwisu zachowana), ale nie pojawia się jako dostępna do rezerwacji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_retire_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_site(ctx: RunContext[ChatDeps], params: CreateSiteParams) -> str:
+        """Proponuje utworzenie nowej budowy (BUD-RRRR-NNN, nazwa, adres).
+
+        Użyj gdy user mówi "dodaj budowę BUD-2026-099, magazyn Lubella,
+        ul. Przemysłowa 5 Lublin". Project_number musi mieć format
+        BUD-RRRR-NNN i być unikalny.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_site(ctx: RunContext[ChatDeps], params: UpdateSiteParams) -> str:
+        """Proponuje edycję istniejącej budowy (nazwa/adres/klient/miasto/notes).
+
+        Użyj gdy user mówi "zmień klienta na BUD-2026-007 na 'Nowy klient SA'"
+        lub "popraw adres BUD-2026-001". project_number identifikuje budowę,
+        sam jest immutable. None oznacza "bez zmiany".
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_delete_site(ctx: RunContext[ChatDeps], params: DeleteSiteParams) -> str:
+        """Proponuje usunięcie budowy (rejected jeśli ma aktywne rezerwacje).
+
+        Użyj gdy user mówi "usuń budowę BUD-2026-099" lub "skasuj projekt
+        BUD-2025-013". Budowa z aktywnymi rezerwacjami zostanie odrzucona
+        — najpierw trzeba zamknąć/anulować rezerwacje.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_delete_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_terminate_employee(
+        ctx: RunContext[ChatDeps], params: TerminateEmployeeParams
+    ) -> str:
+        """Proponuje zakończenie zatrudnienia pracownika.
+
+        Użyj gdy user mówi "zwolnij pracownika jkowalski, powód: rezygnacja"
+        lub "zakończ zatrudnienie tnowak z dniem dzisiejszym, powód: emerytura".
+        Username + reason (min 3 znaki) wymagane. Atomic: deactivate konto,
+        revoke grupy, kasacja aktywnych sesji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_terminate_employee(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_anonymize_employee(
+        ctx: RunContext[ChatDeps], params: AnonymizeEmployeeParams
+    ) -> str:
+        """Proponuje anonimizację pracownika (GDPR Art.17 — NIEODWRACALNE).
+
+        Użyj gdy user mówi "zanonimizuj jkowalski zgodnie z GDPR" lub
+        "wykonaj prawo do usunięcia danych dla tnowak". PII (imię/nazwisko/
+        email/telefon/username) zostaną wymazane bezpowrotnie. Konto user
+        zostanie deactivated. Historia rezerwacji/serwisu pozostaje dla
+        FK integrity.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        Sebastian: ta operacja JEST nieodwracalna — UI pokaże ostrzeżenie.
+        """
+        return tools.propose_anonymize_employee(params, user=ctx.deps.user)
 
     return agent
 
