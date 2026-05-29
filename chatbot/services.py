@@ -202,7 +202,7 @@ def _extract_proposal_from_tool_calls(result) -> dict | None:
             if isinstance(raw_args, str):
                 try:
                     args_dict = json.loads(raw_args)
-                except (json.JSONDecodeError, ValueError):
+                except json.JSONDecodeError, ValueError:
                     args_dict = {}
             elif isinstance(raw_args, dict):
                 args_dict = raw_args
@@ -285,10 +285,7 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
     if action == "update_machine_inspection_date":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         new_date = params.get("next_inspection_date", "?")
-        return (
-            f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} "
-            f"na {new_date}."
-        )
+        return f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} na {new_date}."
     if action == "confirm_reservation":
         rid = params.get("reservation_id", "?")
         return f"Proponowana akcja: potwierdzenie rezerwacji #{rid}."
@@ -339,16 +336,10 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
     if action == "terminate_employee":
         username = params.get("username", "?")
         reason = params.get("reason", "")[:80]
-        return (
-            f"Proponowana akcja: zakończenie zatrudnienia '{username}' "
-            f"(powód: {reason})."
-        )
+        return f"Proponowana akcja: zakończenie zatrudnienia '{username}' (powód: {reason})."
     if action == "anonymize_employee":
         username = params.get("username", "?")
-        return (
-            f"Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR "
-            f"pracownika '{username}'."
-        )
+        return f"Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR pracownika '{username}'."
     return f"Proponowana akcja: {action}."
 
 
@@ -370,7 +361,7 @@ def _parse_proposal(response: str | None) -> dict | None:
         candidate = match.group(0)
         try:
             data = json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
+        except json.JSONDecodeError, ValueError:
             continue
         if not isinstance(data, dict):
             continue

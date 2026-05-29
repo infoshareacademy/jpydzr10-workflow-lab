@@ -415,9 +415,7 @@ def find_available_machines(
     # Bazowy queryset: tylko maszyny które są w teorii rezerwowalne
     # (W magazynie / Na budowie / Zarezerwowana — wszystkie poza WYCOFANA
     # i W_SERWISIE które są niedostępne na nowe rezerwacje).
-    qs = Machine.objects.exclude(
-        status__in=[Machine.Status.WYCOFANA, Machine.Status.W_SERWISIE]
-    )
+    qs = Machine.objects.exclude(status__in=[Machine.Status.WYCOFANA, Machine.Status.W_SERWISIE])
 
     # Type filter — case-insensitive prefix match.
     resolved_type = None
@@ -1582,9 +1580,7 @@ def propose_update_service_record(params: UpdateServiceRecordParams, user) -> st
     return _proposal("update_service_record", payload, preview)
 
 
-def propose_update_machine_inspection_date(
-    params: UpdateMachineInspectionDateParams, user
-) -> str:
+def propose_update_machine_inspection_date(params: UpdateMachineInspectionDateParams, user) -> str:
     """Proponuje przesunięcie daty następnego przeglądu maszyny BEZ tworzenia
     wpisu serwisowego.
 
@@ -1603,8 +1599,7 @@ def propose_update_machine_inspection_date(
         new_date = date.fromisoformat(params.next_inspection_date)
     except ValueError:
         return _error_json(
-            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): "
-            f"{params.next_inspection_date}."
+            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): {params.next_inspection_date}."
         )
 
     try:
@@ -1700,9 +1695,7 @@ def propose_complete_reservation(params: CompleteReservationParams, user) -> str
         try:
             actual = date.fromisoformat(params.actual_return_date)
         except ValueError:
-            return _error_json(
-                f"Nieprawidłowy format daty: {params.actual_return_date}."
-            )
+            return _error_json(f"Nieprawidłowy format daty: {params.actual_return_date}.")
         if actual < reservation.start_date:
             return _error_json("Faktyczna data zwrotu nie może być wcześniejsza niż start.")
         if actual > date.today():
@@ -1760,9 +1753,7 @@ def propose_update_reservation(params: UpdateReservationParams, user) -> str:
         changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
 
     if not changes:
-        return _error_json(
-            f"Brak zmian do wykonania na rezerwacji #{reservation.pk}."
-        )
+        return _error_json(f"Brak zmian do wykonania na rezerwacji #{reservation.pk}.")
 
     # Walidacja dat — start/end musi być sensowne nawet PRZED execute.
     new_start = (
@@ -2097,10 +2088,7 @@ def _execute_update_service_record(params: dict) -> str:
         changes["performed_by"] = params["performed_by"]
 
     update_service_record(record, **changes)
-    return (
-        f"Wpis #{record.pk} ({record.machine.uid}) zaktualizowany "
-        f"({', '.join(changes.keys())})."
-    )
+    return f"Wpis #{record.pk} ({record.machine.uid}) zaktualizowany ({', '.join(changes.keys())})."
 
 
 def _execute_update_machine_inspection_date(params: dict) -> str:
@@ -2118,8 +2106,7 @@ def _execute_update_machine_inspection_date(params: dict) -> str:
     machine.inspection_date = new_date
     machine.save(update_fields=["inspection_date", "updated_at"])
     return (
-        f"Data przeglądu maszyny {machine.uid} zaktualizowana na "
-        f"{params['next_inspection_date']}."
+        f"Data przeglądu maszyny {machine.uid} zaktualizowana na {params['next_inspection_date']}."
     )
 
 
@@ -2281,9 +2268,7 @@ def _execute_terminate_employee(params: dict, user) -> str:
     from accounts.models import EmployeeProfile
     from accounts.services import terminate_employee
 
-    profile = EmployeeProfile.objects.select_related("user").get(
-        user__username=params["username"]
-    )
+    profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
     terminate_employee(profile, reason=params.get("reason", ""), actor=user)
     return f"Zatrudnienie pracownika '{params['username']}' zakończone."
 
@@ -2292,9 +2277,7 @@ def _execute_anonymize_employee(params: dict, user) -> str:
     from accounts.models import EmployeeProfile
     from accounts.services import anonymize_employee
 
-    profile = EmployeeProfile.objects.select_related("user").get(
-        user__username=params["username"]
-    )
+    profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
     anonymize_employee(profile, actor=user)
     return f"Pracownik '{params['username']}' zanonimizowany (GDPR Art.17)."
 
@@ -2339,9 +2322,7 @@ def propose_create_machine(params: CreateMachineParams, user) -> str:
         return auth_err
 
     if Machine.objects.filter(uid=params.uid).exists():
-        return _error_json(
-            f"Maszyna o UID '{params.uid}' juz istnieje w flocie."
-        )
+        return _error_json(f"Maszyna o UID '{params.uid}' juz istnieje w flocie.")
 
     payload = {
         "uid": params.uid,
@@ -2353,7 +2334,7 @@ def propose_create_machine(params: CreateMachineParams, user) -> str:
         "serial_number": params.serial_number,
     }
     preview_lines = [
-        f"Utworzę nową maszynę:",
+        "Utworzę nową maszynę:",
         f"  • UID: {params.uid}",
         f"  • nazwa: {params.name}",
         f"  • typ: {params.machine_type}",
@@ -2400,9 +2381,7 @@ def propose_update_machine(params: UpdateMachineParams, user) -> str:
     if params.manufacturer is not None and params.manufacturer != machine.manufacturer:
         changes.append(f"producent: '{machine.manufacturer}' → '{params.manufacturer}'")
     if params.serial_number is not None and params.serial_number != machine.serial_number:
-        changes.append(
-            f"nr seryjny: '{machine.serial_number}' → '{params.serial_number}'"
-        )
+        changes.append(f"nr seryjny: '{machine.serial_number}' → '{params.serial_number}'")
 
     if not changes:
         return _error_json(f"Brak zmian do wykonania na maszynie {machine.uid}.")
@@ -2416,9 +2395,7 @@ def propose_update_machine(params: UpdateMachineParams, user) -> str:
         "manufacturer": params.manufacturer,
         "serial_number": params.serial_number,
     }
-    preview = (
-        f"Zaktualizuję maszynę {machine.uid}:\n  • " + "\n  • ".join(changes)
-    )
+    preview = f"Zaktualizuję maszynę {machine.uid}:\n  • " + "\n  • ".join(changes)
     _audit_logger.info(
         "CHATBOT PROPOSE update_machine user=%s machine=%s changes=%s",
         getattr(user, "pk", None),
@@ -2502,9 +2479,7 @@ def propose_create_site(params: CreateSiteParams, user) -> str:
         return auth_err
 
     if ConstructionSite.objects.filter(project_number=params.project_number).exists():
-        return _error_json(
-            f"Budowa o numerze '{params.project_number}' juz istnieje."
-        )
+        return _error_json(f"Budowa o numerze '{params.project_number}' juz istnieje.")
 
     payload = {
         "project_number": params.project_number,
@@ -2514,7 +2489,7 @@ def propose_create_site(params: CreateSiteParams, user) -> str:
         "city": params.city,
     }
     preview_lines = [
-        f"Utworzę nową budowę:",
+        "Utworzę nową budowę:",
         f"  • numer projektu: {params.project_number}",
         f"  • nazwa: {params.name}",
         f"  • adres: {params.address}",
@@ -2560,9 +2535,7 @@ def propose_update_site(params: UpdateSiteParams, user) -> str:
         changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
 
     if not changes:
-        return _error_json(
-            f"Brak zmian do wykonania na budowie {site.project_number}."
-        )
+        return _error_json(f"Brak zmian do wykonania na budowie {site.project_number}.")
 
     payload = {
         "site_id": site.pk,
@@ -2573,9 +2546,7 @@ def propose_update_site(params: UpdateSiteParams, user) -> str:
         "city": params.city,
         "notes": params.notes,
     }
-    preview = (
-        f"Zaktualizuję budowę {site.project_number}:\n  • " + "\n  • ".join(changes)
-    )
+    preview = f"Zaktualizuję budowę {site.project_number}:\n  • " + "\n  • ".join(changes)
     _audit_logger.info(
         "CHATBOT PROPOSE update_site user=%s project=%s changes=%s",
         getattr(user, "pk", None),

@@ -910,9 +910,7 @@ class TestProposeCreateServiceRecord:
         assert payload["params"]["cost"] == 308.0
         assert "Wymiana baterii" in payload["preview"]
 
-    def test_inspection_type_preview_mentions_auto_next_date(
-        self, user_service_perms, koparka_001
-    ):
+    def test_inspection_type_preview_mentions_auto_next_date(self, user_service_perms, koparka_001):
         """Dla typów przeglad_* preview MUSI wspomnieć o auto-przesunięciu daty."""
         result = propose_create_service_record(
             self._params(record_type="przegląd_kwartalny", cost=120.0),
@@ -953,9 +951,7 @@ class TestProposeCreateServiceRecord:
         assert "przyszłości" in payload["error"]
 
     def test_zero_cost_renders_bez_kosztu(self, user_service_perms, koparka_001):
-        result = propose_create_service_record(
-            self._params(cost=0.0), user=user_service_perms
-        )
+        result = propose_create_service_record(self._params(cost=0.0), user=user_service_perms)
         payload = json.loads(result)
         assert "bez kosztu" in payload["preview"]
 
@@ -1024,9 +1020,7 @@ class TestProposeUpdateMachineInspectionDate:
 
     def test_warns_when_new_date_in_past(self, user_service_perms, koparka_001):
         past = (date.today() - timedelta(days=5)).isoformat()
-        params = UpdateMachineInspectionDateParams(
-            machine_uid="KOP-001", next_inspection_date=past
-        )
+        params = UpdateMachineInspectionDateParams(machine_uid="KOP-001", next_inspection_date=past)
         result = propose_update_machine_inspection_date(params, user=user_service_perms)
         payload = json.loads(result)
         assert "przeszłości" in payload["preview"]
@@ -1054,9 +1048,7 @@ class TestExecuteServiceActions:
             "description": "Wymiana baterii",
             "cost": 308.0,
         }
-        result = execute_confirmed_action(
-            "create_service_record", params, user=user_service_perms
-        )
+        result = execute_confirmed_action("create_service_record", params, user=user_service_perms)
         assert "Wpis serwisowy" in result
         assert "KOP-001" in result
         # DB stan się zmienił.
@@ -1066,9 +1058,7 @@ class TestExecuteServiceActions:
         assert record.description == "Wymiana baterii"
         assert float(record.cost) == 308.0
 
-    def test_execute_create_inspection_bumps_machine_date(
-        self, user_service_perms, koparka_001
-    ):
+    def test_execute_create_inspection_bumps_machine_date(self, user_service_perms, koparka_001):
         """Przegląd kwartalny → Machine.inspection_date = performed + 3 mc."""
         today = date.today()
         params = {
@@ -1249,9 +1239,7 @@ class TestProposeCompleteReservation:
 class TestProposeUpdateReservation:
     def test_proposes_date_change(self, user_full_perms, reservation_pending):
         new_end = (reservation_pending.end_date + timedelta(days=2)).isoformat()
-        params = UpdateReservationParams(
-            reservation_id=reservation_pending.pk, end_date=new_end
-        )
+        params = UpdateReservationParams(reservation_id=reservation_pending.pk, end_date=new_end)
         result = propose_update_reservation(params, user=user_full_perms)
         payload = json.loads(result)
         assert payload["proposed_action"] == "update_reservation"
@@ -1260,9 +1248,7 @@ class TestProposeUpdateReservation:
     def test_rejects_end_before_start(self, user_full_perms, reservation_pending):
         # end_date < start_date po proponowanej zmianie.
         new_end = (reservation_pending.start_date - timedelta(days=1)).isoformat()
-        params = UpdateReservationParams(
-            reservation_id=reservation_pending.pk, end_date=new_end
-        )
+        params = UpdateReservationParams(reservation_id=reservation_pending.pk, end_date=new_end)
         result = propose_update_reservation(params, user=user_full_perms)
         payload = json.loads(result)
         assert "error" in payload
@@ -1308,9 +1294,7 @@ class TestProposeReportBreakdown:
             person="Test",
             status=Reservation.Status.ZAKONCZONA,
         )
-        params = ReportBreakdownParams(
-            reservation_id=closed.pk, description="Cokolwiek opis."
-        )
+        params = ReportBreakdownParams(reservation_id=closed.pk, description="Cokolwiek opis.")
         result = propose_report_breakdown(params, user=user_all_write_perms)
         payload = json.loads(result)
         assert "error" in payload
@@ -1341,9 +1325,7 @@ class TestExecuteReservationExtras:
         reservation_confirmed.refresh_from_db()
         assert reservation_confirmed.status == Reservation.Status.ZAKONCZONA
 
-    def test_execute_update_reservation_changes_person(
-        self, user_full_perms, reservation_pending
-    ):
+    def test_execute_update_reservation_changes_person(self, user_full_perms, reservation_pending):
         result = execute_confirmed_action(
             "update_reservation",
             {
@@ -1492,9 +1474,7 @@ class TestProposeReturnMachine:
 
 @pytest.mark.django_db
 class TestProposeCloseRepairMachine:
-    def test_proposes_close_for_in_service(
-        self, user_machine_full_perms, koparka_in_service
-    ):
+    def test_proposes_close_for_in_service(self, user_machine_full_perms, koparka_in_service):
         params = CloseRepairMachineParams(machine_uid="SVC-001")
         result = propose_close_repair_machine(params, user=user_machine_full_perms)
         payload = json.loads(result)
@@ -1512,9 +1492,7 @@ class TestProposeCloseRepairMachine:
 @pytest.mark.django_db
 class TestProposeRetireMachine:
     def test_proposes_retire_with_reason(self, user_machine_full_perms, koparka_001):
-        params = RetireMachineParams(
-            machine_uid="KOP-001", reason="Naprawa za droga"
-        )
+        params = RetireMachineParams(machine_uid="KOP-001", reason="Naprawa za droga")
         result = propose_retire_machine(params, user=user_machine_full_perms)
         payload = json.loads(result)
         assert payload["proposed_action"] == "retire_machine"
@@ -1657,17 +1635,13 @@ class TestProposeCreateSite:
         from pydantic import ValidationError as PydanticValidationError
 
         with pytest.raises(PydanticValidationError):
-            CreateSiteParams(
-                project_number="WRONG-FORMAT", name="x", address="y"
-            )
+            CreateSiteParams(project_number="WRONG-FORMAT", name="x", address="y")
 
 
 @pytest.mark.django_db
 class TestProposeUpdateSite:
     def test_proposes_name_change(self, user_site_full_perms, site_bud_007):
-        params = UpdateSiteParams(
-            project_number="BUD-2026-007", name="Nowa nazwa testowa"
-        )
+        params = UpdateSiteParams(project_number="BUD-2026-007", name="Nowa nazwa testowa")
         result = propose_update_site(params, user=user_site_full_perms)
         payload = json.loads(result)
         assert payload["proposed_action"] == "update_site"
@@ -1747,9 +1721,7 @@ def active_employee_profile(db):
 @pytest.mark.django_db
 class TestProposeTerminateEmployee:
     def test_proposes_termination_with_reason(self, user_account_perms, active_employee_profile):
-        params = TerminateEmployeeParams(
-            username="jkowalski", reason="Rezygnacja na własną prośbę"
-        )
+        params = TerminateEmployeeParams(username="jkowalski", reason="Rezygnacja na własną prośbę")
         result = propose_terminate_employee(params, user=user_account_perms)
         payload = json.loads(result)
         assert payload["proposed_action"] == "terminate_employee"
@@ -1774,9 +1746,7 @@ class TestProposeTerminateEmployee:
         EmployeeProfile.objects.get_or_create(
             user=user_account_perms, defaults={"is_active_employee": True}
         )
-        params = TerminateEmployeeParams(
-            username="account-admin", reason="Self-fire attempt"
-        )
+        params = TerminateEmployeeParams(username="account-admin", reason="Self-fire attempt")
         result = propose_terminate_employee(params, user=user_account_perms)
         payload = json.loads(result)
         assert "error" in payload
@@ -1785,9 +1755,7 @@ class TestProposeTerminateEmployee:
 
 @pytest.mark.django_db
 class TestProposeAnonymizeEmployee:
-    def test_proposes_anonymization_with_warning(
-        self, user_account_perms, active_employee_profile
-    ):
+    def test_proposes_anonymization_with_warning(self, user_account_perms, active_employee_profile):
         params = AnonymizeEmployeeParams(username="jkowalski")
         result = propose_anonymize_employee(params, user=user_account_perms)
         payload = json.loads(result)
@@ -1795,9 +1763,7 @@ class TestProposeAnonymizeEmployee:
         assert "NIEODWRACALNA" in payload["preview"]
         assert "GDPR Art.17" in payload["preview"]
 
-    def test_rejects_already_anonymized(
-        self, user_account_perms, active_employee_profile
-    ):
+    def test_rejects_already_anonymized(self, user_account_perms, active_employee_profile):
         from django.utils import timezone
 
         active_employee_profile.is_anonymized = True
@@ -1829,9 +1795,7 @@ class TestExecuteSiteAndEmployeeActions:
 
         assert ConstructionSite.objects.filter(project_number="BUD-2026-200").exists()
 
-    def test_execute_terminate_employee(
-        self, user_account_perms, active_employee_profile
-    ):
+    def test_execute_terminate_employee(self, user_account_perms, active_employee_profile):
         result = execute_confirmed_action(
             "terminate_employee",
             {
@@ -1847,9 +1811,7 @@ class TestExecuteSiteAndEmployeeActions:
         active_employee_profile.user.refresh_from_db()
         assert not active_employee_profile.user.is_active
 
-    def test_execute_anonymize_employee(
-        self, user_account_perms, active_employee_profile
-    ):
+    def test_execute_anonymize_employee(self, user_account_perms, active_employee_profile):
         result = execute_confirmed_action(
             "anonymize_employee",
             {

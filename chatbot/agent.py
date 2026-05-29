@@ -270,13 +270,19 @@ def build_agent() -> Any | None:
         używają TIME_ZONE z ``settings`` (Europe/Warsaw dla tego projektu).
         """
         from datetime import timedelta
+
         today = ctx.deps.today
         now = ctx.deps.now
         tomorrow = (today + timedelta(days=1)).isoformat()
         day_after = (today + timedelta(days=2)).isoformat()
         weekdays_pl = [
-            "poniedziałek", "wtorek", "środa", "czwartek",
-            "piątek", "sobota", "niedziela",
+            "poniedziałek",
+            "wtorek",
+            "środa",
+            "czwartek",
+            "piątek",
+            "sobota",
+            "niedziela",
         ]
         weekday = weekdays_pl[today.weekday()]
         return (
@@ -330,9 +336,7 @@ def build_agent() -> Any | None:
         — case-insensitive prefix match. Zwraca max 20 maszyn z polem
         ``truncated=true`` jeśli było więcej.
         """
-        return tools.find_available_machines(
-            start_date, end_date, machine_type
-        ).model_dump_json()
+        return tools.find_available_machines(start_date, end_date, machine_type).model_dump_json()
 
     # ------------------------------------------------------------------
     # WRITE TOOLS — Wave 14-C. Każde "propose_*" ZWRACA JSON proposal
@@ -475,9 +479,7 @@ def build_agent() -> Any | None:
         return tools.propose_update_reservation(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_report_breakdown(
-        ctx: RunContext[ChatDeps], params: ReportBreakdownParams
-    ) -> str:
+    def propose_report_breakdown(ctx: RunContext[ChatDeps], params: ReportBreakdownParams) -> str:
         """Proponuje zgłoszenie awarii rezerwacji (one-click flow).
 
         Użyj gdy user mówi "maszyna w rez. #42 padła — silnik dymi" lub
@@ -490,9 +492,7 @@ def build_agent() -> Any | None:
         return tools.propose_report_breakdown(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_create_machine(
-        ctx: RunContext[ChatDeps], params: CreateMachineParams
-    ) -> str:
+    def propose_create_machine(ctx: RunContext[ChatDeps], params: CreateMachineParams) -> str:
         """Proponuje utworzenie nowej maszyny w flocie.
 
         Użyj gdy user mówi "dodaj nową koparkę KOP-099, model CAT 320D"
@@ -504,9 +504,7 @@ def build_agent() -> Any | None:
         return tools.propose_create_machine(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_update_machine(
-        ctx: RunContext[ChatDeps], params: UpdateMachineParams
-    ) -> str:
+    def propose_update_machine(ctx: RunContext[ChatDeps], params: UpdateMachineParams) -> str:
         """Proponuje edycję podstawowych pól maszyny (nazwa/lokalizacja/notatki).
 
         Użyj gdy user mówi "zmień nazwę KOP-001 na 'Koparka stara'" lub
@@ -519,9 +517,7 @@ def build_agent() -> Any | None:
         return tools.propose_update_machine(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_return_machine(
-        ctx: RunContext[ChatDeps], params: ReturnMachineParams
-    ) -> str:
+    def propose_return_machine(ctx: RunContext[ChatDeps], params: ReturnMachineParams) -> str:
         """Proponuje zwrot maszyny z budowy lub serwisu do magazynu.
 
         Użyj gdy user mówi "wróciła KOP-003 z budowy" lub "klient zwrócił
@@ -546,9 +542,7 @@ def build_agent() -> Any | None:
         return tools.propose_close_repair_machine(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_retire_machine(
-        ctx: RunContext[ChatDeps], params: RetireMachineParams
-    ) -> str:
+    def propose_retire_machine(ctx: RunContext[ChatDeps], params: RetireMachineParams) -> str:
         """Proponuje wycofanie maszyny z floty (soft delete — status Wycofana).
 
         Użyj gdy user mówi "wycofujemy KOP-003 — kapitał za drogo naprawić"
@@ -560,9 +554,7 @@ def build_agent() -> Any | None:
         return tools.propose_retire_machine(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_create_site(
-        ctx: RunContext[ChatDeps], params: CreateSiteParams
-    ) -> str:
+    def propose_create_site(ctx: RunContext[ChatDeps], params: CreateSiteParams) -> str:
         """Proponuje utworzenie nowej budowy (BUD-RRRR-NNN, nazwa, adres).
 
         Użyj gdy user mówi "dodaj budowę BUD-2026-099, magazyn Lubella,
@@ -574,9 +566,7 @@ def build_agent() -> Any | None:
         return tools.propose_create_site(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_update_site(
-        ctx: RunContext[ChatDeps], params: UpdateSiteParams
-    ) -> str:
+    def propose_update_site(ctx: RunContext[ChatDeps], params: UpdateSiteParams) -> str:
         """Proponuje edycję istniejącej budowy (nazwa/adres/klient/miasto/notes).
 
         Użyj gdy user mówi "zmień klienta na BUD-2026-007 na 'Nowy klient SA'"
@@ -588,9 +578,7 @@ def build_agent() -> Any | None:
         return tools.propose_update_site(params, user=ctx.deps.user)
 
     @agent.tool
-    def propose_delete_site(
-        ctx: RunContext[ChatDeps], params: DeleteSiteParams
-    ) -> str:
+    def propose_delete_site(ctx: RunContext[ChatDeps], params: DeleteSiteParams) -> str:
         """Proponuje usunięcie budowy (rejected jeśli ma aktywne rezerwacje).
 
         Użyj gdy user mówi "usuń budowę BUD-2026-099" lub "skasuj projekt
