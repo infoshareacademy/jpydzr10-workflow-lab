@@ -18,6 +18,7 @@ from django.contrib.auth.models import Permission
 
 from chatbot import tools as chatbot_tools
 from chatbot.tools import (
+    AnonymizeEmployeeParams,
     CancelReservationParams,
     ChangeOperatorParams,
     CloseRepairMachineParams,
@@ -26,28 +27,37 @@ from chatbot.tools import (
     CreateMachineParams,
     CreateReservationParams,
     CreateServiceRecordParams,
+    CreateSiteParams,
+    DeleteSiteParams,
     ReportBreakdownParams,
     RetireMachineParams,
     ReturnMachineParams,
     SetMachineToServiceParams,
     SwapMachineParams,
+    TerminateEmployeeParams,
     UpdateMachineInspectionDateParams,
     UpdateMachineParams,
     UpdateReservationParams,
     UpdateServiceRecordParams,
+    UpdateSiteParams,
     execute_confirmed_action,
+    propose_anonymize_employee,
     propose_close_repair_machine,
     propose_complete_reservation,
     propose_confirm_reservation,
     propose_create_machine,
     propose_create_service_record,
+    propose_create_site,
+    propose_delete_site,
     propose_report_breakdown,
     propose_retire_machine,
     propose_return_machine,
+    propose_terminate_employee,
     propose_update_machine,
     propose_update_machine_inspection_date,
     propose_update_reservation,
     propose_update_service_record,
+    propose_update_site,
 )
 from machines.models import Machine
 from reservations.models import ConstructionSite, Reservation
@@ -1595,3 +1605,263 @@ class TestExecuteMachineActions:
         koparka_001.refresh_from_db()
         assert koparka_001.status == Machine.Status.WYCOFANA
         assert "Stara" in koparka_001.notes
+
+
+# =============================================================================
+# Faza D — construction sites (create / update / delete)
+# =============================================================================
+
+
+@pytest.fixture
+def user_site_full_perms(db):
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="site-full-tester", password="x")
+    for app_label, codename in [
+        ("reservations", "add_constructionsite"),
+        ("reservations", "change_constructionsite"),
+        ("reservations", "delete_constructionsite"),
+        ("reservations", "view_constructionsite"),
+    ]:
+        perm = Permission.objects.get(content_type__app_label=app_label, codename=codename)
+        u.user_permissions.add(perm)
+    return user_model.objects.get(pk=u.pk)
+
+
+@pytest.mark.django_db
+class TestProposeCreateSite:
+    def test_proposes_new_site(self, user_site_full_perms):
+        params = CreateSiteParams(
+            project_number="BUD-2026-099",
+            name="Test budowy",
+            address="ul. Testowa 1, Warszawa",
+            client_name="TestCorp",
+        )
+        result = propose_create_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "create_site"
+        assert "BUD-2026-099" in payload["preview"]
+        assert "TestCorp" in payload["preview"]
+
+    def test_rejects_duplicate_project_number(self, user_site_full_perms, site_bud_007):
+        params = CreateSiteParams(
+            project_number="BUD-2026-007",
+            name="Duplikat",
+            address="ul. X 1",
+        )
+        result = propose_create_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "juz istnieje" in payload["error"]
+
+    def test_rejects_invalid_project_number_format(self):
+        from pydantic import ValidationError as PydanticValidationError
+
+        with pytest.raises(PydanticValidationError):
+            CreateSiteParams(
+                project_number="WRONG-FORMAT", name="x", address="y"
+            )
+
+
+@pytest.mark.django_db
+class TestProposeUpdateSite:
+    def test_proposes_name_change(self, user_site_full_perms, site_bud_007):
+        params = UpdateSiteParams(
+            project_number="BUD-2026-007", name="Nowa nazwa testowa"
+        )
+        result = propose_update_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "update_site"
+        assert "Nowa nazwa testowa" in payload["preview"]
+
+    def test_rejects_when_no_changes(self, user_site_full_perms, site_bud_007):
+        params = UpdateSiteParams(project_number="BUD-2026-007")
+        result = propose_update_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+
+
+@pytest.mark.django_db
+class TestProposeDeleteSite:
+    def test_proposes_delete_for_empty_site(self, user_site_full_perms, site_bud_007):
+        params = DeleteSiteParams(project_number="BUD-2026-007")
+        result = propose_delete_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "delete_site"
+        assert "nieodwracalna" in payload["preview"].lower()
+
+    def test_rejects_site_with_active_reservations(
+        self, user_site_full_perms, site_bud_007, reservation_pending
+    ):
+        # Powiąż reservation z budową, żeby site miał has_active_reservations=True.
+        reservation_pending.site = site_bud_007
+        reservation_pending.save(update_fields=["site"])
+        params = DeleteSiteParams(project_number="BUD-2026-007")
+        result = propose_delete_site(params, user=user_site_full_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "aktywnych rezerwacji" in payload["error"]
+
+
+# =============================================================================
+# Faza E — employees (terminate / anonymize — GDPR)
+# =============================================================================
+
+
+@pytest.fixture
+def user_account_perms(db):
+    user_model = get_user_model()
+    u = user_model.objects.create_user(
+        username="account-admin", password="x", first_name="Admin", last_name="HR"
+    )
+    perm = Permission.objects.get(
+        content_type__app_label="accounts", codename="change_employeeprofile"
+    )
+    u.user_permissions.add(perm)
+    return user_model.objects.get(pk=u.pk)
+
+
+@pytest.fixture
+def active_employee_profile(db):
+    """Aktywny pracownik z EmployeeProfile + user.is_active=True."""
+    from accounts.models import EmployeeProfile
+
+    user_model = get_user_model()
+    employee_user = user_model.objects.create_user(
+        username="jkowalski",
+        password="x",
+        first_name="Jan",
+        last_name="Kowalski",
+        email="jan@example.com",
+        is_active=True,
+    )
+    profile, _ = EmployeeProfile.objects.get_or_create(
+        user=employee_user,
+        defaults={"is_active_employee": True},
+    )
+    if not profile.is_active_employee:
+        profile.is_active_employee = True
+        profile.save()
+    return profile
+
+
+@pytest.mark.django_db
+class TestProposeTerminateEmployee:
+    def test_proposes_termination_with_reason(self, user_account_perms, active_employee_profile):
+        params = TerminateEmployeeParams(
+            username="jkowalski", reason="Rezygnacja na własną prośbę"
+        )
+        result = propose_terminate_employee(params, user=user_account_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "terminate_employee"
+        assert "Jan Kowalski" in payload["preview"]
+        assert "Rezygnacja" in payload["preview"]
+
+    def test_rejects_nonexistent_username(self, user_account_perms):
+        params = TerminateEmployeeParams(username="ghost-user", reason="Test")
+        result = propose_terminate_employee(params, user=user_account_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+
+    def test_rejects_short_reason_at_pydantic_level(self):
+        from pydantic import ValidationError as PydanticValidationError
+
+        with pytest.raises(PydanticValidationError):
+            TerminateEmployeeParams(username="x", reason="ab")  # < 3 chars
+
+    def test_rejects_self_termination(self, user_account_perms):
+        from accounts.models import EmployeeProfile
+
+        EmployeeProfile.objects.get_or_create(
+            user=user_account_perms, defaults={"is_active_employee": True}
+        )
+        params = TerminateEmployeeParams(
+            username="account-admin", reason="Self-fire attempt"
+        )
+        result = propose_terminate_employee(params, user=user_account_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "samego siebie" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestProposeAnonymizeEmployee:
+    def test_proposes_anonymization_with_warning(
+        self, user_account_perms, active_employee_profile
+    ):
+        params = AnonymizeEmployeeParams(username="jkowalski")
+        result = propose_anonymize_employee(params, user=user_account_perms)
+        payload = json.loads(result)
+        assert payload["proposed_action"] == "anonymize_employee"
+        assert "NIEODWRACALNA" in payload["preview"]
+        assert "GDPR Art.17" in payload["preview"]
+
+    def test_rejects_already_anonymized(
+        self, user_account_perms, active_employee_profile
+    ):
+        from django.utils import timezone
+
+        active_employee_profile.is_anonymized = True
+        active_employee_profile.anonymized_at = timezone.now()
+        active_employee_profile.save()
+        params = AnonymizeEmployeeParams(username="jkowalski")
+        result = propose_anonymize_employee(params, user=user_account_perms)
+        payload = json.loads(result)
+        assert "error" in payload
+        assert "już zanonimizowany" in payload["error"]
+
+
+@pytest.mark.django_db
+class TestExecuteSiteAndEmployeeActions:
+    def test_execute_create_site(self, user_site_full_perms):
+        result = execute_confirmed_action(
+            "create_site",
+            {
+                "project_number": "BUD-2026-200",
+                "name": "Exec test budowy",
+                "address": "ul. Exec 1",
+                "client_name": "ExecCorp",
+                "city": "Lublin",
+            },
+            user=user_site_full_perms,
+        )
+        assert "BUD-2026-200" in result
+        from reservations.models import ConstructionSite
+
+        assert ConstructionSite.objects.filter(project_number="BUD-2026-200").exists()
+
+    def test_execute_terminate_employee(
+        self, user_account_perms, active_employee_profile
+    ):
+        result = execute_confirmed_action(
+            "terminate_employee",
+            {
+                "user_id": active_employee_profile.user.pk,
+                "username": "jkowalski",
+                "reason": "Test termination",
+            },
+            user=user_account_perms,
+        )
+        assert "zakończone" in result
+        active_employee_profile.refresh_from_db()
+        assert not active_employee_profile.is_active_employee
+        active_employee_profile.user.refresh_from_db()
+        assert not active_employee_profile.user.is_active
+
+    def test_execute_anonymize_employee(
+        self, user_account_perms, active_employee_profile
+    ):
+        result = execute_confirmed_action(
+            "anonymize_employee",
+            {
+                "user_id": active_employee_profile.user.pk,
+                "username": "jkowalski",
+            },
+            user=user_account_perms,
+        )
+        assert "zanonimizowany" in result
+        active_employee_profile.refresh_from_db()
+        assert active_employee_profile.is_anonymized
+        active_employee_profile.user.refresh_from_db()
+        # PII powinno być zastąpione hashem anon-XXXX.
+        assert active_employee_profile.user.username.startswith("anon-")
+        assert active_employee_profile.user.first_name == "Anonimowy"

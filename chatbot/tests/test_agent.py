@@ -95,6 +95,8 @@ def test_system_prompt_lists_all_write_tools():
     Faza A (2026-05-29): +3 dla serwisu (create/update record, inspection date).
     Faza B (2026-05-29): +4 dla rezerwacji extras (confirm/complete/update/breakdown).
     Faza C (2026-05-29): +5 dla machine CRUD (create/update/return/close_repair/retire).
+    Faza D (2026-05-29): +3 dla construction sites (create/update/delete).
+    Faza E (2026-05-29): +2 dla accounts (terminate/anonymize — GDPR Art.17).
     """
     p = agent_module.SYSTEM_PROMPT
     for tool_name in (
@@ -118,6 +120,13 @@ def test_system_prompt_lists_all_write_tools():
         # Serwis
         "propose_create_service_record",
         "propose_update_service_record",
+        # Budowy
+        "propose_create_site",
+        "propose_update_site",
+        "propose_delete_site",
+        # Pracownicy
+        "propose_terminate_employee",
+        "propose_anonymize_employee",
     ):
         assert tool_name in p, f"System prompt nie zawiera write tool: {tool_name}"
 

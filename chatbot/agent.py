@@ -49,6 +49,7 @@ from django.contrib.auth.models import User
 # ``NameError: name 'CreateReservationParams' is not defined`` przy
 # rejestracji ``@agent.tool``.
 from chatbot.tools import (
+    AnonymizeEmployeeParams,
     CancelReservationParams,
     ChangeOperatorParams,
     CloseRepairMachineParams,
@@ -57,15 +58,19 @@ from chatbot.tools import (
     CreateMachineParams,
     CreateReservationParams,
     CreateServiceRecordParams,
+    CreateSiteParams,
+    DeleteSiteParams,
     ReportBreakdownParams,
     RetireMachineParams,
     ReturnMachineParams,
     SetMachineToServiceParams,
     SwapMachineParams,
+    TerminateEmployeeParams,
     UpdateMachineInspectionDateParams,
     UpdateMachineParams,
     UpdateReservationParams,
     UpdateServiceRecordParams,
+    UpdateSiteParams,
 )
 
 logger = logging.getLogger("chatbot")
@@ -150,6 +155,20 @@ Zasady (BARDZO WAŻNE):
        - `propose_update_machine_inspection_date` — przesunięcie daty
          następnego przeglądu BEZ wpisu serwisowego (np. po przeglądzie
          u zewnętrznego serwisanta off-system).
+
+   Budowy (construction sites):
+       - `propose_create_site` — nowa budowa (BUD-RRRR-NNN + nazwa + adres),
+       - `propose_update_site` — edycja nazwy/adresu/klienta/miasta/notes,
+       - `propose_delete_site` — usunięcie budowy (reject jeśli ma aktywne
+         rezerwacje — najpierw zamknij rezerwacje).
+
+   Pracownicy (accounts — UWAŻAJ z GDPR):
+       - `propose_terminate_employee` — koniec zatrudnienia (username +
+         powód min 3 znaki). Atomic: deactivate konto, revoke RBAC,
+         kasacja sesji.
+       - `propose_anonymize_employee` — GDPR Art.17 (right to erasure).
+         **NIEODWRACALNE** — wymazuje PII (imię/nazwisko/email/telefon).
+         UI pokaże duży warning.
 
    Serwis (przeglądy i naprawy):
        - `propose_create_service_record` — wpis serwisowy (przegląd lub
@@ -539,6 +558,80 @@ def build_agent() -> Any | None:
         Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
         """
         return tools.propose_retire_machine(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_create_site(
+        ctx: RunContext[ChatDeps], params: CreateSiteParams
+    ) -> str:
+        """Proponuje utworzenie nowej budowy (BUD-RRRR-NNN, nazwa, adres).
+
+        Użyj gdy user mówi "dodaj budowę BUD-2026-099, magazyn Lubella,
+        ul. Przemysłowa 5 Lublin". Project_number musi mieć format
+        BUD-RRRR-NNN i być unikalny.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_create_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_update_site(
+        ctx: RunContext[ChatDeps], params: UpdateSiteParams
+    ) -> str:
+        """Proponuje edycję istniejącej budowy (nazwa/adres/klient/miasto/notes).
+
+        Użyj gdy user mówi "zmień klienta na BUD-2026-007 na 'Nowy klient SA'"
+        lub "popraw adres BUD-2026-001". project_number identifikuje budowę,
+        sam jest immutable. None oznacza "bez zmiany".
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_update_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_delete_site(
+        ctx: RunContext[ChatDeps], params: DeleteSiteParams
+    ) -> str:
+        """Proponuje usunięcie budowy (rejected jeśli ma aktywne rezerwacje).
+
+        Użyj gdy user mówi "usuń budowę BUD-2026-099" lub "skasuj projekt
+        BUD-2025-013". Budowa z aktywnymi rezerwacjami zostanie odrzucona
+        — najpierw trzeba zamknąć/anulować rezerwacje.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_delete_site(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_terminate_employee(
+        ctx: RunContext[ChatDeps], params: TerminateEmployeeParams
+    ) -> str:
+        """Proponuje zakończenie zatrudnienia pracownika.
+
+        Użyj gdy user mówi "zwolnij pracownika jkowalski, powód: rezygnacja"
+        lub "zakończ zatrudnienie tnowak z dniem dzisiejszym, powód: emerytura".
+        Username + reason (min 3 znaki) wymagane. Atomic: deactivate konto,
+        revoke grupy, kasacja aktywnych sesji.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        """
+        return tools.propose_terminate_employee(params, user=ctx.deps.user)
+
+    @agent.tool
+    def propose_anonymize_employee(
+        ctx: RunContext[ChatDeps], params: AnonymizeEmployeeParams
+    ) -> str:
+        """Proponuje anonimizację pracownika (GDPR Art.17 — NIEODWRACALNE).
+
+        Użyj gdy user mówi "zanonimizuj jkowalski zgodnie z GDPR" lub
+        "wykonaj prawo do usunięcia danych dla tnowak". PII (imię/nazwisko/
+        email/telefon/username) zostaną wymazane bezpowrotnie. Konto user
+        zostanie deactivated. Historia rezerwacji/serwisu pozostaje dla
+        FK integrity.
+
+        Zwraca JSON z preview — NIE wykonuje od razu, czeka na potwierdzenie.
+        Sebastian: ta operacja JEST nieodwracalna — UI pokaże ostrzeżenie.
+        """
+        return tools.propose_anonymize_employee(params, user=ctx.deps.user)
 
     return agent
 

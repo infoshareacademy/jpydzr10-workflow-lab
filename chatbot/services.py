@@ -105,6 +105,13 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
         "propose_return_machine",
         "propose_close_repair_machine",
         "propose_retire_machine",
+        # Faza D — construction sites CRUD.
+        "propose_create_site",
+        "propose_update_site",
+        "propose_delete_site",
+        # Faza E — accounts (GDPR-careful).
+        "propose_terminate_employee",
+        "propose_anonymize_employee",
     }
 )
 
@@ -319,6 +326,29 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
         reason = params.get("reason", "")
         reason_str = f" (powód: {reason[:60]})" if reason else ""
         return f"Proponowana akcja: wycofanie maszyny {uid} z floty{reason_str}."
+    if action == "create_site":
+        pn = params.get("project_number", "?")
+        name = params.get("name", "?")
+        return f"Proponowana akcja: utworzenie budowy {pn} ({name})."
+    if action == "update_site":
+        pn = params.get("project_number", "?")
+        return f"Proponowana akcja: edycja budowy {pn}."
+    if action == "delete_site":
+        pn = params.get("project_number", "?")
+        return f"Proponowana akcja: usunięcie budowy {pn}."
+    if action == "terminate_employee":
+        username = params.get("username", "?")
+        reason = params.get("reason", "")[:80]
+        return (
+            f"Proponowana akcja: zakończenie zatrudnienia '{username}' "
+            f"(powód: {reason})."
+        )
+    if action == "anonymize_employee":
+        username = params.get("username", "?")
+        return (
+            f"Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR "
+            f"pracownika '{username}'."
+        )
     return f"Proponowana akcja: {action}."
 
 

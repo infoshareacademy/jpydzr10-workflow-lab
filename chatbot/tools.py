@@ -538,6 +538,14 @@ WRITE_ACTION_PERMS: dict[str, tuple[str, ...]] = {
     "return_machine": ("machines.change_machine",),
     "close_repair_machine": ("machines.change_machine",),
     "retire_machine": ("machines.change_machine",),
+    # Faza D — construction sites CRUD.
+    "create_site": ("reservations.add_constructionsite",),
+    "update_site": ("reservations.change_constructionsite",),
+    "delete_site": ("reservations.delete_constructionsite",),
+    # Faza E — accounts (employees): terminate (deactivate + revoke RBAC)
+    # i anonymize (GDPR Art.17 — nieodwracalne wymazanie PII).
+    "terminate_employee": ("accounts.change_employeeprofile",),
+    "anonymize_employee": ("accounts.change_employeeprofile",),
 }
 
 
@@ -1017,6 +1025,125 @@ class RetireMachineParams(BaseModel):
         default="",
         max_length=_NOTES_MAX,
         description="Powod wycofania (opcjonalne, idzie do notes jako [WYCOFANA] <reason>)",
+    )
+
+
+# ------------------------------------------------------------ faza D params
+
+
+_SITE_NAME_MAX = 200
+_SITE_CITY_MAX = 100
+
+
+class CreateSiteParams(BaseModel):
+    """Parametry :func:`propose_create_site` (nowa budowa)."""
+
+    project_number: str = Field(
+        max_length=_PROJECT_NUMBER_MAX,
+        pattern=_PROJECT_NUMBER_PATTERN,
+        description="Numer projektu BUD-RRRR-NNN (np. BUD-2026-099) — unikalny",
+    )
+    name: str = Field(
+        max_length=_SITE_NAME_MAX,
+        description="Nazwa budowy (np. 'Magazyn Lubella')",
+    )
+    address: str = Field(
+        max_length=_ADDRESS_MAX,
+        description="Adres budowy (np. 'ul. Przemysłowa 5, Lublin')",
+    )
+    client_name: str = Field(
+        default="",
+        max_length=_SITE_NAME_MAX,
+        description="Nazwa klienta (np. 'Lubella S.A.'), opcjonalnie",
+    )
+    city: str = Field(
+        default="",
+        max_length=_SITE_CITY_MAX,
+        description="Miasto, opcjonalnie",
+    )
+
+
+class UpdateSiteParams(BaseModel):
+    """Parametry :func:`propose_update_site` (edycja istniejacej budowy)."""
+
+    project_number: str = Field(
+        max_length=_PROJECT_NUMBER_MAX,
+        pattern=_PROJECT_NUMBER_PATTERN,
+        description="Numer projektu BUD-RRRR-NNN istniejacej budowy",
+    )
+    name: str | None = Field(
+        default=None,
+        max_length=_SITE_NAME_MAX,
+        description="Nowa nazwa (None = bez zmiany)",
+    )
+    address: str | None = Field(
+        default=None,
+        max_length=_ADDRESS_MAX,
+        description="Nowy adres (None = bez zmiany)",
+    )
+    client_name: str | None = Field(
+        default=None,
+        max_length=_SITE_NAME_MAX,
+        description="Nowy klient (None = bez zmiany)",
+    )
+    city: str | None = Field(
+        default=None,
+        max_length=_SITE_CITY_MAX,
+        description="Nowe miasto (None = bez zmiany)",
+    )
+    notes: str | None = Field(
+        default=None,
+        max_length=_NOTES_MAX,
+        description="Nowe notatki (None = bez zmiany)",
+    )
+
+
+class DeleteSiteParams(BaseModel):
+    """Parametry :func:`propose_delete_site` (raise jesli ma aktywne rezerwacje)."""
+
+    project_number: str = Field(
+        max_length=_PROJECT_NUMBER_MAX,
+        pattern=_PROJECT_NUMBER_PATTERN,
+        description="Numer projektu BUD-RRRR-NNN budowy do usuniecia",
+    )
+
+
+# ------------------------------------------------------------ faza E params
+
+
+_USERNAME_MAX = 150  # Django default User.username
+
+
+class TerminateEmployeeParams(BaseModel):
+    """Parametry :func:`propose_terminate_employee`.
+
+    Identyfikator po username (preferowane bo czytelne dla operatora) lub
+    user_id (fallback). Reason wymagany dla audit trail.
+    """
+
+    username: str = Field(
+        max_length=_USERNAME_MAX,
+        description="Username pracownika (np. 'jkowalski')",
+    )
+    reason: str = Field(
+        min_length=3,
+        max_length=_NOTES_MAX,
+        description="Powod zakonczenia zatrudnienia (min 3 znaki, wymagany dla audit)",
+    )
+
+
+class AnonymizeEmployeeParams(BaseModel):
+    """Parametry :func:`propose_anonymize_employee` (GDPR Art.17).
+
+    NIEODWRACALNE — PII (imię, nazwisko, email, telefon) zostana wymazane.
+    User account pozostaje (dla FK integrity w rezerwacjach), ale konto jest
+    deactivated. Nie wymaga reason (GDPR Art.17 to prawo usera, nie wymaga
+    uzasadnienia ze strony admina).
+    """
+
+    username: str = Field(
+        max_length=_USERNAME_MAX,
+        description="Username pracownika do anonimizacji (NIEODWRACALNE)",
     )
 
 
@@ -1779,6 +1906,16 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
             return _execute_close_repair_machine(params)
         if action == "retire_machine":
             return _execute_retire_machine(params)
+        if action == "create_site":
+            return _execute_create_site(params)
+        if action == "update_site":
+            return _execute_update_site(params)
+        if action == "delete_site":
+            return _execute_delete_site(params)
+        if action == "terminate_employee":
+            return _execute_terminate_employee(params, user)
+        if action == "anonymize_employee":
+            return _execute_anonymize_employee(params, user)
     except ValidationError as exc:
         # Polski string z listą message'y (bez wycieku class name / tracebacka).
         messages = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
@@ -2093,6 +2230,75 @@ def _execute_close_repair_machine(params: dict) -> str:
     return f"Naprawa maszyny {machine.uid} zakończona, status: W magazynie."
 
 
+def _execute_create_site(params: dict) -> str:
+    from reservations.services import create_site
+
+    site = create_site(
+        project_number=params["project_number"],
+        name=params["name"],
+        address=params["address"],
+        client_name=params.get("client_name", ""),
+        city=params.get("city", ""),
+    )
+    return f"Budowa {site.project_number} ({site.name}) utworzona."
+
+
+def _execute_update_site(params: dict) -> str:
+    from reservations.models import ConstructionSite
+    from reservations.services import update_site
+
+    site_id = params.get("site_id")
+    project_number = params.get("project_number")
+    if site_id:
+        site = ConstructionSite.objects.get(pk=site_id)
+    else:
+        site = ConstructionSite.objects.get(project_number=project_number)
+
+    changes: dict = {}
+    for field in ("name", "address", "client_name", "city", "notes"):
+        if params.get(field) is not None:
+            changes[field] = params[field]
+    update_site(site, **changes)
+    return f"Budowa {site.project_number} zaktualizowana ({', '.join(changes.keys())})."
+
+
+def _execute_delete_site(params: dict) -> str:
+    from reservations.models import ConstructionSite
+    from reservations.services import delete_site
+
+    site_id = params.get("site_id")
+    project_number = params.get("project_number")
+    if site_id:
+        site = ConstructionSite.objects.get(pk=site_id)
+    else:
+        site = ConstructionSite.objects.get(project_number=project_number)
+    project = site.project_number
+    delete_site(site)
+    return f"Budowa {project} usunięta."
+
+
+def _execute_terminate_employee(params: dict, user) -> str:
+    from accounts.models import EmployeeProfile
+    from accounts.services import terminate_employee
+
+    profile = EmployeeProfile.objects.select_related("user").get(
+        user__username=params["username"]
+    )
+    terminate_employee(profile, reason=params.get("reason", ""), actor=user)
+    return f"Zatrudnienie pracownika '{params['username']}' zakończone."
+
+
+def _execute_anonymize_employee(params: dict, user) -> str:
+    from accounts.models import EmployeeProfile
+    from accounts.services import anonymize_employee
+
+    profile = EmployeeProfile.objects.select_related("user").get(
+        user__username=params["username"]
+    )
+    anonymize_employee(profile, actor=user)
+    return f"Pracownik '{params['username']}' zanonimizowany (GDPR Art.17)."
+
+
 def _execute_retire_machine(params: dict) -> str:
     from machines.models import Machine
     from machines.services import retire_machine
@@ -2287,6 +2493,232 @@ def propose_close_repair_machine(params: CloseRepairMachineParams, user) -> str:
     return _proposal("close_repair_machine", payload, preview)
 
 
+def propose_create_site(params: CreateSiteParams, user) -> str:
+    """Proponuje utworzenie nowej budowy (project_number unikalny BUD-RRRR-NNN)."""
+    from reservations.models import ConstructionSite
+
+    auth_err = _check_user_can(user, "create_site")
+    if auth_err:
+        return auth_err
+
+    if ConstructionSite.objects.filter(project_number=params.project_number).exists():
+        return _error_json(
+            f"Budowa o numerze '{params.project_number}' juz istnieje."
+        )
+
+    payload = {
+        "project_number": params.project_number,
+        "name": params.name,
+        "address": params.address,
+        "client_name": params.client_name,
+        "city": params.city,
+    }
+    preview_lines = [
+        f"Utworzę nową budowę:",
+        f"  • numer projektu: {params.project_number}",
+        f"  • nazwa: {params.name}",
+        f"  • adres: {params.address}",
+    ]
+    if params.client_name:
+        preview_lines.append(f"  • klient: {params.client_name}")
+    if params.city:
+        preview_lines.append(f"  • miasto: {params.city}")
+    preview_lines.append("Status startowy: Aktywna.")
+    preview = "\n".join(preview_lines)
+
+    _audit_logger.info(
+        "CHATBOT PROPOSE create_site user=%s project=%s",
+        getattr(user, "pk", None),
+        params.project_number,
+    )
+    return _proposal("create_site", payload, preview)
+
+
+def propose_update_site(params: UpdateSiteParams, user) -> str:
+    """Proponuje edycję istniejącej budowy."""
+    from reservations.models import ConstructionSite
+
+    auth_err = _check_user_can(user, "update_site")
+    if auth_err:
+        return auth_err
+
+    try:
+        site = ConstructionSite.objects.get(project_number=params.project_number)
+    except ConstructionSite.DoesNotExist:
+        return _error_json(f"Budowa o numerze '{params.project_number}' nie istnieje.")
+
+    changes: list[str] = []
+    if params.name is not None and params.name != site.name:
+        changes.append(f"nazwa: '{site.name}' → '{params.name}'")
+    if params.address is not None and params.address != site.address:
+        changes.append(f"adres: '{site.address}' → '{params.address}'")
+    if params.client_name is not None and params.client_name != site.client_name:
+        changes.append(f"klient: '{site.client_name}' → '{params.client_name}'")
+    if params.city is not None and params.city != site.city:
+        changes.append(f"miasto: '{site.city}' → '{params.city}'")
+    if params.notes is not None and params.notes != site.notes:
+        changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
+
+    if not changes:
+        return _error_json(
+            f"Brak zmian do wykonania na budowie {site.project_number}."
+        )
+
+    payload = {
+        "site_id": site.pk,
+        "project_number": site.project_number,
+        "name": params.name,
+        "address": params.address,
+        "client_name": params.client_name,
+        "city": params.city,
+        "notes": params.notes,
+    }
+    preview = (
+        f"Zaktualizuję budowę {site.project_number}:\n  • " + "\n  • ".join(changes)
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE update_site user=%s project=%s changes=%s",
+        getattr(user, "pk", None),
+        site.project_number,
+        len(changes),
+    )
+    return _proposal("update_site", payload, preview)
+
+
+def propose_delete_site(params: DeleteSiteParams, user) -> str:
+    """Proponuje usunięcie budowy (raise jeśli ma aktywne rezerwacje)."""
+    from reservations.models import ConstructionSite
+
+    auth_err = _check_user_can(user, "delete_site")
+    if auth_err:
+        return auth_err
+
+    try:
+        site = ConstructionSite.objects.get(project_number=params.project_number)
+    except ConstructionSite.DoesNotExist:
+        return _error_json(f"Budowa o numerze '{params.project_number}' nie istnieje.")
+
+    if site.has_active_reservations:
+        return _error_json(
+            f"Nie można usunąć budowy {site.project_number}: ma "
+            f"{site.active_reservation_count} aktywnych rezerwacji."
+        )
+
+    payload = {"site_id": site.pk, "project_number": site.project_number}
+    preview = (
+        f"Usunę budowę {site.project_number} ({site.name}).\n"
+        f"⚠ Operacja nieodwracalna. Wszystkie zamknięte rezerwacje "
+        f"powiązane z tą budową zostaną osierocone (FK SET NULL)."
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE delete_site user=%s project=%s",
+        getattr(user, "pk", None),
+        site.project_number,
+    )
+    return _proposal("delete_site", payload, preview)
+
+
+# ------------------------------------------------------------ faza E propose
+
+
+def _resolve_employee_profile(username: str):
+    """Resolve username → EmployeeProfile lub raise tuple z error JSON."""
+    from accounts.models import EmployeeProfile
+
+    try:
+        return EmployeeProfile.objects.select_related("user").get(user__username=username)
+    except EmployeeProfile.DoesNotExist:
+        return None
+
+
+def propose_terminate_employee(params: TerminateEmployeeParams, user) -> str:
+    """Proponuje zakończenie zatrudnienia pracownika (deactivate + revoke RBAC)."""
+    auth_err = _check_user_can(user, "terminate_employee")
+    if auth_err:
+        return auth_err
+
+    profile = _resolve_employee_profile(params.username)
+    if profile is None:
+        return _error_json(f"Pracownik o username '{params.username}' nie istnieje.")
+
+    if profile.is_anonymized:
+        return _error_json(
+            f"Pracownik '{params.username}' jest już zanonimizowany — nie można zwalniać."
+        )
+    if not profile.is_active_employee:
+        return _error_json(
+            f"Pracownik '{params.username}' już jest zwolniony "
+            f"(data zakończenia: {profile.termination_date or 'nieznana'})."
+        )
+
+    # Self-termination protection — admin nie może zwolnić siebie.
+    if profile.user.pk == getattr(user, "pk", None):
+        return _error_json("Nie można zakończyć zatrudnienia samego siebie.")
+
+    payload = {
+        "user_id": profile.user.pk,
+        "username": params.username,
+        "reason": params.reason,
+    }
+    full_name = profile.user.get_full_name() or params.username
+    preview = (
+        f"Zakończę zatrudnienie pracownika '{full_name}' ({params.username}):\n"
+        f"  • powód: {params.reason}\n"
+        f"  • konto zostanie deaktywowane (blokada login)\n"
+        f"  • członkostwa w grupach (RBAC) zostaną usunięte\n"
+        f"  • aktywne sesje pracownika zostaną zamknięte"
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE terminate_employee actor=%s target_user=%s reason_len=%s",
+        getattr(user, "pk", None),
+        profile.user.pk,
+        len(params.reason),
+    )
+    return _proposal("terminate_employee", payload, preview)
+
+
+def propose_anonymize_employee(params: AnonymizeEmployeeParams, user) -> str:
+    """Proponuje anonimizację pracownika (GDPR Art.17 — NIEODWRACALNE wymazanie PII)."""
+    auth_err = _check_user_can(user, "anonymize_employee")
+    if auth_err:
+        return auth_err
+
+    profile = _resolve_employee_profile(params.username)
+    if profile is None:
+        return _error_json(f"Pracownik o username '{params.username}' nie istnieje.")
+
+    if profile.is_anonymized:
+        return _error_json(
+            f"Pracownik '{params.username}' jest już zanonimizowany "
+            f"(data: {profile.anonymized_at})."
+        )
+
+    # Self-anonymization protection.
+    if profile.user.pk == getattr(user, "pk", None):
+        return _error_json("Nie można zanonimizować samego siebie.")
+
+    payload = {
+        "user_id": profile.user.pk,
+        "username": params.username,
+    }
+    full_name = profile.user.get_full_name() or params.username
+    preview = (
+        f"⚠ NIEODWRACALNA OPERACJA GDPR Art.17 ⚠\n\n"
+        f"Zanonimizuję pracownika '{full_name}' ({params.username}):\n"
+        f"  • imię/nazwisko/email/username → zastąpione hashem 'anon-XXXX...'\n"
+        f"  • telefon → wyczyszczony\n"
+        f"  • konto zostanie deaktywowane (jeśli nie było)\n"
+        f"  • historia rezerwacji/serwisu pozostanie (FK integrity)\n\n"
+        f"Po wykonaniu PII tego pracownika NIE da się odtworzyć."
+    )
+    _audit_logger.info(
+        "CHATBOT PROPOSE anonymize_employee actor=%s target_user=%s",
+        getattr(user, "pk", None),
+        profile.user.pk,
+    )
+    return _proposal("anonymize_employee", payload, preview)
+
+
 def propose_retire_machine(params: RetireMachineParams, user) -> str:
     """Proponuje wycofanie maszyny z floty (soft delete — status WYCOFANA)."""
     from machines.models import Machine
@@ -2359,4 +2791,11 @@ ALL_TOOLS: dict[str, Any] = {
     "propose_return_machine": propose_return_machine,
     "propose_close_repair_machine": propose_close_repair_machine,
     "propose_retire_machine": propose_retire_machine,
+    # Faza D — construction sites CRUD.
+    "propose_create_site": propose_create_site,
+    "propose_update_site": propose_update_site,
+    "propose_delete_site": propose_delete_site,
+    # Faza E — accounts (GDPR-careful).
+    "propose_terminate_employee": propose_terminate_employee,
+    "propose_anonymize_employee": propose_anonymize_employee,
 }
