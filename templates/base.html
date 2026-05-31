@@ -571,6 +571,22 @@
     {# HTMX 2.0.9 — server-driven HTML interactivity #}
     <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
 
+    {# HTMX CSRF: czyta token z ciasteczka 'csrftoken' i wysyla jako X-CSRFToken header  #}
+    {# na KAZDY htmx request. Backup dla {% templatetag openblock %} csrf_token {% templatetag closeblock %} w formach (stale form #}
+    {# = stary token = 403). To rozwiazuje "CSRF token from POST incorrect" gdy modal     #}
+    {# byl otwarty przed/po session rotation.                                              #}
+    <script nonce="{{ CSP_NONCE }}" defer>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!window.htmx) return;
+            const m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+            const csrfToken = m ? decodeURIComponent(m[1]) : null;
+            document.body.addEventListener("htmx:configRequest", function (evt) {
+                const fresh = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+                evt.detail.headers["X-CSRFToken"] = fresh ? decodeURIComponent(fresh[1]) : csrfToken;
+            });
+        });
+    </script>
+
     {# ==================================================================== #}
     {# WAŻNE: app.js MUSI być przed alpine.min.js (oba defer) — Alpine     #}
     {# 'init' event po DOMContentLoaded skanuje x-data atrybuty i potrzebuje #}
