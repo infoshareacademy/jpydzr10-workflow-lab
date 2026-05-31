@@ -86,6 +86,21 @@ chip w h1 meta, nie tutaj.
            autocomplete="off"
            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-[140px]">
 
+    {# "Tylko moje" toggle (P0.3): pokazuje rezerwacje zalogowanego uzytkownika.  #}
+    {# Trik: hidden input trzyma 1/'', checkbox @change updateuje go i triggeruje #}
+    {# 'change' na form -> HTMX hx-trigger lapie i wykonuje swap.                 #}
+    {% if request.user.is_authenticated %}
+    <input type="hidden" name="my" value="{{ current_my }}" id="filter-my-hidden">
+    <label class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition select-none"
+           title="Pokaż tylko rezerwacje wpisane przez Ciebie (match po pierwszym tokenie imienia)">
+        <input type="checkbox"
+               {% if current_my %}checked{% endif %}
+               @change="document.getElementById('filter-my-hidden').value = $event.target.checked ? '1' : ''; htmx.trigger(document.querySelector('form.timeline-filters-inline'), 'change')"
+               class="h-3.5 w-3.5 rounded text-brand-600 focus:ring-brand-500">
+        <span>Tylko moje</span>
+    </label>
+    {% endif %}
+
     {# Sortowanie maszyn po dacie przegladu — Sebastian: chce widziec maszyny     #}
     {# ktorym najszybciej konczy sie przeglad (inspection_date ASC). NULL na koncu. #}
     <select name="sort"

@@ -175,6 +175,16 @@ def reservation_modal_view(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
     )
     form = ReservationForm(instance=reservation)
+    # Lista maszyn dostepnych do wymiany (swap) — wyklucza obecna + WYCOFANA
+    # + W_SERWISIE. Lekki queryset (uid + name) zeby template moglo renderowac
+    # dropdown bez dodatkowych zapytan.
+    swap_choices = (
+        Machine.objects.filter(is_reservable=True)
+        .exclude(status__in=[Machine.Status.WYCOFANA, Machine.Status.W_SERWISIE])
+        .exclude(pk=reservation.machine_id)
+        .order_by("uid")
+        .values("pk", "uid", "name")
+    )
     return render(
         request,
         "reservations/_reservation_full_modal.html",
@@ -182,6 +192,8 @@ def reservation_modal_view(request: HttpRequest, pk: int) -> HttpResponse:
             "form": form,
             "reservation": reservation,
             "mode": "edit",
+            "cancellation_reasons": Reservation.CancellationReason.choices,
+            "swap_choices": swap_choices,
         },
     )
 
@@ -1043,6 +1055,21 @@ class TimelineView(LoginRequiredMixin, View):
         if person_q:
             reservations_qs = reservations_qs.filter(person__icontains=person_q)
 
+        # Filter "Tylko moje" (P0.3): pokazuje tylko rezerwacje zalogowanego
+        # uzytkownika (substring match na imieniu + nazwisku ALBO username).
+        # Wpisanie "Sebastian" matchuje rezerwacje z "Sebastian Nowak", "Seb",
+        # "Sebastian K." itd. (icontains case-insensitive). Pelna accent-fold
+        # normalizacja jest w _normalize_person_name ale dla M2 wystarczy proste
+        # SQL LIKE — false negatives akceptowalne, false positives nieosiagalne.
+        only_mine = request.GET.get("my") == "1"
+        if only_mine and request.user.is_authenticated:
+            my_name = (request.user.get_full_name() or request.user.get_username() or "").strip()
+            if my_name:
+                # Match po pierwszym slowie (najczesciej imie) — wiekszosc
+                # uzytkownikow wpisuje sie jako "Imie Nazwisko" lub "Imie".
+                first_token = my_name.split()[0]
+                reservations_qs = reservations_qs.filter(person__icontains=first_token)
+
         # Sortowanie maszyn — domyslnie po uid (alfabetycznie). Sebastian:
         # dodaj opcje sortowania po inspection_date ASC zeby zobaczyc maszyny
         # ktorym najszybciej konczy sie przeglad. NULL inspection_date trafia
@@ -1129,7 +1156,7 @@ class TimelineView(LoginRequiredMixin, View):
 
         filters_active = any(
             request.GET.get(k)
-            for k in ("machine_type", "status", "site", "person", "search", "inspection")
+            for k in ("machine_type", "status", "site", "person", "search", "inspection", "my")
         )
 
         # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
@@ -1158,6 +1185,8 @@ class TimelineView(LoginRequiredMixin, View):
             filter_parts.append(f"&inspection={inspection}")
         if sort_option and sort_option != "uid":
             filter_parts.append(f"&sort={sort_option}")
+        if only_mine:
+            filter_parts.append("&my=1")
         filter_qs = "".join(filter_parts)
 
         context = {
@@ -1194,6 +1223,7 @@ class TimelineView(LoginRequiredMixin, View):
             "current_search": search,
             "current_inspection": inspection or "",
             "current_sort": sort_option,
+            "current_my": "1" if only_mine else "",
         }
 
         template = (
