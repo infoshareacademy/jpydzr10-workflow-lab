@@ -251,37 +251,10 @@
     <div class="space-y-3">
         {# Timeline grid (desktop) + mobile fallback #}
         <section aria-label="Siatka rezerwacji">
-            {% comment %} Wave 14-A Bundle 9 -- visible horizontal scroll buttons jako
-               fallback dla Comet browser (Perplexity) gdzie scrollbar nie
-               jest widoczny. Plus keyboard hint dla a11y. Klik <- / ->
-               scrolluje timeline-wrap o 200px. {% endcomment %}
+            {# Wave 14-A Bundle 9 scroll-bar usunięty: redundantny względem mini-step nav  #}
+            {# w sticky #tl-controls (≪ ‹ Dziś › ≫). Sebastian: 'nauczyciel mnie zapyta  #}
+            {# po co to jest, skoro tam masz u góry dodatkowy widget'.                    #}
             <div class="timeline-grid-wrapper">
-                <div class="hidden md:flex items-center justify-between mb-2 px-1 text-xs text-slate-500 dark:text-slate-400">
-                    <div class="flex items-center gap-1.5">
-                        <kbd class="px-1.5 py-0.5 text-[0.625rem] font-mono rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">←</kbd>
-                        <span>/</span>
-                        <kbd class="px-1.5 py-0.5 text-[0.625rem] font-mono rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">→</kbd>
-                        <span class="ml-1">przewija oś czasu</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button type="button"
-                                @click="document.querySelector('.timeline-wrap').scrollBy({ left: -200, behavior: 'smooth' })"
-                                class="p-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                                aria-label="Przewiń oś czasu w lewo">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </button>
-                        <button type="button"
-                                @click="document.querySelector('.timeline-wrap').scrollBy({ left: 200, behavior: 'smooth' })"
-                                class="p-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                                aria-label="Przewiń oś czasu w prawo">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
                 {% include "reservations/_timeline_grid.html" %}
             </div>
 

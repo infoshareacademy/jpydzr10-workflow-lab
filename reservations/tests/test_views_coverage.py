@@ -770,7 +770,12 @@ class TestTimelineFiltersExtra:
             assert response.status_code == 200
 
     def test_timeline_with_person_filter(self, client, user, machine):
-        """?person=Anna → filtruje reservation.person__icontains."""
+        """?person=Anna Test → filtruje reservation.person= (exact match z dropdown).
+
+        Po refactorze 2026-05-31 (Bug 58 Sebastian): person zmienione z icontains
+        na exact match bo wartosci pochodza z dropdown unique_persons. Partial
+        match (np. 'Anna' zamiast 'Anna Test') nie znajduje rezerwacji.
+        """
         with freeze_time("2030-01-05"):
             client.force_login(user)
             ConfirmedReservationFactory(
@@ -779,7 +784,9 @@ class TestTimelineFiltersExtra:
                 start_date=date(2030, 1, 5),
                 end_date=date(2030, 1, 8),
             )
-            response = client.get(reverse("reservations:timeline") + "?format=json&person=Anna")
+            response = client.get(
+                reverse("reservations:timeline") + "?format=json&person=Anna+Test"
+            )
             data = response.json()
             rows = {r["uid"]: r for r in data["machine_rows"]}
             assert rows[machine.uid]["bars"]  # ma bar

@@ -1051,24 +1051,16 @@ class TimelineView(LoginRequiredMixin, View):
         site_number = request.GET.get("site")
         if site_number:
             reservations_qs = reservations_qs.filter(site__project_number=site_number)
+        # Sebastian 2026-05-31: 'Tylko moje' usuniete (probowalo szukac po pierwszym
+        # slowie user.full_name - dawalo pusty timeline bo dane testowe maja losowych
+        # ludzi a nie zalogowanego usera). Zastapione 2 dropdownami z listy istniejacych
+        # osob: person (osoba rezerwujaca) + responsible_person (osoba odpowiedzialna).
         person_q = (request.GET.get("person") or "").strip()
         if person_q:
-            reservations_qs = reservations_qs.filter(person__icontains=person_q)
-
-        # Filter "Tylko moje" (P0.3): pokazuje tylko rezerwacje zalogowanego
-        # uzytkownika (substring match na imieniu + nazwisku ALBO username).
-        # Wpisanie "Sebastian" matchuje rezerwacje z "Sebastian Nowak", "Seb",
-        # "Sebastian K." itd. (icontains case-insensitive). Pelna accent-fold
-        # normalizacja jest w _normalize_person_name ale dla M2 wystarczy proste
-        # SQL LIKE — false negatives akceptowalne, false positives nieosiagalne.
-        only_mine = request.GET.get("my") == "1"
-        if only_mine and request.user.is_authenticated:
-            my_name = (request.user.get_full_name() or request.user.get_username() or "").strip()
-            if my_name:
-                # Match po pierwszym slowie (najczesciej imie) — wiekszosc
-                # uzytkownikow wpisuje sie jako "Imie Nazwisko" lub "Imie".
-                first_token = my_name.split()[0]
-                reservations_qs = reservations_qs.filter(person__icontains=first_token)
+            reservations_qs = reservations_qs.filter(person=person_q)
+        responsible_q = (request.GET.get("responsible") or "").strip()
+        if responsible_q:
+            reservations_qs = reservations_qs.filter(responsible_person=responsible_q)
 
         # Sortowanie maszyn — domyslnie po uid (alfabetycznie). Sebastian:
         # dodaj opcje sortowania po inspection_date ASC zeby zobaczyc maszyny
@@ -1156,7 +1148,7 @@ class TimelineView(LoginRequiredMixin, View):
 
         filters_active = any(
             request.GET.get(k)
-            for k in ("machine_type", "status", "site", "person", "search", "inspection", "my")
+            for k in ("machine_type", "status", "site", "person", "responsible", "search", "inspection")
         )
 
         # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
@@ -1185,9 +1177,26 @@ class TimelineView(LoginRequiredMixin, View):
             filter_parts.append(f"&inspection={inspection}")
         if sort_option and sort_option != "uid":
             filter_parts.append(f"&sort={sort_option}")
-        if only_mine:
-            filter_parts.append("&my=1")
+        if responsible_q:
+            filter_parts.append(f"&responsible={responsible_q}")
         filter_qs = "".join(filter_parts)
+
+        # Listy unique osob (rezerwujace + odpowiedzialne) — dla dropdownow w filtrach.
+        # Sebastian: 'zamiast Tylko moje, 2 dropdowny z listy istniejacych osob'.
+        unique_persons = list(
+            Reservation.objects.filter(status__in=_TIMELINE_VISIBLE_STATUSES)
+            .exclude(person="")
+            .values_list("person", flat=True)
+            .distinct()
+            .order_by("person")
+        )
+        unique_responsibles = list(
+            Reservation.objects.filter(status__in=_TIMELINE_VISIBLE_STATUSES)
+            .exclude(responsible_person="")
+            .values_list("responsible_person", flat=True)
+            .distinct()
+            .order_by("responsible_person")
+        )
 
         context = {
             "period": period,
@@ -1223,7 +1232,9 @@ class TimelineView(LoginRequiredMixin, View):
             "current_search": search,
             "current_inspection": inspection or "",
             "current_sort": sort_option,
-            "current_my": "1" if only_mine else "",
+            "current_responsible": responsible_q,
+            "persons": unique_persons,
+            "responsibles": unique_responsibles,
         }
 
         template = (

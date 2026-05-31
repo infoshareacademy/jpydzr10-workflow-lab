@@ -79,27 +79,28 @@ chip w h1 meta, nie tutaj.
         {% endfor %}
     </select>
 
-    <input type="text" name="person" value="{{ current_person }}"
-           aria-label="Osoba rezerwujaca"
-           placeholder="Osoba rezerwująca…"
-           title="Filtruj po osobie ktora utworzyla rezerwacje (pole Reservation.person). NIE filtruje po kierowniku budowy/responsible_person."
-           autocomplete="off"
-           class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-[140px]">
+    {# Sebastian 2026-05-31: zamiast text input person + 'Tylko moje' (bo pusty timeline gdy   #}
+    {# user = Sebastian Nowak ale dane testowe maja losowe osoby) — 2 dropdowny z LISTY        #}
+    {# istniejacych osob. Person = kto wpisal rezerwacje, Responsible = kierownik budowy.      #}
+    <select name="person"
+            aria-label="Osoba rezerwująca"
+            title="Filtruj po osobie ktora wpisala rezerwacje (Reservation.person)"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="">— rezerwujący —</option>
+        {% for p in persons %}
+            <option value="{{ p }}" {% if p == current_person %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+    </select>
 
-    {# "Tylko moje" toggle (P0.3): pokazuje rezerwacje zalogowanego uzytkownika.  #}
-    {# Trik: hidden input trzyma 1/'', checkbox @change updateuje go i triggeruje #}
-    {# 'change' na form -> HTMX hx-trigger lapie i wykonuje swap.                 #}
-    {% if request.user.is_authenticated %}
-    <input type="hidden" name="my" value="{{ current_my }}" id="filter-my-hidden">
-    <label class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition select-none"
-           title="Pokaż tylko rezerwacje wpisane przez Ciebie (match po pierwszym tokenie imienia)">
-        <input type="checkbox"
-               {% if current_my %}checked{% endif %}
-               @change="document.getElementById('filter-my-hidden').value = $event.target.checked ? '1' : ''; htmx.trigger(document.querySelector('form.timeline-filters-inline'), 'change')"
-               class="h-3.5 w-3.5 rounded text-brand-600 focus:ring-brand-500">
-        <span>Tylko moje</span>
-    </label>
-    {% endif %}
+    <select name="responsible"
+            aria-label="Osoba odpowiedzialna na budowie"
+            title="Filtruj po kierowniku budowy (Reservation.responsible_person)"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="">— odpowiedzialny —</option>
+        {% for p in responsibles %}
+            <option value="{{ p }}" {% if p == current_responsible %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+    </select>
 
     {# Sortowanie maszyn po dacie przegladu — Sebastian: chce widziec maszyny     #}
     {# ktorym najszybciej konczy sie przeglad (inspection_date ASC). NULL na koncu. #}
