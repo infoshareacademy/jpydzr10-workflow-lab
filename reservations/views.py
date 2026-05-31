@@ -457,6 +457,32 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
         ctx["mode"] = "edit"
         return ctx
 
+    def form_invalid(self, form):
+        # HTMX edycja z modala timeline: zamiast renderowac caly form.html
+        # (ktore i tak hx-swap="none" odrzuci -> ciche zamkniecie modala bez
+        # informacji co poszlo nie tak), zwracamy 422 + showToast z pierwszym
+        # bledem walidacji. Modal pozostaje otwarty (bo nie ma reservation-updated
+        # eventu), user widzi toast i moze poprawic dane.
+        if getattr(self.request, "htmx", False):
+            error_msg = ""
+            for field, errors in form.errors.items():
+                if errors:
+                    label = form.fields.get(field).label if field in form.fields else field
+                    error_msg = f"{label}: {errors[0]}" if field != "__all__" else str(errors[0])
+                    break
+            if not error_msg:
+                error_msg = "Nie udalo sie zapisac zmian — sprawdz formularz."
+            response = HttpResponse(status=422)
+            response["HX-Trigger"] = json.dumps({
+                "showToast": {
+                    "kind": "error",
+                    "message": error_msg,
+                    "duration": 6000,
+                },
+            })
+            return response
+        return super().form_invalid(form)
+
 
 # =============================================================================
 # RESERVATION — STATE TRANSITIONS
@@ -521,7 +547,10 @@ def _redirect_back(request: HttpRequest, *, fallback_pk: int) -> HttpResponse:
 
         trigger_payload = {
             "refreshTimeline": True,
-            "reservationUpdated": True,
+            # kebab-case dispatch -- Alpine `@reservation-updated.window`
+            # zamyka modal po sukcesie. Wczesniej tylko camelCase byl wysylany,
+            # i Alpine nigdy go nie lapal (kebab != camel w nazwach eventow).
+            "reservation-updated": True,
         }
         if last_msg:
             trigger_payload["showToast"] = {

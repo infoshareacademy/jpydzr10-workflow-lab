@@ -172,6 +172,10 @@
                     altInput: true,
                     altFormat: "d.m.Y",
                     allowInput: true,
+                    // Renderuj kalendarz inline w DOM modala (nie na body),
+                    // zeby klikniecie daty nie bylo interpretowane jako
+                    // "click outside modal" -> nie zamyka popupa rezerwacji.
+                    static: true,
                 });
             });
         }

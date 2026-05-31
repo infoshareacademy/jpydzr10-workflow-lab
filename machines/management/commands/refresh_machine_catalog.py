@@ -6,7 +6,7 @@ Cel:
   -- intuicyjne wyszukiwanie "minikoparka 13";
 * dla każdego z 10 typów ``Machine.Type`` ma być realna reprezentacja w UI:
   po 5 sztuk dla 4 "głównych" typów, po 3 sztuki dla pozostałych 6;
-* typ ``INNE`` dostaje nazwy opisowe (Wyżka magazynowa / Drabina przejezdna /
+* typ ``INNE`` dostaje nazwy opisowe (Wyciąg magazynowy / Drabina przejezdna /
   Rusztowanie modułowe) zamiast nudnych "Inne 1, Inne 2".
 
 Idempotentny: drugie uruchomienie nie zmienia nic.
@@ -42,7 +42,7 @@ TARGETS: dict[str, int] = {
 }
 
 INNE_NAMES: list[str] = [
-    "Wyżka magazynowa",
+    "Wyciąg magazynowy",
     "Drabina przejezdna",
     "Rusztowanie modułowe",
 ]
@@ -80,12 +80,16 @@ def _pretty_name(mtype: str, idx: int) -> str:
     """Build display name for given type + sequence index (1-based).
 
     * INNE typ: opisowe nazwy bez liczb (każda unikalna),
+    * WALEC typ: "Walec drogowy N" (doprecyzowanie kategorii — w katalogu
+      pokazujemy walec drogowy, nie ogrodowy / lekki / wibracyjny),
     * pozostałe: ``{Label z dużej} {n}`` (Koparka 1, Wózek widłowy 3).
     """
     if mtype == Machine.Type.INNE:
         if 1 <= idx <= len(INNE_NAMES):
             return INNE_NAMES[idx - 1]
         return f"Sprzęt pomocniczy {idx}"
+    if mtype == Machine.Type.WALEC:
+        return f"Walec drogowy {idx}"
     label = Machine.Type(mtype).label
     return f"{label} {idx}"
 

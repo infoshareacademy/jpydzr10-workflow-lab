@@ -28,8 +28,7 @@
 <form method="post"
       action="{% if mode == 'edit' %}{% url 'reservations:update' reservation.pk %}{% else %}{% url 'reservations:create' %}{% endif %}"
       {% if mode == 'edit' %}hx-post="{% url 'reservations:update' reservation.pk %}"
-      hx-swap="none"
-      hx-on::after-request="if (event.detail.successful) { window.dispatchEvent(new CustomEvent('reservation-updated')); }"{% endif %}
+      hx-swap="none"{% endif %}
       class="space-y-5"
       novalidate>
     {% csrf_token %}
