@@ -146,3 +146,24 @@ def is_today(value):
         return False
     except ValueError:  # pragma: no cover — defensive (date eq nie rzuca ValueError)
         return False
+
+
+@register.simple_tag
+def qs_replace(request, **kwargs):
+    """Zwraca aktualny query string z nadpisaniami w kwargs.
+
+    Uzycie w template (przyklad paginacji bez utraty filtrow):
+        <a href="?{% qs_replace request page=page_obj.next_page_number %}">Nast.</a>
+
+    Wartosc None lub pusta string usuwa klucz z query stringu (przydatne np.
+    przy resecie strony do 1 — przekaz page="" zeby calkiem usunac param).
+    Wszystkie pozostale parametry GET (q, status, machine_type, sort, site, person…)
+    sa zachowane bez zmian.
+    """
+    qd = request.GET.copy()
+    for key, value in kwargs.items():
+        if value is None or value == "":
+            qd.pop(key, None)
+        else:
+            qd[key] = value
+    return qd.urlencode()
