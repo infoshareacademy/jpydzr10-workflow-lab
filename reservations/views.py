@@ -310,10 +310,17 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
                 )
                 if getattr(request, "htmx", False):
                     # Close the modal + refresh the list table via HX-Trigger.
+                    # `refreshTimeline` triggers swap #timeline-grid (jesli user
+                    # tworzy z timeline'a) — bez full page reload.
                     response = HttpResponse(status=204)
-                    response["HX-Trigger"] = "reservationCreated"
+                    response["HX-Trigger"] = "reservationCreated, refreshTimeline"
                     return response
-                return redirect("reservations:detail", pk=reservation.pk)
+                # Non-HTMX flow: respektuj skad uzytkownik przyszedl (timeline?
+                # list? site_detail?) zamiast hardcoded redirect na detail
+                # rezerwacji. Sebastian wyrazil P0 frustration ze tworzenie
+                # rezerwacji z timeline przerzucalo na karte rezerwacji —
+                # user chce zostac na timeline i zobaczyc nowy bar.
+                return _redirect_back(request, fallback_pk=reservation.pk)
     else:
         form = ReservationForm()
 
@@ -450,14 +457,23 @@ def reservation_confirm(request: HttpRequest, pk: int) -> HttpResponse:
 def _redirect_back(request: HttpRequest, *, fallback_pk: int) -> HttpResponse:
     """Wraca tam skad user przyszedl (?next= w POST, lub HTTP_REFERER jesli z timeline).
 
-    Bez tego po confirm/cancel/complete z timeline'a uzytkownik byl przerzucany
-    na karte rezerwacji — co Sebastian wytknal jako P0 irytacje (chce zostac na
-    timeline zeby kontynuowac prace).
+    HTMX-aware: jesli request.htmx == True, zwraca 204 + HX-Trigger=refreshTimeline
+    zamiast 302 redirect. Skutek: timeline-grid (ma hx-trigger='refreshTimeline
+    from:body') odswieza sie partial swap, bez full page reload. To znaczy
+    confirm/cancel/complete z timeline'a NIE odswieza calego ekranu.
 
-    Bezpieczenstwo: walidujemy ze 'next' / referer to ten sam host
-    (Django url_has_allowed_host_and_scheme), inaczej fallback do detail.
+    Non-HTMX fallback: bezpieczenstwo walidujemy url_has_allowed_host_and_scheme
+    + whitelist safe_paths. Bez tego po confirm/cancel/complete z timeline'a
+    uzytkownik byl przerzucany na karte rezerwacji.
     """
     from django.utils.http import url_has_allowed_host_and_scheme
+
+    # HTMX fast path — zero page reload, tylko refresh timeline grid (jesli
+    # taki istnieje na obecnej stronie). Sebastian explicit P0 wymog.
+    if getattr(request, "htmx", False):
+        response = HttpResponse(status=204)
+        response["HX-Trigger"] = "refreshTimeline, reservationUpdated"
+        return response
 
     next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "")
     allowed = url_has_allowed_host_and_scheme(

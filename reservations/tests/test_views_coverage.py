@@ -984,7 +984,9 @@ class TestReservationCreateHTMX:
                 HTTP_HX_REQUEST="true",
             )
             assert response.status_code == 204
-            assert response["HX-Trigger"] == "reservationCreated"
+            # Bug 14 fix 2026-05-31: dodano "refreshTimeline" zeby tworzenie
+            # z timeline'a HTMX-swap'owalo grid bez full page reload.
+            assert response["HX-Trigger"] == "reservationCreated, refreshTimeline"
 
     def test_htmx_create_get_returns_partial(self, client, user):
         with freeze_time("2030-01-05"):

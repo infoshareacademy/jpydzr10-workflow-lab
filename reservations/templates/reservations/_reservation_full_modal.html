@@ -107,22 +107,31 @@
             </p>
         </div>
 
-        {# Zmien status (confirm / complete -- zalezy od aktualnego statusu) #}
+        {# Zmien status (confirm / complete) — HTMX-driven zeby NIE odswiezac calego ekranu. #}
+        {# Backend (_redirect_back) zwraca 204 + HX-Trigger='refreshTimeline' przy htmx        #}
+        {# requestach, co triggeruje swap tylko #timeline-grid (ma hx-trigger 'refreshTimeline #}
+        {# from:body'). Modal zamykany przez @reservation-updated.window listener (Alpine).   #}
         {% if reservation.is_pending %}
-            <form method="post" action="{% url 'reservations:confirm' reservation.pk %}" class="inline">
+            <form hx-post="{% url 'reservations:confirm' reservation.pk %}"
+                  hx-swap="none"
+                  hx-confirm="Potwierdzić rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Status zmieni się z oczekującej na potwierdzoną."
+                  hx-on::after-request="window.dispatchEvent(new CustomEvent('reservation-updated'))"
+                  class="inline">
                 {% csrf_token %}
                 <button type="submit"
-                        x-on:click.prevent="if (confirm('Potwierdzić rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Status zmieni się z oczekującej na potwierdzoną.')) $event.target.closest('form').submit()"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     Potwierdź status
                 </button>
             </form>
         {% elif reservation.is_confirmed %}
-            <form method="post" action="{% url 'reservations:complete' reservation.pk %}" class="inline">
+            <form hx-post="{% url 'reservations:complete' reservation.pk %}"
+                  hx-swap="none"
+                  hx-confirm="Zakończyć rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Maszyna wróci do magazynu, status zmieni się na zakończoną. Tej operacji NIE da się cofnąć."
+                  hx-on::after-request="window.dispatchEvent(new CustomEvent('reservation-updated'))"
+                  class="inline">
                 {% csrf_token %}
                 <button type="submit"
-                        x-on:click.prevent="if (confirm('Zakończyć rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Maszyna wróci do magazynu, status zmieni się na zakończoną. Tej operacji NIE da się cofnąć.')) $event.target.closest('form').submit()"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9M3 7l9 6 9-6M3 7l9-4 9 4"/></svg>
                     Zakończ i zwróć maszynę
