@@ -179,7 +179,7 @@
         {# Status legend: zawsze rozwinieta (Sebastian: 'napisy na siebie nachodzily   #}
         {# w collapse <details>, zostaw rozwiniete'). Layout: prefix 'Legenda:' + #}
         {# inline chipy z odstepami gap-x-4 zeby nie nachodzily na mniejszych ekranach.  #}
-        <div class="px-5 sm:px-6 pb-2 -mt-1 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px]">
+        <div class="px-5 sm:px-6 pb-2 -mt-1 flex flex-wrap items-center gap-x-10 gap-y-3 text-[11px]">
             <span class="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Legenda:</span>
             <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-500 flex-shrink-0"></span>Oczekuje</span>
             <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-emerald-500 flex-shrink-0"></span>Potwierdzona</span>
@@ -198,10 +198,6 @@
     {# pozostale 31 oczekujacych ma daty poza wybranym oknem. Tooltip wyjasnia.       #}
     {% with total_bars=0 pending_bars=0 confirmed_bars=0 %}
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="Statystyki w aktualnie widzianym okresie">
-        <p class="col-span-2 sm:col-span-4 text-[10px] text-slate-400 dark:text-slate-500 -mb-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Liczniki dotyczą tylko bieżącego okresu na osi czasu (np. wybranego miesiąca). Globalne sumy znajdziesz na <a href="{% url 'home' %}" class="underline hover:text-brand-600">panelu głównym</a>.
-        </p>
         <div class="surface-card kpi-card px-4 py-3 text-slate-700 dark:text-slate-200"
              title="Liczba rezerwacji (bars) widocznych w aktualnym okresie na osi czasu">
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
@@ -240,6 +236,10 @@
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
         </div>
     </div>
+    <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Liczniki powyżej dotyczą tylko bieżącego okresu na osi czasu (np. wybranego miesiąca). Globalne sumy znajdziesz na <a href="{% url 'home' %}" class="underline hover:text-brand-600 font-medium">panelu głównym</a>.</span>
+    </p>
     {% endwith %}
 
     {# HYDRATION — przeniesiona do _timeline_grid.html (partial), zeby po HTMX swap rowniez #}

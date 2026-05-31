@@ -135,6 +135,27 @@
                 'unknown': '#6b7280'    // gray-500 - brak danych
             };
 
+            // JITTER ANTI-COLLISION (Sebastian 2026-05-31 wieczor):
+            // 25+ maszyn ma location='Magazyn' -> wszystkie geokodowane do tego
+            // samego punktu Wroclaw -> nakladaly sie na jeden pin, klik tylko 1.
+            // Liczymy ile pinow trafilo w ten sam punkt (rounded do ~10m precision)
+            // i kazdy n-ty offsetujemy w spirali Fibonacciego ~50m okolo bazy.
+            // 0.0005 deg lat = ~55m. Golden angle 137.5° = 2.39996 rad daje
+            // najbardziej rownomierne rozlozenie pinow w okregu (zaden klaster).
+            var collisionCount = {};  // klucz "lat,lng" -> ile juz pinow tam jest
+            function jitterPosition(latLng) {
+                var key = latLng.lat().toFixed(4) + ',' + latLng.lng().toFixed(4);
+                var index = collisionCount[key] || 0;
+                collisionCount[key] = index + 1;
+                if (index === 0) return latLng;  // pierwszy = bez offsetu
+                var goldenAngle = 2.39996 * index;
+                var radius = 0.00025 * Math.sqrt(index);  // narastajacy promien
+                return new google.maps.LatLng(
+                    latLng.lat() + radius * Math.cos(goldenAngle),
+                    latLng.lng() + radius * Math.sin(goldenAngle)
+                );
+            }
+
             pins.forEach(function (pin) {
                 geocoder.geocode(
                     { address: pin.location_address, region: 'PL' },
@@ -146,7 +167,8 @@
                             maybeFit();
                             return;
                         }
-                        var pos = results[0].geometry.location;
+                        var basePos = results[0].geometry.location;
+                        var pos = jitterPosition(basePos);  // anti-collision
                         bounds.extend(pos);
 
                         var marker = new google.maps.Marker({

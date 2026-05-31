@@ -244,8 +244,11 @@ def _machine_image_static_url(machine_type_value: str) -> str:
 
 
 # Default warehouse address - fallback gdy maszyna nie ma machine.location
-# i nie jest na budowie. Sebastian: "ul. Magazynowa 5, 02-652 Warszawa".
-_DEFAULT_WAREHOUSE_ADDRESS = "ul. Magazynowa 5, 02-652 Warszawa"
+# i nie jest na budowie. Sebastian 2026-05-31 wieczor: zmiana na Wroclaw bo
+# wiekszosc maszyn dotad spadala na jeden punkt w Warszawie i sie nakladala.
+# Frontend dodaje spiral jitter zeby kilka maszyn z tym samym adresem nie
+# pojawialo sie dokladnie w tym samym miejscu (kazda offsetowana o ~30m).
+_DEFAULT_WAREHOUSE_ADDRESS = "ul. Krakowska 100, 50-424 Wroclaw"
 
 
 @login_required
@@ -332,7 +335,16 @@ def maps_view(request):
         # warianty 'Magazyn'/pustki jako brak adresu i uzywamy default warehouse.
         def _real_address(addr):
             stripped = (addr or "").strip()
-            if not stripped or stripped.lower() in ("magazyn", "warehouse", "magazynow"):
+            # Rozszerzona lista non-adres slow (Sebastian audit 2026-05-31 wieczor):
+            # bylo 25 maszyn "Magazyn", 2 "Serwis", 2 "Magazyn glowny" -> wszystkie
+            # spadaly na default warehouse. Teraz idą tam jawnie + frontend jitter
+            # rozsuwa je w mini-spirali zeby nie nakladaly sie na jednym pinie.
+            non_addresses = (
+                "magazyn", "warehouse", "magazynow",
+                "magazyn glowny", "magazyn główny",
+                "serwis", "service", "warsztat",
+            )
+            if not stripped or stripped.lower() in non_addresses:
                 return None
             return stripped
 
