@@ -243,6 +243,29 @@ def create_reservation(
             }
         )
 
+    # Walidacja budowy: nie mozna rezerwowac maszyny na zakonczona / anulowana
+    # budowe. Sytuacja "36 aktywnych rezerwacji na zakonczonej budowie" pokazuje
+    # ze logika nigdy nie blokowala dodawania nowych rezerwacji do nieaktywnej
+    # budowy.
+    if site_id is not None:
+        try:
+            target_site = ConstructionSite.objects.get(pk=site_id)
+        except ConstructionSite.DoesNotExist as exc:
+            raise ValidationError({"site": _("Wskazana budowa nie istnieje.")}) from exc
+        if target_site.status != ConstructionSite.Status.AKTYWNA:
+            raise ValidationError(
+                {
+                    "site": _(
+                        "Budowa %(project_number)s ma status %(status)s "
+                        "— nie można na niej tworzyć nowych rezerwacji."
+                    )
+                    % {
+                        "project_number": target_site.project_number,
+                        "status": target_site.get_status_display(),
+                    }
+                }
+            )
+
     if has_conflict(machine_id=machine_id, start=start_date, end=end_date):
         conflicts = get_conflicting_reservations(
             machine_id=machine_id, start=start_date, end=end_date
@@ -540,7 +563,7 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
     today = today or date.today()
     Machine = apps.get_model("machines", "Machine")
 
-    updated = extended = reserved = 0
+    updated = extended = reserved = released = 0
 
     confirmed = (
         Reservation.objects.filter(status=Reservation.Status.POTWIERDZONA)
@@ -587,17 +610,54 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
             machine.save(update_fields=["status", "updated_at"])
             reserved += 1
 
+    # ------------------------------------------------------------------
+    # Pass 3 — release stale statuses. NA_BUDOWIE/ZAREZERWOWANA without
+    # corresponding confirmed reservation (active or future) reverts to
+    # W_MAGAZYNIE. Handles cases where reservations were cancelled,
+    # completed, or edited bypassing the normal status flow (manual admin
+    # changes, swap_machine, batch operations).
+    # ------------------------------------------------------------------
+    stale_qs = Machine.objects.filter(
+        status__in=[Machine.Status.NA_BUDOWIE, Machine.Status.ZAREZERWOWANA]
+    )
+    for machine in stale_qs:
+        active = Reservation.objects.filter(
+            machine=machine,
+            status=Reservation.Status.POTWIERDZONA,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).exists()
+        if active:
+            # NA_BUDOWIE correct; nothing to do (Pass 1 handled flips into it).
+            continue
+
+        has_future = Reservation.objects.filter(
+            machine=machine,
+            status=Reservation.Status.POTWIERDZONA,
+            start_date__gt=today,
+        ).exists()
+
+        target = (
+            Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
+        )
+        if machine.status != target:
+            machine.status = target
+            machine.save(update_fields=["status", "updated_at"])
+            released += 1
+
     logger.info(
-        "Daily sync (%s): updated=%d, extended=%d, reserved=%d",
+        "Daily sync (%s): updated=%d, extended=%d, reserved=%d, released=%d",
         today,
         updated,
         extended,
         reserved,
+        released,
     )
     return {
         "updated": updated,
         "extended": extended,
         "reserved": reserved,
+        "released": released,
         "today": today,
     }
 

@@ -140,7 +140,13 @@ class TestPendingAndCancelledIgnored:
         result = run_daily_sync(today=date(2030, 1, 5))
         machine.refresh_from_db()
         assert machine.status == Machine.Status.W_MAGAZYNIE
-        assert result == {"updated": 0, "extended": 0, "reserved": 0, "today": date(2030, 1, 5)}
+        assert result == {
+            "updated": 0,
+            "extended": 0,
+            "reserved": 0,
+            "released": 0,
+            "today": date(2030, 1, 5),
+        }
 
 
 @pytest.mark.django_db
