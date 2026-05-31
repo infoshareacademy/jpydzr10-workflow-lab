@@ -192,13 +192,13 @@
                 </div>
                 <div class="flex items-center gap-1">
                     {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}&filter={{ current_filter }}{% if current_function %}&function={{ current_function }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}"
+                        <a href="?{% qs_replace request page=page_obj.previous_page_number %}"
                            class="px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                             ← Poprzednia
                         </a>
                     {% endif %}
                     {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}&filter={{ current_filter }}{% if current_function %}&function={{ current_function }}{% endif %}{% if current_q %}&q={{ current_q }}{% endif %}"
+                        <a href="?{% qs_replace request page=page_obj.next_page_number %}"
                            class="px-2.5 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                             Następna →
                         </a>
