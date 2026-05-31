@@ -174,13 +174,12 @@
                     <span>{% trans "Oś czasu" %}</span>
                 </a>
 
-                {# Mapy — placeholder dla Google Maps widget (BETA). Sebastian: 'pod osia czasu'. #}
-                {# Aktualnie linkuje do '#' bo widget jeszcze nie zaimplementowany — beta badge   #}
-                {# jest sygnalem ze feature in development. Po implementacji widget wymieni href. #}
-                <a href="#"
+                {# Mapy - Google Maps widget z pinami maszyn (BETA). Sebastian: 'pod osia czasu'. #}
+                {# BETA badge zostaje bo feature wymaga GOOGLE_MAPS_API_KEY w .env (bez klucza   #}
+                {# widok pokazuje panel info zamiast crashowac). #}
+                <a href="{% url 'maps' %}"
                    @click="sidebarOpen = false"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-not-allowed opacity-70"
-                   title="Widget Google Maps - in development">
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px] {% active_link '/mapy/' 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' %}{% if '/mapy/' not in request.path %}text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
                     </svg>

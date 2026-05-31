@@ -13,11 +13,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views import home
+from core.views import home, maps_view
 
 urlpatterns = [
     path("", home, name="home"),
     path("admin/", admin.site.urls),
+    # /mapy/ - Google Maps widget (BETA) - pin per maszyna. Sebastian #60.
+    # Widok wymaga GOOGLE_MAPS_API_KEY w .env zeby aktywowac mape; bez
+    # klucza pokazuje panel informacyjny.
+    path("mapy/", maps_view, name="maps"),
     # i18n set_language endpoint — POST language=<code>&next=<path>; ustawia
     # ``django_language`` cookie + session, robi redirect na ``next``. Działa
     # globalnie (BEZ ``i18n_patterns``) — language jest per-user, nie per-URL.
