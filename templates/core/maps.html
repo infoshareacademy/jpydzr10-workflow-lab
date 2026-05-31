@@ -77,9 +77,11 @@
         {# Mapa wstrzyknieta przez JS po loaded Google API #}
     </div>
 
-    {# Dane pinow przekazane do JS przez bezpieczny inline JSON.
+    {% comment %}
+       Dane pinow przekazane do JS przez bezpieczny inline JSON.
        json_script byloby idealne ale potrzebujemy raw JSON do JSON.parse() -
-       textContent jest bezpieczny (zadnego HTML interpretation). #}
+       textContent jest bezpieczny (zadnego HTML interpretation).
+    {% endcomment %}
     <script id="pins-data" type="application/json" nonce="{{ CSP_NONCE }}">{{ pins_json|safe }}</script>
 
     {# Init mapy: czeka az Google API zaladowane przez async loader. #}
@@ -119,6 +121,9 @@
 
             var geocoder = new google.maps.Geocoder();
             var infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
+            // Expose globalnie zeby custom close button (✕) w renderInfoWindow
+            // mial dostep przez window.__planerMapsInfoWindow.close().
+            window.__planerMapsInfoWindow = infoWindow;
             var bounds = new google.maps.LatLngBounds();
             var resolved = 0;
 
@@ -197,7 +202,10 @@
             }[pin.inspection_status] || 'background:#e0e7ff;color:#3730a3;';
 
             var html = '' +
-                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;">' +
+                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;position:relative;">' +
+                  '<button onclick="window.__planerMapsInfoWindow && window.__planerMapsInfoWindow.close()" ' +
+                    'style="position:absolute;top:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.95);border:1px solid #cbd5e1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:#475569;z-index:10;padding:0;font-weight:bold;" ' +
+                    'title="Zamknij" aria-label="Zamknij okno informacji">✕</button>' +
                   '<img src="' + esc(pin.photo_url) + '" alt="' + esc(pin.name) +
                   '" style="width:100%;height:120px;object-fit:cover;border-radius:6px;background:#f1f5f9;" loading="lazy" />' +
                   '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:600;line-height:1.3;">' +
@@ -248,8 +256,10 @@
     })();
     </script>
 
-    {# Loader Google Maps JS API. async + defer - rekomendacja Google 2026.
-       loading=async = nowy parametr ktory wycisza warning "use loading=async". #}
+    {% comment %}
+       Loader Google Maps JS API. async + defer - rekomendacja Google 2026.
+       loading=async = nowy parametr ktory wycisza warning "use loading=async".
+    {% endcomment %}
     <script async defer
             nonce="{{ CSP_NONCE }}"
             src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key|urlencode }}&libraries=geocoding&loading=async&v=weekly"></script>

@@ -316,15 +316,24 @@ def maps_view(request):
         # Wybor adresu - Sebastian's priorytet (update 2026-05-31 wieczor):
         # Na budowie -> covering-today: res.address > site.address > machine.location
         # Inne -> machine.location -> default.
+        # Fix 2026-05-31 wieczor: machine.location moze byc "Magazyn" (string,
+        # nie adres) — to powoduje Geocoding ZERO_RESULTS. Traktujemy wszystkie
+        # warianty 'Magazyn'/pustki jako brak adresu i uzywamy default warehouse.
+        def _real_address(addr):
+            stripped = (addr or "").strip()
+            if not stripped or stripped.lower() in ("magazyn", "warehouse", "magazynow"):
+                return None
+            return stripped
+
         if machine.status == Machine.Status.NA_BUDOWIE and current is not None:
             location_address = (
-                (current.address and current.address.strip())
-                or (current.site.address if current.site_id and current.site.address else None)
-                or machine.location
+                _real_address(current.address)
+                or (_real_address(current.site.address) if current.site_id else None)
+                or _real_address(machine.location)
                 or _DEFAULT_WAREHOUSE_ADDRESS
             )
         else:
-            location_address = machine.location or _DEFAULT_WAREHOUSE_ADDRESS
+            location_address = _real_address(machine.location) or _DEFAULT_WAREHOUSE_ADDRESS
 
         site_label = (
             f"{display_res.site.project_number} - {display_res.site.name}"

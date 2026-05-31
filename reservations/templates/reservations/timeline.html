@@ -176,28 +176,19 @@
             </span>
         </div>
 
-        {# Status legend (P1.4): collapsible details — pod sticky bar zeby user      #}
-        {# wiedzial co znacza kolory pasekow rezerwacji. Domyslnie zwiniete zeby nie #}
-        {# zajmowac miejsca. Klik <summary> rozwija liste kolorow z labelami.        #}
-        <details class="px-5 sm:px-6 pb-2 -mt-1 group">
-            <summary class="text-[10px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition select-none inline-flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                Legenda kolorów
-            </summary>
-            <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-amber-500"></span>Oczekuje</span>
-                <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-emerald-500"></span>Potwierdzona</span>
-                <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-slate-400"></span>Zakończona</span>
-                <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-rose-500"></span>Anulowana</span>
-                <span class="text-slate-300 dark:text-slate-600 ml-2" aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1.5 text-slate-500">Tło maszyny:</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-rose-100 dark:bg-rose-900/30 border border-rose-300"></span>Przegląd po terminie</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-300"></span>Przegląd wkrótce</span>
-            </div>
-        </details>
+        {# Status legend: zawsze rozwinieta (Sebastian: 'napisy na siebie nachodzily   #}
+        {# w collapse <details>, zostaw rozwiniete'). Layout: prefix 'Legenda:' + #}
+        {# inline chipy z odstepami gap-x-4 zeby nie nachodzily na mniejszych ekranach.  #}
+        <div class="px-5 sm:px-6 pb-2 -mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+            <span class="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Legenda:</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-500 flex-shrink-0"></span>Oczekuje</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-emerald-500 flex-shrink-0"></span>Potwierdzona</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-400 flex-shrink-0"></span>Zakończona</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-500 flex-shrink-0"></span>Anulowana</span>
+            <span class="text-slate-400 dark:text-slate-500" aria-hidden="true">|</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-100 dark:bg-rose-900/30 border border-rose-300 flex-shrink-0"></span>Przegląd po terminie</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-300 flex-shrink-0"></span>Przegląd wkrótce</span>
+        </div>
     </div>
 
     {# ============================== QUICK STATS ============================== #}
@@ -470,9 +461,20 @@
 
             // Bierz aktualny URL (z hx-push-url) jako baza filtrow
             var newParams = new URLSearchParams(window.location.search);
-            // Nadpisz period (z link href) — to on jest unikalny per link
-            var linkPeriod = linkParams.get('period');
-            if (linkPeriod) newParams.set('period', linkPeriod);
+            // Period: dla mini-step buttonow (title=+/-7/+/-30/Dzis) ZACHOWAJ
+            // aktualny period (z URL). Dla period switcher (puste title)
+            // wymus period z link href. BUG sebastian 2026-05-31: dla mini-step
+            // tez nadpisywalismy period z link href ktory byl ze server-render
+            // (= initial period), wiec klik +7d po wyborze 'Miesiac' wracal na
+            // 'week'.
+            if (title) {
+                // mini-step button: zachowaj period z aktualnego URL
+                if (!newParams.get('period')) newParams.set('period', period);
+            } else {
+                // period switcher: wymus period z link href
+                var linkPeriod = linkParams.get('period');
+                if (linkPeriod) newParams.set('period', linkPeriod);
+            }
             // Nadpisz start (z computation)
             newParams.set('start', newStart);
 
