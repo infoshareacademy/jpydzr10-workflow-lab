@@ -372,6 +372,13 @@
         // Recompute nav URLs (in-place URLSearchParams swap on each <a hx-get>)
         _updateNavLinks(period, startIso);
 
+        // Update active state na period switcher (7/14/Miesiac) — server renderuje
+        // active class warunkowo {% if period == 'week' %}bg-white..{% endif %},
+        // ale po HTMX swap zwracamy tylko #timeline-grid, wiec sticky bar zostaje
+        // z stara aktywna zakladka. Sebastian wytknal: 'klikam Miesiac ale dalej
+        // swieci sie 7 dni'.
+        _updatePeriodTabs(period);
+
         // KPI re-hydrate — Alpine machineRows must reload from new json_script
         var data = document.getElementById('machine-rows-data');
         if (data && window.timelineShellState) {
@@ -396,6 +403,42 @@
         var d = new Date(iso + 'T00:00:00Z');
         d.setUTCDate(d.getUTCDate() + n);
         return d.toISOString().slice(0, 10);
+    }
+
+    function _updatePeriodTabs(period) {
+        // 3 anchory w period switcher maja href "?period=week..." / "?period=2week..."
+        // / "?period=month...". Decydujemy aktywny po pierwszym match parametru.
+        // Active styling: bg-white/bg-slate-700 + text-brand-700/300 + shadow-sm.
+        // Inactive: text-slate-600/400. Reszta classes pozostaje bez zmian.
+        var ACTIVE = 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm';
+        var INACTIVE = 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200';
+        var ACTIVE_CLASSES = ACTIVE.split(' ');
+        var INACTIVE_CLASSES = INACTIVE.split(' ');
+
+        document.querySelectorAll('#tl-controls a[hx-get]').forEach(function (a) {
+            var href = a.getAttribute('href') || '';
+            // Period switcher: titles SA puste, ale URL ma "?period=X&start=" gdzie X
+            // jednoznacznie identyfikuje. Mini-step buttony maja title "+/-N dni" wiec
+            // je pomijamy (period zachowuja jako current).
+            if (a.getAttribute('title')) return;  // mini-step / Dzis -> not period switch
+
+            var m = href.match(/[?&]period=([^&]+)/);
+            if (!m) return;
+            var isActive = m[1] === period;
+
+            // Remove both states then add the correct one
+            ACTIVE_CLASSES.concat(INACTIVE_CLASSES).forEach(function (c) {
+                if (c) a.classList.remove(c);
+            });
+            (isActive ? ACTIVE_CLASSES : INACTIVE_CLASSES).forEach(function (c) {
+                if (c) a.classList.add(c);
+            });
+            if (isActive) {
+                a.setAttribute('aria-current', 'page');
+            } else {
+                a.removeAttribute('aria-current');
+            }
+        });
     }
 
     function _updateNavLinks(period, startIso) {
