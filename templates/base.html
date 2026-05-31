@@ -107,11 +107,6 @@
                               d="M3 7l9-4 9 4M3 7v10l9 4M3 7l9 4m9-4v10l-9 4M12 11v10"/>
                     </svg>
                     <span class="text-base">{% trans "Planer Maszyn" %}</span>
-                    {# BETA badge — Sebastian rozmawia z nauczycielem; sygnal ze projekt #}
-                    {# w fazie developmentu, ale uzytecznym (M2 deadline 14.06.2026).    #}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                        BETA
-                    </span>
                 </a>
                 {# Close button — only on mobile (lg:hidden) #}
                 <button type="button"
@@ -169,6 +164,30 @@
                     <span>{% trans "Dashboard" %}</span>
                 </a>
 
+                {# Os czasu — przeniesione na 2 pozycje po Dashboard (Sebastian: 'timeline serce systemu'). #}
+                <a href="{% url 'reservations:timeline' %}"
+                   @click="sidebarOpen = false"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px] {% active_link '/rezerwacje/timeline' 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' %}{% if '/rezerwacje/timeline' not in request.path %}text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"/>
+                    </svg>
+                    <span>{% trans "Oś czasu" %}</span>
+                </a>
+
+                {# Mapy — placeholder dla Google Maps widget (BETA). Sebastian: 'pod osia czasu'. #}
+                {# Aktualnie linkuje do '#' bo widget jeszcze nie zaimplementowany — beta badge   #}
+                {# jest sygnalem ze feature in development. Po implementacji widget wymieni href. #}
+                <a href="#"
+                   @click="sidebarOpen = false"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-not-allowed opacity-70"
+                   title="Widget Google Maps - in development">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
+                    </svg>
+                    <span>{% trans "Mapy" %}</span>
+                    <span class="ml-auto inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-300 dark:border-amber-700">BETA</span>
+                </a>
+
                 {# Maszyny -- Heroicons: truck (NIE smietnik / archive). #}
                 <a href="{% url 'machines:list' %}"
                    @click="sidebarOpen = false"
@@ -187,19 +206,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
                     </svg>
                     <span>{% trans "Rezerwacje" %}</span>
-                </a>
-
-                {% comment %}
-                Wave 14-A Bundle 5: TOP-LEVEL (NIE indented pod Rezerwacjami).
-                Os czasu -- Heroicons: calendar-days (z grid dni, NIE 3-kreski).
-                {% endcomment %}
-                <a href="{% url 'reservations:timeline' %}"
-                   @click="sidebarOpen = false"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px] {% active_link '/rezerwacje/timeline' 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' %}{% if '/rezerwacje/timeline' not in request.path %}text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50{% endif %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"/>
-                    </svg>
-                    <span>{% trans "Oś czasu" %}</span>
                 </a>
 
                 {% comment %}

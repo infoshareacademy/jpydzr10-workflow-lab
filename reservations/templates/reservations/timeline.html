@@ -438,15 +438,25 @@
     }
 
     function _updateNavLinks(period, startIso) {
-        // Each link in #tl-controls has hx-get and href starting with "?period=..."
-        // We rewrite the start= param to reflect new startIso (so future clicks use it).
+        // KRYTYCZNY fix Bug 63 (2026-05-31): filtry nakladaja sie wzajemnie.
+        // PRZED: bralismy URL z a.getAttribute('href') ktora trzymala stan
+        // poprzedniego renderu — bez aktualnych filtrow ustawionych przez form.
+        // Skutek: klik person='Anna' w formie -> URL push '?person=Anna' ale
+        // sticky bar linki dalej miały href '?period=...' bez Anna. Klik period
+        // switcher -> nowy URL bez Anna -> filtr znikal.
+        //
+        // PO: baza to window.location.search (aktualizowany przez hx-push-url
+        // po kazdej zmianie). Nadpisujemy tylko 'period' (z link href — to on
+        // identyfikuje typ linka) i 'start' (z computation poniżej). Reszta
+        // filtrow (machine_type, status, site, person, responsible, search,
+        // inspection, sort) idzie z URL — zachowana automatycznie.
         var links = document.querySelectorAll('#tl-controls a[hx-get]');
         var todayIso = new Date().toISOString().slice(0, 10);
         links.forEach(function (a) {
             var url = a.getAttribute('href') || '';
             var qmark = url.indexOf('?');
             if (qmark < 0) return;
-            var params = new URLSearchParams(url.slice(qmark + 1));
+            var linkParams = new URLSearchParams(url.slice(qmark + 1));
 
             // Decide new start based on label/title (heuristic: title says "-30 dni" / "+7 dni" etc.)
             var title = (a.getAttribute('title') || '').toLowerCase();
@@ -458,11 +468,25 @@
             else if (title.indexOf('dzis') >= 0 || title.indexOf('dziś') >= 0) newStart = todayIso;
             else newStart = startIso;  // period switcher: stay on same start
 
-            params.set('start', newStart);
-            var newUrl = '?' + params.toString();
+            // Bierz aktualny URL (z hx-push-url) jako baza filtrow
+            var newParams = new URLSearchParams(window.location.search);
+            // Nadpisz period (z link href) — to on jest unikalny per link
+            var linkPeriod = linkParams.get('period');
+            if (linkPeriod) newParams.set('period', linkPeriod);
+            // Nadpisz start (z computation)
+            newParams.set('start', newStart);
+
+            var newUrl = '?' + newParams.toString();
             a.setAttribute('href', newUrl);
             a.setAttribute('hx-get', newUrl);
         });
+
+        // Update hidden inputs period/start w formie filtrow (zeby nastepny
+        // submit formy mial aktualne wartosci a nie stare server-rendered).
+        var formPeriodInput = document.querySelector('form.timeline-filters-inline input[name=period]');
+        var formStartInput = document.querySelector('form.timeline-filters-inline input[name=start]');
+        if (formPeriodInput) formPeriodInput.value = period;
+        if (formStartInput) formStartInput.value = startIso;
 
         // Tell HTMX to re-process the elements so new hx-get takes effect
         if (window.htmx) {
