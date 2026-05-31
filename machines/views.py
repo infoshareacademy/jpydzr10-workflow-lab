@@ -42,6 +42,8 @@ from django.views.generic import (
 )
 from openpyxl.utils.exceptions import InvalidFileException
 
+from core.pagination import PerPageMixin
+
 from .forms import MachineFilterForm, MachineForm, MachineImportXlsxForm
 from .models import Machine
 from .services import (
@@ -61,13 +63,15 @@ logger = logging.getLogger("machines")
 # =============================================================================
 
 
-class MachineListView(LoginRequiredMixin, ListView):
-    """Paginated list of machines with sidebar filters."""
+class MachineListView(PerPageMixin, LoginRequiredMixin, ListView):
+    """Paginated list of machines with sidebar filters.
+
+    PerPageMixin: ?per_page=N (whitelist 10/20/50/100/500/5000), default 100.
+    """
 
     model = Machine
     template_name = "machines/list.html"
     context_object_name = "machines"
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = Machine.objects.all()

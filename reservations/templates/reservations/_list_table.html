@@ -290,8 +290,11 @@
     </div>
 
     {# ============================== PAGINATION ============================== #}
+    <div class="flex items-center justify-end mt-3 mb-1">
+        {% include "_per_page_selector.html" %}
+    </div>
     {% if is_paginated %}
-        <nav class="flex items-center justify-between mt-4 px-1 text-sm" aria-label="Stronicowanie wyników">
+        <nav class="flex items-center justify-between mt-2 px-1 text-sm" aria-label="Stronicowanie wyników">
             <span class="text-slate-600 dark:text-slate-400">
                 Strona <span class="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{{ page_obj.number }}</span>
                 z <span class="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{{ page_obj.paginator.num_pages }}</span>

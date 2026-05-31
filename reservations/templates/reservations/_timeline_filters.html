@@ -77,10 +77,22 @@ chip w h1 meta, nie tutaj.
     </select>
 
     <input type="text" name="person" value="{{ current_person }}"
-           aria-label="Osoba"
-           placeholder="Osoba…"
+           aria-label="Osoba rezerwujaca"
+           placeholder="Osoba rezerwująca…"
+           title="Filtruj po osobie ktora utworzyla rezerwacje (pole Reservation.person). NIE filtruje po kierowniku budowy/responsible_person."
            autocomplete="off"
-           class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-[110px]">
+           class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-[140px]">
+
+    {# Sortowanie maszyn po dacie przegladu — Sebastian: chce widziec maszyny     #}
+    {# ktorym najszybciej konczy sie przeglad (inspection_date ASC). NULL na koncu. #}
+    <select name="sort"
+            aria-label="Sortowanie maszyn"
+            title="Sortuj wiersze maszyn — domyslnie po UID alfabetycznie. Opcja 'Przeglad najwczesniej' pokazuje na gorze maszyny z najblizszym terminem przegladu."
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="uid" {% if current_sort == 'uid' or not current_sort %}selected{% endif %}>↕ UID (A→Z)</option>
+        <option value="inspection_asc" {% if current_sort == 'inspection_asc' %}selected{% endif %}>↑ Przegląd najwcześniej</option>
+        <option value="inspection_desc" {% if current_sort == 'inspection_desc' %}selected{% endif %}>↓ Przegląd najpóźniej</option>
+    </select>
 
     {# Submit jest fallbackiem dla browserow bez JS / HTMX. Reactive HTMX     #}
     {# wywoluje zapytanie na change, ale enter w inpucie tez powinien dzialac. #}

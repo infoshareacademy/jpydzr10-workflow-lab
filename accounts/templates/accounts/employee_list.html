@@ -181,6 +181,9 @@
         </div>
 
         {# ============================== PAGINACJA ============================== #}
+        <div class="flex items-center justify-end mt-3 mb-1">
+            {% include "_per_page_selector.html" %}
+        </div>
         {% if is_paginated %}
             <nav class="flex items-center justify-between" aria-label="Paginacja">
                 <div class="text-xs text-slate-600 dark:text-slate-400">

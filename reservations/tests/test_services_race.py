@@ -77,7 +77,10 @@ class TestConfirmReservationRaceSafety:
             start_date=date(2030, 2, 3),
             end_date=date(2030, 2, 7),
         )
-        with pytest.raises(ValidationError, match="Konflikt rezerwacji"):
+        # Bug 2 fix 2026-05-31: error message zmienione z generic "Konflikt rezerwacji"
+        # na konkretna liste konfliktujacych rezerwacji ("nakłada się z N innymi…")
+        # zeby user widzial GDZIE konkretnie jest collision.
+        with pytest.raises(ValidationError, match="nakłada się"):
             confirm_reservation(second)
 
         second.refresh_from_db()

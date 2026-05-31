@@ -33,6 +33,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, UpdateView, View
 
+from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors, join_validation_error
 from core.utils import parse_iso_date
 from machines.models import Machine
@@ -78,7 +79,7 @@ PAGE_SIZE = 20
 # =============================================================================
 
 
-class ReservationListView(LoginRequiredMixin, ListView):
+class ReservationListView(PerPageMixin, LoginRequiredMixin, ListView):
     """Paginated list of reservations with a sidebar filter form."""
 
     model = Reservation
@@ -431,6 +432,10 @@ def reservation_confirm(request: HttpRequest, pk: int) -> HttpResponse:
 
     Wymaga uprawnienia ``reservations.change_reservation`` — domyślnie
     grupa "Magazynierzy" + "Kierownicy".
+
+    Redirect: respektuje POST field ``next`` (lub HTTP_REFERER jeśli z timeline),
+    inaczej wraca na detail rezerwacji. Sebastian wytknal ze potwierdzenie z
+    timeline'a przenosilo na karte rezerwacji — chce zostac na timeline.
     """
     reservation = get_object_or_404(Reservation, pk=pk)
     try:
@@ -439,7 +444,31 @@ def reservation_confirm(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja potwierdzona."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
+
+
+def _redirect_back(request: HttpRequest, *, fallback_pk: int) -> HttpResponse:
+    """Wraca tam skad user przyszedl (?next= w POST, lub HTTP_REFERER jesli z timeline).
+
+    Bez tego po confirm/cancel/complete z timeline'a uzytkownik byl przerzucany
+    na karte rezerwacji — co Sebastian wytknal jako P0 irytacje (chce zostac na
+    timeline zeby kontynuowac prace).
+
+    Bezpieczenstwo: walidujemy ze 'next' / referer to ten sam host
+    (Django url_has_allowed_host_and_scheme), inaczej fallback do detail.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "")
+    allowed = url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    )
+    # Akceptujemy redirect tylko do timeline / list / site_detail — nie do detail
+    # (zeby unikac petli "confirm -> detail -> confirm").
+    safe_paths = ("/rezerwacje/timeline/", "/rezerwacje/", "/budowy/")
+    if allowed and next_url and any(p in next_url for p in safe_paths):
+        return redirect(next_url)
+    return redirect("reservations:detail", pk=fallback_pk)
 
 
 @login_required
@@ -466,7 +495,7 @@ def reservation_cancel(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja anulowana."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -492,7 +521,7 @@ def reservation_complete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja zakończona, maszyna wróciła do magazynu."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -666,7 +695,7 @@ class CheckConflictView(LoginRequiredMixin, View):
 # =============================================================================
 
 
-class ConstructionSiteListView(LoginRequiredMixin, ListView):
+class ConstructionSiteListView(PerPageMixin, LoginRequiredMixin, ListView):
     model = ConstructionSite
     template_name = "reservations/site_list.html"
     context_object_name = "sites"
@@ -951,6 +980,18 @@ class TimelineView(LoginRequiredMixin, View):
         if person_q:
             reservations_qs = reservations_qs.filter(person__icontains=person_q)
 
+        # Sortowanie maszyn — domyslnie po uid (alfabetycznie). Sebastian:
+        # dodaj opcje sortowania po inspection_date ASC zeby zobaczyc maszyny
+        # ktorym najszybciej konczy sie przeglad. NULL inspection_date trafia
+        # na koniec (Postgres: NULLS LAST domyslnie przy ASC).
+        sort_option = request.GET.get("sort") or "uid"
+        if sort_option == "inspection_asc":
+            order = ["inspection_date", "uid"]
+        elif sort_option == "inspection_desc":
+            order = ["-inspection_date", "uid"]
+        else:
+            order = ["uid"]
+
         # One Prefetch ⇒ all rows are filled in a single extra query, the
         # bars are read off ``machine.period_reservations`` (in-memory list).
         machines_qs = machines_qs.prefetch_related(
@@ -959,7 +1000,7 @@ class TimelineView(LoginRequiredMixin, View):
                 queryset=reservations_qs,
                 to_attr="period_reservations",
             )
-        ).order_by("uid")
+        ).order_by(*order)
 
         machine_rows: list[dict] = []
         for machine in machines_qs:
@@ -1052,6 +1093,8 @@ class TimelineView(LoginRequiredMixin, View):
             filter_parts.append(f"&search={search}")
         if inspection:
             filter_parts.append(f"&inspection={inspection}")
+        if sort_option and sort_option != "uid":
+            filter_parts.append(f"&sort={sort_option}")
         filter_qs = "".join(filter_parts)
 
         context = {
@@ -1083,6 +1126,7 @@ class TimelineView(LoginRequiredMixin, View):
             "current_person": person_q,
             "current_search": search,
             "current_inspection": inspection or "",
+            "current_sort": sort_option,
         }
 
         template = (

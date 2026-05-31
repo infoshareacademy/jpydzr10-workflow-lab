@@ -409,8 +409,34 @@ def confirm_reservation(reservation: Reservation, *, today: date | None = None) 
         end=locked.end_date,
         exclude_pk=locked.pk,
     ):
+        # Pokazujemy uzytkownikowi LISTE konfliktujacych rezerwacji zeby
+        # wiedzial gdzie konkretnie jest nakladanie — bez tego user widzi
+        # tylko "konflikt" i myli sie ze go nie ma (timeline wizualnie
+        # nakladajace bary moga byc zakryte przez inny bar wyzej w stacku).
+        conflicts = list(
+            get_conflicting_reservations(
+                machine_id=locked.machine_id,
+                start=locked.start_date,
+                end=locked.end_date,
+                exclude_pk=locked.pk,
+            )
+        )
+        details = "; ".join(
+            f"#{c.pk} {c.start_date}→{c.end_date} ({c.get_status_display()}, {c.person})"
+            for c in conflicts[:3]
+        )
         raise ValidationError(
-            _("Konflikt rezerwacji wykryty podczas zatwierdzania (race condition).")
+            _(
+                "Nie można potwierdzić — rezerwacja #%(pk)s (%(start)s→%(end)s) "
+                "nakłada się z %(count)d innymi rezerwacjami: %(details)s"
+            )
+            % {
+                "pk": locked.pk,
+                "start": locked.start_date,
+                "end": locked.end_date,
+                "count": len(conflicts),
+                "details": details,
+            }
         )
 
     locked.status = Reservation.Status.POTWIERDZONA

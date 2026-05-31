@@ -225,6 +225,9 @@
                 </div>
 
                 {# ================ Pagination — shared between both views ================ #}
+                <div class="flex items-center justify-end mt-3 mb-1">
+                    {% include "_per_page_selector.html" %}
+                </div>
                 {% if is_paginated %}
                 <nav class="flex items-center justify-between mt-2 text-sm" aria-label="Stronicowanie">
                     <span class="text-slate-500 dark:text-slate-400">

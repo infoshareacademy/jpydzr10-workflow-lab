@@ -50,6 +50,7 @@ from django.views.generic import (
     View,
 )
 
+from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors, join_validation_error
 
 from .forms import (
@@ -79,13 +80,15 @@ XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml
 # =============================================================================
 
 
-class ServiceRecordListView(LoginRequiredMixin, ListView):
-    """Paginated list of service records with sidebar filters."""
+class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
+    """Paginated list of service records with sidebar filters.
+
+    PerPageMixin: ?per_page=N (whitelist 10/20/50/100/500/5000), default 100.
+    """
 
     model = ServiceRecord
     template_name = "service/list.html"
     context_object_name = "records"
-    paginate_by = PAGE_SIZE
 
     def get_queryset(self):
         qs = ServiceRecord.objects.select_related("machine").order_by("-performed_date", "-pk")
