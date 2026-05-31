@@ -95,9 +95,14 @@
     </div>
 
     {# ============================== FOOTER: AKCJE TERMINALNE (zmieniaja status, NIE sa zwyklym zapisem!) ============================== #}
+    {# Layout 2-rzedowy: info nad wszystkimi buttonami. Bez tego buttony naklady sie na siebie  #}
+    {# (komunikat 'Akcje terminalne' z flex-1 rozpychal sie na full width, dropdowny absolute  #}
+    {# kolidowaly). Teraz: row 1 = info, row 2 = wszystkie 6 akcji w 1 flex flex-wrap.          #}
     {% if mode == 'edit' and reservation and not reservation.is_closed %}
-    <footer class="px-6 py-3 border-t-2 border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-900/20 flex flex-wrap items-center gap-3">
-        <div class="flex items-start gap-2 flex-1 min-w-0">
+    <footer class="px-6 py-3 border-t-2 border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-900/20 space-y-2.5">
+
+        {# ROW 1: info komunikat (na pelna szerokosc, nie zabiera miejsca buttonom) #}
+        <div class="flex items-start gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
             </svg>
@@ -106,6 +111,10 @@
                 Aby zapisać zmiany w formularzu użyj <em>"Zapisz zmiany"</em> poniżej.
             </p>
         </div>
+
+        {# ROW 2: wszystkie buttony w jednym flex z gap-2, dropdowny absolute pod ich parent       #}
+        {# div (relative). x-data wspoldzielony zeby openAction='cancel' zamykal 'breakdown' itp. #}
+        <div x-data="{ openAction: null }" class="flex flex-wrap items-center gap-2">
 
         {# Zmien status (confirm / complete) — HTMX-driven zeby NIE odswiezac calego ekranu. #}
         {# Backend (_redirect_back) zwraca 204 + HX-Trigger='refreshTimeline' przy htmx        #}
@@ -138,12 +147,6 @@
                 </button>
             </form>
         {% endif %}
-
-        {# ======================== POZOSTALE AKCJE: cancel / breakdown / change_operator / swap_machine ========================  #}
-        {# Wszystkie 4 jako collapse dropdowns (x-show) z position:absolute, klik outside zamyka. Submit via hx-post     #}
-        {# -> backend zwraca 204 + HX-Trigger refreshTimeline (przez _redirect_back) -> #timeline-grid auto-swap + toast. #}
-        {# Bez tego user musi otworzyc 'Pelny widok' -> opuscic timeline. Sebastian P0: 'wszystko z linii czasu'.        #}
-        <div x-data="{ openAction: null }" class="flex flex-wrap items-center gap-2 relative">
 
             {# --- ANULUJ rezerwacje --- #}
             <div class="relative">
@@ -272,14 +275,15 @@
                 </div>
             </div>
             {% endif %}
-        </div>
 
-        {# Pelny widok detail w nowej karcie (escape do pelnej strony) #}
-        <a href="{% url 'reservations:detail' reservation.pk %}"
-           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            Pełny widok
-        </a>
+            {# Pelny widok detail w nowej karcie (escape do pelnej strony) — w tej samej #}
+            {# flex-wrap row co inne akcje zeby ostatecznie wszystkie byly w 1 spojnym pasie. #}
+            <a href="{% url 'reservations:detail' reservation.pk %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition ml-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Pełny widok
+            </a>
+        </div>
     </footer>
     {% endif %}
 </div>
