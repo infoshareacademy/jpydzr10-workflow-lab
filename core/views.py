@@ -80,9 +80,18 @@ def home(request):
     horizon = today + timedelta(days=14)
 
     # Query 1 — wszystkie metryki maszyn w jednym round-tripie.
+    # "Dostepne" = fizycznie w magazynie: W_MAGAZYNIE (wolne) + ZAREZERWOWANA
+    # (sa w magazynie ale z przyszla rezerwacja). Operator chce wiedziec ile
+    # maszyn fizycznie ma na stanie -- nie ile z nich nie ma JAKIEJKOLWIEK
+    # rezerwacji. Subtitle w home.html rozbija na "X wolne + Y zarezerwowane".
     machine_stats = Machine.objects.aggregate(
         total=Count("id"),
-        available=Count("id", filter=Q(status=Machine.Status.W_MAGAZYNIE)),
+        available=Count(
+            "id",
+            filter=Q(status__in=[Machine.Status.W_MAGAZYNIE, Machine.Status.ZAREZERWOWANA]),
+        ),
+        in_warehouse_free=Count("id", filter=Q(status=Machine.Status.W_MAGAZYNIE)),
+        in_warehouse_booked=Count("id", filter=Q(status=Machine.Status.ZAREZERWOWANA)),
         on_site=Count("id", filter=Q(status=Machine.Status.NA_BUDOWIE)),
         in_service=Count("id", filter=Q(status=Machine.Status.W_SERWISIE)),
         inspections_overdue=Count("id", filter=Q(inspection_date__lt=today)),
@@ -115,6 +124,8 @@ def home(request):
         "kpi": {
             "machines_total": machine_stats["total"],
             "machines_available": machine_stats["available"],
+            "machines_in_warehouse_free": machine_stats["in_warehouse_free"],
+            "machines_in_warehouse_booked": machine_stats["in_warehouse_booked"],
             "machines_on_site": machine_stats["on_site"],
             "machines_in_service": machine_stats["in_service"],
             "inspections_overdue": machine_stats["inspections_overdue"],

@@ -192,13 +192,21 @@
     </div>
 
     {# ============================== QUICK STATS ============================== #}
+    {# Te liczniki pokazuja TYLKO bars przecinajace AKTUALNIE WIDZIANY OKRES        #}
+    {# (np. miesiac maja-czerwca). Dlatego beda nizsze niz globalne KPI na dashboard. #}
+    {# Sebastian 2026-05-31: "czemu 6 oczekujacych skoro w bazie jest 37" -- bo      #}
+    {# pozostale 31 oczekujacych ma daty poza wybranym oknem. Tooltip wyjasnia.       #}
     {% with total_bars=0 pending_bars=0 confirmed_bars=0 %}
-    {# Liczniki w Pythonie wymagaja inkrementacji przez {% with %} — zamiast tego policzmy w Alpine #}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="Statystyki okresu">
-        <div class="surface-card kpi-card px-4 py-3 text-slate-700 dark:text-slate-200">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="Statystyki w aktualnie widzianym okresie">
+        <p class="col-span-2 sm:col-span-4 text-[10px] text-slate-400 dark:text-slate-500 -mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Liczniki dotyczą tylko bieżącego okresu na osi czasu (np. wybranego miesiąca). Globalne sumy znajdziesz na <a href="{% url 'home' %}" class="underline hover:text-brand-600">panelu głównym</a>.
+        </p>
+        <div class="surface-card kpi-card px-4 py-3 text-slate-700 dark:text-slate-200"
+             title="Liczba rezerwacji (bars) widocznych w aktualnym okresie na osi czasu">
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14"/></svg>
-                Rezerwacji
+                Rezerwacji w okresie
             </div>
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="totalReservations">0</div>
         </div>
