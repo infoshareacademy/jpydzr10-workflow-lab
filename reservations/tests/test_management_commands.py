@@ -85,13 +85,15 @@ class TestSeedSitesCommand:
     """Demo construction sites — idempotent get_or_create."""
 
     def test_creates_all_demo_sites_when_db_empty(self):
-        """Pusta baza → tworzy 5 demo budów BUD-2026-001..-005."""
+        """Pusta baza → tworzy demo budowy w nowym formacie 10260000001..N."""
+        from reservations.management.commands.seed_sites import DEMO_SITES
+
         out = StringIO()
         call_command("seed_sites", stdout=out)
-        # 5 demo sites z DEMO_SITES.
-        assert ConstructionSite.objects.count() == 5
-        # Sprawdź jeden konkretny.
-        assert ConstructionSite.objects.filter(project_number="BUD-2026-001").exists()
+        # Tyle demo sites ile w DEMO_SITES (obecnie 6 z realnymi adresami PL).
+        assert ConstructionSite.objects.count() == len(DEMO_SITES)
+        # Sprawdz pierwszy demo numer w nowym formacie.
+        assert ConstructionSite.objects.filter(project_number="10260000001").exists()
 
     def test_idempotent_on_second_run(self):
         """Druga uruchomienie — nic nie tworzy (already exists)."""
@@ -104,11 +106,13 @@ class TestSeedSitesCommand:
         assert "już istniały" in out.getvalue() or "0 utworzone" in out.getvalue()
 
     def test_count_caps_at_demo_size(self):
-        """``--count=100`` jest cap'owane do len(DEMO_SITES)=5."""
+        """``--count=100`` jest cap'owane do len(DEMO_SITES)."""
+        from reservations.management.commands.seed_sites import DEMO_SITES
+
         out = StringIO()
         call_command("seed_sites", count=100, stdout=out)
-        # Wszystkie 5 demo sites.
-        assert ConstructionSite.objects.count() == 5
+        # Wszystkie demo sites — count cap'owany do len(DEMO_SITES).
+        assert ConstructionSite.objects.count() == len(DEMO_SITES)
 
     def test_count_smaller_than_demo_size_creates_subset(self):
         """``--count=2`` tworzy tylko pierwsze 2 demo sites."""

@@ -27,7 +27,16 @@ class TestConstructionSiteValidators:
     @pytest.mark.django_db
     @pytest.mark.parametrize(
         "valid_number",
-        ["BUD-2026-001", "BUD-9999-999", "BUD-0000-000"],
+        [
+            # Legacy format BUD-RRRR-NNN (zachowany dla wstecznej kompatybilnosci)
+            "BUD-2026-001",
+            "BUD-9999-999",
+            "BUD-0000-000",
+            # Nowy format 10YYNNNNN (preferowany od 2026-05-31)
+            "10260000001",
+            "10269999999",
+            "10300000042",
+        ],
     )
     def test_accepts_valid_project_number(self, valid_number):
         site = ConstructionSite(

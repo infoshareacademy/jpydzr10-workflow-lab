@@ -30,13 +30,27 @@ from core.models import TimestampedModel
 
 from .managers import ReservationManager
 
-# Regex for the local Polish project number format. Anchored to keep
-# accidental prefixes / suffixes out (``"BUD-2026-001-x"`` rejects).
-PROJECT_NUMBER_PATTERN = r"^BUD-\d{4}-\d{3}$"
+# Regex for the local Polish project number formats. Two supported forms
+# (anchored to keep accidental prefixes / suffixes out):
+#
+# 1. ``10YYNNNNNNN`` (11 cyfr) — preferowany nowy format od 2026-05-31:
+#    ``10`` (staly prefix) + ``YY`` (dwie cyfry roku) + 7-cyfrowy numer
+#    sekwencyjny. Przyklad: ``10260000001`` = 1. budowa 2026.
+# 2. ``BUD-RRRR-NNN`` (12 znakow) — legacy format z M2 W1. Zostaje
+#    obslugiwany dla wstecznej kompatybilnosci (istniejacych budow, testow,
+#    chatbot tools, archiwalnych dokumentow).
+#
+# Walidator akceptuje OBA formaty (alternacja regex). Anchory ``^...$``
+# obejmuja cala alternacje przez zewnetrzna grupe non-capturing zeby `re.search`
+# poprawnie dzialal i odrzucal prefiksy/sufiksy w obu wariantach.
+PROJECT_NUMBER_PATTERN = r"^(?:10\d{2}\d{7}|BUD-\d{4}-\d{3})$"
 
 PROJECT_NUMBER_VALIDATOR = RegexValidator(
     regex=PROJECT_NUMBER_PATTERN,
-    message="Numer projektu musi być w formacie BUD-RRRR-NNN (np. BUD-2026-001).",
+    message=(
+        "Numer projektu musi byc w formacie 10YYNNNNN (np. 10260000001) "
+        "lub starym BUD-RRRR-NNN (np. BUD-2026-001)."
+    ),
 )
 
 
@@ -72,7 +86,7 @@ class ConstructionSite(TimestampedModel):
         db_index=True,
         validators=[PROJECT_NUMBER_VALIDATOR],
         verbose_name=_("Numer projektu"),
-        help_text="Format: BUD-RRRR-NNN (np. BUD-2026-001).",
+        help_text="Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). Stare numery BUD-RRRR-NNN dalej akceptowane.",
     )
     name = models.CharField(max_length=200, verbose_name=_("Nazwa budowy"))
     client_name = models.CharField(max_length=200, blank=True, default="", verbose_name=_("Klient"))
