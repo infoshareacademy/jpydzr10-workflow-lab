@@ -126,7 +126,8 @@ class TestServiceTransitions:
             start_date=date(2030, 2, 1),
             end_date=date(2030, 2, 5),
         )
-        result = complete_reservation(res)
+        # Bug 19 walidacja: today musi byc >= start_date (maszyna juz wyjechala)
+        result = complete_reservation(res, today=date(2030, 2, 3))
         assert result.status == Reservation.Status.ZAKONCZONA
 
     def test_legal_confirmed_to_cancelled_via_service(self, machine):

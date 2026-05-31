@@ -434,7 +434,11 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
             return self.form_invalid(form)
 
         messages.success(self.request, _("Rezerwacja zaktualizowana."))
-        return redirect("reservations:detail", pk=self.object.pk)
+        # Bug 18 fix: respektuj skad user przyszedl (timeline/list/site_detail)
+        # zamiast hardcoded redirect na detail. Edit z timeline'a -> wraca na
+        # timeline z toast notification (HTMX flow) lub redirect na referer
+        # (non-HTMX flow).
+        return _redirect_back(self.request, fallback_pk=self.object.pk)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -600,7 +604,7 @@ def reservation_change_operator(request: HttpRequest, pk: int) -> HttpResponse:
     form = ChangeOperatorForm(request.POST)
     if not form.is_valid():
         messages.error(request, _("Niepoprawne dane: %(err)s") % {"err": form.errors.as_text()})
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
     try:
         change_operator(
             reservation,
@@ -614,7 +618,7 @@ def reservation_change_operator(request: HttpRequest, pk: int) -> HttpResponse:
             request,
             _("Osoba zmieniona na: %(person)s") % {"person": form.cleaned_data["new_person"]},
         )
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -637,7 +641,7 @@ def reservation_swap_machine(request: HttpRequest, pk: int) -> HttpResponse:
     form = SwapMachineForm(request.POST, current_machine_id=reservation.machine_id)
     if not form.is_valid():
         messages.error(request, _("Niepoprawne dane: %(err)s") % {"err": form.errors.as_text()})
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
     try:
         result = swap_machine(
             reservation,
@@ -647,7 +651,7 @@ def reservation_swap_machine(request: HttpRequest, pk: int) -> HttpResponse:
         )
     except ValidationError as exc:
         messages.error(request, join_validation_error(exc))
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
 
     messages.success(
         request,
@@ -688,7 +692,7 @@ def reservation_report_breakdown(request: HttpRequest, pk: int) -> HttpResponse:
             _("Awaria zgłoszona — maszyna %(uid)s w serwisie, rezerwacja zamknięta.")
             % {"uid": result["machine_uid"]},
         )
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 # =============================================================================
@@ -1165,8 +1169,12 @@ class TimelineView(LoginRequiredMixin, View):
             "machine_rows": machine_rows,
             "machine_types": Machine.Type.choices,
             "statuses": Machine.Status.choices,
+            # Bug 20: pokazuj rowniez budowe ktora jest aktualnie wybrana w filtrze
+            # nawet gdy jest zakonczona/anulowana — zeby user mogl ja odznaczyc.
+            # Bez tego zarchiwizowana budowa znika z dropdown i URL ?site=BUD-X
+            # zostaje "uwieziony" bez UI controla do wyczyszczenia.
             "sites": ConstructionSite.objects.filter(
-                status=ConstructionSite.Status.AKTYWNA
+                Q(status=ConstructionSite.Status.AKTYWNA) | Q(project_number=site_number or "")
             ).order_by("project_number"),
             "prev_start": (start - timedelta(days=days)).isoformat(),
             "next_start": (start + timedelta(days=days)).isoformat(),

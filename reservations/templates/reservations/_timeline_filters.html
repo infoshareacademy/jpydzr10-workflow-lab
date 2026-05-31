@@ -67,11 +67,14 @@ chip w h1 meta, nie tutaj.
 
     <select name="site"
             aria-label="Budowa"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[170px]">
-        <option value="">— budowa —</option>
+            title="Filtruj rezerwacje po budowie — pokazuje tylko maszyny przypisane do wybranego projektu"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[280px]">
+        <option value="">— wszystkie budowy —</option>
         {% for s in sites %}
-            <option value="{{ s.project_number }}" {% if s.project_number == current_site %}selected{% endif %}>
-                {{ s.project_number }}
+            <option value="{{ s.project_number }}"
+                    title="{{ s.project_number }} — {{ s.name }}{% if s.client_name %} ({{ s.client_name }}){% endif %}"
+                    {% if s.project_number == current_site %}selected{% endif %}>
+                {{ s.project_number }} — {{ s.name|truncatechars:35 }}
             </option>
         {% endfor %}
     </select>

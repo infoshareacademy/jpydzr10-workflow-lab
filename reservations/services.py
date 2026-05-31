@@ -527,6 +527,22 @@ def complete_reservation(
     locked = Reservation.objects.select_for_update().get(pk=reservation.pk)
     _assert_legal_transition(locked.status, Reservation.Status.ZAKONCZONA)
 
+    # Walidacja Bug 19 (Sebastian incydent #256 — Minikoparka 4 zaakceptowana
+    # ze start_date=04.06 i zakonczona 31.05; maszyna nigdy nie pojechala na
+    # budowe). Zakonczenie = zwrot maszyny do magazynu. Niemozliwe gdy start
+    # jeszcze nie nadszedl — maszyna nie wyjechala wiec nie ma czego zwrocic.
+    # Wlasciwa akcja w tym scenariuszu to ANULUJ rezerwacje (cancel_reservation),
+    # nie complete. Wprowadzamy ValidationError z jasnym wskazaniem alternatywy.
+    if locked.start_date > today:
+        raise ValidationError(
+            _(
+                "Nie można zakończyć rezerwacji #%(pk)s — start (%(start)s) "
+                "jeszcze nie nadszedł, maszyna nie wyjechała na budowę. "
+                "Użyj 'Anuluj rezerwację' jeśli chcesz cofnąć wynajem."
+            )
+            % {"pk": locked.pk, "start": locked.start_date}
+        )
+
     update_fields = ["status", "updated_at"]
     if actual_return_date is not None:
         if actual_return_date < locked.start_date:
