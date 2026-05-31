@@ -309,11 +309,27 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
                     _("Rezerwacja %(title)s została utworzona.") % {"title": reservation.title},
                 )
                 if getattr(request, "htmx", False):
-                    # Close the modal + refresh the list table via HX-Trigger.
-                    # `refreshTimeline` triggers swap #timeline-grid (jesli user
-                    # tworzy z timeline'a) — bez full page reload.
+                    # HX-Trigger jako JSON — pozwala na payload (showToast event
+                    # czytany przez globalny toast listener w app.js). Bez tego
+                    # uzytkownik nie widzi feedback po HTMX create (flash messages
+                    # sa w base.html messages section poza scope swap timeline'a).
                     response = HttpResponse(status=204)
-                    response["HX-Trigger"] = "reservationCreated, refreshTimeline"
+                    response["HX-Trigger"] = json.dumps(
+                        {
+                            "reservationCreated": True,
+                            "refreshTimeline": True,
+                            "showToast": {
+                                "kind": "success",
+                                "message": (
+                                    f"✓ Rezerwacja #{reservation.pk} dla "
+                                    f"{reservation.machine.uid} "
+                                    f"({reservation.start_date.strftime('%d.%m')}—"
+                                    f"{reservation.end_date.strftime('%d.%m.%Y')}) zapisana"
+                                ),
+                                "duration": 6000,
+                            },
+                        }
+                    )
                     return response
                 # Non-HTMX flow: respektuj skad uzytkownik przyszedl (timeline?
                 # list? site_detail?) zamiast hardcoded redirect na detail
@@ -470,9 +486,36 @@ def _redirect_back(request: HttpRequest, *, fallback_pk: int) -> HttpResponse:
 
     # HTMX fast path — zero page reload, tylko refresh timeline grid (jesli
     # taki istnieje na obecnej stronie). Sebastian explicit P0 wymog.
+    #
+    # Toast z flash messages: po HTMX swap base.html messages section NIE jest
+    # re-renderowana, wiec user nie widzi success/error. Zbieramy aktualne
+    # storage Django messages, czyscimy je (mark_used), i przekazujemy ostatnia
+    # przez HX-Trigger JSON do showToast event w globalnym toast listenerze.
     if getattr(request, "htmx", False):
+        storage = messages.get_messages(request)
+        last_msg = None
+        last_level = "success"
+        for msg in storage:
+            last_msg = str(msg.message)
+            # Django levels: DEBUG=10, INFO=20, SUCCESS=25, WARNING=30, ERROR=40
+            last_level = msg.tags or "info"
+        # mark_used (iteracja storage zuzywa wiadomosci) — zapobiega podwojeniu
+        # gdy potem renderujemy normalny page.
+        storage.used = True
+
+        trigger_payload = {
+            "refreshTimeline": True,
+            "reservationUpdated": True,
+        }
+        if last_msg:
+            trigger_payload["showToast"] = {
+                "kind": "error" if "error" in last_level else "success",
+                "message": last_msg,
+                "duration": 6000 if "error" in last_level else 4000,
+            }
+
         response = HttpResponse(status=204)
-        response["HX-Trigger"] = "refreshTimeline, reservationUpdated"
+        response["HX-Trigger"] = json.dumps(trigger_payload)
         return response
 
     next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "")

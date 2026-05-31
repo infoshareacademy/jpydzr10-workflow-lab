@@ -984,9 +984,15 @@ class TestReservationCreateHTMX:
                 HTTP_HX_REQUEST="true",
             )
             assert response.status_code == 204
-            # Bug 14 fix 2026-05-31: dodano "refreshTimeline" zeby tworzenie
-            # z timeline'a HTMX-swap'owalo grid bez full page reload.
-            assert response["HX-Trigger"] == "reservationCreated, refreshTimeline"
+            # Bug 14 fix 2026-05-31: HX-Trigger jako JSON z eventami:
+            # reservationCreated + refreshTimeline + showToast (z payload z PK
+            # rezerwacji i UID maszyny zeby user wiedzial co zostalo zapisane).
+            import json as _json
+            payload = _json.loads(response["HX-Trigger"])
+            assert payload["reservationCreated"] is True
+            assert payload["refreshTimeline"] is True
+            assert "showToast" in payload
+            assert "Rezerwacja" in payload["showToast"]["message"]
 
     def test_htmx_create_get_returns_partial(self, client, user):
         with freeze_time("2030-01-05"):
