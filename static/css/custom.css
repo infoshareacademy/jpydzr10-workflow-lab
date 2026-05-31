@@ -122,18 +122,21 @@
  * --------------------------------------------------------------------------- */
 
 .timeline-wrap {
-    /* Wave 14-A Bundle 9 -- Sebastian uzywa Comet (Perplexity AI browser).
-       W Chrome scrollbar widoczny, w Comet NIE -- Comet domyslnie hide-uje
-       horizontal scrollbar gdy content przekracza viewport. Naprawione:
-         (1) `overflow-x: scroll` zamiast `auto` -- ZAWSZE wymuszamy
-             scrollbar, niezaleznie od preferencji uzytkownika browsera;
-         (2) `::-webkit-scrollbar { -webkit-appearance: auto }` poniżej
-             wymusza native scrollbar w WebKit-based browsers (Comet,
-             Safari, niektore Chromium fork z aggressive hide);
-         (3) `scrollbar-width: auto` (Firefox standard) zamiast `thin`
-             zeby na FF tez bylo widoczne; */
-    overflow-x: scroll;
-    overflow-y: visible;
+    /* overflow: visible — KLUCZOWE dla sticky header. `overflow-x: scroll`
+       (stara wersja) tworzylo scroll container, ktory ograniczal sticky scope
+       do .timeline-wrap zamiast window. Skutkowalo to:
+         (a) sticky head zawsze przyklejony 69px od wrap_top (= overlap z
+             pierwsza maszyna gdy grid maly, np. filtr "po terminie"),
+         (b) header nie podazal za viewport przy scrollowaniu strony.
+       Z `overflow: visible` sticky scope = window, header dziala normalnie
+       (przykleja sie pod #tl-controls przy scrollu, niewidoczny przy braku
+       scroll = zaden overlap).
+
+       Trade-off: poziome overflow grida (1214px week / 1220px month) na
+       monitorach < 1280px wywola horizontal scrollbar na poziomie strony
+       zamiast wewnatrz tylko timeline. Sebastian pracuje na 24"+ (1920+),
+       wiec w praktyce grid zawsze sie miesci. */
+    overflow: visible;
     border-radius: 0.75rem;
     border: 1px solid rgb(229 231 235);
     background: rgb(255 255 255);
@@ -208,14 +211,12 @@
 }
 
 .timeline-head-cell {
-    /* Wave 14-J sticky scroll (wzorowany na WMS): header row z dniami
-       przykleja sie POD paskiem kontrolnym (#tl-controls). JS w timeline.html
-       mierzy offsetHeight paska i wpisuje --tl-ctrl-h na <html>. Fallback
-       0px = sticky do top viewportu jesli JS nie zadzialal.
-
-       Wave 14-K: padding+font zmniejszone (~50px → ~36px) zeby pierwsza
-       maszyna nie chowala sie kompletnie pod sticky stack. Plus subtelny
-       shadow zeby wizualnie odroznic sticky boundary. */
+    /* Sticky na poziomie WINDOW (od kiedy .timeline-wrap ma overflow: visible
+       zamiast overflow-x: scroll — patrz komentarz przy .timeline-wrap powyzej).
+       top: var(--tl-ctrl-h, 0px) (= 69px = wysokosc #tl-controls) — header
+       przykleja sie POD paskiem kontrolnym przy scrollowaniu strony. Przy
+       scroll=0 header pozostaje na grid_top (natural position), bez overlap
+       z pierwszym machine row. */
     position: sticky;
     top: var(--tl-ctrl-h, 0px);
     z-index: 20;
@@ -243,10 +244,10 @@
 }
 
 .timeline-corner {
-    /* Rog siatki (col=1, row=1) — sticky w obu osiach: pionowo pod
-       paskiem kontrolnym (--tl-ctrl-h), poziomo do lewej krawedzi
-       scroll-wrappera. Wyzszy z-index niz day-header zeby przykrywal
-       nazwy dni przy horizontal scroll. */
+    /* Rog siatki (col=1, row=1) — sticky w obu osiach: pionowo pod paskiem
+       kontrolnym (--tl-ctrl-h), poziomo do lewej krawedzi. Sticky scope = window
+       (od kiedy .timeline-wrap ma overflow: visible). Wyzszy z-index niz day-header
+       (25 > 20) zeby przykrywal nazwy dni przy horizontal scroll. */
     position: sticky;
     top: var(--tl-ctrl-h, 0px);
     left: 0;
