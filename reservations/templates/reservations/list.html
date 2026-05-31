@@ -105,11 +105,12 @@
                         <span>Oczekująca</span>
                     </button>
 
-                    {# Potwierdzona (info/blue) #}
+                    {# Potwierdzona (success/emerald) — spojne z status_badge tag, ktory daje #}
+                    {# bg-emerald-100/800 dla badge'a "potwierdzona" w wierszach tabeli.       #}
                     <button type="submit" name="status" value="potwierdzona"
                             aria-pressed="{% if filter_form.status.value == 'potwierdzona' %}true{% else %}false{% endif %}"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
-                                   {% if filter_form.status.value == 'potwierdzona' %}bg-brand-600 text-white border-brand-600{% else %}bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800 hover:bg-brand-100 dark:hover:bg-brand-900/40{% endif %}">
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
+                                   {% if filter_form.status.value == 'potwierdzona' %}bg-emerald-600 text-white border-emerald-600{% else %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span>Potwierdzona</span>
                     </button>

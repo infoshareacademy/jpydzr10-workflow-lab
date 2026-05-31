@@ -171,7 +171,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-3 py-3">
-                                    {% status_badge s.status as css %}
+                                    {% site_status_badge s.status as css %}
                                     <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium {{ css }}">
                                         <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60" aria-hidden="true"></span>
                                         {{ s.get_status_display }}
@@ -194,7 +194,7 @@
                             <div class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold">{{ s.project_number }}</div>
                             <div class="font-medium text-slate-900 dark:text-white truncate mt-0.5">{{ s.name }}</div>
                         </div>
-                        {% status_badge s.status as css %}
+                        {% site_status_badge s.status as css %}
                         <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 {{ css }}">
                             <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60" aria-hidden="true"></span>
                             {{ s.get_status_display }}

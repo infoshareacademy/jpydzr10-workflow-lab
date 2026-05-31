@@ -69,6 +69,28 @@ def active_link(context, url_path, css_class="bg-slate-100 dark:bg-slate-700"):
     return css_class if current.startswith(url_path) else ""
 
 
+# Statusy budow maja inne semantyczne kolory niz rezerwacje:
+# - aktywna  = zielony  (vs rezerwacja "potwierdzona" tez zielona — spojne)
+# - zakonczona = szary  (terminalny stan)
+# - anulowana = czerwony (vs rezerwacja "anulowana" szara — budowa anulowana
+#   to bardziej znaczace zdarzenie biznesowe, podkreslamy kolorem)
+# Dlatego osobny mapping zamiast nadpisywania kluczy w STATUS_COLOR_CLASSES
+# (rezerwacja "anulowana" zostala by przemalowana na czerwono niechcacy).
+SITE_STATUS_COLOR_CLASSES = {
+    "aktywna": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+    "zakończona": "bg-slate-200 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400",
+    "anulowana": "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200",
+}
+
+
+@register.simple_tag
+def site_status_badge(status_value):
+    """Klasy CSS dla badge'a statusu budowy (rozne od rezerwacji)."""
+    return SITE_STATUS_COLOR_CLASSES.get(
+        status_value, "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+    )
+
+
 # Mapowanie statusu rezerwacji na klase CSS bara timeline (slugified bez
 # diakrytyk bo CSS classy nie lubia non-ASCII w pewnych przegladarkach + linterach).
 BAR_CLASS_MAP = {

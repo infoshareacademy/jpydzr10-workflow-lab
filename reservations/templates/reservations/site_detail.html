@@ -53,7 +53,7 @@
                     </p>
                 {% endif %}
             </div>
-            {% status_badge site.status as badge_css %}
+            {% site_status_badge site.status as badge_css %}
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold {{ badge_css }} flex-shrink-0 self-start">
                 <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60" aria-hidden="true"></span>
                 {{ site.get_status_display }}

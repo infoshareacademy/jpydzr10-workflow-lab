@@ -41,17 +41,20 @@
     Wcześniej Play CDN runtime (407 KB JS + 'unsafe-eval' w CSP).
     Po migracji CLI build: ~79 KB static CSS, bez runtime ewaluacji.
     {% endcomment %}
-    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    {# Cache buster oparty na czasie startu Django (settings.DEPLOY_TIMESTAMP).    #}
+    {# Wymusza ponowne pobranie CSS po kazdej zmianie/restarcie - inaczej Comet  #}
+    {# i niektore agresywne browser cache trzymaja stary plik mimo F5.           #}
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}?v={{ STATIC_VERSION }}">
 
     {# Flatpickr — date picker (z polską lokalizacją) #}
-    <link rel="stylesheet" href="{% static 'vendor/flatpickr.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/flatpickr.min.css' %}?v={{ STATIC_VERSION }}">
 
     {% comment %}
     Custom CSS layer (timeline grid, KPI cards, status chips, modal, toast,
     chatbot animations) — wzbogaca tailwind.css o reguły wymagające
     prawdziwego CSS (grid templates, keyframes, print media).
     {% endcomment %}
-    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}?v={{ STATIC_VERSION }}">
 
     {% block extra_head %}{% endblock %}
 </head>

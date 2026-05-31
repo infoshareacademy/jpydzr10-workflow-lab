@@ -249,6 +249,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.navigation",
                 "core.context_processors.chatbot_drawer",
+                "core.context_processors.static_version",
                 # ``CSP_NONCE`` w kontekście — używane przez templates dla
                 # inline <script nonce="{{ CSP_NONCE }}"> (przygotowanie do
                 # nonce-based CSP w M3, gdy usuniemy 'unsafe-inline').

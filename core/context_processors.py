@@ -1,10 +1,24 @@
 """Context processory dostępne w każdym template'cie."""
 
+import time
+
 # Limit ostatnich konwersacji pokazywanych w drawerze (sidebar) per user.
 # Duplikat z premedytacją wobec chatbot.views.DRAWER_CONVERSATION_LIMIT —
 # nie importujemy widoków chatbota, żeby uniknąć ciężkiego eager loadu
 # (ratelimit + agent_provider).
 _CHATBOT_DRAWER_LIMIT = 5
+
+# Wersja static assets — ustawiona raz przy starcie procesu Django (timestamp).
+# Uzywana jako ?v=N query param dla CSS/JS w base.html. Bez tego niektore
+# agresywne browser cache (Comet, Brave) trzymaja stary plik mimo F5 — query
+# param zmusza ponowne pobranie po kazdym restarcie dev servera (auto po
+# manage.py runserver reload).
+STATIC_VERSION = str(int(time.time()))
+
+
+def static_version(request):
+    """Wstrzykuje ``STATIC_VERSION`` do kazdego template'a — patrz docstring stalej."""
+    return {"STATIC_VERSION": STATIC_VERSION}
 
 
 def navigation(request):
