@@ -211,14 +211,13 @@
 }
 
 .timeline-head-cell {
-    /* Sticky na poziomie WINDOW (od kiedy .timeline-wrap ma overflow: visible
-       zamiast overflow-x: scroll — patrz komentarz przy .timeline-wrap powyzej).
-       top: var(--tl-ctrl-h, 0px) (= 69px = wysokosc #tl-controls) — header
-       przykleja sie POD paskiem kontrolnym przy scrollowaniu strony. Przy
-       scroll=0 header pozostaje na grid_top (natural position), bez overlap
-       z pierwszym machine row. */
+    /* Sticky stack offset: top = wysokosc globalnego topbaru (--topbar-h, 64px)
+       + wysokosc paska kontrolnego timeline (--tl-ctrl-h). Naglowek dni siatki
+       przykleja sie DOKLADNIE pod oba sticky elementy (app-topbar + #tl-controls).
+       Wartosci CSS var ustawia JS w base.html (--topbar-h) i timeline.html
+       (--tl-ctrl-h) po DOMContentLoaded i htmx:afterSwap. */
     position: sticky;
-    top: var(--tl-ctrl-h, 0px);
+    top: calc(var(--topbar-h, 64px) + var(--tl-ctrl-h, 0px));
     z-index: 20;
     background: rgb(255 255 255);
     border-bottom: 1px solid rgb(229 231 235);
@@ -244,12 +243,12 @@
 }
 
 .timeline-corner {
-    /* Rog siatki (col=1, row=1) — sticky w obu osiach: pionowo pod paskiem
-       kontrolnym (--tl-ctrl-h), poziomo do lewej krawedzi. Sticky scope = window
+    /* Rog siatki (col=1, row=1) — sticky w obu osiach: pionowo pod sticky stack
+       (app-topbar + #tl-controls), poziomo do lewej krawedzi. Sticky scope = window
        (od kiedy .timeline-wrap ma overflow: visible). Wyzszy z-index niz day-header
        (25 > 20) zeby przykrywal nazwy dni przy horizontal scroll. */
     position: sticky;
-    top: var(--tl-ctrl-h, 0px);
+    top: calc(var(--topbar-h, 64px) + var(--tl-ctrl-h, 0px));
     left: 0;
     z-index: 25;
     background: rgb(255 255 255);

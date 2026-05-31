@@ -1028,6 +1028,32 @@ class TimelineView(LoginRequiredMixin, View):
             for k in ("machine_type", "status", "site", "person", "search", "inspection")
         )
 
+        # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
+        # +/-days ktore byly zalezne od aktualnego period). Sebastian: te buttony
+        # maja byc niezalezne od view type, zeby precyzyjnie nawigowac w czasie.
+        prev_7 = (start - timedelta(days=7)).isoformat()
+        next_7 = (start + timedelta(days=7)).isoformat()
+        prev_30 = (start - timedelta(days=30)).isoformat()
+        next_30 = (start + timedelta(days=30)).isoformat()
+
+        # filter_qs — fragmenty URL z aktywnymi filtrami, do uzycia w hx-get/href.
+        # Bez tego template ma N if-ow dla kazdego URL = ~80 linii nieczytelnej
+        # mieszanki Django+HTMX. Pre-renderujemy raz tutaj.
+        filter_parts = []
+        if machine_type:
+            filter_parts.append(f"&machine_type={machine_type}")
+        if machine_status:
+            filter_parts.append(f"&status={machine_status}")
+        if site_number:
+            filter_parts.append(f"&site={site_number}")
+        if person_q:
+            filter_parts.append(f"&person={person_q}")
+        if search:
+            filter_parts.append(f"&search={search}")
+        if inspection:
+            filter_parts.append(f"&inspection={inspection}")
+        filter_qs = "".join(filter_parts)
+
         context = {
             "period": period,
             "days": days,
@@ -1042,7 +1068,13 @@ class TimelineView(LoginRequiredMixin, View):
             ).order_by("project_number"),
             "prev_start": (start - timedelta(days=days)).isoformat(),
             "next_start": (start + timedelta(days=days)).isoformat(),
+            "prev_7_iso": prev_7,
+            "next_7_iso": next_7,
+            "prev_30_iso": prev_30,
+            "next_30_iso": next_30,
+            "start_iso": start.isoformat(),
             "today_iso": date.today().isoformat(),
+            "filter_qs": filter_qs,
             "filters_active": filters_active,
             # Echo current filter values so the template can pre-fill inputs.
             "current_machine_type": machine_type or "",

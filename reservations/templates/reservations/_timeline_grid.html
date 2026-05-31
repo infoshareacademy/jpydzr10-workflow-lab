@@ -8,8 +8,15 @@
    weekend stonowany (.is-weekend), bary z gradientem + hover-lift. Empty
    state przyjazny — z ikona i CTA. {% endcomment %}
 
+{# data-start-iso / data-end-iso / data-period — odczytywane przez timeline.html script        #}
+{# w htmx:afterSwap zeby zaktualizowac period label + przeliczyc URLs strzalek nawigacji.       #}
+{# json_script na poczatku partial — Alpine re-hydratuje machineRows dla KPI cards po swap.    #}
+{{ machine_rows|json_script:"machine-rows-data" }}
 <div id="timeline-grid"
      class="timeline-wrap scrollbar-thin shadow-sm"
+     data-start-iso="{{ start|date:'Y-m-d' }}"
+     data-end-iso="{{ end|date:'Y-m-d' }}"
+     data-period="{{ period }}"
      hx-trigger="refreshTimeline from:body"
      hx-get="{% url 'reservations:timeline' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
      hx-target="#timeline-grid"

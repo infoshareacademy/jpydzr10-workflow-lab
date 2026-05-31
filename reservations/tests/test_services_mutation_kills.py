@@ -258,7 +258,13 @@ class TestDailySyncPendingFutureNoOp:
         machine.refresh_from_db()
         assert machine.status == Machine.Status.W_MAGAZYNIE
         # Wszystkie countery zero — pending nie liczone.
-        assert result == {"updated": 0, "extended": 0, "reserved": 0, "today": date(2030, 1, 1)}
+        assert result == {
+            "updated": 0,
+            "extended": 0,
+            "reserved": 0,
+            "released": 0,
+            "today": date(2030, 1, 1),
+        }
 
 
 @pytest.mark.django_db

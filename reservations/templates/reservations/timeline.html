@@ -90,44 +90,90 @@
     </header>
 
     {# ============================== STICKY CONTROL BAR — period + nawigacja ==============================  #}
-    {# Wyciagniete z <header> na page-level (sibling). Sticky scope = body / layout shell  #}
-    {# zamiast <header> (~120px). Dzieki temu pasek podaza za viewport przez cala dlugosc  #}
-    {# strony przy scrollowaniu, nie tylko dopoki header jest widoczny.                    #}
-    {# id=tl-controls oraz z-30 wymagane przez script na koncu tego templatu — mierzy      #}
-    {# offsetHeight i ustawia --tl-ctrl-h na <html> dla pozycjonowania naglowka dni.       #}
-    <div id="tl-controls" class="sticky top-0 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-800/80 shadow-sm">
+    {# Sticky top-16 (= h-16 = wysokosc globalnego #app-topbar w base.html). Przykleja sie  #}
+    {# POD topbar przy scrollu, nie NA nim (z-30 > z-20 nadpisaloby topbar — bug pre-fix). #}
+    {# Wszystkie linki nawigacji uzywaja HTMX swap target=#timeline-grid + hx-push-url     #}
+    {# zeby uzytkownik nie tracil pozycji scroll przy klikaniu strzalek. Bez tego scroll   #}
+    {# resetuje sie na top przy kazdym kliku, co Sebastian wytknal jako P0 irytacje.       #}
+    {# Mini-step buttons (-30d, -7d, +7d, +30d) niezaleznie od aktualnego period — pozwala  #}
+    {# precyzyjnie nawigowac w czasie bez zmiany wielkosci okna timeline.                  #}
+    <div id="tl-controls" class="sticky top-16 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-slate-800/80 shadow-sm">
         <div class="px-5 sm:px-6 py-2.5 flex flex-wrap items-center gap-2 sm:gap-3">
 
-            {# View type — segment control #}
+            {# Period label reactive — pokazuje aktualnie wybrany zakres dat. Updateowany #}
+            {# po HTMX swap przez listener htmx:afterSwap (czyta nowy okres z #timeline-grid #}
+            {# data attributes). #}
+            <div class="text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap tabular-nums mr-1">
+                <span class="font-mono" id="tl-period-label">{{ start|date_pl }} → {{ end|date_pl }}</span>
+            </div>
+
+            {# View type — segment control (HTMX swap, nie page reload) #}
             <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900/60 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 text-xs sm:text-sm" role="group" aria-label="Wybór okresu">
-                <a href="?period=week&start={{ start|date:'Y-m-d' }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
+                <a href="?period=week&start={{ start_iso }}{{ filter_qs }}"
+                   hx-get="?period=week&start={{ start_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == 'week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
                    aria-current="{% if period == 'week' %}page{% endif %}">7 dni</a>
-                <a href="?period=2week&start={{ start|date:'Y-m-d' }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
+                <a href="?period=2week&start={{ start_iso }}{{ filter_qs }}"
+                   hx-get="?period=2week&start={{ start_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == '2week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
                    aria-current="{% if period == '2week' %}page{% endif %}">14 dni</a>
-                <a href="?period=month&start={{ start|date:'Y-m-d' }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
+                <a href="?period=month&start={{ start_iso }}{{ filter_qs }}"
+                   hx-get="?period=month&start={{ start_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == 'month' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
                    aria-current="{% if period == 'month' %}page{% endif %}">Miesiąc</a>
             </div>
 
-            {# Date navigation — zachowuje aktywne filtry w URL przy nawigacji #}
+            {# Mini-step nav: «-30d ‹-7d Dziś +7d› +30d» (HTMX swap, scroll-preserving) #}
             <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm" role="group" aria-label="Nawigacja w czasie">
-                <a href="?period={{ period }}&start={{ prev_start }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
-                   class="p-1.5 sm:p-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-                   aria-label="Poprzedni okres">
+                <a href="?period={{ period }}&start={{ prev_30_iso }}{{ filter_qs }}"
+                   hx-get="?period={{ period }}&start={{ prev_30_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
+                   class="px-2 sm:px-2.5 py-1.5 sm:py-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 font-mono text-sm"
+                   title="-30 dni" aria-label="Cofnij 30 dni">«</a>
+                <a href="?period={{ period }}&start={{ prev_7_iso }}{{ filter_qs }}"
+                   hx-get="?period={{ period }}&start={{ prev_7_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
+                   class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+                   title="-7 dni" aria-label="Cofnij 7 dni">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 </a>
-                <a href="?period={{ period }}&start={{ today_iso }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
-                   class="px-3 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500">
+                <a href="?period={{ period }}&start={{ today_iso }}{{ filter_qs }}"
+                   hx-get="?period={{ period }}&start={{ today_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
+                   class="px-3 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+                   title="Skocz do dzis" aria-label="Pokaz okres zaczynajacy sie dzis">
                     Dziś
                 </a>
-                <a href="?period={{ period }}&start={{ next_start }}{% if current_machine_type %}&machine_type={{ current_machine_type }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_site %}&site={{ current_site }}{% endif %}{% if current_person %}&person={{ current_person }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_inspection %}&inspection={{ current_inspection }}{% endif %}"
-                   class="p-1.5 sm:p-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-                   aria-label="Następny okres">
+                <a href="?period={{ period }}&start={{ next_7_iso }}{{ filter_qs }}"
+                   hx-get="?period={{ period }}&start={{ next_7_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
+                   class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
+                   title="+7 dni" aria-label="Przesun o 7 dni do przodu">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                 </a>
+                <a href="?period={{ period }}&start={{ next_30_iso }}{{ filter_qs }}"
+                   hx-get="?period={{ period }}&start={{ next_30_iso }}{{ filter_qs }}"
+                   hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
+                   hx-indicator="#tl-loading"
+                   class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 font-mono text-sm"
+                   title="+30 dni" aria-label="Przesun o 30 dni do przodu">»</a>
             </div>
+
+            {# Loading indicator dla HTMX requestow — pokazuje sie tylko gdy hx-request w toku. #}
+            <span id="tl-loading" class="htmx-indicator inline-flex items-center text-xs text-brand-600 dark:text-brand-300 ml-1">
+                <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                Ładuję…
+            </span>
         </div>
     </div>
 
@@ -174,8 +220,9 @@
     </div>
     {% endwith %}
 
-    {# ============================== HYDRATION (dla Alpine) ============================== #}
-    {{ machine_rows|json_script:"machine-rows-data" }}
+    {# HYDRATION — przeniesiona do _timeline_grid.html (partial), zeby po HTMX swap rowniez #}
+    {# byla swieza. Tutaj nic — Alpine init() i tak czyta json_script ktorego ID nie zmienia #}
+    {# sie po swap (json_script jest na poczatku partial, podmieniany za kazdym swapem).      #}
 
     {# ============================== LAYOUT — pelnoszerokie, bez sidebar ============================== #}
     <div class="space-y-3">
@@ -295,11 +342,94 @@
     }
     setHeight();
     window.addEventListener('resize', setHeight);
-    // HTMX swap moze podmienic content w obrebie timeline, ale #tl-controls
-    // pozostaje (jest poza zakresem hx-target). Mimo to robimy refresh po
-    // afterSwap zeby sticky header dni dostal swiezy offset jesli pasek
-    // urosl o jeden wiersz (np. po dodaniu filtra-chipa).
-    document.body.addEventListener('htmx:afterSwap', setHeight);
+
+    // Re-hydratacja po HTMX swap #timeline-grid (klik strzalek nawigacji, period switcher):
+    //   1) odswiez --tl-ctrl-h (na wypadek zmiany rozmiaru bara)
+    //   2) zaktualizuj period label (z data-start/data-end na nowym #timeline-grid)
+    //   3) re-hydrate Alpine machineRows dla KPI cards (json_script w partial)
+    //   4) podmien aria-current + active class w period switcher (link wyglada na "wybrany")
+    //   5) podmien href + hx-get linkow strzalek na nowe ISO daty (server already wstawil w partial?)
+    //      Aktualnie linki sa OUTSIDE #timeline-grid (w #tl-controls), wiec server NIE refresh-uje
+    //      ich URL po swap. Trzeba: czytac nowy start_iso z partial i przeliczyc URLs w JS.
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        var t = evt.detail && evt.detail.target;
+        if (!t || t.id !== 'timeline-grid') return;
+
+        setHeight();
+
+        var grid = document.getElementById('timeline-grid');
+        if (!grid) return;
+        var startIso = grid.getAttribute('data-start-iso') || '';
+        var endIso = grid.getAttribute('data-end-iso') || '';
+        var period = grid.getAttribute('data-period') || 'week';
+
+        // Period label
+        var label = document.getElementById('tl-period-label');
+        if (label && startIso && endIso) {
+            label.textContent = _formatPl(startIso) + ' → ' + _formatPl(endIso);
+        }
+
+        // Recompute nav URLs (in-place URLSearchParams swap on each <a hx-get>)
+        _updateNavLinks(period, startIso);
+
+        // KPI re-hydrate — Alpine machineRows must reload from new json_script
+        var data = document.getElementById('machine-rows-data');
+        if (data && window.timelineShellState) {
+            try {
+                var rows = JSON.parse(data.textContent);
+                window.timelineShellState.machineRows = rows;
+                window.timelineShellState.totalMachines = rows.length;
+                window.timelineShellState.totalReservations = rows.reduce(function (s, m) {
+                    return s + ((m.bars || []).length);
+                }, 0);
+            } catch (e) { /* silent */ }
+        }
+    });
+
+    function _formatPl(iso) {
+        // 2026-06-07 -> 07.06.2026
+        if (!iso || iso.length < 10) return iso;
+        return iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4);
+    }
+
+    function _addDays(iso, n) {
+        var d = new Date(iso + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + n);
+        return d.toISOString().slice(0, 10);
+    }
+
+    function _updateNavLinks(period, startIso) {
+        // Each link in #tl-controls has hx-get and href starting with "?period=..."
+        // We rewrite the start= param to reflect new startIso (so future clicks use it).
+        var links = document.querySelectorAll('#tl-controls a[hx-get]');
+        var todayIso = new Date().toISOString().slice(0, 10);
+        links.forEach(function (a) {
+            var url = a.getAttribute('href') || '';
+            var qmark = url.indexOf('?');
+            if (qmark < 0) return;
+            var params = new URLSearchParams(url.slice(qmark + 1));
+
+            // Decide new start based on label/title (heuristic: title says "-30 dni" / "+7 dni" etc.)
+            var title = (a.getAttribute('title') || '').toLowerCase();
+            var newStart = startIso;
+            if (title.indexOf('-30') >= 0) newStart = _addDays(startIso, -30);
+            else if (title.indexOf('+30') >= 0) newStart = _addDays(startIso, 30);
+            else if (title.indexOf('-7') >= 0) newStart = _addDays(startIso, -7);
+            else if (title.indexOf('+7') >= 0) newStart = _addDays(startIso, 7);
+            else if (title.indexOf('dzis') >= 0 || title.indexOf('dziś') >= 0) newStart = todayIso;
+            else newStart = startIso;  // period switcher: stay on same start
+
+            params.set('start', newStart);
+            var newUrl = '?' + params.toString();
+            a.setAttribute('href', newUrl);
+            a.setAttribute('hx-get', newUrl);
+        });
+
+        // Tell HTMX to re-process the elements so new hx-get takes effect
+        if (window.htmx) {
+            window.htmx.process(document.getElementById('tl-controls'));
+        }
+    }
 })();
 </script>
 {% endblock %}
