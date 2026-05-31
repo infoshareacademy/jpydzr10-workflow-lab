@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, TemplateView
 from django_ratelimit.decorators import ratelimit
 
+from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors
 
 from .forms import ProfileForm, RegisterEmployeeForm
@@ -146,7 +147,7 @@ def employee_register_view(request):
 # =============================================================================
 
 
-class EmployeeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class EmployeeListView(PerPageMixin, LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """Lista pracowników z filtrami status (aktywni / zwolnieni / wszyscy) + funkcja.
 
     Filtry GET:
@@ -162,7 +163,6 @@ class EmployeeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = EmployeeProfile
     template_name = "accounts/employee_list.html"
     context_object_name = "profiles"
-    paginate_by = 25
     permission_required = "accounts.view_employeeprofile"
     raise_exception = True
 

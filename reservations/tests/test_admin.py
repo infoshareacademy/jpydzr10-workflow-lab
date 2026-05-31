@@ -138,8 +138,14 @@ class TestActionComplete:
         machine.status = Machine.Status.NA_BUDOWIE
         machine.location = "Plac budowy"
         machine.save()
+        # Bug 19 walidacja: complete wymaga start <= today. Admin action uzywa
+        # date.today() pod spodem -> uzywamy past dates zeby symulowac realna
+        # sytuacje 'rezerwacja sie zaczela, czas zakonczyc'.
+        from datetime import timedelta as _td
         confirmed = ConfirmedReservationFactory(
-            machine=machine, start_date=date(2030, 1, 1), end_date=date(2030, 1, 5)
+            machine=machine,
+            start_date=date.today() - _td(days=5),
+            end_date=date.today() + _td(days=2),
         )
 
         admin = ReservationAdmin(Reservation, site)

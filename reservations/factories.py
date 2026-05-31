@@ -115,9 +115,17 @@ class PendingReservationFactory(ReservationFactory):
 
 
 class ConfirmedReservationFactory(ReservationFactory):
-    """A reservation in ``potwierdzona`` — ready for ``run_daily_sync``."""
+    """A reservation in ``potwierdzona`` — ready for ``run_daily_sync``.
+
+    Default start_date: 2 dni temu (= juz aktywna, mozna complete bez
+    naruszania Bug 19 walidacji 'cannot complete before start'). Test moze
+    nadpisac jesli potrzebuje future start (np. test sprawdzajacy 'cannot
+    complete reservation that has not started').
+    """
 
     status = Reservation.Status.POTWIERDZONA
+    start_date = factory.LazyFunction(lambda: date.today() - timedelta(days=2))
+    end_date = factory.LazyAttribute(lambda o: o.start_date + timedelta(days=_random_duration_days()))
 
 
 class CancelledReservationFactory(ReservationFactory):
@@ -125,4 +133,9 @@ class CancelledReservationFactory(ReservationFactory):
 
 
 class CompletedReservationFactory(ReservationFactory):
+    """A reservation in ``zakonczona`` — start_date musi byc <= today bo nie
+    da sie technicznie zakonczyc rezerwacji ktora sie nie zaczela (Bug 19)."""
+
     status = Reservation.Status.ZAKONCZONA
+    start_date = factory.LazyFunction(lambda: date.today() - timedelta(days=10))
+    end_date = factory.LazyAttribute(lambda o: o.start_date + timedelta(days=_random_duration_days()))

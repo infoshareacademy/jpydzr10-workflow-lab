@@ -211,17 +211,46 @@ UNFOLD = {
 #     dynamicznych klas + nasze custom transitions. Strict CSS-only setup byłby
 #     możliwy po przejściu na nonce-based, ale nieproporcjonalne.
 
+# Google Maps widget (BETA, /mapy/) wymaga whitelistowania domen w CSP:
+#   - script-src: maps.googleapis.com - loader JS API
+#   - img-src: maps.gstatic.com + maps.googleapis.com - tile images + marker icons
+#   - connect-src: maps.googleapis.com - XHR dla geocoding / places API
+# Bez tych wpisow przegladarka blokuje wszystkie requesty Google Maps + console
+# zapelnia sie bledami CSP. Widget jest gated przez `if GOOGLE_MAPS_API_KEY`
+# w template - bez klucza skrypt sie nawet nie laduje.
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "style-src": ("'self'", "'unsafe-inline'"),
-        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'"),
-        "img-src": ("'self'", "data:"),
-        "font-src": ("'self'", "data:"),
-        "connect-src": ("'self'",),
+        "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com"),
+        "script-src": (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            "https://maps.googleapis.com",
+        ),
+        "img-src": (
+            "'self'",
+            "data:",
+            "https://maps.gstatic.com",
+            "https://maps.googleapis.com",
+            "https://*.googleusercontent.com",
+        ),
+        "font-src": ("'self'", "data:", "https://fonts.gstatic.com"),
+        "connect-src": ("'self'", "https://maps.googleapis.com"),
         "frame-ancestors": ("'none'",),
     },
 }
+
+
+# =============================================================================
+# GOOGLE MAPS API (widok /mapy/ - BETA)
+# =============================================================================
+# Klucz API Google Maps JavaScript API. Pobierany z .env (GOOGLE_MAPS_API_KEY).
+# Pusta wartosc = widget /mapy/ pokazuje panel "brak klucza" zamiast crashowac
+# (gating w templates/core/maps.html). Klucz powinien byc obostrzony przez
+# referrer restriction w Google Cloud Console: tylko domena produkcyjna +
+# localhost dla dev.
+GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 
 
 # =============================================================================
@@ -249,6 +278,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.navigation",
                 "core.context_processors.chatbot_drawer",
+                "core.context_processors.static_version",
                 # ``CSP_NONCE`` w kontekście — używane przez templates dla
                 # inline <script nonce="{{ CSP_NONCE }}"> (przygotowanie do
                 # nonce-based CSP w M3, gdy usuniemy 'unsafe-inline').

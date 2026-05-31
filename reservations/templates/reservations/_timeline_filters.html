@@ -67,20 +67,51 @@ chip w h1 meta, nie tutaj.
 
     <select name="site"
             aria-label="Budowa"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[170px]">
-        <option value="">— budowa —</option>
+            title="Filtruj rezerwacje po budowie — pokazuje tylko maszyny przypisane do wybranego projektu"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[280px]">
+        <option value="">— wszystkie budowy —</option>
         {% for s in sites %}
-            <option value="{{ s.project_number }}" {% if s.project_number == current_site %}selected{% endif %}>
-                {{ s.project_number }}
+            <option value="{{ s.project_number }}"
+                    title="{{ s.project_number }} — {{ s.name }}{% if s.client_name %} ({{ s.client_name }}){% endif %}"
+                    {% if s.project_number == current_site %}selected{% endif %}>
+                {{ s.project_number }} — {{ s.name|truncatechars:35 }}
             </option>
         {% endfor %}
     </select>
 
-    <input type="text" name="person" value="{{ current_person }}"
-           aria-label="Osoba"
-           placeholder="Osoba…"
-           autocomplete="off"
-           class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-[110px]">
+    {# Sebastian 2026-05-31: zamiast text input person + 'Tylko moje' (bo pusty timeline gdy   #}
+    {# user = Sebastian Nowak ale dane testowe maja losowe osoby) — 2 dropdowny z LISTY        #}
+    {# istniejacych osob. Person = kto wpisal rezerwacje, Responsible = kierownik budowy.      #}
+    <select name="person"
+            aria-label="Osoba rezerwująca"
+            title="Filtruj po osobie ktora wpisala rezerwacje (Reservation.person)"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="">— rezerwujący —</option>
+        {% for p in persons %}
+            <option value="{{ p }}" {% if p == current_person %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="responsible"
+            aria-label="Osoba odpowiedzialna na budowie"
+            title="Filtruj po kierowniku budowy (Reservation.responsible_person)"
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="">— odpowiedzialny —</option>
+        {% for p in responsibles %}
+            <option value="{{ p }}" {% if p == current_responsible %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+    </select>
+
+    {# Sortowanie maszyn po dacie przegladu — Sebastian: chce widziec maszyny     #}
+    {# ktorym najszybciej konczy sie przeglad (inspection_date ASC). NULL na koncu. #}
+    <select name="sort"
+            aria-label="Sortowanie maszyn"
+            title="Sortuj wiersze maszyn — domyslnie po UID alfabetycznie. Opcja 'Przeglad najwczesniej' pokazuje na gorze maszyny z najblizszym terminem przegladu."
+            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition max-w-[180px]">
+        <option value="uid" {% if current_sort == 'uid' or not current_sort %}selected{% endif %}>↕ UID (A→Z)</option>
+        <option value="inspection_asc" {% if current_sort == 'inspection_asc' %}selected{% endif %}>↑ Przegląd najwcześniej</option>
+        <option value="inspection_desc" {% if current_sort == 'inspection_desc' %}selected{% endif %}>↓ Przegląd najpóźniej</option>
+    </select>
 
     {# Submit jest fallbackiem dla browserow bez JS / HTMX. Reactive HTMX     #}
     {# wywoluje zapytanie na change, ale enter w inpucie tez powinien dzialac. #}

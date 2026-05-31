@@ -243,6 +243,29 @@ def create_reservation(
             }
         )
 
+    # Walidacja budowy: nie mozna rezerwowac maszyny na zakonczona / anulowana
+    # budowe. Sytuacja "36 aktywnych rezerwacji na zakonczonej budowie" pokazuje
+    # ze logika nigdy nie blokowala dodawania nowych rezerwacji do nieaktywnej
+    # budowy.
+    if site_id is not None:
+        try:
+            target_site = ConstructionSite.objects.get(pk=site_id)
+        except ConstructionSite.DoesNotExist as exc:
+            raise ValidationError({"site": _("Wskazana budowa nie istnieje.")}) from exc
+        if target_site.status != ConstructionSite.Status.AKTYWNA:
+            raise ValidationError(
+                {
+                    "site": _(
+                        "Budowa %(project_number)s ma status %(status)s "
+                        "— nie można na niej tworzyć nowych rezerwacji."
+                    )
+                    % {
+                        "project_number": target_site.project_number,
+                        "status": target_site.get_status_display(),
+                    }
+                }
+            )
+
     if has_conflict(machine_id=machine_id, start=start_date, end=end_date):
         conflicts = get_conflicting_reservations(
             machine_id=machine_id, start=start_date, end=end_date
@@ -386,8 +409,34 @@ def confirm_reservation(reservation: Reservation, *, today: date | None = None) 
         end=locked.end_date,
         exclude_pk=locked.pk,
     ):
+        # Pokazujemy uzytkownikowi LISTE konfliktujacych rezerwacji zeby
+        # wiedzial gdzie konkretnie jest nakladanie — bez tego user widzi
+        # tylko "konflikt" i myli sie ze go nie ma (timeline wizualnie
+        # nakladajace bary moga byc zakryte przez inny bar wyzej w stacku).
+        conflicts = list(
+            get_conflicting_reservations(
+                machine_id=locked.machine_id,
+                start=locked.start_date,
+                end=locked.end_date,
+                exclude_pk=locked.pk,
+            )
+        )
+        details = "; ".join(
+            f"#{c.pk} {c.start_date}→{c.end_date} ({c.get_status_display()}, {c.person})"
+            for c in conflicts[:3]
+        )
         raise ValidationError(
-            _("Konflikt rezerwacji wykryty podczas zatwierdzania (race condition).")
+            _(
+                "Nie można potwierdzić — rezerwacja #%(pk)s (%(start)s→%(end)s) "
+                "nakłada się z %(count)d innymi rezerwacjami: %(details)s"
+            )
+            % {
+                "pk": locked.pk,
+                "start": locked.start_date,
+                "end": locked.end_date,
+                "count": len(conflicts),
+                "details": details,
+            }
         )
 
     locked.status = Reservation.Status.POTWIERDZONA
@@ -478,6 +527,22 @@ def complete_reservation(
     locked = Reservation.objects.select_for_update().get(pk=reservation.pk)
     _assert_legal_transition(locked.status, Reservation.Status.ZAKONCZONA)
 
+    # Walidacja Bug 19 (Sebastian incydent #256 — Minikoparka 4 zaakceptowana
+    # ze start_date=04.06 i zakonczona 31.05; maszyna nigdy nie pojechala na
+    # budowe). Zakonczenie = zwrot maszyny do magazynu. Niemozliwe gdy start
+    # jeszcze nie nadszedl — maszyna nie wyjechala wiec nie ma czego zwrocic.
+    # Wlasciwa akcja w tym scenariuszu to ANULUJ rezerwacje (cancel_reservation),
+    # nie complete. Wprowadzamy ValidationError z jasnym wskazaniem alternatywy.
+    if locked.start_date > today:
+        raise ValidationError(
+            _(
+                "Nie można zakończyć rezerwacji #%(pk)s — start (%(start)s) "
+                "jeszcze nie nadszedł, maszyna nie wyjechała na budowę. "
+                "Użyj 'Anuluj rezerwację' jeśli chcesz cofnąć wynajem."
+            )
+            % {"pk": locked.pk, "start": locked.start_date}
+        )
+
     update_fields = ["status", "updated_at"]
     if actual_return_date is not None:
         if actual_return_date < locked.start_date:
@@ -540,7 +605,7 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
     today = today or date.today()
     Machine = apps.get_model("machines", "Machine")
 
-    updated = extended = reserved = 0
+    updated = extended = reserved = released = 0
 
     confirmed = (
         Reservation.objects.filter(status=Reservation.Status.POTWIERDZONA)
@@ -587,17 +652,54 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
             machine.save(update_fields=["status", "updated_at"])
             reserved += 1
 
+    # ------------------------------------------------------------------
+    # Pass 3 — release stale statuses. NA_BUDOWIE/ZAREZERWOWANA without
+    # corresponding confirmed reservation (active or future) reverts to
+    # W_MAGAZYNIE. Handles cases where reservations were cancelled,
+    # completed, or edited bypassing the normal status flow (manual admin
+    # changes, swap_machine, batch operations).
+    # ------------------------------------------------------------------
+    stale_qs = Machine.objects.filter(
+        status__in=[Machine.Status.NA_BUDOWIE, Machine.Status.ZAREZERWOWANA]
+    )
+    for machine in stale_qs:
+        active = Reservation.objects.filter(
+            machine=machine,
+            status=Reservation.Status.POTWIERDZONA,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).exists()
+        if active:
+            # NA_BUDOWIE correct; nothing to do (Pass 1 handled flips into it).
+            continue
+
+        has_future = Reservation.objects.filter(
+            machine=machine,
+            status=Reservation.Status.POTWIERDZONA,
+            start_date__gt=today,
+        ).exists()
+
+        target = (
+            Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
+        )
+        if machine.status != target:
+            machine.status = target
+            machine.save(update_fields=["status", "updated_at"])
+            released += 1
+
     logger.info(
-        "Daily sync (%s): updated=%d, extended=%d, reserved=%d",
+        "Daily sync (%s): updated=%d, extended=%d, reserved=%d, released=%d",
         today,
         updated,
         extended,
         reserved,
+        released,
     )
     return {
         "updated": updated,
         "extended": extended,
         "reserved": reserved,
+        "released": released,
         "today": today,
     }
 

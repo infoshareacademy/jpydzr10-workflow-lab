@@ -8,8 +8,15 @@
    weekend stonowany (.is-weekend), bary z gradientem + hover-lift. Empty
    state przyjazny — z ikona i CTA. {% endcomment %}
 
+{# data-start-iso / data-end-iso / data-period — odczytywane przez timeline.html script        #}
+{# w htmx:afterSwap zeby zaktualizowac period label + przeliczyc URLs strzalek nawigacji.       #}
+{# json_script na poczatku partial — Alpine re-hydratuje machineRows dla KPI cards po swap.    #}
+{{ machine_rows|json_script:"machine-rows-data" }}
 <div id="timeline-grid"
      class="timeline-wrap scrollbar-thin shadow-sm"
+     data-start-iso="{{ start|date:'Y-m-d' }}"
+     data-end-iso="{{ end|date:'Y-m-d' }}"
+     data-period="{{ period }}"
      hx-trigger="refreshTimeline from:body"
      hx-get="{% url 'reservations:timeline' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
      hx-target="#timeline-grid"
@@ -21,10 +28,14 @@
         <div class="timeline-grid" data-period="{{ period }}" style="--days: {{ day_list|length }}" role="rowgroup">
 
             {# ROW 1: header — sticky day labels (col 1 = corner, col 2+ = days) #}
+            {# Counter (X) - liczba maszyn po filtrze. Sebastian: 'chce wiedziec ile maszyn #}
+            {# zostalo po przefiltrowaniu np. walec=2, wozek=3'. Re-renderowany na kazdy    #}
+            {# HTMX swap bo jest w partial.                                                 #}
             <div class="timeline-corner" role="columnheader">
                 <span class="inline-flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2"/></svg>
                     Maszyna
+                    <span class="ml-1 px-1.5 py-0.5 rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[0.625rem] font-semibold tabular-nums" title="Liczba maszyn po aktualnych filtrach">{{ machine_rows|length }}</span>
                 </span>
             </div>
             {% for day in day_list %}

@@ -33,6 +33,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, UpdateView, View
 
+from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors, join_validation_error
 from core.utils import parse_iso_date
 from machines.models import Machine
@@ -78,7 +79,7 @@ PAGE_SIZE = 20
 # =============================================================================
 
 
-class ReservationListView(LoginRequiredMixin, ListView):
+class ReservationListView(PerPageMixin, LoginRequiredMixin, ListView):
     """Paginated list of reservations with a sidebar filter form."""
 
     model = Reservation
@@ -174,6 +175,16 @@ def reservation_modal_view(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
     )
     form = ReservationForm(instance=reservation)
+    # Lista maszyn dostepnych do wymiany (swap) — wyklucza obecna + WYCOFANA
+    # + W_SERWISIE. Lekki queryset (uid + name) zeby template moglo renderowac
+    # dropdown bez dodatkowych zapytan.
+    swap_choices = (
+        Machine.objects.filter(is_reservable=True)
+        .exclude(status__in=[Machine.Status.WYCOFANA, Machine.Status.W_SERWISIE])
+        .exclude(pk=reservation.machine_id)
+        .order_by("uid")
+        .values("pk", "uid", "name")
+    )
     return render(
         request,
         "reservations/_reservation_full_modal.html",
@@ -181,6 +192,8 @@ def reservation_modal_view(request: HttpRequest, pk: int) -> HttpResponse:
             "form": form,
             "reservation": reservation,
             "mode": "edit",
+            "cancellation_reasons": Reservation.CancellationReason.choices,
+            "swap_choices": swap_choices,
         },
     )
 
@@ -308,11 +321,34 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
                     _("Rezerwacja %(title)s została utworzona.") % {"title": reservation.title},
                 )
                 if getattr(request, "htmx", False):
-                    # Close the modal + refresh the list table via HX-Trigger.
+                    # HX-Trigger jako JSON — pozwala na payload (showToast event
+                    # czytany przez globalny toast listener w app.js). Bez tego
+                    # uzytkownik nie widzi feedback po HTMX create (flash messages
+                    # sa w base.html messages section poza scope swap timeline'a).
                     response = HttpResponse(status=204)
-                    response["HX-Trigger"] = "reservationCreated"
+                    response["HX-Trigger"] = json.dumps(
+                        {
+                            "reservationCreated": True,
+                            "refreshTimeline": True,
+                            "showToast": {
+                                "kind": "success",
+                                "message": (
+                                    f"✓ Rezerwacja #{reservation.pk} dla "
+                                    f"{reservation.machine.uid} "
+                                    f"({reservation.start_date.strftime('%d.%m')}—"
+                                    f"{reservation.end_date.strftime('%d.%m.%Y')}) zapisana"
+                                ),
+                                "duration": 6000,
+                            },
+                        }
+                    )
                     return response
-                return redirect("reservations:detail", pk=reservation.pk)
+                # Non-HTMX flow: respektuj skad uzytkownik przyszedl (timeline?
+                # list? site_detail?) zamiast hardcoded redirect na detail
+                # rezerwacji. Sebastian wyrazil P0 frustration ze tworzenie
+                # rezerwacji z timeline przerzucalo na karte rezerwacji —
+                # user chce zostac na timeline i zobaczyc nowy bar.
+                return _redirect_back(request, fallback_pk=reservation.pk)
     else:
         form = ReservationForm()
 
@@ -410,7 +446,11 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
             return self.form_invalid(form)
 
         messages.success(self.request, _("Rezerwacja zaktualizowana."))
-        return redirect("reservations:detail", pk=self.object.pk)
+        # Bug 18 fix: respektuj skad user przyszedl (timeline/list/site_detail)
+        # zamiast hardcoded redirect na detail. Edit z timeline'a -> wraca na
+        # timeline z toast notification (HTMX flow) lub redirect na referer
+        # (non-HTMX flow).
+        return _redirect_back(self.request, fallback_pk=self.object.pk)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -431,6 +471,10 @@ def reservation_confirm(request: HttpRequest, pk: int) -> HttpResponse:
 
     Wymaga uprawnienia ``reservations.change_reservation`` — domyślnie
     grupa "Magazynierzy" + "Kierownicy".
+
+    Redirect: respektuje POST field ``next`` (lub HTTP_REFERER jeśli z timeline),
+    inaczej wraca na detail rezerwacji. Sebastian wytknal ze potwierdzenie z
+    timeline'a przenosilo na karte rezerwacji — chce zostac na timeline.
     """
     reservation = get_object_or_404(Reservation, pk=pk)
     try:
@@ -439,7 +483,67 @@ def reservation_confirm(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja potwierdzona."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
+
+
+def _redirect_back(request: HttpRequest, *, fallback_pk: int) -> HttpResponse:
+    """Wraca tam skad user przyszedl (?next= w POST, lub HTTP_REFERER jesli z timeline).
+
+    HTMX-aware: jesli request.htmx == True, zwraca 204 + HX-Trigger=refreshTimeline
+    zamiast 302 redirect. Skutek: timeline-grid (ma hx-trigger='refreshTimeline
+    from:body') odswieza sie partial swap, bez full page reload. To znaczy
+    confirm/cancel/complete z timeline'a NIE odswieza calego ekranu.
+
+    Non-HTMX fallback: bezpieczenstwo walidujemy url_has_allowed_host_and_scheme
+    + whitelist safe_paths. Bez tego po confirm/cancel/complete z timeline'a
+    uzytkownik byl przerzucany na karte rezerwacji.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    # HTMX fast path — zero page reload, tylko refresh timeline grid (jesli
+    # taki istnieje na obecnej stronie). Sebastian explicit P0 wymog.
+    #
+    # Toast z flash messages: po HTMX swap base.html messages section NIE jest
+    # re-renderowana, wiec user nie widzi success/error. Zbieramy aktualne
+    # storage Django messages, czyscimy je (mark_used), i przekazujemy ostatnia
+    # przez HX-Trigger JSON do showToast event w globalnym toast listenerze.
+    if getattr(request, "htmx", False):
+        storage = messages.get_messages(request)
+        last_msg = None
+        last_level = "success"
+        for msg in storage:
+            last_msg = str(msg.message)
+            # Django levels: DEBUG=10, INFO=20, SUCCESS=25, WARNING=30, ERROR=40
+            last_level = msg.tags or "info"
+        # mark_used (iteracja storage zuzywa wiadomosci) — zapobiega podwojeniu
+        # gdy potem renderujemy normalny page.
+        storage.used = True
+
+        trigger_payload = {
+            "refreshTimeline": True,
+            "reservationUpdated": True,
+        }
+        if last_msg:
+            trigger_payload["showToast"] = {
+                "kind": "error" if "error" in last_level else "success",
+                "message": last_msg,
+                "duration": 6000 if "error" in last_level else 4000,
+            }
+
+        response = HttpResponse(status=204)
+        response["HX-Trigger"] = json.dumps(trigger_payload)
+        return response
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER", "")
+    allowed = url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    )
+    # Akceptujemy redirect tylko do timeline / list / site_detail — nie do detail
+    # (zeby unikac petli "confirm -> detail -> confirm").
+    safe_paths = ("/rezerwacje/timeline/", "/rezerwacje/", "/budowy/")
+    if allowed and next_url and any(p in next_url for p in safe_paths):
+        return redirect(next_url)
+    return redirect("reservations:detail", pk=fallback_pk)
 
 
 @login_required
@@ -466,7 +570,7 @@ def reservation_cancel(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja anulowana."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -492,7 +596,7 @@ def reservation_complete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, join_validation_error(exc))
     else:
         messages.success(request, _("Rezerwacja zakończona, maszyna wróciła do magazynu."))
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -512,7 +616,7 @@ def reservation_change_operator(request: HttpRequest, pk: int) -> HttpResponse:
     form = ChangeOperatorForm(request.POST)
     if not form.is_valid():
         messages.error(request, _("Niepoprawne dane: %(err)s") % {"err": form.errors.as_text()})
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
     try:
         change_operator(
             reservation,
@@ -526,7 +630,7 @@ def reservation_change_operator(request: HttpRequest, pk: int) -> HttpResponse:
             request,
             _("Osoba zmieniona na: %(person)s") % {"person": form.cleaned_data["new_person"]},
         )
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 @login_required
@@ -549,7 +653,7 @@ def reservation_swap_machine(request: HttpRequest, pk: int) -> HttpResponse:
     form = SwapMachineForm(request.POST, current_machine_id=reservation.machine_id)
     if not form.is_valid():
         messages.error(request, _("Niepoprawne dane: %(err)s") % {"err": form.errors.as_text()})
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
     try:
         result = swap_machine(
             reservation,
@@ -559,7 +663,7 @@ def reservation_swap_machine(request: HttpRequest, pk: int) -> HttpResponse:
         )
     except ValidationError as exc:
         messages.error(request, join_validation_error(exc))
-        return redirect("reservations:detail", pk=pk)
+        return _redirect_back(request, fallback_pk=pk)
 
     messages.success(
         request,
@@ -600,7 +704,7 @@ def reservation_report_breakdown(request: HttpRequest, pk: int) -> HttpResponse:
             _("Awaria zgłoszona — maszyna %(uid)s w serwisie, rezerwacja zamknięta.")
             % {"uid": result["machine_uid"]},
         )
-    return redirect("reservations:detail", pk=pk)
+    return _redirect_back(request, fallback_pk=pk)
 
 
 # =============================================================================
@@ -666,7 +770,7 @@ class CheckConflictView(LoginRequiredMixin, View):
 # =============================================================================
 
 
-class ConstructionSiteListView(LoginRequiredMixin, ListView):
+class ConstructionSiteListView(PerPageMixin, LoginRequiredMixin, ListView):
     model = ConstructionSite
     template_name = "reservations/site_list.html"
     context_object_name = "sites"
@@ -947,9 +1051,28 @@ class TimelineView(LoginRequiredMixin, View):
         site_number = request.GET.get("site")
         if site_number:
             reservations_qs = reservations_qs.filter(site__project_number=site_number)
+        # Sebastian 2026-05-31: 'Tylko moje' usuniete (probowalo szukac po pierwszym
+        # slowie user.full_name - dawalo pusty timeline bo dane testowe maja losowych
+        # ludzi a nie zalogowanego usera). Zastapione 2 dropdownami z listy istniejacych
+        # osob: person (osoba rezerwujaca) + responsible_person (osoba odpowiedzialna).
         person_q = (request.GET.get("person") or "").strip()
         if person_q:
-            reservations_qs = reservations_qs.filter(person__icontains=person_q)
+            reservations_qs = reservations_qs.filter(person=person_q)
+        responsible_q = (request.GET.get("responsible") or "").strip()
+        if responsible_q:
+            reservations_qs = reservations_qs.filter(responsible_person=responsible_q)
+
+        # Sortowanie maszyn — domyslnie po uid (alfabetycznie). Sebastian:
+        # dodaj opcje sortowania po inspection_date ASC zeby zobaczyc maszyny
+        # ktorym najszybciej konczy sie przeglad. NULL inspection_date trafia
+        # na koniec (Postgres: NULLS LAST domyslnie przy ASC).
+        sort_option = request.GET.get("sort") or "uid"
+        if sort_option == "inspection_asc":
+            order = ["inspection_date", "uid"]
+        elif sort_option == "inspection_desc":
+            order = ["-inspection_date", "uid"]
+        else:
+            order = ["uid"]
 
         # One Prefetch ⇒ all rows are filled in a single extra query, the
         # bars are read off ``machine.period_reservations`` (in-memory list).
@@ -959,7 +1082,7 @@ class TimelineView(LoginRequiredMixin, View):
                 queryset=reservations_qs,
                 to_attr="period_reservations",
             )
-        ).order_by("uid")
+        ).order_by(*order)
 
         machine_rows: list[dict] = []
         for machine in machines_qs:
@@ -1025,7 +1148,54 @@ class TimelineView(LoginRequiredMixin, View):
 
         filters_active = any(
             request.GET.get(k)
-            for k in ("machine_type", "status", "site", "person", "search", "inspection")
+            for k in ("machine_type", "status", "site", "person", "responsible", "search", "inspection")
+        )
+
+        # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
+        # +/-days ktore byly zalezne od aktualnego period). Sebastian: te buttony
+        # maja byc niezalezne od view type, zeby precyzyjnie nawigowac w czasie.
+        prev_7 = (start - timedelta(days=7)).isoformat()
+        next_7 = (start + timedelta(days=7)).isoformat()
+        prev_30 = (start - timedelta(days=30)).isoformat()
+        next_30 = (start + timedelta(days=30)).isoformat()
+
+        # filter_qs — fragmenty URL z aktywnymi filtrami, do uzycia w hx-get/href.
+        # Bez tego template ma N if-ow dla kazdego URL = ~80 linii nieczytelnej
+        # mieszanki Django+HTMX. Pre-renderujemy raz tutaj.
+        filter_parts = []
+        if machine_type:
+            filter_parts.append(f"&machine_type={machine_type}")
+        if machine_status:
+            filter_parts.append(f"&status={machine_status}")
+        if site_number:
+            filter_parts.append(f"&site={site_number}")
+        if person_q:
+            filter_parts.append(f"&person={person_q}")
+        if search:
+            filter_parts.append(f"&search={search}")
+        if inspection:
+            filter_parts.append(f"&inspection={inspection}")
+        if sort_option and sort_option != "uid":
+            filter_parts.append(f"&sort={sort_option}")
+        if responsible_q:
+            filter_parts.append(f"&responsible={responsible_q}")
+        filter_qs = "".join(filter_parts)
+
+        # Listy unique osob (rezerwujace + odpowiedzialne) — dla dropdownow w filtrach.
+        # Sebastian: 'zamiast Tylko moje, 2 dropdowny z listy istniejacych osob'.
+        unique_persons = list(
+            Reservation.objects.filter(status__in=_TIMELINE_VISIBLE_STATUSES)
+            .exclude(person="")
+            .values_list("person", flat=True)
+            .distinct()
+            .order_by("person")
+        )
+        unique_responsibles = list(
+            Reservation.objects.filter(status__in=_TIMELINE_VISIBLE_STATUSES)
+            .exclude(responsible_person="")
+            .values_list("responsible_person", flat=True)
+            .distinct()
+            .order_by("responsible_person")
         )
 
         context = {
@@ -1037,12 +1207,22 @@ class TimelineView(LoginRequiredMixin, View):
             "machine_rows": machine_rows,
             "machine_types": Machine.Type.choices,
             "statuses": Machine.Status.choices,
+            # Bug 20: pokazuj rowniez budowe ktora jest aktualnie wybrana w filtrze
+            # nawet gdy jest zakonczona/anulowana — zeby user mogl ja odznaczyc.
+            # Bez tego zarchiwizowana budowa znika z dropdown i URL ?site=BUD-X
+            # zostaje "uwieziony" bez UI controla do wyczyszczenia.
             "sites": ConstructionSite.objects.filter(
-                status=ConstructionSite.Status.AKTYWNA
+                Q(status=ConstructionSite.Status.AKTYWNA) | Q(project_number=site_number or "")
             ).order_by("project_number"),
             "prev_start": (start - timedelta(days=days)).isoformat(),
             "next_start": (start + timedelta(days=days)).isoformat(),
+            "prev_7_iso": prev_7,
+            "next_7_iso": next_7,
+            "prev_30_iso": prev_30,
+            "next_30_iso": next_30,
+            "start_iso": start.isoformat(),
             "today_iso": date.today().isoformat(),
+            "filter_qs": filter_qs,
             "filters_active": filters_active,
             # Echo current filter values so the template can pre-fill inputs.
             "current_machine_type": machine_type or "",
@@ -1051,6 +1231,10 @@ class TimelineView(LoginRequiredMixin, View):
             "current_person": person_q,
             "current_search": search,
             "current_inspection": inspection or "",
+            "current_sort": sort_option,
+            "current_responsible": responsible_q,
+            "persons": unique_persons,
+            "responsibles": unique_responsibles,
         }
 
         template = (

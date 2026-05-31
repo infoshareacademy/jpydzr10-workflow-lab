@@ -43,7 +43,8 @@ class TestCompleteReservationWithActualReturn:
             start_date=date(2030, 1, 1),
             end_date=date(2030, 1, 10),
         )
-        complete_reservation(res)
+        # Bug 19 walidacja: today musi byc >= start_date (maszyna juz wyjechala)
+        complete_reservation(res, today=date(2030, 1, 5))
         res.refresh_from_db()
         assert res.status == Reservation.Status.ZAKONCZONA
         assert res.actual_return_date is None

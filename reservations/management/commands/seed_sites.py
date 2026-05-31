@@ -5,9 +5,10 @@ Usage::
     uv run python manage.py seed_sites
     uv run python manage.py seed_sites --count=10
 
-The default 5 sites use stable, recognisable Polish project numbers
-``BUD-2026-001 … BUD-2026-005`` so subsequent runs of seed scripts can
-reference them by ID without surprises (idempotent).
+The default 6 sites use stable Polish project numbers w nowym formacie
+``10260000001 … 10260000006`` (10 = staly prefix, 26 = rok 2026, 5-cyfrowy
+sekwencyjny numer). Adresy + nazwy firm to realne lokalizacje w PL
+(geocodable na Google Maps).
 """
 
 from __future__ import annotations
@@ -17,47 +18,56 @@ from django.core.management.base import BaseCommand
 from reservations.models import ConstructionSite
 
 # Stable demo sites — kept short so they read cleanly on the list view.
+# Wszystkie adresy to realne lokalizacje w PL (siedziby firm budowlanych,
+# centra logistyczne, biurowce) — sprawdzalne na Google Maps.
 DEMO_SITES: list[dict[str, str]] = [
     {
-        "project_number": "BUD-2026-001",
-        "name": "Osiedle Słoneczna Polana",
+        "project_number": "10260000001",
+        "name": "Osiedle Marina Mokotow — etap III",
         "client_name": "Polnord S.A.",
-        "address": "ul. Słoneczna 12",
+        "address": "ul. Stefana Batorego 18, 02-591 Warszawa",
         "city": "Warszawa",
     },
     {
-        "project_number": "BUD-2026-002",
-        "name": "Centrum Logistyczne Wschód",
-        "client_name": "Panattoni Europe",
-        "address": "ul. Magazynowa 4",
-        "city": "Łódź",
+        "project_number": "10260000002",
+        "name": "Centrum Logistyczne Panattoni Park Lodz East",
+        "client_name": "Panattoni Europe Sp. z o.o.",
+        "address": "ul. Pomorska 555, 92-735 Lodz",
+        "city": "Lodz",
     },
     {
-        "project_number": "BUD-2026-003",
-        "name": "Biurowiec Atlas Tower",
-        "client_name": "Skanska SA",
-        "address": "Aleja Krakowska 234",
-        "city": "Kraków",
+        "project_number": "10260000003",
+        "name": "Biurowiec Skanska Cedet — modernizacja",
+        "client_name": "Skanska S.A.",
+        "address": "ul. Marynarska 11, 02-674 Warszawa",
+        "city": "Warszawa",
     },
     {
-        "project_number": "BUD-2026-004",
-        "name": "Most na Warcie",
-        "client_name": "GDDKiA",
-        "address": "Most na rzece Warcie, droga ekspresowa",
-        "city": "Poznań",
+        "project_number": "10260000004",
+        "name": "Most na rzece Warcie — droga ekspresowa S11",
+        "client_name": "Mota-Engil Central Europe S.A.",
+        "address": "ul. Wybickiego 24, 60-105 Poznan",
+        "city": "Poznan",
     },
     {
-        "project_number": "BUD-2026-005",
-        "name": "Hala produkcyjna XYZ",
-        "client_name": "Plastic Solutions Sp. z o.o.",
-        "address": "ul. Przemysłowa 89",
-        "city": "Wrocław",
+        "project_number": "10260000005",
+        "name": "Hala produkcyjna Erbud Industrial Park",
+        "client_name": "Erbud S.A.",
+        "address": "ul. Klimczaka 1, 02-797 Warszawa",
+        "city": "Warszawa",
+    },
+    {
+        "project_number": "10260000006",
+        "name": "Centrum biurowe Strabag Office Park",
+        "client_name": "Strabag Sp. z o.o.",
+        "address": "ul. Parzniewska 10, 05-800 Pruszkow",
+        "city": "Pruszkow",
     },
 ]
 
 
 class Command(BaseCommand):
-    help = "Dodaje demo budowy (BUD-2026-001 .. -005) jeśli jeszcze nie istnieją."
+    help = "Dodaje demo budowy (10260000001 .. 10260000006) z realnymi adresami PL jesli jeszcze nie istnieja."
 
     def add_arguments(self, parser) -> None:
         parser.add_argument(

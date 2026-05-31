@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% comment %} ==========================================================================
+   maps.html - Google Maps widget (BETA) - widok /mapy/
+
+   Co: mapa Polski z pinem per maszyna (is_reservable=True, excl WYCOFANA).
+   Klik pin -> InfoWindow z miniaturka + UID + nazwa (link do detail) +
+   status + przeglad + osoba odpowiedzialna.
+
+   Gating: bez GOOGLE_MAPS_API_KEY w .env pokazujemy panel informacyjny
+   zamiast crashujacej mapy. Klucz API ladowany przez script async +
+   defer (Google rekomendacja).
+
+   Geocoding: frontend (Google Geocoding API). Adres -> lat/lng przy
+   kazdym page load. M3 TODO: cache lat/lng w Machine model + offline
+   pipeline (rate limits).
+========================================================================== {% endcomment %}
+
+{% block title %}{% trans "Mapy maszyn" %} - Planer Maszyn{% endblock %}
+
+{% block content %}
+<div class="space-y-3">
+
+    {# ===================== HEADER ===================== #}
+    <header class="surface-card">
+        <div class="px-5 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
+                    </svg>
+                    {% trans "Mapy maszyn" %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-300 dark:border-amber-700 leading-none">BETA</span>
+                </h1>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    {% blocktrans count counter=pins_count %}{{ counter }} maszyna na mapie. Klik pin -> szczegoly.{% plural %}{{ counter }} maszyn na mapie. Klik pin -> szczegoly.{% endblocktrans %}
+                </p>
+            </div>
+            <a href="{% url 'reservations:timeline' %}"
+               class="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                {% trans "Wroc do osi czasu" %}
+            </a>
+        </div>
+    </header>
+
+    {# ===================== BRAK KLUCZA: panel info ===================== #}
+    {% if not gmap_api_key %}
+    <div class="surface-card p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+        <div class="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            <div class="space-y-2 text-sm">
+                <p class="font-semibold text-amber-900 dark:text-amber-200">
+                    {% trans "Brak klucza Google Maps API" %}
+                </p>
+                <p class="text-amber-800 dark:text-amber-300">
+                    {% trans "Aby aktywowac widok mapy, ustaw zmienna srodowiskowa" %}
+                    <code class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-100 text-xs font-mono">GOOGLE_MAPS_API_KEY</code>
+                    {% trans "w pliku" %} <code class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-100 text-xs font-mono">.env</code>
+                    {% trans "i zrestartuj serwer." %}
+                </p>
+                <p class="text-xs text-amber-700 dark:text-amber-400">
+                    {% trans "Klucz mozesz pobrac w Google Cloud Console: Maps JavaScript API + Geocoding API. Polecane: zabezpieczenie kluczem przez HTTP referrer (np. localhost:8002/*)." %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# ===================== MAPA + PIN DATA ===================== #}
+    {% else %}
+    <div id="machine-map"
+         class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800"
+         style="height: 70vh; min-height: 500px;"
+         role="application"
+         aria-label="{% trans 'Mapa maszyn budowlanych' %}">
+        {# Mapa wstrzyknieta przez JS po loaded Google API #}
+    </div>
+
+    {# Dane pinow przekazane do JS przez bezpieczny inline JSON.
+       json_script byloby idealne ale potrzebujemy raw JSON do JSON.parse() -
+       textContent jest bezpieczny (zadnego HTML interpretation). #}
+    <script id="pins-data" type="application/json" nonce="{{ CSP_NONCE }}">{{ pins_json|safe }}</script>
+
+    {# Init mapy: czeka az Google API zaladowane przez async loader. #}
+    <script nonce="{{ CSP_NONCE }}">
+    (function () {
+        // Zabezpieczenie przed wielokrotnym initem (HTMX swap re-fire).
+        if (window.__planerMapsInitialized) return;
+        window.__planerMapsInitialized = true;
+
+        function initMachineMap() {
+            var pinsEl = document.getElementById('pins-data');
+            var mapEl = document.getElementById('machine-map');
+            if (!pinsEl || !mapEl || !window.google || !window.google.maps) {
+                return;
+            }
+            var pins;
+            try {
+                pins = JSON.parse(pinsEl.textContent);
+            } catch (e) {
+                console.error('[Mapy] Blad parsowania pins JSON:', e);
+                return;
+            }
+
+            // Centrum Polski + zoom 6 (caly kraj widoczny w viewport).
+            var map = new google.maps.Map(mapEl, {
+                center: { lat: 52.0, lng: 19.0 },
+                zoom: 6,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true,
+                gestureHandling: 'cooperative'
+            });
+
+            if (!pins.length) {
+                return;
+            }
+
+            var geocoder = new google.maps.Geocoder();
+            var infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
+            var bounds = new google.maps.LatLngBounds();
+            var resolved = 0;
+
+            // Kolor pin per inspection_status - wizualny sygnal stanu przegladu.
+            var pinColorByStatus = {
+                'overdue': '#dc2626',   // red-600 - przegląd przeterminowany
+                'warning': '#f59e0b',   // amber-500 - wkrotce przeglad
+                'ok':      '#10b981',   // emerald-500 - wszystko w porzadku
+                'unknown': '#6b7280'    // gray-500 - brak danych
+            };
+
+            pins.forEach(function (pin) {
+                geocoder.geocode(
+                    { address: pin.location_address, region: 'PL' },
+                    function (results, status) {
+                        resolved++;
+                        if (status !== 'OK' || !results || !results[0]) {
+                            console.warn('[Mapy] Geocoding failed dla', pin.uid, pin.location_address, status);
+                            // Mimo to inkrementujemy resolved zeby fitBounds doszedl.
+                            maybeFit();
+                            return;
+                        }
+                        var pos = results[0].geometry.location;
+                        bounds.extend(pos);
+
+                        var marker = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            title: pin.uid + ' - ' + pin.name,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 9,
+                                fillColor: pinColorByStatus[pin.inspection_status] || '#2563eb',
+                                fillOpacity: 1.0,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 2
+                            }
+                        });
+
+                        marker.addListener('click', function () {
+                            infoWindow.setContent(renderInfoWindow(pin));
+                            infoWindow.open(map, marker);
+                        });
+
+                        maybeFit();
+                    }
+                );
+            });
+
+            function maybeFit() {
+                // Po przetworzeniu wszystkich geocode requestow - fit bounds.
+                if (resolved === pins.length && !bounds.isEmpty()) {
+                    map.fitBounds(bounds, 60);
+                    // Cap maksymalny zoom - inaczej przy jednym pinie zoomuje az do ulicy.
+                    var listener = google.maps.event.addListenerOnce(map, 'idle', function () {
+                        if (map.getZoom() > 12) map.setZoom(12);
+                    });
+                }
+            }
+        }
+
+        function renderInfoWindow(pin) {
+            // Wszystkie wartosci sa user-controlled (z DB) - escapujemy zeby
+            // unikac XSS w razie zlosliwego inputu.
+            function esc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+            var inspectionBadgeColor = {
+                'overdue': 'background:#fee2e2;color:#991b1b;',
+                'warning': 'background:#fef3c7;color:#92400e;',
+                'ok':      'background:#d1fae5;color:#065f46;',
+                'unknown': 'background:#e5e7eb;color:#374151;'
+            }[pin.inspection_status] || 'background:#e0e7ff;color:#3730a3;';
+
+            var html = '' +
+                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;">' +
+                  '<img src="' + esc(pin.photo_url) + '" alt="' + esc(pin.name) +
+                  '" style="width:100%;height:120px;object-fit:cover;border-radius:6px;background:#f1f5f9;" loading="lazy" />' +
+                  '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:600;line-height:1.3;">' +
+                    '<a href="' + esc(pin.detail_url) + '" style="color:#1d4ed8;text-decoration:none;border-bottom:1px solid #93c5fd;">' +
+                      esc(pin.name) +
+                    '</a>' +
+                  '</h3>' +
+                  '<p style="margin:2px 0;font-size:11px;color:#64748b;"><strong>UID:</strong> ' + esc(pin.uid) + '</p>' +
+                  '<p style="margin:2px 0;font-size:11px;"><strong>Typ:</strong> ' + esc(pin.machine_type) + '</p>' +
+                  '<p style="margin:2px 0;font-size:11px;"><strong>Status:</strong> ' + esc(pin.status) + '</p>' +
+                  '<p style="margin:4px 0 2px 0;font-size:11px;">' +
+                    '<strong>Przeglad:</strong> ' + esc(pin.inspection_date) +
+                    ' <span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;' + inspectionBadgeColor + '">' +
+                      esc(pin.inspection_status) +
+                    '</span>' +
+                  '</p>';
+            if (pin.responsible) {
+                html += '<p style="margin:2px 0;font-size:11px;"><strong>Odpowiedzialny:</strong> ' + esc(pin.responsible) + '</p>';
+            }
+            if (pin.site_label) {
+                html += '<p style="margin:2px 0;font-size:11px;color:#475569;"><strong>Budowa:</strong> ' + esc(pin.site_label) + '</p>';
+            }
+            html += '<p style="margin:6px 0 0 0;font-size:10px;color:#94a3b8;font-style:italic;">' + esc(pin.location_address) + '</p>' +
+                '</div>';
+            return html;
+        }
+
+        // Loader Google Maps API jest async/defer - sluchamy az dolaczy + odpalamy.
+        // Sprawdzamy okresowo (200ms) czy window.google.maps juz dostepne.
+        var checkCount = 0;
+        var maxChecks = 50; // 10 sekund max
+        var interval = setInterval(function () {
+            checkCount++;
+            if (window.google && window.google.maps) {
+                clearInterval(interval);
+                initMachineMap();
+            } else if (checkCount >= maxChecks) {
+                clearInterval(interval);
+                console.error('[Mapy] Google Maps API nie zaladowane w 10s - sprawdz klucz API i CSP.');
+                var mapEl = document.getElementById('machine-map');
+                if (mapEl) {
+                    mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#991b1b;background:#fef2f2;height:100%;display:flex;align-items:center;justify-content:center;">' +
+                        'Nie udalo sie zaladowac Google Maps API. Sprawdz konsole przegladarki + klucz API.' +
+                        '</div>';
+                }
+            }
+        }, 200);
+    })();
+    </script>
+
+    {# Loader Google Maps JS API. async + defer - rekomendacja Google 2026.
+       loading=async = nowy parametr ktory wycisza warning "use loading=async". #}
+    <script async defer
+            nonce="{{ CSP_NONCE }}"
+            src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key|urlencode }}&libraries=geocoding&loading=async&v=weekly"></script>
+
+    {% endif %}
+
+    {# ===================== LEGEND ===================== #}
+    {% if gmap_api_key %}
+    <div class="surface-card px-5 py-3">
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+            <span class="text-slate-500 dark:text-slate-400 font-medium">{% trans "Legenda:" %}</span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#10b981;border:2px solid #fff;box-shadow:0 0 0 1px #10b981;"></span>
+                <span class="text-slate-700 dark:text-slate-300">{% trans "Przeglad aktualny" %}</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;border:2px solid #fff;box-shadow:0 0 0 1px #f59e0b;"></span>
+                <span class="text-slate-700 dark:text-slate-300">{% trans "Wkrotce przeglad (14 dni)" %}</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626;"></span>
+                <span class="text-slate-700 dark:text-slate-300">{% trans "Przeglad przeterminowany" %}</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full" style="background:#6b7280;border:2px solid #fff;box-shadow:0 0 0 1px #6b7280;"></span>
+                <span class="text-slate-700 dark:text-slate-300">{% trans "Brak danych" %}</span>
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

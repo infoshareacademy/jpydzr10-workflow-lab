@@ -10,13 +10,18 @@ disabled-od-M1 input w topbar, robi typeahead przez HTMX (``request.htmx``
 gdy operator naciśnie Enter zamiast klikać w wynik dropdownu.
 """
 
+import json
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.templatetags.static import static
+from django.urls import reverse
+from django.utils.text import slugify
 from django_ratelimit.decorators import ratelimit
 
 from core.search import global_search
@@ -193,3 +198,174 @@ def global_search_view(request):
         template,
         {"query": query, "results": results, "total": total},
     )
+
+
+# =============================================================================
+# /mapy/ — Google Maps widget (BETA)
+# =============================================================================
+# Sebastian #60: mapa Polski z pin per maszyna w aktualnej lokalizacji
+# (machine.location lub site.address z najnowszej aktywnej rezerwacji).
+# Klik pin -> InfoWindow z miniaturka + UID + nazwa (link na detail) + status
+# + przeglad + osoba odpowiedzialna. Frontend geocoding (MVP/BETA) -
+# kazdy adres jest zapytany do Geocoding API przy render. Production-ready
+# byloby cache lat/lng w Machine model + offline geocoding pipeline -
+# TODO M3.
+
+# Polska ASCII map - slugify nie zna polskiego "ł" (LATIN SMALL LETTER L WITH
+# STROKE). Bez tej translacji `wozek widłowy` daje slug `wozek-widowy` ->
+# fallback static image 404'uje. Te same wartosci co w
+# machines/templatetags/machines_tags.py.
+_POLISH_ASCII_MAP = str.maketrans({"ł": "l", "Ł": "L"})
+
+
+def _machine_image_static_url(machine_type_value: str) -> str:
+    """Zwraca static URL placeholder image per typ maszyny.
+
+    Mirror logiki ``machine_image_url`` template taga - uzywamy slug-z-typu
+    + fallback ``inne.webp`` zamiast machine.image (kazda maszyna ma fallback
+    obraz, nawet bez uploaded zdjecia). Brak fallback do uploaded image bo
+    z view rendering pip JSON, nie HTML - dla MVP wystarcza static.
+    """
+    slug = slugify((machine_type_value or "").translate(_POLISH_ASCII_MAP))
+    if not slug:
+        slug = "inne"
+    return static(f"images/machines/{slug}.webp")
+
+
+# Default warehouse address - fallback gdy maszyna nie ma machine.location
+# i nie jest na budowie. Sebastian: "ul. Magazynowa 5, 02-652 Warszawa".
+_DEFAULT_WAREHOUSE_ADDRESS = "ul. Magazynowa 5, 02-652 Warszawa"
+
+
+@login_required
+def maps_view(request):
+    """Widok /mapy/ - Google Maps z pinami maszyn (BETA).
+
+    Renderuje:
+    - mape Polski (centered lat=52, lng=19, zoom=6)
+    - pin per kazda maszyna ``is_reservable=True`` (excluding WYCOFANA)
+    - klik pin = InfoWindow z miniaturka + szczegoly + link do detail
+
+    Logika lokalizacji pinu (Sebastian update 2026-05-31 wieczor):
+
+    * Jesli ``machine.status == "Na budowie"`` -> bierzemy NAJNOWSZA
+      ``confirmed`` rezerwacje **covering today** (``start_date <= today
+      <= end_date``). Priorytet adresu w obrebie tej rezerwacji:
+      ``reservation.address`` > ``reservation.site.address`` >
+      ``machine.location`` > ``DEFAULT_WAREHOUSE_ADDRESS``.
+      Pin "podaza" za maszyna na budowie.
+    * Wpp (W magazynie / Zarezerwowana / W serwisie) -> uzywamy
+      ``machine.location`` (lub default warehouse jesli puste).
+
+    Geocoding robi sie na frontendzie (Google Geocoding API) - kazdy adres
+    konwertowany do lat/lng przy page load. MVP/BETA, M3 TODO: cache lat/lng
+    w Machine model + offline pipeline (rate limits dla setek maszyn).
+
+    Kontekst dla template:
+    - ``pins_json``: JSON string z lista dict-ow (uid, name, photo, ...).
+    - ``gmap_api_key``: GOOGLE_MAPS_API_KEY z settings (puste -> warning panel).
+    - ``pins_count``: int, ile pinow na mapie (do nagłówka).
+    """
+    # Lokalne importy: machines/reservations sa heavyweight (django_filters,
+    # tons of dependencies). Lazy import zachowuje top of file lekki + unika
+    # potencjalnych circular deps gdyby core stalo sie zaleznoscia.
+    from machines.models import Machine
+    from reservations.models import Reservation
+
+    today = date.today()
+
+    # Wykluczamy WYCOFANA - tak samo jak timeline view. WYCOFANA nie maja juz
+    # rezerwacji ani sensownej lokalizacji - na mapie byly by martwymi pinami.
+    machines_qs = Machine.objects.exclude(status=Machine.Status.WYCOFANA).filter(is_reservable=True)
+
+    # Prefetch confirmed rezerwacji covering today (do "podazania pinu" za
+    # maszyna na budowie) + osobno najnowsza confirmed res (do osoby
+    # odpowiedzialnej dla maszyn poza statusem Na budowie - np. zarezerwowanych).
+    # Sort desc - [0] dostaje najnowsza spelniajaca warunek.
+    from django.db.models import Prefetch
+
+    current_reservations = (
+        Reservation.objects.filter(
+            status=Reservation.Status.POTWIERDZONA,
+            start_date__lte=today,
+            end_date__gte=today,
+        )
+        .select_related("site")
+        .order_by("-start_date")
+    )
+    # Fallback prefetch - dowolna confirmed rezerwacja (nawet przyszla)
+    # zeby maszyna ZAREZERWOWANA tez miala osobe odpowiedzialna w popup.
+    any_confirmed = (
+        Reservation.objects.filter(status=Reservation.Status.POTWIERDZONA)
+        .select_related("site")
+        .order_by("-start_date")
+    )
+    machines_qs = machines_qs.prefetch_related(
+        Prefetch("reservations", queryset=current_reservations, to_attr="current_today"),
+        Prefetch("reservations", queryset=any_confirmed, to_attr="any_confirmed"),
+    )
+
+    pins: list[dict] = []
+    for machine in machines_qs:
+        # current = covering today; fallback = jakakolwiek confirmed.
+        current = machine.current_today[0] if machine.current_today else None
+        fallback = machine.any_confirmed[0] if machine.any_confirmed else None
+        # Dla osoby + site w popup uzywamy current jesli jest, wpp fallback.
+        display_res = current or fallback
+
+        # Wybor adresu - Sebastian's priorytet (update 2026-05-31 wieczor):
+        # Na budowie -> covering-today: res.address > site.address > machine.location
+        # Inne -> machine.location -> default.
+        if machine.status == Machine.Status.NA_BUDOWIE and current is not None:
+            location_address = (
+                (current.address and current.address.strip())
+                or (current.site.address if current.site_id and current.site.address else None)
+                or machine.location
+                or _DEFAULT_WAREHOUSE_ADDRESS
+            )
+        else:
+            location_address = machine.location or _DEFAULT_WAREHOUSE_ADDRESS
+
+        site_label = (
+            f"{display_res.site.project_number} - {display_res.site.name}"
+            if display_res and display_res.site_id
+            else ""
+        )
+
+        # Image: priorytet ImageField na machine, fallback static per typ.
+        try:
+            photo_url = (
+                machine.image.url
+                if machine.image
+                else _machine_image_static_url(machine.machine_type)
+            )
+        except ValueError:
+            photo_url = _machine_image_static_url(machine.machine_type)
+
+        pins.append(
+            {
+                "uid": machine.uid,
+                "name": machine.name,
+                "machine_type": machine.get_machine_type_display(),
+                "status": machine.get_status_display(),
+                "inspection_date": (
+                    machine.inspection_date.strftime("%d.%m.%Y")
+                    if machine.inspection_date
+                    else "brak danych"
+                ),
+                "inspection_status": machine.inspection_status,
+                "location_address": location_address,
+                "site_label": site_label,
+                "responsible": display_res.responsible_person if display_res else "",
+                "person": display_res.person if display_res else "",
+                "detail_url": reverse("machines:detail", kwargs={"uid": machine.uid}),
+                "photo_url": photo_url,
+            }
+        )
+
+    context = {
+        "pins_json": json.dumps(pins, ensure_ascii=False),
+        "pins_count": len(pins),
+        "gmap_api_key": settings.GOOGLE_MAPS_API_KEY,
+    }
+    return render(request, "core/maps.html", context)

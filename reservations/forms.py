@@ -275,7 +275,10 @@ class ConstructionSiteForm(forms.ModelForm):
         }
         widgets = {
             "project_number": forms.TextInput(
-                attrs={"class": INPUT_CSS, "placeholder": f"BUD-{date.today().year}-001"}
+                attrs={
+                    "class": INPUT_CSS,
+                    "placeholder": f"10{date.today().year % 100:02d}00000001",
+                }
             ),
             "name": forms.TextInput(attrs={"class": INPUT_CSS}),
             "client_name": forms.TextInput(attrs={"class": INPUT_CSS}),
