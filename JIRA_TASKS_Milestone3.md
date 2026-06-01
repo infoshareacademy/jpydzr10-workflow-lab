@@ -9,15 +9,21 @@
 
 ## Cel Milestone 3
 
-Domknięcie 5 zaplanowanych obszarów M3 z oryginalnego harmonogramu kursu:
+Domknięcie obszarów M3 z oryginalnego harmonogramu kursu **+ rozszerzenia o wow-faktor** (zgodnie z decyzją 01.06.2026 po audycie adwokata diabła):
 
-1. **Internacjonalizacja** — pełna lokalizacja PL / NL / FR / EN (3 nowe języki, każdy ma być wdrożony chirurgicznie, nie po łebkach).
-2. **Mailing transakcyjny** — system wysyłki maili przez Google Workspace SMTP (konto firmowe `info@werkstroomlab.be`), 6 scenariuszy biznesowych.
-3. **Audit log** — logowanie wszystkich akcji POST/PUT/DELETE w UI + admin page + eksport CSV + retention policy.
-4. **Raporty wizualne** — 4 wykresy Chart.js na nowej stronie `/raporty/` + eksport PDF raportu miesięcznego.
-5. **Polish, dokumentacja, bezpieczeństwo** — `django check --deploy` clean, dokumentacja użytkownika końcowego (PDF), demo data refresh, E2E smoke testy.
+1. **Internacjonalizacja** — pełna lokalizacja PL / NL / FR / EN (3 nowe języki, chirurgicznie). **Plurals (3 formy w PL), waluty (EUR default, PLN dla PL), formatowanie liczb i numerów telefonów per locale.**
+2. **Mailing transakcyjny** — Google Workspace SMTP (`info@werkstroomlab.be`), 6 scenariuszy biznesowych. **Idempotency, unsubscribe (GDPR), bounce log, dark mode Outlook, preview view, Mailpit w dev.**
+3. **2FA (TOTP)** — `django-otp` + QR code dla wszystkich `is_staff` użytkowników. Recovery codes. OWASP A07:2021 compliance.
+4. **Audit log** — middleware + `AuditLogEntry` + admin + CSV + retention 90 dni + GDPR erasure obejmuje audit.
+5. **Raporty wizualne** — 4 wykresy Chart.js + PDF raport miesięczny (server-side matplotlib) + lokalizacja PL/NL/FR/EN.
+6. **Accessibility (WCAG 2.1 AA)** — pełen audit przez Axe DevTools, fixy kontrastów, focus rings, ARIA labels, skip links, keyboard nav. **European Accessibility Act compliance** (od 28.06.2025 wymagane prawem dla nowych app w EU).
+7. **CI/CD pipeline** — GitHub Actions: pytest + ruff + coverage badge + bandit + safety (CVE scan deps). **Bez deployment** — sama infrastruktura testowa.
+8. **GDPR essentials** — privacy policy page, cookie notice, data export endpoint, anonymize obejmuje audit log.
+9. **Polish, dokumentacja, bezpieczeństwo** — `django check --deploy` clean, custom error pages 404/500/403, ERD + 5 ADR (Architecture Decision Records), 2 PDF instrukcje użytkownika, demo data refresh, E2E Playwright + 5 pytest-bdd Gherkin scenariusze, Lighthouse audit, backup restore fire drill.
 
-**Świadome cięcia względem oryginalnych propozycji** (zob. sekcja "Co NIE wchodzi w M3"): hosting odłożony, Celery/Redis/django-channels/2FA/Sentry/Frappe Gantt pomijane jako overkill dla skali projektu.
+**Waluta domyślna:** **EUR** (Sebastian operuje w Belgii). Pole `currency` na `ServiceRecord.cost`. Wyświetlanie w UI per locale (NL/FR/EN → EUR z formatem locale, PL → PLN z formatem PL).
+
+**Świadome cięcia** (zob. sekcja "Co NIE wchodzi w M3"): hosting odłożony, Celery/Redis/django-channels/Sentry/Frappe Gantt — overkill. **2FA NIE jest już cuts** (przeniesione do scope).
 
 ---
 
@@ -46,22 +52,32 @@ Stack M2 zostaje bez zmian. **Nowe paczki dodawane w M3:**
 | Warstwa | Pakiet | Wersja minimum | Zastosowanie |
 |---------|--------|----------------|--------------|
 | Charts | **Chart.js** | **4.x stable** (vendored w `static/vendor/`) | 4 wykresy na stronie `/raporty/` |
-| PDF reports | **reportlab** | **>=4.2** (już w stacku, użyte do PDF rezerwacji) | Raport miesięczny PDF |
-| Matplotlib (PDF charts) | **matplotlib** | **>=3.9** | Renderowanie wykresów w PDF (server-side, Chart.js to JS-only) |
+| PDF reports | **reportlab** | **>=4.2** (już w stacku) | Raport miesięczny PDF |
+| Matplotlib (PDF charts) | **matplotlib** | **>=3.9** | Renderowanie wykresów do PNG dla PDF (server-side) |
 | Coverage badge | **coverage-badge** | **>=1.1** | SVG badge w README po pytest |
+| **2FA** | **django-otp** | **>=1.5** | TOTP + recovery codes |
+| **2FA — QR codes** | **qrcode[pil]** | **>=7.4** | Generowanie QR do enrolmentu w Google Authenticator |
+| **Telefony** | **phonenumbers** + **django-phonenumber-field** | **>=8.13** / **>=8.0** | Walidacja + formatowanie per locale (+48, +32, +33, +44) |
+| **Waluty** | **py-moneyed** + **django-money** | **>=3.0** / **>=3.5** | Pole `Money` (amount + currency code) na `ServiceRecord.cost` z EUR default |
+| **Security scan deps** | **safety** lub **pip-audit** | latest | CVE scan w CI |
+| **Security scan kod** | **bandit** | **>=1.7** | Hardcoded secrets, weak crypto, SQL injection patterns |
+| **ERD** | **django-extensions** | **>=3.2** | `graph_models -a -o docs/erd.png` (Graphviz wymagany) |
+| **Local dev SMTP** | **Mailpit** | **latest** (Docker image) | Lokalny SMTP server + UI podglądu w dev (zamiast console backend) |
 
 **Bez nowych zewnętrznych zależności:**
 
-- Mailing — `django.core.mail` (wbudowane) z SMTP backendem na Google Workspace
-- i18n — `django.utils.translation` (wbudowane) + `gettext` z systemu (`brew install gettext` na macOS, jeśli jeszcze nie ma)
-- Audit log — custom middleware + model, **bez** `django-auditlog` (duplikacja z naszą logiką)
+- Mailing produkcyjny — `django.core.mail` (wbudowane) z SMTP backendem na Google Workspace
+- i18n — `django.utils.translation` (wbudowane) + `gettext` z systemu (`brew install gettext`)
+- Audit log — custom middleware + model, **bez** `django-auditlog` (duplikacja)
+- a11y audit — **Axe DevTools browser extension** (Chrome/Firefox, free) + manualny checklist WCAG 2.1 AA
 
-**Flatpickr lokalizacje** dodane jako vendored static files:
+**Flatpickr lokalizacje** dodane jako vendored static files (`static/vendor/flatpickr-{nl,fr,en}.js`). `flatpickr-pl.js` już istnieje z M2.
 
-- `static/vendor/flatpickr-nl.js`
-- `static/vendor/flatpickr-fr.js`
-- `static/vendor/flatpickr-en.js`
-- (`flatpickr-pl.js` już istnieje z M2)
+**System binaries do zainstalowania jednorazowo:**
+
+```bash
+brew install gettext graphviz  # i18n compilation + ERD generation
+```
 
 ---
 
@@ -123,9 +139,9 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 | Sprint | Daty | Główne tematy |
 |--------|------|---------------|
-| **S1** | 15-21.06.2026 (7 dni) | i18n PL/NL/FR/EN pełne + Mailing transakcyjny |
-| **S2** | 22-28.06.2026 (7 dni) | Audit log + Raporty Chart.js + PDF |
-| **Bufor** | 29-30.06.2026 (2 dni) | Polish, dokumentacja, demo refresh, E2E |
+| **S1** | 15-21.06.2026 (7 dni) | i18n PL/NL/FR/EN pełne (+plurals/EUR/phones) + Mailing (+idempotency/unsubscribe/Mailpit) + **2FA TOTP** |
+| **S2** | 22-28.06.2026 (7 dni) | Audit log + Raporty Chart.js + PDF + **równolegle: a11y/CI/security/GDPR z 2.3** |
+| **Bufor** | 29-30.06.2026 (2 dni) | Pełen polish (2.3.A-J): custom errors, ERD/ADR, backup restore drill, bdd, Lighthouse, dokumentacja PDF, demo refresh, E2E |
 
 ---
 
@@ -245,10 +261,29 @@ Dwa sprinty tygodniowe + bufor na polish:
 - [ ] Daty formatowane per locale: `2026-06-15` (PL), `15 juni 2026` (NL), `15 juin 2026` (FR), `June 15, 2026` (EN) — bez `force_str` ani hardcoded format
 - [ ] Email templates (z task 1.2) zlokalizowane — wysyłka maila po `confirm_reservation` używa `with translation.override(user.profile.preferred_language)`
 - [ ] Walidacja form: ValidationError messages owinięte w `gettext_lazy`, pokazują się w aktualnym języku UI
-- [ ] Testy: `uv run pytest reservations/tests/test_i18n.py -v` — minimum 8 testów (per język: jeden sprawdza tytuł home view, drugi flash message po confirm_reservation)
-- [ ] **Acceptance**: użytkownik z `Accept-Language: nl-BE` otwiera aplikację i widzi 100% UI po niderlandzku — ani jednego polskiego stringa (poza nazwami własnymi typu "Isocab Construct", "Wroclaw", UID maszyn)
+- [ ] **PLURALS audit** — każde KPI/info z liczbą używa `{% blocktrans count counter=n %}` (PL ma 3 formy: `1 maszyna / 2-4 maszyny / 5 maszyn`):
+  - [ ] `home.html` KPI ("Aktywne rezerwacje", "Dostępne maszyny", "Przeglądy")
+  - [ ] timeline period KPI ("Rezerwacji w okresie", "Oczekuje", "Potwierdzone", "Maszyny")
+  - [ ] flash messages typu "Zaktualizowano X rezerwacji"
+  - [ ] Test plurals: `pytest tests/test_i18n_plurals.py` — minimum 4 testy (1/2/5/0 maszyn po PL)
+- [ ] **WALUTY (EUR default)** — nowy model field + formatowanie:
+  - [ ] `pip add django-money py-moneyed` + migracja `ServiceRecord.cost` `Decimal` → `MoneyField(default_currency='EUR')`
+  - [ ] Domyślnie EUR dla wszystkich nowych rekordów. PLN dla istniejących (data migration ustawia PLN na rekordach sprzed 01.06.2026)
+  - [ ] `settings/base.py`: `DEFAULT_CURRENCY = 'EUR'`, `CURRENCIES = ('EUR', 'PLN', 'GBP', 'USD')`
+  - [ ] Wyświetlanie: `{{ record.cost|intcomma }} {{ record.cost.currency }}` z prefixem/sufixem per locale (PL = `1 234,56 PLN`, NL = `€ 1.234,56`, FR = `1 234,56 €`, EN = `€1,234.56`)
+  - [ ] Raport miesięczny (Task 2.2) sumuje per waluta osobno (zero auto-konwersji — brak FX rates w M3)
+- [ ] **TELEFONY per locale** — phonenumbers lib:
+  - [ ] `pip add phonenumbers django-phonenumber-field`
+  - [ ] `EmployeeProfile.phone` migrowane na `PhoneNumberField`
+  - [ ] Walidacja: numer musi być valid dla wybranego kraju (`+48 ...` dla PL, `+32 ...` dla BE, `+33 ...` dla FR, `+44 ...` dla EN)
+  - [ ] Wyświetlanie sformatowane per locale (`+48 123 456 789`)
+- [ ] **Formatowanie dat/liczb per locale** (django USE_L10N=True już ustawione, ale audit):
+  - [ ] `2026-06-15` (PL ISO) / `15 juni 2026` (NL) / `15 juin 2026` (FR) / `June 15, 2026` (EN)
+  - [ ] `1 234,56` (PL/NL/FR) vs `1,234.56` (EN)
+- [ ] Testy: `uv run pytest reservations/tests/test_i18n.py -v` — minimum 10 testów (per język: tytuł home view + flash message + plural form + currency format + date format)
+- [ ] **Acceptance**: użytkownik z `Accept-Language: nl-BE` otwiera aplikację i widzi 100% UI po niderlandzku — ani jednego polskiego stringa (poza nazwami własnymi typu "Isocab Construct", "Wroclaw", UID maszyn). Koszty serwisowe wyświetlają się w EUR z formatem NL.
 
-**Effort estimate:** 5 dni roboczych (najwięcej czasu na tłumaczenia — ~600 msgids × 3 języki = 1800 fraz).
+**Effort estimate:** 5 dni roboczych (~600 msgids × 3 języki = 1800 fraz + plurals + currency migration + phones).
 
 ---
 
@@ -350,7 +385,107 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
   - Backend test: `locmem`
 - [ ] **Acceptance**: Sebastian klika "Potwierdź rezerwację" w UI → w ciągu 30 sek dostaje na `info@werkstroomlab.be` mail z poprawnym subject + body w języku ustawionym dla user'a (`preferred_language`), z klikalnym linkiem `https://localhost:8002/rezerwacje/123/` do detalu.
 
-**Effort estimate:** 3 dni roboczych (setup SMTP + 6 maili + crony + testy).
+### Sub-zadania robustness (dodane po audycie adwokata diabła 01.06.2026):
+
+- [ ] **IDEMPOTENCY crons** — chroni przed dublami przy retry / race condition:
+  - [ ] `Reservation.reminder_sent_at` (DateTimeField, nullable). `send_daily_reminders` sprawdza WHERE `reminder_sent_at IS NULL` i ustawia po wysyłce w tej samej transakcji
+  - [ ] `Machine.inspection_warning_sent_at` (DateTimeField, nullable). `send_inspection_alerts` upcoming sprawdza flagę, resetuje po przejściu z warning → ok (po przeglądzie)
+  - [ ] Test: uruchom cron 3× pod rząd → tylko 1 mail per reservation/machine
+- [ ] **UNSUBSCRIBE LINK (GDPR Article 7)** — każdy mail transakcyjny musi mieć:
+  - [ ] Footer link `Wypisz się` / `Uitschrijven` / `Se désinscrire` / `Unsubscribe` → URL `/account/email-preferences/?token=<HMAC-signed>`
+  - [ ] Widok `email_preferences_view` z formem (toggle per typ maila: reminders, alerts, marketing)
+  - [ ] `EmployeeProfile.email_opt_outs` (JSONField) — list typów maili na ktore user się wypisał
+  - [ ] `send_localized_mail()` sprawdza opt-out przed wysłaniem, skip jeśli opted-out (oprócz security-critical jak `password_reset`)
+- [ ] **BOUNCE LOG (minimalny)** — `core.BounceLog` model:
+  - [ ] Pola: timestamp, recipient_email, error_message, retry_count
+  - [ ] Try/except wokół `msg.send()` w `send_localized_mail` — łap `smtplib.SMTPRecipientsRefused`, `SMTPDataError`, loguj do BounceLog
+  - [ ] Admin page do przeglądania bounces (filtr po email + daterange)
+- [ ] **DARK MODE w mailu HTML** — Outlook desktop 2019+ ignoruje `<meta name="color-scheme">`:
+  - [ ] `<style>` block z `[data-ogsc]` selektorami dla Outlook ciemnego trybu
+  - [ ] Test w Gmail (web ciemny), Outlook Web, Outlook Desktop ciemny
+- [ ] **EMAIL PREVIEW VIEW (dev tool)** — `core/views.py` `email_preview_view`:
+  - [ ] URL `/admin/preview-email/?template=reservation_confirmed&lang=nl`
+  - [ ] Wyświetla renderowany HTML w iframe + plaintext fallback + subject
+  - [ ] Wymaga `is_staff` + DEBUG=True (nigdy w prod)
+  - [ ] Lista wszystkich 6 maili × 4 języki = 24 przycisków preview
+- [ ] **MAILPIT w dev** (zamiast console backend):
+  - [ ] Dodać do `docker-compose.yml` service `mailpit`:
+    ```yaml
+    mailpit:
+      image: axllent/mailpit:latest
+      ports:
+        - "1025:1025"  # SMTP
+        - "8025:8025"  # Web UI
+    ```
+  - [ ] `settings/dev.py`: `EMAIL_HOST='localhost'`, `EMAIL_PORT=1025`, `EMAIL_USE_TLS=False`
+  - [ ] README: "wszystkie maile w dev lądują w Mailpit UI: http://localhost:8025"
+- [ ] **Acceptance**: po wysłaniu reminder cron 3× pod rząd → 1 mail w skrzynce (idempotency). Klik "Wypisz się" w mailu → strona preferencji, toggle off → następny cron skip tego usera. Mailpit UI w dev pokazuje wszystkie testowe maile.
+
+**Effort estimate:** 3 dni roboczych (setup SMTP + 6 maili + crony + testy + robustness).
+
+---
+
+### Task 1.3 — 2FA (Two-Factor Authentication) — **NEW po audycie 01.06.2026**
+
+**Co robimy:** wszyscy `is_staff` użytkownicy muszą skonfigurować 2FA TOTP (Google Authenticator / 1Password / Authy). Recovery codes na wypadek utraty telefonu. **OWASP A07:2021 compliance + wow faktor dla nauczyciela.**
+
+**Plan działania:**
+
+1. Instalacja:
+   ```bash
+   uv add django-otp qrcode[pil]
+   ```
+   `INSTALLED_APPS`: dodać `django_otp`, `django_otp.plugins.otp_totp`, `django_otp.plugins.otp_static` (recovery codes).
+   `MIDDLEWARE`: dodać `django_otp.middleware.OTPMiddleware` PO `AuthenticationMiddleware`.
+
+2. Migracje:
+   ```bash
+   uv run python manage.py migrate
+   ```
+
+3. Custom login flow:
+   - Po standardowym `LoginView` (username + password) → redirect na `/account/2fa/verify/`
+   - Tam user wpisuje 6-cyfrowy token z aplikacji authenticatora → walidacja przez `TOTPDevice.verify_token()`
+   - Sukces → `request.session['otp_device_id'] = device.id` + redirect na `next` URL
+   - Jeśli user nie ma jeszcze skonfigurowanego device → `/account/2fa/setup/`
+
+4. Setup flow (`/account/2fa/setup/`):
+   - Wygeneruj `TOTPDevice` (unconfirmed)
+   - Wyrenderuj QR code (base64-encoded PNG) z `provisioning_uri()` (otpauth:// URI)
+   - User skanuje QR → wpisuje pierwszy token żeby potwierdzić (`device.confirm_device(token)`)
+   - Po confirmie: wygeneruj 10 recovery codes (`StaticToken`), pokaż user'owi RAZ (z guzikiem "Pobierz jako TXT"), zapisz hash w DB
+   - Pokaż info "zachowaj te kody w bezpiecznym miejscu, są wyświetlone tylko raz"
+
+5. Wymuszenie 2FA dla `is_staff`:
+   - Decorator `@otp_required` lub middleware który sprawdza `request.user.is_verified()` (django-otp) dla wszystkich views z `is_staff` permission
+   - Jeśli `is_staff` user się loguje BEZ 2FA setup → forced redirect na `/account/2fa/setup/`
+   - Wyjątki: `/account/logout/`, statyki, healthz
+
+6. Disable 2FA flow (dla admina jeśli user zgubił telefon + recovery codes):
+   - Tylko `is_superuser` może wyłączyć 2FA innemu userowi z admin panelu
+   - Audit log entry: `action='2fa-disabled-by-admin'` z `object_id=target_user.id`
+
+7. UI:
+   - Karta "Bezpieczeństwo" w `/account/profile/` z toggle "2FA aktywne / nieaktywne"
+   - Button "Wygeneruj nowe recovery codes" (unieważnia stare)
+
+**Definition of Done:**
+
+- [ ] `django-otp` + `qrcode[pil]` zainstalowane, migracje przeszły
+- [ ] User `seba` (is_staff) loguje się → forced redirect na `/account/2fa/setup/`
+- [ ] Setup: QR code wyświetla się poprawnie, skan w Google Authenticator działa, pierwszy token confirmuje device
+- [ ] Po setup: 10 recovery codes wyświetlonych RAZ z guzikiem download TXT, hash zapisany w DB
+- [ ] Login: po username/password → `/account/2fa/verify/` → wpisanie 6-cyfrowego tokena → sukces → redirect na `next`
+- [ ] Recovery code działa: user zamiast tokena wpisuje recovery code (one-time), system go akceptuje + unieważnia (token nie do reuse)
+- [ ] Wszystkie `is_staff` views chronione `@otp_required` lub middleware (404/302 do `/account/2fa/setup/` jeśli user nie zweryfikowany)
+- [ ] `is_superuser` może wyłączyć 2FA innemu userowi z admin (z audit log entry)
+- [ ] Karta "Bezpieczeństwo" w `/account/profile/` z toggle, guzik "Nowe recovery codes"
+- [ ] **Lokalizacja**: setup/verify/recovery codes pages po PL/NL/FR/EN
+- [ ] **Backup codes dla demo account** (seba): zapisane w lokalnym pliku notatek poza repo, żeby nie zgubic na prezentacji
+- [ ] Testy: `pytest accounts/tests/test_2fa.py -v` — minimum 8 (setup flow, verify flow z prawidłowym tokenem, verify z błędnym tokenem, recovery code one-time, force redirect dla is_staff bez 2FA, admin disable 2FA innego usera tworzy audit log entry, lokalizacja setup page po NL, password reset NIE wymaga 2FA — bo user zalogowany dopiero później)
+- [ ] **Acceptance**: nauczyciel widzi login → username/password → 6-cyfrowy kod z Google Authenticator → wchodzi do app. Próba pominięcia 2FA = niemożliwa. Recovery codes do downloadu jako TXT na wypadek utraty telefonu.
+
+**Effort estimate:** 1 dzień roboczy.
 
 ---
 
@@ -513,52 +648,289 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 
 ---
 
-### Task 2.3 — Polish, dokumentacja, demo refresh, E2E
+### Task 2.3 — Polish, a11y, CI, GDPR, dokumentacja — **rozszerzony po audycie 01.06.2026**
 
-**Definition of Done:**
+**Cel:** wszystkie elementy "wow factor 11/10" które plan podstawowy pomijał.
 
-- [ ] **Dokumentacja użytkownika końcowego:**
-  - [ ] `docs/instrukcja-magazyniera.pdf` (~5 stron, screenshots z UI): jak zalogować się, jak zarezerwować maszynę, jak potwierdzić, jak zgłosić awarię, jak wydrukować potwierdzenie rezerwacji
-  - [ ] `docs/instrukcja-administratora.pdf` (~5 stron): jak dodać użytkownika, jak nadać role/uprawnienia, jak zobaczyć audit log, jak zsynchronizować statusy, jak wyeksportować raport miesięczny
+#### 2.3.A — Accessibility (WCAG 2.1 AA) — **EU compliance + wow factor**
+
+European Accessibility Act (obowiązujący od 28.06.2025 dla nowych app w EU) wymaga zgodności z WCAG 2.1 AA.
+
+- [ ] **Axe DevTools audit** każdej kluczowej strony (login, dashboard, timeline, lista rezerwacji, detail, form rezerwacji, mapy, raporty) — **zero violations level AA**
+- [ ] **Kontrasty** (tailwind sprawdzić w dark mode i light mode):
+  - [ ] Tekst regular ≥4.5:1 vs background
+  - [ ] Tekst large (>=18px lub >=14px bold) ≥3:1
+  - [ ] Komponenty UI (border, focus rings) ≥3:1
+- [ ] **Focus rings widoczne** na każdym interactive element (button, link, input, select, textarea, modal close). `:focus-visible` outline w Tailwind config
+- [ ] **ARIA labels** na ikonach-only buttons (np. close X w modalu, ikony w nav)
+- [ ] **Skip links** — `<a href="#main">Pomiń nawigację</a>` na top każdej strony (visible on :focus)
+- [ ] **Keyboard navigation** — pełna ścieżka bez myszy:
+  - [ ] Tab order zgodny z visual order
+  - [ ] Modale: focus trap (Alpine focus plugin już mamy) + ESC zamyka
+  - [ ] Dropdowny (Alpine x-show): Enter open, ESC close, arrow keys navigate
+- [ ] **Screen reader compatibility** — test z VoiceOver (macOS):
+  - [ ] Wszystkie obrazy mają `alt=""` (decorative) lub opisowy alt
+  - [ ] Form errors anonsowane przez `aria-live="polite"` lub `role="alert"`
+  - [ ] Toast notifications mają `role="status"` / `aria-live`
+  - [ ] Tabele mają `<th scope="col">` + `<caption>`
+- [ ] **Heading hierarchy** — h1 → h2 → h3 bez skoków
+- [ ] **`prefers-reduced-motion`** — wszystkie Alpine transitions sprawdzić, dodać media query w global CSS:
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+  ```
+- [ ] **Lokalizacja a11y attributów** — `aria-label`, `<title>`, alt texts po PL/NL/FR/EN
+- [ ] Testy: `pytest tests/test_a11y.py` — minimum 5 (skip link present, focus visible CSS, aria-labels na key buttons, heading hierarchy, reduced motion CSS)
+
+**Effort:** 1 dzień.
+
+#### 2.3.B — CI/CD (GitHub Actions) — **bez deployment**
+
+Pipeline który chroni przed regresjami na każdy push, **bez** serwera produkcyjnego.
+
+- [ ] `.github/workflows/ci.yml`:
+  ```yaml
+  on: [push, pull_request]
+  jobs:
+    test:
+      runs-on: ubuntu-latest
+      services:
+        postgres: { image: postgres:16, env: {...}, ports: ['5432:5432'] }
+      steps:
+        - uses: actions/checkout@v4
+        - uses: astral-sh/setup-uv@v3
+        - run: uv sync --frozen
+        - run: uv run ruff check . && uv run ruff format --check .
+        - run: uv run python manage.py migrate
+        - run: uv run pytest -n auto --cov --cov-report=xml --cov-fail-under=95
+        - run: uv run bandit -r . -x tests/,migrations/
+        - run: uv run safety check --json || true  # warning, nie blocker
+        - uses: codecov/codecov-action@v4  # opcjonalne
+  ```
+- [ ] Coverage badge auto-generated po pytest, commitowany do `.github/badges/coverage.svg`
+- [ ] **Status check w PR-ach** — green checkmark obok każdego commita
+- [ ] README "Build status" badge na top: ![CI](https://github.com/.../workflows/ci/badge.svg)
+- [ ] **Acceptance**: push do feature branch → automatyczny CI run → zielone checki w 2-3 min
+
+**Effort:** 0.5 dnia.
+
+#### 2.3.C — Security scan (bandit + safety + CSP audit)
+
+- [ ] `uv add --dev bandit safety` (lub `pip-audit` jako alternatywa)
+- [ ] `bandit -r . -x tests/,migrations/` — naprawić wszystkie HIGH severity findings:
+  - [ ] Brak `assert` w produkcyjnym kodzie (Bandit B101)
+  - [ ] Brak `subprocess` z `shell=True` (B602)
+  - [ ] Brak `pickle.load` z untrusted source (B301)
+  - [ ] Brak hardcoded passwords (B105/B106)
+- [ ] `safety check` — naprawić wszystkie CVE w deps (lub upgrade do non-vulnerable wersji)
+- [ ] **CSP audit** — sprawdzić że nasze `CSP_NONCE` setup faktycznie blokuje inline scripts bez nonce:
+  - [ ] Otworzyć DevTools → Console → szukać "Content Security Policy" violations
+  - [ ] Wszystkie inline `<script>` muszą mieć `nonce="{{ CSP_NONCE }}"`
+  - [ ] Wszystkie inline `<style>` analogicznie
+- [ ] **Acceptance**: `bandit -r .` zero HIGH, `safety check` clean, CSP zero violations w przeglądarce
+
+**Effort:** 0.3 dnia.
+
+#### 2.3.D — GDPR essentials
+
+- [ ] **Privacy Policy page** `/legal/privacy/` — 1 strona statyczna z sekcjami:
+  - [ ] Kto jest administratorem danych (firma Sebastian'a)
+  - [ ] Jakie dane zbieramy (imię, email, telefon, rezerwacje)
+  - [ ] Po co (zarządzanie wypożyczeniami)
+  - [ ] Jak długo (audit log 90 dni, dane konta do żądania usunięcia)
+  - [ ] Prawa użytkownika (dostęp, sprostowanie, usunięcie, sprzeciw, przenośność)
+  - [ ] Kontakt (`info@werkstroomlab.be`)
+  - [ ] Lokalizacja po PL/NL/FR/EN
+- [ ] **Cookie notice** — minimalistyczny banner (Alpine.js, dismissable, zapamiętany w localStorage):
+  - [ ] "Używamy tylko niezbędnych cookies (session, CSRF). Brak trackingu" + button "Rozumiem"
+  - [ ] Jeśli nigdy nie dodajemy analytics → wystarczy "essential cookies only" notice
+- [ ] **Data export endpoint** `/account/export-data/`:
+  - [ ] POST → generuje JSON z wszystkimi danymi usera (profile, rezerwacje, audit log entries gdzie user=request.user)
+  - [ ] Download jako `dane-osobowe-YYYY-MM-DD.json`
+  - [ ] Rate limit: 1× dziennie per user (django-axes)
+- [ ] **Right to erasure** (już istnieje `anonymize_employee`, ale rozszerzyć):
+  - [ ] `anonymize_employee` ANONIMIZUJE też audit log entries (`user=None`, `object_repr` z imieniem → "[ANONIMIZOWANO]")
+  - [ ] Test: po anonymize wyszukanie po imieniu w audit log NIC nie zwraca
+- [ ] Link do Privacy Policy w footer każdej strony
+- [ ] **Acceptance**: user klika "Pobierz moje dane" → dostaje JSON. Admin klika "Anonimizuj" → wszystko z imieniem znika, audit log entries zostają ale bez PII.
+
+**Effort:** 0.5 dnia.
+
+#### 2.3.E — Custom error pages 404/500/403
+
+- [ ] `templates/errors/404.html` — branded, link "Wróć do dashboardu" + search box
+- [ ] `templates/errors/500.html` — branded, "coś poszło nie tak, ekipa została powiadomiona" (informacja, nie kłamstwo)
+- [ ] `templates/errors/403.html` — branded, "brak uprawnień" + link do logowania jeśli anonymous
+- [ ] `templates/errors/maintenance.html` — gdy aplikacja jest down (placeholder dla przyszłości)
+- [ ] `planer_config/urls.py`: `handler404`, `handler500`, `handler403` zdefiniowane
+- [ ] **Lokalizacja** wszystkich error pages PL/NL/FR/EN
+- [ ] Test: ustawić `DEBUG=False`, wejść na `/nieistnieje/` → custom 404 zamiast django default
+- [ ] **Acceptance**: każdy error page wygląda jak część app (header, footer, branding) — nie jak surowy Django default.
+
+**Effort:** 0.3 dnia.
+
+#### 2.3.F — ERD + ADR (Architecture Decision Records)
+
+- [ ] `uv add --dev django-extensions` (jeśli jeszcze nie ma) + `brew install graphviz`
+- [ ] `uv run python manage.py graph_models -a -o docs/erd.png --exclude-models=Session,LogEntry,ContentType,Permission,Group`
+- [ ] `docs/architecture.md` — Mermaid diagram głównych komponentów (Django apps, PostgreSQL, Chatbot AI z Gemini, Google Maps API, SMTP)
+- [ ] `docs/adr/` z 5 krótkimi ADR (1 strona każdy, format MADR):
+  - [ ] `001-postgresql-not-sqlite.md` — czemu PostgreSQL od początku
+  - [ ] `002-htmx-not-spa.md` — czemu HTMX zamiast React/Vue
+  - [ ] `003-pydantic-ai-gemini.md` — czemu Pydantic AI + Gemini dla chatbota
+  - [ ] `004-totp-not-webauthn.md` — czemu TOTP zamiast WebAuthn (prostota dla skali)
+  - [ ] `005-no-celery-sync-mail.md` — czemu sync mailing zamiast Celery
+- [ ] README link do `docs/architecture.md` i `docs/adr/`
+- [ ] **Acceptance**: nauczyciel otwiera `docs/erd.png` → widzi schemat bazy 1 spojrzeniem. Otwiera `docs/adr/001-...` → 1 strona "context / decision / consequences".
+
+**Effort:** 0.5 dnia.
+
+#### 2.3.G — Backup strategia + restore fire drill
+
+- [ ] `scripts/backup_db.sh`:
+  ```bash
+  #!/usr/bin/env bash
+  set -euo pipefail
+  TIMESTAMP=$(date +%Y-%m-%d_%H%M)
+  BACKUP_DIR="${BACKUP_DIR:-./backups}"
+  mkdir -p "$BACKUP_DIR"
+  PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -h localhost -p 5434 -U "$POSTGRES_USER" "$POSTGRES_DB" \
+      | gzip > "$BACKUP_DIR/${TIMESTAMP}.sql.gz"
+  echo "Backup OK: $BACKUP_DIR/${TIMESTAMP}.sql.gz ($(du -h "$BACKUP_DIR/${TIMESTAMP}.sql.gz" | cut -f1))"
+  # Retention: usun starsze niz 30 dni
+  find "$BACKUP_DIR" -name "*.sql.gz" -mtime +30 -delete
+  ```
+- [ ] `scripts/restore_db.sh` (do fire drill):
+  ```bash
+  #!/usr/bin/env bash
+  set -euo pipefail
+  BACKUP_FILE="$1"
+  TEST_DB="${TEST_DB:-restore_test}"
+  createdb -h localhost -p 5434 -U "$POSTGRES_USER" "$TEST_DB"
+  gunzip -c "$BACKUP_FILE" | PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5434 -U "$POSTGRES_USER" "$TEST_DB"
+  # Verify: count records
+  PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5434 -U "$POSTGRES_USER" -d "$TEST_DB" -c "SELECT COUNT(*) FROM reservations_reservation;"
+  dropdb -h localhost -p 5434 -U "$POSTGRES_USER" "$TEST_DB"
+  echo "Restore drill OK"
+  ```
+- [ ] **Fire drill** wykonany: `bash scripts/backup_db.sh && bash scripts/restore_db.sh backups/latest.sql.gz` → count rezerwacji zgadza się z produkcyjnym
+- [ ] README "Backup DB" sekcja z cron entry `0 2 * * * cd /app && bash scripts/backup_db.sh`
+- [ ] **Acceptance**: skrypt restore na test db pokazuje tę samą liczbę rezerwacji co produkcja → backup jest WIARYGODNY (nie iluzja)
+
+**Effort:** 0.2 dnia.
+
+#### 2.3.H — pytest-bdd Gherkin scenariusze (5)
+
+Wow faktor dla kursu — biznesowe scenariusze zapisane w stylu "Given/When/Then" które każdy klient zrozumie.
+
+- [ ] `tests/bdd/reservations.feature`:
+  ```gherkin
+  Feature: Cykl zycia rezerwacji
+    Scenario: Magazynier rezerwuje maszyne na przyszly tydzien
+      Given uzytkownik "seba" jest zalogowany jako Magazynier
+      And istnieje maszyna "M-0001" o statusie "W magazynie"
+      When seba tworzy rezerwacje na M-0001 od jutra na 5 dni
+      Then rezerwacja ma status "oczekujaca"
+      And maszyna M-0001 ma status "Zarezerwowana"
+
+    Scenario: Kierownik potwierdza rezerwacje
+      Given istnieje rezerwacja "R-100" o statusie "oczekujaca"
+      When kierownik klika "Potwierdz" w modal
+      Then rezerwacja ma status "potwierdzona"
+      And osoba odpowiedzialna otrzymuje mail z potwierdzeniem
+
+    Scenario: Hard Return Policy - maszyna nie wrocila na czas
+      Given istnieje rezerwacja konczaca sie wczoraj o statusie "potwierdzona"
+      And maszyna jest dalej "Na budowie"
+      When uruchamia sie cron daily_sync
+      Then rezerwacja ma przedluzony end_date na dzisiaj
+      And admin dostaje alert
+
+    Scenario: Konflikt rezerwacji jest wykrywany
+      Given istnieje potwierdzona rezerwacja M-0001 od 10-15 czerwca
+      When seba probuje stworzyc rezerwacje M-0001 od 12-18 czerwca
+      Then dostaje blad "Termin koliduje z inna rezerwacja"
+
+    Scenario: Anulowanie wymaga powodu
+      Given istnieje rezerwacja o statusie "potwierdzona"
+      When kierownik klika "Anuluj" bez wybierania powodu
+      Then formularz pokazuje blad walidacji "Powod jest wymagany"
+  ```
+- [ ] `tests/bdd/steps_reservations.py` — implementacje step definitions
+- [ ] `pytest tests/bdd/ -v` przechodzi
+- [ ] **Acceptance**: nauczyciel widzi `.feature` plik → rozumie biznes na pierwszy rzut oka bez czytania kodu.
+
+**Effort:** 0.5 dnia.
+
+#### 2.3.I — Lighthouse audit + Performance
+
+- [ ] Otworzyć `/`, `/rezerwacje/timeline/`, `/maszyny/`, `/mapy/` w Chrome → DevTools → Lighthouse → Audit (mobile + desktop)
+- [ ] **Target scores:**
+  - [ ] Performance: ≥90
+  - [ ] Accessibility: ≥95 (powinno być 100 po 2.3.A)
+  - [ ] Best Practices: ≥95
+  - [ ] SEO: ≥90
+- [ ] **Konkretne fixe** (z Lighthouse recommendations):
+  - [ ] Obrazy maszyn → WebP format (już są .webp) + `loading="lazy"` na below-fold
+  - [ ] Critical CSS inlined w `<head>` (Tailwind już to robi)
+  - [ ] JS bundle splitting (Vite/esbuild jeśli potrzeba — raczej nie, vendored)
+  - [ ] HTTP cache headers (Cache-Control na statics, whitenoise to robi)
+- [ ] **Acceptance**: 4 strony × 4 score ≥90% → screenshot w `docs/lighthouse-scores.png`
+
+**Effort:** 0.2 dnia.
+
+#### 2.3.J — Dokumentacja użytkownika + README + django check --deploy
+
+- [ ] `docs/instrukcja-magazyniera.pdf` (~5 stron, screenshots z UI): jak zalogować się (z 2FA!), jak zarezerwować maszynę, jak potwierdzić, jak zgłosić awarię
+- [ ] `docs/instrukcja-administratora.pdf` (~5 stron): jak dodać użytkownika, jak nadać role, jak zobaczyć audit log, jak wyeksportować raport miesięczny, jak wyłączyć 2FA innego usera
 - [ ] **README.md** sekcje:
-  - [ ] "Internacjonalizacja" — jak dodać nowy język (`makemessages -l XX`, edycja `.po`, `compilemessages`)
-  - [ ] "Mailing" — jak skonfigurować SMTP Google Workspace + App Password
-  - [ ] "Production cron" — wszystkie crony (daily_reminders, inspection_alerts, prune_audit_log, run_daily_sync)
-  - [ ] "Backup DB" — `scripts/backup_db.sh` + cron entry
+  - [ ] "Internacjonalizacja" — jak dodać nowy język
+  - [ ] "Mailing" — SMTP Google Workspace + App Password
+  - [ ] "2FA" — jak skonfigurować pierwszy device, recovery codes
+  - [ ] "GDPR" — privacy policy, data export, anonymize
+  - [ ] "Production cron" — wszystkie crony
+  - [ ] "Backup + restore" — `scripts/backup_db.sh` + `restore_db.sh`
+  - [ ] "Architecture" — link do `docs/erd.png` i `docs/adr/`
+  - [ ] Badges na top: ![CI] ![Coverage] ![Python] ![Django]
 - [ ] **Demo data refresh:**
-  - [ ] `uv run python manage.py seed_reservations_topup --until 2026-07-30` — żeby timeline na prezentacji M3 nie był pusty po prawej
-  - [ ] Sprawdzić że nowe rezerwacje używają istniejących osób (responsible_person) i budów (nie tworzą nowych)
-- [ ] **`django check --deploy`** — clean (zero WARNING):
-  - [ ] `SECURE_SSL_REDIRECT = True` w prod.py
-  - [ ] `SESSION_COOKIE_SECURE = True` w prod.py
-  - [ ] `CSRF_COOKIE_SECURE = True` w prod.py
-  - [ ] `SECURE_HSTS_SECONDS = 31536000` w prod.py
-  - [ ] `SECURE_CONTENT_TYPE_NOSNIFF = True`
-  - [ ] `X_FRAME_OPTIONS = 'DENY'`
-- [ ] **Performance audit timeline:**
-  - [ ] Django Debug Toolbar włączony w dev
-  - [ ] Otworzyć `/rezerwacje/timeline/?period=month` z 50+ maszyn × 30 dni
-  - [ ] Sprawdzić: <10 queries total, żadne query > 100ms
-  - [ ] Jeśli N+1: dodać `select_related('machine', 'site')` / `prefetch_related('reservations')`
-- [ ] **Backup strategia DB:**
-  - [ ] `scripts/backup_db.sh` z `pg_dump $DATABASE_URL | gzip > backups/$(date +%Y-%m-%d_%H%M).sql.gz`
-  - [ ] README cron: `0 2 * * * cd /app && bash scripts/backup_db.sh`
-  - [ ] Test manualny: uruchomić skrypt → plik pojawia się w `backups/`, da się rozkompresowac i zaimportować do nowej bazy
-- [ ] **Coverage badge:**
-  - [ ] `uv run coverage run -m pytest && uv run coverage-badge -f -o .github/badges/coverage.svg`
-  - [ ] Badge wstawiony w README na samej górze
-  - [ ] Makefile target `make coverage-badge`
-- [ ] **Smoke test E2E (Playwright):**
-  - [ ] `tests/e2e/test_smoke.py` — minimum 3 scenariusze:
-    - [ ] Scenariusz 1: login (seba/seba) → dashboard → click KPI "Aktywne rezerwacje" → lista rezerwacji
-    - [ ] Scenariusz 2: timeline → click bar rezerwacji → modal otwiera się → click "Potwierdź" → modal zamyka się + toast success
-    - [ ] Scenariusz 3: tworzenie rezerwacji od zera (lista → nowa → form → wybierz maszynę/datę/osobę/budowę → submit → redirect na detail)
-  - [ ] `uv run pytest tests/e2e/ --headed=False` przechodzi
-  - [ ] Makefile target `make e2e`
+  - [ ] `uv run python manage.py seed_reservations_topup --until 2026-07-30`
+  - [ ] Realne nazwy NL/FR (np. dodać kilku odpowiedzialnych z imionami "Jan de Vries", "Marie Dupont", "John Smith")
+  - [ ] Sprawdzić że ServiceRecord ma `cost` w EUR (po migracji django-money)
+- [ ] **`django check --deploy`** clean — zero WARNING:
+  - [ ] `SECURE_SSL_REDIRECT=True`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, `SECURE_HSTS_SECONDS=31536000`, `SECURE_CONTENT_TYPE_NOSNIFF=True`, `X_FRAME_OPTIONS='DENY'`
+- [ ] **Performance audit timeline** (Django Debug Toolbar): /rezerwacje/timeline/ z 50+ maszyn × 30 dni → <10 queries, każde <100ms
+- [ ] **E2E Playwright** — minimum 3 scenariusze (login + 2FA → dashboard, timeline modal confirm, tworzenie rezerwacji od zera). `make e2e` przechodzi.
 
-**Acceptance:** osoba zewnętrzna (np. ktoś z rodziny lub kolega) dostaje link do aplikacji + `docs/instrukcja-magazyniera.pdf` → potrafi samodzielnie dodać rezerwację bez pytania.
+**Effort:** 0.5 dnia.
 
-**Effort estimate:** 2 dni roboczych.
+---
+
+### Cały Task 2.3 — Effort total
+
+| Sub-zadanie | Effort | Bezwzględne? |
+|---|---|---|
+| 2.3.A Accessibility WCAG 2.1 AA | 1 dzień | TAK (EU compliance) |
+| 2.3.B CI GitHub Actions | 0.5 dnia | TAK (wow faktor) |
+| 2.3.C Security scan (bandit + safety + CSP) | 0.3 dnia | TAK |
+| 2.3.D GDPR essentials | 0.5 dnia | TAK (Belgia = EU) |
+| 2.3.E Custom error pages | 0.3 dnia | NICE-TO-HAVE |
+| 2.3.F ERD + 5 ADR | 0.5 dnia | NICE-TO-HAVE (wow) |
+| 2.3.G Backup + restore fire drill | 0.2 dnia | TAK |
+| 2.3.H pytest-bdd 5 scenariuszy | 0.5 dnia | NICE-TO-HAVE (wow) |
+| 2.3.I Lighthouse audit | 0.2 dnia | NICE-TO-HAVE (wow) |
+| 2.3.J Dokumentacja + README + demo + check --deploy + E2E | 0.5 dnia | TAK |
+| **TOTAL** | **4.5 dnia** | |
+
+**Bufor pomiędzy końcem Sprint 2 (28.06) a deadline'em (30.06) to tylko 2 dni** — większość 2.3 musi się zacząć już w trakcie Sprint 2 (parallel). Realistycznie:
+
+- 22-24.06: Audit log (Task 2.1, 2 dni równolegle z 2.3.B CI + 2.3.C security)
+- 25-27.06: Raporty (Task 2.2, 3 dni równolegle z 2.3.A a11y)
+- 28-30.06: pełen polish (2.3.D-J + dokumentacja)
+
+**Jeśli przepełnienie:** P2 (custom errors, ERD/ADR, bdd, lighthouse) idą do bufora lipcowego — wciąż "wow 11/10" jest osiągnięty przez P0 (a11y, CI, security, GDPR, 2FA z S1).
+
+**Acceptance całego M3:** osoba zewnętrzna dostaje link + PDF instrukcji → samodzielnie loguje się (z 2FA), zmienia język na NL, tworzy rezerwację, dostaje mail, eksportuje raport PDF, sprawdza audit log w admin. Wszystko działa. Lighthouse Accessibility = 100%.
 
 ---
 
@@ -567,7 +939,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 | Cut | Powód |
 |-----|-------|
 | Hosting (VPS / Fly.io / PythonAnywhere) | Sebastian: "póki co nie hostujemy, wrócimy później". Deployment to potencjalnie 1-2 tyg samego setup'u + monitorowania |
-| 2FA / WebAuthn | Overkill dla skali (1 admin + ~5 użytkowników) — single tenant, intranet-style |
+| WebAuthn / Passkeys | 2FA TOTP wystarcza dla skali. WebAuthn dodaje hardware key dependency |
 | Celery + Redis | Mailing sync wystarczy. Crony do reminderów wystarczają. Celery to overkill |
 | django-channels / WebSockets | HTMX wystarcza dla wszystkich realtime potrzeb (potwierdzenia, refresh timeline) |
 | Sentry / error monitoring | Bez deploymentu nie ma sensu. Wejdzie razem z hostingiem |
@@ -631,23 +1003,51 @@ Analogicznie dla `feature/m3-s1-mailing`, `feature/m3-s2-audit-log`, `feature/m3
 
 ---
 
-## Definition of Done — cały Milestone 3
+## Definition of Done — cały Milestone 3 (rozszerzony do 11/10 po audycie 01.06.2026)
 
 Przed zakończeniem M3 wszystko poniżej musi być zielone:
 
-- [ ] Wszystkie 5 zaplanowanych obszarów zakończone (i18n, mailing, audit log, raporty, polish)
+**Funkcjonalne:**
+
+- [ ] Wszystkie obszary zakończone: i18n (PL/NL/FR/EN + plurals + EUR), mailing (6 maili × 4 języki + robustness), 2FA TOTP, audit log, raporty Chart.js + PDF, polish
+- [ ] Manualny walk-through w przeglądarce po wszystkich widokach × 4 języki = 4 pełne obchody UI
+- [ ] 24 maile transakcyjne wysłane manualnie do `info@werkstroomlab.be`, każdy zweryfikowany w Gmail Web (poprawny subject, body, dark mode, unsubscribe link, plaintext fallback)
+- [ ] 2FA: login z Google Authenticator działa, recovery codes do downloadu, admin może wyłączyć 2FA innego usera
+- [ ] Audit log działa, CSV eksport pobrany i otwarty w Excelu, prune cron usuwa stare
+- [ ] Raporty: 4 wykresy renderują się responsively, PDF generuje się z brandingiem
+- [ ] GDPR: privacy policy live, data export działa, anonymize obejmuje audit log
+
+**Jakościowe:**
+
 - [ ] `uv run pytest -q -n auto` — 100% pass, coverage ≥ 95%
 - [ ] `uv run ruff check . && uv run ruff format --check .` — clean
-- [ ] `uv run python manage.py check --deploy` — clean (zero WARNING)
-- [ ] Manualny walk-through w przeglądarce po wszystkich widokach × 4 języki = 4 pełne obchody UI
-- [ ] 24 maile transakcyjne wysłane manualnie do `info@werkstroomlab.be`, każdy zweryfikowany w Gmail Web
-- [ ] Audit log działa, CSV eksport pobrany i otwarty w Excelu
-- [ ] Raporty: 4 wykresy renderują się, PDF generuje się
-- [ ] Dokumentacja: 2 PDF instrukcji + README sekcje (i18n, mailing, cron, backup)
-- [ ] Demo data: timeline ma rezerwacje sięgające do 2026-07-30
-- [ ] Coverage badge w README
-- [ ] E2E Playwright: 3 scenariusze pass
+- [ ] `uv run python manage.py check --deploy` — zero WARNING
+- [ ] `uv run bandit -r . -x tests/,migrations/` — zero HIGH severity
+- [ ] `uv run safety check` — zero CVE w deps (lub upgrade dokonany)
+- [ ] CSP audit: zero violations w DevTools Console
+- [ ] **Axe DevTools**: zero violations level AA na 8 kluczowych stronach
+- [ ] **Lighthouse**: 4 strony × 4 score (Performance/Accessibility/Best Practices/SEO) — wszystkie ≥90 (Accessibility ≥95)
+
+**Infrastruktura:**
+
+- [ ] **CI GitHub Actions** zielone na każdym push (pytest + ruff + bandit + safety + coverage badge)
+- [ ] Coverage badge w README aktualny
+- [ ] Backup: `scripts/backup_db.sh` + `restore_db.sh` przetestowane (fire drill OK)
+- [ ] E2E Playwright: 3 scenariusze pass (z 2FA flow)
+- [ ] pytest-bdd: 5 Gherkin scenariuszy pass
+
+**Dokumentacja:**
+
+- [ ] `docs/instrukcja-magazyniera.pdf` + `docs/instrukcja-administratora.pdf`
+- [ ] `docs/erd.png` (Graphviz)
+- [ ] `docs/architecture.md` (Mermaid diagram)
+- [ ] `docs/adr/001-005-*.md` (5 ADR)
+- [ ] `README.md` sekcje: i18n, mailing, 2FA, GDPR, cron, backup, architecture, status badges
+
+**Git:**
+
 - [ ] Wszystko zmergowane do `main` przez `--no-ff` z merge commitami markującymi sprints
+- [ ] Zero force-push na `main` / `develop` w trakcie M3
 
 ---
 
@@ -656,3 +1056,4 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 | Data | Event |
 |------|-------|
 | 2026-06-01 | Utworzony jako konkretny plan zaplecza dla M3 (16 dni roboczych: 15-30.06.2026). Bazuje na audycie agentowym `NOTES_FOR_MILESTONE_3.md` z 2026-04-20, ale ze świadomymi cięciami (zob. sekcja "Co NIE wchodzi w M3") + dostosowaniem decyzji biznesowych: pełne 4 języki PL/NL/FR/EN, mailing przez Google Workspace `info@werkstroomlab.be`, hosting odłożony. |
+| 2026-06-01 (v2) | Rozszerzenie planu po audycie adwokata diabła: **dodane 2FA TOTP** (Task 1.3, 1 dzień, OWASP A07:2021), **a11y WCAG 2.1 AA** (European Accessibility Act compliance — wymagane prawem od 28.06.2025), **CI GitHub Actions** (bez deploymentu — sama infrastruktura testowa), **GDPR essentials** (privacy policy, cookie notice, data export, audit log erasure), security scan (bandit + safety + CSP audit), custom error pages, ERD + 5 ADR, backup restore fire drill, pytest-bdd 5 scenariuszy, Lighthouse audit, idempotency cronów mailingu, unsubscribe link, Mailpit w dev. Waluta domyślna EUR (Belgia), dodane `django-money`, `phonenumbers`, `django-otp`, `qrcode`. Plurals (3 formy PL) explicit w DoD. |
