@@ -30,11 +30,11 @@ Milestone 2 ma UI hardcoded po polsku. Milestone 3 powinien wprowadzić wieloję
 - `django.utils.translation` + `{% trans %}` + `{% blocktrans %}` w szablonach.
 - `gettext_lazy` w `models.py`, `forms.py`, `admin.py` (verbose_name, help_text, choices labels).
 - Struktura `locale/<lang_code>/LC_MESSAGES/django.po`.
-- Polecenia: `django-admin makemessages -l nl -l fr -l en`, `django-admin compilemessages`.
-- **Języki docelowe:** polski (base), niderlandzki (firma Sebastian — belgijska), francuski (belgijska klient base), angielski (fallback). W M3 minimum PL + jeszcze jeden, reszta ambitna.
-- `LANGUAGE_CODE = "pl"`, `USE_I18N = True`, `LANGUAGES = [("pl", "Polski"), ("nl", "Nederlands"), ("fr", "Français"), ("en", "English")]`.
+- Polecenia: `django-admin makemessages -l en`, `django-admin compilemessages`.
+- **Języki docelowe (decyzja 2026-06-22 — zakres zredukowany z 4 do 2):** polski (base) + angielski. NL/FR odpadają (nieużywane w tym projekcie; kurs wymaga 2). Pełne tłumaczenie + weryfikacja UI w przeglądarce **bez zmian** — zmieniła się wyłącznie liczba języków.
+- `LANGUAGE_CODE = "pl"`, `USE_I18N = True`, `LANGUAGES = [("pl", "Polski"), ("en", "English")]`.
 - `LocaleMiddleware` w `MIDDLEWARE`.
-- `i18n_patterns(...)` w `urls.py` — URL-e z prefiksem języka `/pl/`, `/nl/`, etc.
+- `i18n_patterns(...)` w `urls.py` — URL-e z prefiksem języka `/pl/`, `/en/`, etc.
 - **Przełącznik języka** w header — Alpine.js dropdown.
 
 ### Specjalne
@@ -45,7 +45,7 @@ Milestone 2 ma UI hardcoded po polsku. Milestone 3 powinien wprowadzić wieloję
 
 ### Uwagi
 
-- Tłumaczenie `django-unfold` — sprawdzić czy ma `.po` plik dla PL/NL/FR.
+- Tłumaczenie `django-unfold` — sprawdzić czy ma `.po` plik dla PL/EN.
 - Tłumaczenie komunikatów email (jeśli zrobione w M2) — wymaga szablonów per język.
 - Admin labele — `verbose_name` + `verbose_name_plural` przez `gettext_lazy` we wszystkich modelach.
 
@@ -257,7 +257,7 @@ Przy kontynuacji w M3:
 
 Jeśli M3 ma 8 sprintów (podobnie jak M2), luźny szkic:
 
-- **S1** — i18n foundation + PL/NL/FR/EN `.po` skeleton + `LocaleMiddleware` + przełącznik języka.
+- **S1** — i18n foundation + PL/EN `.po` skeleton + `LocaleMiddleware` + przełącznik języka.
 - **S2** — RBAC: Django Groups + permission decorators + login flow + profil pracownika.
 - **S3** — Audit log middleware + model `AuditLogEntry` + admin page + CSV export.
 - **S4** — Email backend + 7 scenariuszy mailingowych + szablony PL/NL.

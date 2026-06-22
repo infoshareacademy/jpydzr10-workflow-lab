@@ -11,17 +11,17 @@
 
 Domknięcie obszarów M3 z oryginalnego harmonogramu kursu **+ rozszerzenia o wow-faktor** (zgodnie z decyzją 01.06.2026 po audycie adwokata diabła):
 
-1. **Internacjonalizacja** — pełna lokalizacja PL / NL / FR / EN (3 nowe języki, chirurgicznie). **Plurals (3 formy w PL), waluty (EUR default, PLN dla PL), formatowanie liczb i numerów telefonów per locale.**
+1. **Internacjonalizacja** — pełna lokalizacja PL / EN (3 nowe języki, chirurgicznie). **Plurals (3 formy w PL), waluty (EUR default, PLN dla PL), formatowanie liczb i numerów telefonów per locale.**
 2. **Mailing transakcyjny** — Google Workspace SMTP (`info@werkstroomlab.be`), 6 scenariuszy biznesowych. **Idempotency, unsubscribe (GDPR), bounce log, dark mode Outlook, preview view, Mailpit w dev.**
 3. **2FA (TOTP)** — `django-otp` + QR code dla wszystkich `is_staff` użytkowników. Recovery codes. OWASP A07:2021 compliance.
 4. **Audit log** — middleware + `AuditLogEntry` + admin + CSV + retention 90 dni + GDPR erasure obejmuje audit.
-5. **Raporty wizualne** — 4 wykresy Chart.js + PDF raport miesięczny (server-side matplotlib) + lokalizacja PL/NL/FR/EN.
+5. **Raporty wizualne** — 4 wykresy Chart.js + PDF raport miesięczny (server-side matplotlib) + lokalizacja PL/EN.
 6. **Accessibility (WCAG 2.1 AA)** — pełen audit przez Axe DevTools, fixy kontrastów, focus rings, ARIA labels, skip links, keyboard nav. **European Accessibility Act compliance** (od 28.06.2025 wymagane prawem dla nowych app w EU).
 7. **CI/CD pipeline** — GitHub Actions: pytest + ruff + coverage badge + bandit + safety (CVE scan deps). **Bez deployment** — sama infrastruktura testowa.
 8. **GDPR essentials** — privacy policy page, cookie notice, data export endpoint, anonymize obejmuje audit log.
 9. **Polish, dokumentacja, bezpieczeństwo** — `django check --deploy` clean, custom error pages 404/500/403, ERD + 5 ADR (Architecture Decision Records), 2 PDF instrukcje użytkownika, demo data refresh, E2E Playwright + 5 pytest-bdd Gherkin scenariusze, Lighthouse audit, backup restore fire drill.
 
-**Waluta domyślna:** **EUR** (Sebastian operuje w Belgii). Pole `currency` na `ServiceRecord.cost`. Wyświetlanie w UI per locale (NL/FR/EN → EUR z formatem locale, PL → PLN z formatem PL).
+**Waluta domyślna:** **EUR** (Sebastian operuje w Belgii). Pole `currency` na `ServiceRecord.cost`. Wyświetlanie w UI per locale (EN → EUR z formatem locale, PL → PLN z formatem PL).
 
 **Świadome cięcia** (zob. sekcja "Co NIE wchodzi w M3"): hosting odłożony, Celery/Redis/django-channels/Sentry/Frappe Gantt — overkill. **2FA NIE jest już cuts** (przeniesione do scope).
 
@@ -31,13 +31,13 @@ Domknięcie obszarów M3 z oryginalnego harmonogramu kursu **+ rozszerzenia o wo
 
 Zasady jak w Milestone 2 — bez zmian. Najważniejsze przypomnienia:
 
-- **Język UI:** od M3 wchodzi **i18n PL/NL/FR/EN**. Każdy nowy string MUSI być owinięty w `{% trans %}` / `gettext_lazy`. Stringi nieprzetłumaczone = blocker przy merge.
+- **Język UI:** od M3 wchodzi **i18n PL/EN**. Każdy nowy string MUSI być owinięty w `{% trans %}` / `gettext_lazy`. Stringi nieprzetłumaczone = blocker przy merge.
 - **Język kodu:** angielski. Nazwy klas, funkcji, zmiennych, komentarzy.
 - **Git workflow:** `feature/m3-sN-<nazwa>` branche → rebase na develop → squash merge do develop → merge developu do main z `--no-ff` (merge commit jako marker sprintu).
 - **Commit messages:** `typ: opis` po polsku (ASCII bez diakrytyków, np. "zaktualizowano" zamiast "zaktualizowano"). Bez `--amend` na opublikowanych commitach, bez `--no-verify`.
 - **Każdy commit:** wszystkie testy zielone (`uv run pytest -q -n auto`), lint czysty (`uv run ruff check . && uv run ruff format --check .`).
 - **Coverage target:** ≥ **95%** (kontynuacja M2 — `fail_under=95.0` w `pyproject.toml`).
-- **Każdy merge do develop:** manualna weryfikacja UI w przeglądarce (lokalnie `make run` na :8002) w **każdym z 4 języków** (PL / NL / FR / EN).
+- **Każdy merge do develop:** manualna weryfikacja UI w przeglądarce (lokalnie `make run` na :8002) w **każdym z 2 języków** (PL / EN).
 - **Magic numbers / strings:** wszystkie w module-level constants.
 - **`except Exception` zakazane** — konkretne wyjątki lub komentarz wyjaśniający.
 - **TODO zakazane w kodzie** — wszystkie pomysły idą do tego dokumentu jako taski.
@@ -139,7 +139,7 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 | Sprint | Daty | Główne tematy |
 |--------|------|---------------|
-| **S1** | 15-21.06.2026 (7 dni) | i18n PL/NL/FR/EN pełne (+plurals/EUR/phones) + Mailing (+idempotency/unsubscribe/Mailpit) + **2FA TOTP** |
+| **S1** | 15-21.06.2026 (7 dni) | i18n PL/EN pełne (+plurals/EUR/phones) + Mailing (+idempotency/unsubscribe/Mailpit) + **2FA TOTP** |
 | **S2** | 22-28.06.2026 (7 dni) | Audit log + Raporty Chart.js + PDF + **równolegle: a11y/CI/security/GDPR z 2.3** |
 | **Bufor** | 29-30.06.2026 (2 dni) | Pełen polish (2.3.A-J): custom errors, ERD/ADR, backup restore drill, bdd, Lighthouse, dokumentacja PDF, demo refresh, E2E |
 
@@ -147,9 +147,11 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 ## SPRINT 1 (15-21.06.2026) — i18n + Mailing
 
-### Task 1.1 — i18n: pełna lokalizacja PL / NL / FR / EN
+### Task 1.1 — i18n: pełna lokalizacja PL / EN
 
-**Co robimy:** każdy widoczny string w UI ma 4 wersje językowe. Switcher języka w nav header, datepicker zlokalizowany, formatowanie dat per locale, emaile w języku odbiorcy.
+> **Zmiana zakresu 2026-06-22:** i18n = **2 języki (PL + EN)**, zredukowane z pierwotnych 4 (NL/FR odpadają — nieużywane). Wymóg „absolutnie wszystko przetłumaczone + zweryfikowane w UI" pozostaje **bez zmian** — zmieniła się wyłącznie liczba języków.
+
+**Co robimy:** każdy widoczny string w UI ma 2 wersje językowe (PL/EN). Switcher języka w nav header, datepicker zlokalizowany, formatowanie dat per locale, emaile w języku odbiorcy.
 
 **Plan działania:**
 
@@ -191,7 +193,7 @@ Dwa sprinty tygodniowe + bufor na polish:
    uv run python manage.py compilemessages
    ```
 
-5. Dodać `EmployeeProfile.preferred_language` (CharField choices PL/NL/FR/EN, default 'pl'):
+5. Dodać `EmployeeProfile.preferred_language` (CharField choices PL/EN, default 'pl'):
    - Migracja `accounts/migrations/00XX_employee_preferred_language.py`
    - Admin: dodać do `EmployeeProfileAdmin.fieldsets`
    - Form: dodać do user edit form
@@ -240,10 +242,10 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 **Definition of Done:**
 
-- [ ] `msgfmt --statistics locale/nl/LC_MESSAGES/django.po` zwraca `X translated messages, 0 untranslated, 0 fuzzy` (analogicznie dla `fr`, `en`)
+- [ ] `msgfmt --statistics locale/en/LC_MESSAGES/django.po` zwraca `X translated messages, 0 untranslated, 0 fuzzy` (analogicznie dla `pl`)
 - [ ] `compilemessages` przechodzi bez warningów, `.mo` pliki w repo
-- [ ] Switcher języka w nav header działa: klik PL/NL/FR/EN → cała strona przeładowana w tym języku, cookie `django_language` zapisany
-- [ ] **Manualny obchód w przeglądarce w 4 językach** (lista checklist do odhaczenia per język):
+- [ ] Switcher języka w nav header działa: klik PL/EN → cała strona przeładowana w tym języku, cookie `django_language` zapisany
+- [ ] **Manualny obchód w przeglądarce w 2 językach** (lista checklist do odhaczenia per język):
   - [ ] `/` dashboard (wszystkie KPI cards, sekcja "Dziś w magazynie", linki)
   - [ ] `/rezerwacje/timeline/` (legenda, filtry, KPI period, modal rezerwacji, akcje terminalne, paginacja)
   - [ ] `/rezerwacje/` (lista, filtry, paginacja, sortowanie)
@@ -279,9 +281,9 @@ Dwa sprinty tygodniowe + bufor na polish:
   - [ ] Wyświetlanie sformatowane per locale (`+48 123 456 789`)
 - [ ] **Formatowanie dat/liczb per locale** (django USE_L10N=True już ustawione, ale audit):
   - [ ] `2026-06-15` (PL ISO) / `15 juni 2026` (NL) / `15 juin 2026` (FR) / `June 15, 2026` (EN)
-  - [ ] `1 234,56` (PL/NL/FR) vs `1,234.56` (EN)
+  - [ ] `1 234,56` (PL/EN) vs `1,234.56` (EN)
 - [ ] Testy: `uv run pytest reservations/tests/test_i18n.py -v` — minimum 10 testów (per język: tytuł home view + flash message + plural form + currency format + date format)
-- [ ] **Acceptance**: użytkownik z `Accept-Language: nl-BE` otwiera aplikację i widzi 100% UI po niderlandzku — ani jednego polskiego stringa (poza nazwami własnymi typu "Isocab Construct", "Wroclaw", UID maszyn). Koszty serwisowe wyświetlają się w EUR z formatem NL.
+- [ ] **Acceptance**: użytkownik z `Accept-Language: en` otwiera aplikację i widzi 100% UI po angielsku — ani jednego polskiego stringa (poza nazwami własnymi typu "Isocab Construct", "Wroclaw", UID maszyn). Koszty serwisowe wyświetlają się w EUR z formatem locale.
 
 **Effort estimate:** 5 dni roboczych (~600 msgids × 3 języki = 1800 fraz + plurals + currency migration + phones).
 
@@ -289,7 +291,7 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 ### Task 1.2 — Mailing transakcyjny (Google Workspace SMTP)
 
-**Co robimy:** podpinamy SMTP Google Workspace (konto `info@werkstroomlab.be`), tworzymy 6 maili transakcyjnych wysyłanych w 4 językach.
+**Co robimy:** podpinamy SMTP Google Workspace (konto `info@werkstroomlab.be`), tworzymy 6 maili transakcyjnych wysyłanych w 2 językach.
 
 **Setup SMTP Google Workspace:**
 
@@ -354,9 +356,9 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 - [ ] `.env` rozszerzone o 6 zmiennych EMAIL_*, `.env.example` zaktualizowany (bez prawdziwego App Password)
 - [ ] App Password wygenerowane i działa — manualnie z Django shell `send_mail('test', 'body', None, ['info@werkstroomlab.be'])` dochodzi do skrzynki w <30 sek
 - [ ] `settings/prod.py` przełączony na SMTP backend, `settings/test.py` na `locmem` (Django test default)
-- [ ] Migracja `accounts/migrations/00XX_employee_preferred_language.py` — dodaje pole CharField choices PL/NL/FR/EN default 'pl'
+- [ ] Migracja `accounts/migrations/00XX_employee_preferred_language.py` — dodaje pole CharField choices PL/EN default 'pl'
 - [ ] `core/mailing.py` z funkcją `send_localized_mail()` + testy unit
-- [ ] **24 pliki email templates** (6 maili × 2 wersje (txt, html) × 4 języki = 48 plików? NIE — txt/html w danym języku, ale język = zmienna runtime, nie filename. Czyli: 6 maili × 2 wersje = **12 plików HTML/TXT** + każdy template wewnętrznie używa `{% trans %}` żeby się przełączał per language). Plus 6 subject templates.txt = **18 plików łącznie**.
+- [ ] **24 pliki email templates** (6 maili × 2 wersje (txt, html) × 2 języki = 24 plików? NIE — txt/html w danym języku, ale język = zmienna runtime, nie filename. Czyli: 6 maili × 2 wersje = **12 plików HTML/TXT** + każdy template wewnętrznie używa `{% trans %}` żeby się przełączał per language). Plus 6 subject templates.txt = **18 plików łącznie**.
 - [ ] Każdy mail HTML ma branded header (logo + nazwa firmy "Isocab Construct") + footer (kontakt + unsubscribe placeholder)
 - [ ] Każdy mail HTML ma plaintext fallback (`EmailMultiAlternatives`)
 - [ ] 2 nowe management commands w `core/management/commands/`:
@@ -367,13 +369,13 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
   0 7 * * * cd /app && uv run python manage.py send_daily_reminders
   0 8 * * * cd /app && uv run python manage.py send_inspection_alerts
   ```
-- [ ] **Manualny test każdego z 6 maili w 4 językach = 24 wysyłki** do `info@werkstroomlab.be`:
-  - [ ] reservation_confirmed (PL, NL, FR, EN)
-  - [ ] reservation_cancelled (PL, NL, FR, EN)
-  - [ ] reservation_reminder (PL, NL, FR, EN)
-  - [ ] inspection_overdue (PL, NL, FR, EN)
-  - [ ] inspection_upcoming (PL, NL, FR, EN)
-  - [ ] password_reset (PL, NL, FR, EN)
+- [ ] **Manualny test każdego z 6 maili w 2 językach = 12 wysyłek** do `info@werkstroomlab.be`:
+  - [ ] reservation_confirmed (PL, EN)
+  - [ ] reservation_cancelled (PL, EN)
+  - [ ] reservation_reminder (PL, EN)
+  - [ ] inspection_overdue (PL, EN)
+  - [ ] inspection_upcoming (PL, EN)
+  - [ ] password_reset (PL, EN)
 - [ ] Każdy mail w Gmail Web + Outlook Web:
   - [ ] dostarczalność (Inbox, nie Spam)
   - [ ] HTML renderuje się poprawnie (logo, układ, ciemny motyw kompatybilny)
@@ -407,7 +409,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
   - [ ] URL `/admin/preview-email/?template=reservation_confirmed&lang=nl`
   - [ ] Wyświetla renderowany HTML w iframe + plaintext fallback + subject
   - [ ] Wymaga `is_staff` + DEBUG=True (nigdy w prod)
-  - [ ] Lista wszystkich 6 maili × 4 języki = 24 przycisków preview
+  - [ ] Lista wszystkich 6 maili × 2 języki = 12 przycisków preview
 - [ ] **MAILPIT w dev** (zamiast console backend):
   - [ ] Dodać do `docker-compose.yml` service `mailpit`:
     ```yaml
@@ -480,7 +482,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 - [ ] Wszystkie `is_staff` views chronione `@otp_required` lub middleware (404/302 do `/account/2fa/setup/` jeśli user nie zweryfikowany)
 - [ ] `is_superuser` może wyłączyć 2FA innemu userowi z admin (z audit log entry)
 - [ ] Karta "Bezpieczeństwo" w `/account/profile/` z toggle, guzik "Nowe recovery codes"
-- [ ] **Lokalizacja**: setup/verify/recovery codes pages po PL/NL/FR/EN
+- [ ] **Lokalizacja**: setup/verify/recovery codes pages po PL/EN
 - [ ] **Backup codes dla demo account** (seba): zapisane w lokalnym pliku notatek poza repo, żeby nie zgubic na prezentacji
 - [ ] Testy: `pytest accounts/tests/test_2fa.py -v` — minimum 8 (setup flow, verify flow z prawidłowym tokenem, verify z błędnym tokenem, recovery code one-time, force redirect dla is_staff bez 2FA, admin disable 2FA innego usera tworzy audit log entry, lokalizacja setup page po NL, password reset NIE wymaga 2FA — bo user zalogowany dopiero później)
 - [ ] **Acceptance**: nauczyciel widzi login → username/password → 6-cyfrowy kod z Google Authenticator → wchodzi do app. Próba pominięcia 2FA = niemożliwa. Recovery codes do downloadu jako TXT na wypadek utraty telefonu.
@@ -621,7 +623,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
    class ReportsDashboardView(View): ...
    ```
 
-6. Lokalizacja: cały widok + labelki wykresów + PDF po PL/NL/FR/EN (tłumaczenia w `.po` z task 1.1).
+6. Lokalizacja: cały widok + labelki wykresów + PDF po PL/EN (tłumaczenia w `.po` z task 1.1).
 
 **Definition of Done:**
 
@@ -634,7 +636,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 - [ ] Wszystkie wykresy responsive (mobile-friendly), reagują na dark mode (color schemes)
 - [ ] PDF eksport: button → `raport-2026-06.pdf` z 4 wykresami + KPI table + branded header
 - [ ] `/raporty/` zabezpieczone — anonymous → 302 na login, non-staff user → 403
-- [ ] Lokalizacja: tytuły wykresów + axis labels + tooltips + PDF po PL/NL/FR/EN
+- [ ] Lokalizacja: tytuły wykresów + axis labels + tooltips + PDF po PL/EN
 - [ ] Testy: `uv run pytest reports/tests/ -v` — minimum 6:
   - wykres 1 generuje poprawne dane (wykorzystanie z mocked rezerwacji)
   - ranking sortowany desc, top 10 nie więcej
@@ -680,7 +682,7 @@ European Accessibility Act (obowiązujący od 28.06.2025 dla nowych app w EU) wy
       *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
   ```
-- [ ] **Lokalizacja a11y attributów** — `aria-label`, `<title>`, alt texts po PL/NL/FR/EN
+- [ ] **Lokalizacja a11y attributów** — `aria-label`, `<title>`, alt texts po PL/EN
 - [ ] Testy: `pytest tests/test_a11y.py` — minimum 5 (skip link present, focus visible CSS, aria-labels na key buttons, heading hierarchy, reduced motion CSS)
 
 **Effort:** 1 dzień.
@@ -741,7 +743,7 @@ Pipeline który chroni przed regresjami na każdy push, **bez** serwera produkcy
   - [ ] Jak długo (audit log 90 dni, dane konta do żądania usunięcia)
   - [ ] Prawa użytkownika (dostęp, sprostowanie, usunięcie, sprzeciw, przenośność)
   - [ ] Kontakt (`info@werkstroomlab.be`)
-  - [ ] Lokalizacja po PL/NL/FR/EN
+  - [ ] Lokalizacja po PL/EN
 - [ ] **Cookie notice** — minimalistyczny banner (Alpine.js, dismissable, zapamiętany w localStorage):
   - [ ] "Używamy tylko niezbędnych cookies (session, CSRF). Brak trackingu" + button "Rozumiem"
   - [ ] Jeśli nigdy nie dodajemy analytics → wystarczy "essential cookies only" notice
@@ -764,7 +766,7 @@ Pipeline który chroni przed regresjami na każdy push, **bez** serwera produkcy
 - [ ] `templates/errors/403.html` — branded, "brak uprawnień" + link do logowania jeśli anonymous
 - [ ] `templates/errors/maintenance.html` — gdy aplikacja jest down (placeholder dla przyszłości)
 - [ ] `planer_config/urls.py`: `handler404`, `handler500`, `handler403` zdefiniowane
-- [ ] **Lokalizacja** wszystkich error pages PL/NL/FR/EN
+- [ ] **Lokalizacja** wszystkich error pages PL/EN
 - [ ] Test: ustawić `DEBUG=False`, wejść na `/nieistnieje/` → custom 404 zamiast django default
 - [ ] **Acceptance**: każdy error page wygląda jak część app (header, footer, branding) — nie jak surowy Django default.
 
@@ -895,7 +897,7 @@ Wow faktor dla kursu — biznesowe scenariusze zapisane w stylu "Given/When/Then
   - [ ] Badges na top: ![CI] ![Coverage] ![Python] ![Django]
 - [ ] **Demo data refresh:**
   - [ ] `uv run python manage.py seed_reservations_topup --until 2026-07-30`
-  - [ ] Realne nazwy NL/FR (np. dodać kilku odpowiedzialnych z imionami "Jan de Vries", "Marie Dupont", "John Smith")
+  - [ ] Realne nazwy PL/EN (np. dodać kilku odpowiedzialnych z imionami "Jan Kowalski", "Anna Nowak", "John Smith")
   - [ ] Sprawdzić że ServiceRecord ma `cost` w EUR (po migracji django-money)
 - [ ] **`django check --deploy`** clean — zero WARNING:
   - [ ] `SECURE_SSL_REDIRECT=True`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, `SECURE_HSTS_SECONDS=31536000`, `SECURE_CONTENT_TYPE_NOSNIFF=True`, `X_FRAME_OPTIONS='DENY'`
@@ -986,7 +988,7 @@ git push -u origin feature/m3-s1-i18n-pelne --force-with-lease
 # Merge do develop (preferowane: squash żeby develop był czysty)
 git switch develop && git pull --ff-only
 git merge --squash feature/m3-s1-i18n-pelne
-git commit -m "feat(M3-S1): i18n pelna lokalizacja PL/NL/FR/EN + flatpickr per-locale"
+git commit -m "feat(M3-S1): i18n pelna lokalizacja PL/EN + flatpickr per-locale"
 git push origin develop
 
 # Po pełnym sprincie: develop → main z merge commit
@@ -1009,8 +1011,8 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 
 **Funkcjonalne:**
 
-- [ ] Wszystkie obszary zakończone: i18n (PL/NL/FR/EN + plurals + EUR), mailing (6 maili × 4 języki + robustness), 2FA TOTP, audit log, raporty Chart.js + PDF, polish
-- [ ] Manualny walk-through w przeglądarce po wszystkich widokach × 4 języki = 4 pełne obchody UI
+- [ ] Wszystkie obszary zakończone: i18n (PL/EN + plurals + EUR), mailing (6 maili × 2 języki + robustness), 2FA TOTP, audit log, raporty Chart.js + PDF, polish
+- [ ] Manualny walk-through w przeglądarce po wszystkich widokach × 2 języki = 4 pełne obchody UI
 - [ ] 24 maile transakcyjne wysłane manualnie do `info@werkstroomlab.be`, każdy zweryfikowany w Gmail Web (poprawny subject, body, dark mode, unsubscribe link, plaintext fallback)
 - [ ] 2FA: login z Google Authenticator działa, recovery codes do downloadu, admin może wyłączyć 2FA innego usera
 - [ ] Audit log działa, CSV eksport pobrany i otwarty w Excelu, prune cron usuwa stare
@@ -1055,5 +1057,5 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 
 | Data | Event |
 |------|-------|
-| 2026-06-01 | Utworzony jako konkretny plan zaplecza dla M3 (16 dni roboczych: 15-30.06.2026). Bazuje na audycie agentowym `NOTES_FOR_MILESTONE_3.md` z 2026-04-20, ale ze świadomymi cięciami (zob. sekcja "Co NIE wchodzi w M3") + dostosowaniem decyzji biznesowych: pełne 4 języki PL/NL/FR/EN, mailing przez Google Workspace `info@werkstroomlab.be`, hosting odłożony. |
+| 2026-06-01 | Utworzony jako konkretny plan zaplecza dla M3 (16 dni roboczych: 15-30.06.2026). Bazuje na audycie agentowym `NOTES_FOR_MILESTONE_3.md` z 2026-04-20, ale ze świadomymi cięciami (zob. sekcja "Co NIE wchodzi w M3") + dostosowaniem decyzji biznesowych: pełne 2 języki PL/EN, mailing przez Google Workspace `info@werkstroomlab.be`, hosting odłożony. |
 | 2026-06-01 (v2) | Rozszerzenie planu po audycie adwokata diabła: **dodane 2FA TOTP** (Task 1.3, 1 dzień, OWASP A07:2021), **a11y WCAG 2.1 AA** (European Accessibility Act compliance — wymagane prawem od 28.06.2025), **CI GitHub Actions** (bez deploymentu — sama infrastruktura testowa), **GDPR essentials** (privacy policy, cookie notice, data export, audit log erasure), security scan (bandit + safety + CSP audit), custom error pages, ERD + 5 ADR, backup restore fire drill, pytest-bdd 5 scenariuszy, Lighthouse audit, idempotency cronów mailingu, unsubscribe link, Mailpit w dev. Waluta domyślna EUR (Belgia), dodane `django-money`, `phonenumbers`, `django-otp`, `qrcode`. Plurals (3 formy PL) explicit w DoD. |
