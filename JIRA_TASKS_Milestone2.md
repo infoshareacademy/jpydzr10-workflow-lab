@@ -25,7 +25,7 @@ Ten plan rozszerza ten zakres o dojrzały stack, refaktor UI na wzorzec Alpine R
 
 ## Konwencje i bezwzględne zasady
 
-- **Język UI:** 100% polski. Zero angielskich/niderlandzkich/francuskich stringów w Milestone 2. Internacjonalizacja (PL/NL/FR/EN) wchodzi w Milestone 3.
+- **Język UI:** 100% polski. Zero angielskich/niderlandzkich/francuskich stringów w Milestone 2. Internacjonalizacja (PL/EN) wchodzi w Milestone 3.
 - **Język kodu:** angielski (nazwy klas, funkcji, zmiennych, komentarzy, docstringów). Wyjątek: nazwy domenowe biznesowe (`BudowaManager` → preferuj `ConstructionSiteManager`).
 - **Git workflow:** `feature/m2-sN-<nazwa>` branche → rebase na develop → squash merge do develop → sprint end: develop → main z merge commit.
 - **Commit messages:** `typ: opis` (np. `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`, `style:`). Bez `--amend` (chyba że Sebastian wyraźnie poprosi), bez `--no-verify`.
