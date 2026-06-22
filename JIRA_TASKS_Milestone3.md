@@ -1,6 +1,6 @@
 # JIRA Tasks — Milestone 3: Aplikacja Web Zaawansowana
 
-**Projekt:** Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy **Isocab Construct**.
+**Projekt:** Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy **BudMech**.
 **Milestone 2 (Aplikacja web — Django):** zakończony ~14.06.2026 (prezentacja przygotowawcza poszła 31.05.2026, prezentacja właściwa za 2 tygodnie).
 **Milestone 3 (Aplikacja web zaawansowana):** rozpoczyna się **15.06.2026** (po prezentacji M2), deadline **30.06.2026** (16 dni roboczych — wersja skrocona).
 **Pełen oryginalny deadline kursowy:** 09.08.2026, ale plan M3 zamykamy do końca czerwca żeby zostawić lipiec/sierpień na refaktor + ewentualne biznesowe rozszerzenia poza scopem kursu.
@@ -12,7 +12,7 @@
 Domknięcie obszarów M3 z oryginalnego harmonogramu kursu **+ rozszerzenia o wow-faktor** (zgodnie z decyzją 01.06.2026 po audycie adwokata diabła):
 
 1. **Internacjonalizacja** — pełna lokalizacja PL / EN (3 nowe języki, chirurgicznie). **Plurals (3 formy w PL), waluty (EUR default, PLN dla PL), formatowanie liczb i numerów telefonów per locale.**
-2. **Mailing transakcyjny** — Google Workspace SMTP (`info@werkstroomlab.be`), 6 scenariuszy biznesowych. **Idempotency, unsubscribe (GDPR), bounce log, dark mode Outlook, preview view, Mailpit w dev.**
+2. **Mailing transakcyjny** — Google Workspace SMTP (`info@budmech.pl`), 6 scenariuszy biznesowych. **Idempotency, unsubscribe (GDPR), bounce log, dark mode Outlook, preview view, Mailpit w dev.**
 3. **2FA (TOTP)** — `django-otp` + QR code dla wszystkich `is_staff` użytkowników. Recovery codes. OWASP A07:2021 compliance.
 4. **Audit log** — middleware + `AuditLogEntry` + admin + CSV + retention 90 dni + GDPR erasure obejmuje audit.
 5. **Raporty wizualne** — 4 wykresy Chart.js + PDF raport miesięczny (server-side matplotlib) + lokalizacja PL/EN.
@@ -283,7 +283,7 @@ Dwa sprinty tygodniowe + bufor na polish:
   - [ ] `2026-06-15` (PL ISO) / `15 juni 2026` (NL) / `15 juin 2026` (FR) / `June 15, 2026` (EN)
   - [ ] `1 234,56` (PL/EN) vs `1,234.56` (EN)
 - [ ] Testy: `uv run pytest reservations/tests/test_i18n.py -v` — minimum 10 testów (per język: tytuł home view + flash message + plural form + currency format + date format)
-- [ ] **Acceptance**: użytkownik z `Accept-Language: en` otwiera aplikację i widzi 100% UI po angielsku — ani jednego polskiego stringa (poza nazwami własnymi typu "Isocab Construct", "Wroclaw", UID maszyn). Koszty serwisowe wyświetlają się w EUR z formatem locale.
+- [ ] **Acceptance**: użytkownik z `Accept-Language: en` otwiera aplikację i widzi 100% UI po angielsku — ani jednego polskiego stringa (poza nazwami własnymi typu "BudMech", "Wroclaw", UID maszyn). Koszty serwisowe wyświetlają się w EUR z formatem locale.
 
 **Effort estimate:** 5 dni roboczych (~600 msgids × 3 języki = 1800 fraz + plurals + currency migration + phones).
 
@@ -291,7 +291,7 @@ Dwa sprinty tygodniowe + bufor na polish:
 
 ### Task 1.2 — Mailing transakcyjny (Google Workspace SMTP)
 
-**Co robimy:** podpinamy SMTP Google Workspace (konto `info@werkstroomlab.be`), tworzymy 6 maili transakcyjnych wysyłanych w 2 językach.
+**Co robimy:** podpinamy SMTP Google Workspace (konto `info@budmech.pl`), tworzymy 6 maili transakcyjnych wysyłanych w 2 językach.
 
 **Setup SMTP Google Workspace:**
 
@@ -305,10 +305,10 @@ Dwa sprinty tygodniowe + bufor na polish:
    EMAIL_HOST=smtp.gmail.com
    EMAIL_PORT=587
    EMAIL_USE_TLS=True
-   EMAIL_HOST_USER=info@werkstroomlab.be
+   EMAIL_HOST_USER=info@budmech.pl
    EMAIL_HOST_PASSWORD=<16-znakowy-app-password>
-   DEFAULT_FROM_EMAIL=Planer Maszyn <info@werkstroomlab.be>
-   SERVER_EMAIL=info@werkstroomlab.be
+   DEFAULT_FROM_EMAIL=Planer Maszyn <info@budmech.pl>
+   SERVER_EMAIL=info@budmech.pl
    ```
 
 3. `settings/prod.py`:
@@ -354,12 +354,12 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 **Definition of Done:**
 
 - [ ] `.env` rozszerzone o 6 zmiennych EMAIL_*, `.env.example` zaktualizowany (bez prawdziwego App Password)
-- [ ] App Password wygenerowane i działa — manualnie z Django shell `send_mail('test', 'body', None, ['info@werkstroomlab.be'])` dochodzi do skrzynki w <30 sek
+- [ ] App Password wygenerowane i działa — manualnie z Django shell `send_mail('test', 'body', None, ['info@budmech.pl'])` dochodzi do skrzynki w <30 sek
 - [ ] `settings/prod.py` przełączony na SMTP backend, `settings/test.py` na `locmem` (Django test default)
 - [ ] Migracja `accounts/migrations/00XX_employee_preferred_language.py` — dodaje pole CharField choices PL/EN default 'pl'
 - [ ] `core/mailing.py` z funkcją `send_localized_mail()` + testy unit
 - [ ] **24 pliki email templates** (6 maili × 2 wersje (txt, html) × 2 języki = 24 plików? NIE — txt/html w danym języku, ale język = zmienna runtime, nie filename. Czyli: 6 maili × 2 wersje = **12 plików HTML/TXT** + każdy template wewnętrznie używa `{% trans %}` żeby się przełączał per language). Plus 6 subject templates.txt = **18 plików łącznie**.
-- [ ] Każdy mail HTML ma branded header (logo + nazwa firmy "Isocab Construct") + footer (kontakt + unsubscribe placeholder)
+- [ ] Każdy mail HTML ma branded header (logo + nazwa firmy "BudMech") + footer (kontakt + unsubscribe placeholder)
 - [ ] Każdy mail HTML ma plaintext fallback (`EmailMultiAlternatives`)
 - [ ] 2 nowe management commands w `core/management/commands/`:
   - `send_daily_reminders.py` — wysyła reminder T-1 day, idempotentne (flag `reminder_sent_at` na Reservation)
@@ -369,7 +369,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
   0 7 * * * cd /app && uv run python manage.py send_daily_reminders
   0 8 * * * cd /app && uv run python manage.py send_inspection_alerts
   ```
-- [ ] **Manualny test każdego z 6 maili w 2 językach = 12 wysyłek** do `info@werkstroomlab.be`:
+- [ ] **Manualny test każdego z 6 maili w 2 językach = 12 wysyłek** do `info@budmech.pl`:
   - [ ] reservation_confirmed (PL, EN)
   - [ ] reservation_cancelled (PL, EN)
   - [ ] reservation_reminder (PL, EN)
@@ -385,7 +385,7 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
   - Per mail: render bez crash + zawiera kluczowe pola
   - Per język: subject jest przetłumaczony
   - Backend test: `locmem`
-- [ ] **Acceptance**: Sebastian klika "Potwierdź rezerwację" w UI → w ciągu 30 sek dostaje na `info@werkstroomlab.be` mail z poprawnym subject + body w języku ustawionym dla user'a (`preferred_language`), z klikalnym linkiem `https://localhost:8002/rezerwacje/123/` do detalu.
+- [ ] **Acceptance**: Sebastian klika "Potwierdź rezerwację" w UI → w ciągu 30 sek dostaje na `info@budmech.pl` mail z poprawnym subject + body w języku ustawionym dla user'a (`preferred_language`), z klikalnym linkiem `https://localhost:8002/rezerwacje/123/` do detalu.
 
 ### Sub-zadania robustness (dodane po audycie adwokata diabła 01.06.2026):
 
@@ -742,7 +742,7 @@ Pipeline który chroni przed regresjami na każdy push, **bez** serwera produkcy
   - [ ] Po co (zarządzanie wypożyczeniami)
   - [ ] Jak długo (audit log 90 dni, dane konta do żądania usunięcia)
   - [ ] Prawa użytkownika (dostęp, sprostowanie, usunięcie, sprzeciw, przenośność)
-  - [ ] Kontakt (`info@werkstroomlab.be`)
+  - [ ] Kontakt (`info@budmech.pl`)
   - [ ] Lokalizacja po PL/EN
 - [ ] **Cookie notice** — minimalistyczny banner (Alpine.js, dismissable, zapamiętany w localStorage):
   - [ ] "Używamy tylko niezbędnych cookies (session, CSRF). Brak trackingu" + button "Rozumiem"
@@ -1013,7 +1013,7 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 
 - [ ] Wszystkie obszary zakończone: i18n (PL/EN + plurals + EUR), mailing (6 maili × 2 języki + robustness), 2FA TOTP, audit log, raporty Chart.js + PDF, polish
 - [ ] Manualny walk-through w przeglądarce po wszystkich widokach × 2 języki = 4 pełne obchody UI
-- [ ] 24 maile transakcyjne wysłane manualnie do `info@werkstroomlab.be`, każdy zweryfikowany w Gmail Web (poprawny subject, body, dark mode, unsubscribe link, plaintext fallback)
+- [ ] 24 maile transakcyjne wysłane manualnie do `info@budmech.pl`, każdy zweryfikowany w Gmail Web (poprawny subject, body, dark mode, unsubscribe link, plaintext fallback)
 - [ ] 2FA: login z Google Authenticator działa, recovery codes do downloadu, admin może wyłączyć 2FA innego usera
 - [ ] Audit log działa, CSV eksport pobrany i otwarty w Excelu, prune cron usuwa stare
 - [ ] Raporty: 4 wykresy renderują się responsively, PDF generuje się z brandingiem
@@ -1057,5 +1057,5 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 
 | Data | Event |
 |------|-------|
-| 2026-06-01 | Utworzony jako konkretny plan zaplecza dla M3 (16 dni roboczych: 15-30.06.2026). Bazuje na audycie agentowym `NOTES_FOR_MILESTONE_3.md` z 2026-04-20, ale ze świadomymi cięciami (zob. sekcja "Co NIE wchodzi w M3") + dostosowaniem decyzji biznesowych: pełne 2 języki PL/EN, mailing przez Google Workspace `info@werkstroomlab.be`, hosting odłożony. |
+| 2026-06-01 | Utworzony jako konkretny plan zaplecza dla M3 (16 dni roboczych: 15-30.06.2026). Bazuje na audycie agentowym `NOTES_FOR_MILESTONE_3.md` z 2026-04-20, ale ze świadomymi cięciami (zob. sekcja "Co NIE wchodzi w M3") + dostosowaniem decyzji biznesowych: pełne 2 języki PL/EN, mailing przez Google Workspace `info@budmech.pl`, hosting odłożony. |
 | 2026-06-01 (v2) | Rozszerzenie planu po audycie adwokata diabła: **dodane 2FA TOTP** (Task 1.3, 1 dzień, OWASP A07:2021), **a11y WCAG 2.1 AA** (European Accessibility Act compliance — wymagane prawem od 28.06.2025), **CI GitHub Actions** (bez deploymentu — sama infrastruktura testowa), **GDPR essentials** (privacy policy, cookie notice, data export, audit log erasure), security scan (bandit + safety + CSP audit), custom error pages, ERD + 5 ADR, backup restore fire drill, pytest-bdd 5 scenariuszy, Lighthouse audit, idempotency cronów mailingu, unsubscribe link, Mailpit w dev. Waluta domyślna EUR (Belgia), dodane `django-money`, `phonenumbers`, `django-otp`, `qrcode`. Plurals (3 formy PL) explicit w DoD. |

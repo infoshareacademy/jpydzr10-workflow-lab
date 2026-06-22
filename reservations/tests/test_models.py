@@ -55,7 +55,7 @@ class TestConstructionSiteValidators:
             "BUD-2026-0001",  # numer > 3 cyfr
             "bud-2026-001",  # lowercase prefix
             "BUD_2026_001",  # underscores
-            "123456789",  # WMS-style 9-digit (rejected per project decision)
+            "123456789",  # plain 9-digit numeric (rejected per project decision)
             "",
             "BUD-2026-001-x",  # suffix
         ],

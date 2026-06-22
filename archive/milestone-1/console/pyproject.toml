@@ -1,12 +1,12 @@
 [project]
 name = "planer-maszyn"
 version = "1.0.0"
-description = "Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla Isocab Construct"
+description = "Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla BudMech"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 requires-python = ">=3.10"
 authors = [
-    { name = "Sebastian", email = "sebastian@werkstroomlab.be" },
+    { name = "Sebastian", email = "kontakt@budmech.pl" },
 ]
 
 # Brak zewnętrznych zależności — czysty stdlib Python

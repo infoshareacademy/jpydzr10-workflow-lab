@@ -77,7 +77,7 @@ uv run python manage.py runserver 0.0.0.0:8002       # http://localhost:8002
 |---------|----------|--------|-------------------------------|
 | **Ten kursowy repo** | localhost:**5434** | http://localhost:**8002** | `kursowe-repo-8002` |
 | planer-maszyn-reference (sandbox) | localhost:5433 | http://localhost:8001 | `planer-maszyn-reference-8001` |
-| WMS (inny projekt Sebastian'a) | localhost:5432 | http://localhost:8000 | `isocab-postgres` |
+| Inny lokalny projekt | localhost:5432 | http://localhost:8000 | (port zajęty — nie ruszać) |
 
 Nazwa kontenera Postgres w OrbStack UI zawiera port Django — łatwo zobaczyć na jaki localhost wejść.
 

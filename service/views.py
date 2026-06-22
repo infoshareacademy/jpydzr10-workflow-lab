@@ -288,7 +288,7 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                         continue
                     created.append(record.pk)
                     # Rewind the uploaded file so the next iteration can read
-                    # the bytes again — matches the WMS bulk_inspection pattern.
+                    # the bytes again — matches the bulk_inspection pattern.
                     if upload is not None:
                         upload.seek(0)
                 if errors and not created:

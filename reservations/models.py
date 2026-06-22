@@ -5,8 +5,7 @@ rows are self-explanatory and consistent with the ``machines`` app
 convention (``W magazynie``, ``Na budowie`` …).
 
 ``ConstructionSite`` uses the local Polish project numbering format
-``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT the 9-digit Belgian format
-from WMS SEBASTIANA (which is a different business context).
+``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT a plain 9-digit numeric format.
 
 ``Reservation`` ties a :class:`machines.Machine` to a date range, optionally
 referencing a :class:`ConstructionSite`. Status transitions are guarded in the

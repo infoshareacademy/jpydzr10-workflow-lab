@@ -590,7 +590,7 @@ WRITE_RATE_LIMIT_PERIOD_SEC = 86_400  # 24h
 def _check_write_rate_limit(user_id: int) -> bool:
     """Sprawdza dzienny limit confirm operations użytkownika (10/d).
 
-    Implementacja podobna do WMS ``chatbot.api._check_rate_limit``: klucz
+    Standardowy wzorzec rate-limit per-user: klucz
     cache per-user, fail-CLOSED jeśli cache nie działa (lepiej odmówić
     niż pozwolić na batch attack podczas outage cache backend).
 

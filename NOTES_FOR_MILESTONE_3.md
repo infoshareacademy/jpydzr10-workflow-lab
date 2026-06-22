@@ -218,9 +218,9 @@ Propozycje „na wyrost", jeśli Sebastian chce ambitniejszy M3 niż oryginalna 
 
 - **Moduł budów (Construction Sites)** — już częściowo w M2 jeśli zdecydujemy zaimplementować TASK 14 z M1 v2 (`ConstructionSite` model z 9-cyfrowym numerem projektu). Rozszerzenie w M3: strony budowy, zdjęcia z budowy, dokumenty (umowy, protokoły).
 - **Moduł czasu pracy pracowników** — godzinowe rozliczenia + raportowanie.
-- **Moduł materiałów** — analogiczny do WMS `shop/`: katalog materiałów, zamówienia wewnętrzne, FIFO stock. Bardzo duży moduł — raczej M4.
-- **Moduł planowania transportów** — analogiczny do WMS `planning/`: transport (scheduled date, cargo) → machine assignment.
-- **Moduł zwrotów materiałów** — WMS `returns/` (overshotten panelen). Specyficzny dla branży izolacji, może nie pasować do Planera Maszyn.
+- **Moduł materiałów** — katalog materiałów, zamówienia wewnętrzne, FIFO stock. Bardzo duży moduł — raczej M4.
+- **Moduł planowania transportów** — transport (scheduled date, cargo) → machine assignment.
+- **Moduł zwrotów materiałów** — zwroty nadmiarowych materiałów. Specyficzny dla branży, może nie pasować do Planera Maszyn.
 - **Import z Excel** — rzeczywiste arkusze od klienta (często bałaganiarskie) → defensywny import jak obecny `machines_db.json`, ale z Excel.
 - **Mapa budów** (Leaflet / Google Maps) — pokazuje aktualne lokalizacje maszyn na mapie Polski. Wymaga geocodera (Nominatim, darmowy).
 - **Mobile-friendly view** — Tailwind już jest responsive, ale M3 może dodać dedykowane mobile-first flows (quick-scan QR code maszyny → status).
@@ -236,7 +236,7 @@ Przy kontynuacji w M3:
 - **Kod po angielsku.** Zachować.
 - **Django LTS only** (5.2 w M2 → ewentualnie 5.3 w M3 jeśli zostanie ogłoszone jako LTS).
 - **Zero zewnętrznych deps produkcyjnych w runtime** jest już porzucone w M2 (mamy Django + kilkanaście pakietów). W M3 zachować minimalizm — każdy nowy pakiet uzasadniony.
-- **Alpine Reactive Derived UI State** jako obowiązujący wzorzec dla reaktywnych sekcji (po Wave 13 patternie z WMS).
+- **Alpine Reactive Derived UI State** jako obowiązujący wzorzec dla reaktywnych sekcji.
 - **Testy ≥ 80% coverage** — utrzymać.
 
 ---
@@ -245,11 +245,11 @@ Przy kontynuacji w M3:
 
 Żeby nie było wątpliwości — te rzeczy pojawiły się w dyskusjach o M2 i zostały **świadomie** odłożone poza M3 lub w ogóle poza zakres kursu:
 
-- **Voice agent / chatbot głosowy** (Whisper + ElevenLabs) — pomysł z WMS roadmap M5, nie dotyczy kursu.
-- **WhatsApp Business API / Telegram Bot API** (WMS M6) — nie dotyczy.
-- **Hilti ON!Track integracja** (WMS M4) — nie dotyczy.
-- **Cladseal Optimizer** (WMS `cladseal/`) — branżowy specyfik, nie dotyczy.
-- **Moduł shop / stock FIFO** (WMS `shop/`) — możliwy w M4+, ale nie M3.
+- **Voice agent / chatbot głosowy** (Whisper + ElevenLabs) — pomysł poza zakresem kursu.
+- **WhatsApp Business API / Telegram Bot API** — poza zakresem.
+- **Integracja z zewnętrznym systemem ewidencji narzędzi** — poza zakresem.
+- **Moduł optymalizacji branżowej** — specyfik branżowy, poza zakresem.
+- **Moduł magazynowy / stock FIFO** — możliwy w M4+, ale nie M3.
 
 ---
 
