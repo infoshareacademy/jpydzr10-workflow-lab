@@ -43,6 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Instalacja GNU gettext (msgfmt dla compilemessages)
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
       - name: Instalacja uv
         uses: astral-sh/setup-uv@v5
         with:
