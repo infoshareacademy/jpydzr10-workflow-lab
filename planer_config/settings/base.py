@@ -17,7 +17,6 @@ import os
 import sys
 from pathlib import Path
 
-from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
 # =============================================================================
@@ -393,9 +392,12 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Nazwy języków podajemy w ich WŁASNYM języku (endonimy) i celowo NIE
+# tłumaczymy — w przełączniku "Polski"/"English" mają wyglądać tak samo
+# niezależnie od aktualnego locale (standard UX selektorów języka).
 LANGUAGES = [
-    ("pl", _("Polski")),
-    ("en", _("English")),
+    ("pl", "Polski"),
+    ("en", "English"),
 ]
 
 # LOCALE_PATHS — Django szuka tu .po/.mo files dla każdej języka.

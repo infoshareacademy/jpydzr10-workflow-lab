@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-25 19:56+0200\n"
+"POT-Creation-Date: 2026-06-25 21:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -624,14 +624,6 @@ msgstr "Repair completed — machine %(uid)s available in warehouse."
 msgid "Maszyna %(uid)s została wycofana z floty."
 msgstr "Machine %(uid)s has been retired from the fleet."
 
-#: planer_config/settings/base.py:397
-msgid "Polski"
-msgstr "Polish"
-
-#: planer_config/settings/base.py:398
-msgid "English"
-msgstr "English"
-
 #: reservations/emails.py:53
 #, python-format
 msgid "Potwierdzenie rezerwacji %(uid)s"
@@ -688,9 +680,9 @@ msgstr "— no site —"
 
 #: reservations/forms.py:128
 msgid "Adres budowy/dostawy maszyny. Wymagane — pojawi sie w PDF wydruku."
-msgstr "Machine delivery/site address. Required — appears on the printed PDF."
-"Site/delivery address of the machine. Required — it appears on the printed "
-"PDF."
+msgstr ""
+"Machine delivery/site address. Required — appears on the printed PDF.Site/"
+"delivery address of the machine. Required — it appears on the printed PDF."
 
 #: reservations/forms.py:132 reservations/models.py:238
 msgid ""
@@ -806,9 +798,10 @@ msgstr "— select a replacement machine —"
 
 #: reservations/forms.py:378
 msgid "Maszyna, która przejmie rezerwację od dziś do końca okresu."
-msgstr "The machine that will take over the reservation from today to the end of the period."
-"The machine that will take over the reservation from today until the end of "
-"the period."
+msgstr ""
+"The machine that will take over the reservation from today to the end of the "
+"period.The machine that will take over the reservation from today until the "
+"end of the period."
 
 #: reservations/forms.py:387
 msgid "np. Awaria silnika KOP-001, klient wymaga ciągłej pracy"
@@ -1149,14 +1142,16 @@ msgstr "The failure description must be at least 5 characters long."
 #: reservations/services.py:868
 #, python-format
 msgid "Nie można zgłosić awarii dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr "Cannot report a breakdown for a closed reservation (status=%(status)s)."
-"A failure cannot be reported for a closed reservation (status=%(status)s)."
+msgstr ""
+"Cannot report a breakdown for a closed reservation (status=%(status)s).A "
+"failure cannot be reported for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:958
 #, python-format
 msgid "Nie można zmienić osoby dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr "Cannot change the person for a closed reservation (status=%(status)s)."
-"The person cannot be changed for a closed reservation (status=%(status)s)."
+msgstr ""
+"Cannot change the person for a closed reservation (status=%(status)s).The "
+"person cannot be changed for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:964 reservations/services.py:1543
 msgid "Nowa osoba jest wymagana."
@@ -1185,8 +1180,10 @@ msgstr "The replacement machine must differ from the current one."
 #: reservations/services.py:1062
 #, python-format
 msgid "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
-msgstr "Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
-"Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
+msgstr ""
+"Machine %(uid)s has been retired from the fleet — it cannot be a "
+"replacement.Machine %(uid)s has been retired from the fleet — it cannot be a "
+"replacement."
 
 #: reservations/services.py:1071
 #, python-format
@@ -1219,8 +1216,9 @@ msgstr ""
 
 #: reservations/services.py:1288
 msgid "Lista maszyn zawiera duplikaty — każda maszyna może być tylko raz."
-msgstr "The machine list contains duplicates — each machine may appear only once."
-"The machine list contains duplicates — each machine can appear only once."
+msgstr ""
+"The machine list contains duplicates — each machine may appear only once.The "
+"machine list contains duplicates — each machine can appear only once."
 
 #: reservations/services.py:1309
 #, python-format
@@ -1264,8 +1262,9 @@ msgstr "Hello %(name)s,"
 #: reservations/templates/reservations/email/confirmation.html:17
 #, python-format
 msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."
-msgstr "Reservation of machine <strong>%(uid)s</strong> has been confirmed."
-"The reservation of machine <strong>%(uid)s</strong> has been confirmed."
+msgstr ""
+"Reservation of machine <strong>%(uid)s</strong> has been confirmed.The "
+"reservation of machine <strong>%(uid)s</strong> has been confirmed."
 
 #: reservations/templates/reservations/email/confirmation.html:23
 #: reservations/templates/reservations/email/confirmation.txt:7
@@ -1526,7 +1525,7 @@ msgstr "Repair"
 msgid "Data wykonania nie może być w przyszłości."
 msgstr "The performed date cannot be in the future."
 
-#: service/views.py:426
+#: service/views.py:445
 #, python-format
 msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
 msgstr "Service completed — machine %(uid)s returns to the warehouse."
@@ -1544,8 +1543,8 @@ msgid ""
 "Ta akcja wymaga wyższej roli (np. magazynier lub kierownik). Jeśli uważasz, "
 "że to pomyłka, skontaktuj się z administratorem."
 msgstr ""
-"This action requires a higher role (e.g. warehouse keeper or manager). If you "
-"believe this is a mistake, contact your administrator."
+"This action requires a higher role (e.g. warehouse keeper or manager). If "
+"you believe this is a mistake, contact your administrator."
 
 #: templates/403.html:43
 msgid "Wróć do dashboardu"
@@ -1680,8 +1679,8 @@ msgstr ""
 "                            to log in as an administrator."
 
 #: templates/base.html:567
-msgid "Milestone 2"
-msgstr "Milestone 2"
+msgid "Milestone 3"
+msgstr "Milestone 3"
 
 #: templates/core/_search_results.html:64
 #, python-format
@@ -1813,6 +1812,12 @@ msgstr ""
 #: templates/core/search.html:135
 msgid "Wpisz frazę powyżej, żeby zacząć przeszukiwać aplikację."
 msgstr "Enter a phrase above to start searching the application."
+
+#~ msgid "Polski"
+#~ msgstr "Polish"
+
+#~ msgid "English"
+#~ msgstr "English"
 
 #~ msgid "Nederlands"
 #~ msgstr "Dutch"

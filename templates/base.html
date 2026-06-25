@@ -462,8 +462,15 @@
                                            cursor-pointer transition-colors"
                                     aria-label="{% trans 'Wybierz język' %}">
                                 {% for lang_code, lang_name in LANGUAGES %}
+                                    {# name_local to endonim (nazwa języka w nim samym), więc #}
+                                    {# selektor pokazuje "Polski"/"English" niezależnie od     #}
+                                    {# aktywnego locale. get_available_languages przepuszcza   #}
+                                    {# nazwę przez gettext (np. English->angielski) — dlatego   #}
+                                    {# bierzemy name_local zamiast lang_name. capfirst, bo       #}
+                                    {# name_local dla polskiego to "polski" małą literą.        #}
+                                    {% get_language_info for lang_code as lang_info %}
                                     <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>
-                                        {{ lang_name }}
+                                        {{ lang_info.name_local|capfirst }}
                                     </option>
                                 {% endfor %}
                             </select>
@@ -557,7 +564,7 @@
             {# === FOOTER (minimal) === #}
             <footer class="mt-auto border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                 <div class="px-4 sm:px-6 lg:px-8 py-4 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <p>{% trans "Planer Maszyn Budowlanych" %} &middot; {% trans "Milestone 2" %} (Django 5.2 LTS)</p>
+                    <p>{% trans "Planer Maszyn Budowlanych" %} &middot; {% trans "Milestone 3" %} (Django 5.2 LTS)</p>
                     <p class="text-slate-500 dark:text-slate-400">&copy; 2026 {% trans "Planer Maszyn" %}</p>
                 </div>
             </footer>

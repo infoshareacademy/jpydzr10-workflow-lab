@@ -173,5 +173,5 @@ class TestAxesLockedView:
     def test_locked_page_uses_base_template(self, client):
         """Strona musi extendować ``base.html`` (spójny UI, nav + footer)."""
         response = client.get(reverse("accounts:locked"))
-        # Sprawdź obecność elementów base — np. footer "Milestone 2".
-        assert b"Milestone 2" in response.content
+        # Sprawdź obecność elementów base — np. footer "Milestone 3".
+        assert b"Milestone 3" in response.content
