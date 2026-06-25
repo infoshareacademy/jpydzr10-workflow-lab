@@ -444,7 +444,7 @@
                         {# Wybór per-user; działa bez przeładowania URL (bez locale     #}
                         {# prefix). Lista języków pobierana z settings.LANGUAGES.       #}
                         {# ============================================================ #}
-                        <form action="{% url 'set_language' %}" method="post" class="hidden sm:flex items-center">
+                        <form action="{% url 'set_language' %}" method="post" class="flex items-center">
                             {% csrf_token %}
                             <input type="hidden" name="next" value="{{ request.path }}">
                             {% get_current_language as LANGUAGE_CODE %}

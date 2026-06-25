@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-17 14:12+0200\n"
+"POT-Creation-Date: 2026-06-25 19:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,178 +17,454 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: accounts/forms.py:18 accounts/models.py:47
+#: accounts/forms.py:36 accounts/forms.py:108 accounts/models.py:54
 msgid "Telefon"
 msgstr "Phone"
 
-#: accounts/forms.py:19 accounts/models.py:51
+#: accounts/forms.py:37 accounts/models.py:59
 msgid "Identyfikator pracownika"
 msgstr "Employee ID"
 
-#: accounts/forms.py:20 accounts/models.py:57
+#: accounts/forms.py:38 accounts/models.py:65
 msgid "Motyw interfejsu"
 msgstr "Interface theme"
 
-#: accounts/models.py:39 templates/base.html:155
+#: accounts/forms.py:68
+msgid "Login"
+msgstr "Login"
+
+#: accounts/forms.py:76
+msgid "Krótki identyfikator do logowania (bez spacji)."
+msgstr "Short identifier for logging in (no spaces)."
+
+#: accounts/forms.py:80
+msgid "Imię"
+msgstr "First name"
+
+#: accounts/forms.py:85
+msgid "Nazwisko"
+msgstr "Last name"
+
+#: accounts/forms.py:89
+msgid "Email"
+msgstr "Email"
+
+#: accounts/forms.py:101
+msgid "Funkcja w firmie"
+msgstr "Role in the company"
+
+#: accounts/forms.py:103
+msgid ""
+"Funkcja definiuje grupy RBAC i uprawnienia (Magazynierzy, Kierownicy itd.)."
+msgstr ""
+"The role defines RBAC groups and permissions (Warehouse keepers, Managers, "
+"etc.)."
+
+#: accounts/forms.py:119
+msgid "Hasło"
+msgstr "Password"
+
+#: accounts/forms.py:127
+msgid ""
+"Min. 10 znaków. Hasło jest sprawdzane przez Have I Been Pwned — wycieki "
+"publicznych baz są odrzucane."
+msgstr ""
+"Min. 10 characters. The password is checked against Have I Been Pwned — "
+"leaks from public databases are rejected."
+
+#: accounts/forms.py:133
+msgid "Potwierdź hasło"
+msgstr "Confirm password"
+
+#: accounts/forms.py:140
+msgid "Login jest wymagany."
+msgstr "Login is required."
+
+#: accounts/forms.py:142
+msgid "Użytkownik o takim loginie już istnieje."
+msgstr "A user with this login already exists."
+
+#: accounts/forms.py:153
+msgid "Hasła nie pasują do siebie."
+msgstr "The passwords do not match."
+
+#: accounts/models.py:24
+msgid "Magazynier"
+msgstr "Warehouse keeper"
+
+#: accounts/models.py:25
+msgid "Montażysta"
+msgstr "Fitter"
+
+#: accounts/models.py:26
+msgid "Kierownik"
+msgstr "Manager"
+
+#: accounts/models.py:27 templates/base.html:139
+msgid "Administrator"
+msgstr "Administrator"
+
+#: accounts/models.py:32
+msgid "Automatyczny"
+msgstr "Automatic"
+
+#: accounts/models.py:33
+msgid "Jasny"
+msgstr "Light"
+
+#: accounts/models.py:34
+msgid "Ciemny"
+msgstr "Dark"
+
+#: accounts/models.py:40 templates/base.html:139
 msgid "Użytkownik"
 msgstr "User"
 
-#: accounts/models.py:45
+#: accounts/models.py:46
 msgid "Funkcja"
 msgstr "Role"
 
-#: accounts/models.py:61
+#: accounts/models.py:69
 msgid "Aktywny pracownik"
 msgstr "Active employee"
 
-#: accounts/models.py:65
+#: accounts/models.py:73
 msgid "Zanonimizowany"
 msgstr "Anonymized"
 
-#: accounts/models.py:71
+#: accounts/models.py:79
 msgid "Data anonimizacji"
 msgstr "Anonymization date"
 
-#: accounts/models.py:77
+#: accounts/models.py:85
 msgid "Data zakończenia zatrudnienia"
 msgstr "End of employment date"
 
-#: accounts/models.py:83
+#: accounts/models.py:91
 msgid "Powód zakończenia"
 msgstr "Termination reason"
 
-#: accounts/models.py:89
+#: accounts/models.py:97
 msgid "Profil pracownika"
 msgstr "Employee profile"
 
-#: accounts/models.py:90
+#: accounts/models.py:98
 msgid "Profile pracowników"
 msgstr "Employee profiles"
 
-#: accounts/services.py:109
+#: accounts/services.py:169
 msgid "Nie można zakończyć zatrudnienia zanonimizowanego profilu."
-msgstr ""
+msgstr "Cannot end employment of an anonymized profile."
 
-#: machines/forms.py:42
+#: accounts/templates/accounts/2fa_recovery.html:4
+msgid "Kody zapasowe 2FA"
+msgstr "2FA recovery codes"
+
+#: accounts/templates/accounts/2fa_recovery.html:11
+msgid "Twoje kody zapasowe"
+msgstr "Your recovery codes"
+
+#: accounts/templates/accounts/2fa_recovery.html:14
+msgid ""
+"Zapisz te kody w bezpiecznym miejscu. Każdy działa jednorazowo i pozwala "
+"zalogować się, gdy nie masz dostępu do aplikacji uwierzytelniającej."
+msgstr ""
+"Store these codes in a safe place. Each one works once and lets you log in "
+"when you do not have access to your authenticator app."
+
+#: accounts/templates/accounts/2fa_recovery.html:26
+msgid "Pobierz jako plik TXT"
+msgstr "Download as a TXT file"
+
+#: accounts/templates/accounts/2fa_recovery.html:30
+msgid "Przejdź do aplikacji"
+msgstr "Go to the app"
+
+#: accounts/templates/accounts/2fa_setup.html:4
+msgid "Konfiguracja 2FA"
+msgstr "2FA setup"
+
+#: accounts/templates/accounts/2fa_setup.html:11
+msgid "Włącz uwierzytelnianie dwuskładnikowe"
+msgstr "Enable two-factor authentication"
+
+#: accounts/templates/accounts/2fa_setup.html:14
+msgid ""
+"Zeskanuj kod QR w aplikacji typu Google Authenticator, a następnie wpisz "
+"wygenerowany sześciocyfrowy kod."
+msgstr ""
+"Scan the QR code with an app such as Google Authenticator, then enter the "
+"generated six-digit code."
+
+#: accounts/templates/accounts/2fa_setup.html:24
+msgid "Kod QR do konfiguracji 2FA"
+msgstr "QR code for 2FA setup"
+
+#: accounts/templates/accounts/2fa_setup.html:29
+msgid "Klucz ręczny"
+msgstr "Manual key"
+
+#: accounts/templates/accounts/2fa_setup.html:37
+msgid "Kod z aplikacji"
+msgstr "Code from the app"
+
+#: accounts/templates/accounts/2fa_setup.html:46
+msgid "Potwierdź i włącz 2FA"
+msgstr "Confirm and enable 2FA"
+
+#: accounts/templates/accounts/2fa_verify.html:4
+msgid "Weryfikacja 2FA"
+msgstr "2FA verification"
+
+#: accounts/templates/accounts/2fa_verify.html:11
+msgid "Potwierdź drugi składnik"
+msgstr "Confirm the second factor"
+
+#: accounts/templates/accounts/2fa_verify.html:14
+msgid ""
+"Wpisz sześciocyfrowy kod z aplikacji uwierzytelniającej. Możesz też użyć "
+"jednorazowego kodu zapasowego."
+msgstr ""
+"Enter the six-digit code from your authenticator app. You can also use a "
+"one-time recovery code."
+
+#: accounts/templates/accounts/2fa_verify.html:27
+msgid "Kod uwierzytelniający lub zapasowy"
+msgstr "Authentication or recovery code"
+
+#: accounts/templates/accounts/2fa_verify.html:36
+msgid "Zweryfikuj"
+msgstr "Verify"
+
+#: accounts/twofactor.py:77
+msgid "Nieprawidłowy kod. Spróbuj ponownie."
+msgstr "Invalid code. Please try again."
+
+#: accounts/twofactor.py:107
+msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
+msgstr "Invalid authentication or recovery code."
+
+#: accounts/views.py:130
+#, python-format
+msgid "Pracownik zarejestrowany: %(name)s"
+msgstr "Employee registered: %(name)s"
+
+#: accounts/views.py:228
+msgid "Nie możesz zakończyć własnego zatrudnienia."
+msgstr "You cannot end your own employment."
+
+#: accounts/views.py:240
+#, python-format
+msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
+msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
+
+#: accounts/views.py:259
+msgid "Nie możesz zanonimizować własnego profilu."
+msgstr "You cannot anonymize your own profile."
+
+#: accounts/views.py:270
+msgid ""
+"Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
+msgstr ""
+"Profile anonymized in accordance with GDPR (Art. 17 — right to be "
+"forgotten)."
+
+#: machines/forms.py:43
 msgid "UID"
 msgstr "UID"
 
-#: machines/forms.py:43 machines/models.py:98
+#: machines/forms.py:44 machines/models.py:98
 msgid "Nazwa"
 msgstr "Name"
 
-#: machines/forms.py:44 machines/forms.py:100 machines/models.py:104
-#: service/forms.py:231
+#: machines/forms.py:45 machines/forms.py:110 machines/models.py:104
+#: service/forms.py:248
 msgid "Typ"
 msgstr "Type"
 
-#: machines/forms.py:45 machines/models.py:106
+#: machines/forms.py:46 machines/models.py:106
 msgid "Model"
 msgstr "Model"
 
-#: machines/forms.py:46
+#: machines/forms.py:47
 msgid "Pojemność"
 msgstr "Capacity"
 
-#: machines/forms.py:47 machines/forms.py:94 machines/models.py:129
-#: reservations/forms.py:126 reservations/forms.py:207
-#: reservations/models.py:86 reservations/models.py:200
+#: machines/forms.py:48 machines/forms.py:104 machines/models.py:129
+#: reservations/forms.py:188 reservations/forms.py:271
+#: reservations/models.py:100 reservations/models.py:247
 msgid "Status"
 msgstr "Status"
 
-#: machines/forms.py:48 machines/models.py:122
+#: machines/forms.py:49 machines/models.py:154
+msgid "Dostępna do rezerwacji"
+msgstr "Available for reservation"
+
+#: machines/forms.py:50 machines/models.py:122
 msgid "Lokalizacja"
 msgstr "Location"
 
-#: machines/forms.py:49 service/forms.py:133
+#: machines/forms.py:51 service/forms.py:148
 msgid "Data przeglądu"
 msgstr "Inspection date"
 
-#: machines/forms.py:50 machines/models.py:132
+#: machines/forms.py:52 machines/models.py:132
 msgid "Producent"
 msgstr "Manufacturer"
 
-#: machines/forms.py:51 machines/models.py:135
+#: machines/forms.py:53 machines/models.py:135
 msgid "Numer seryjny"
 msgstr "Serial number"
 
-#: machines/forms.py:52 machines/models.py:140
+#: machines/forms.py:54 machines/models.py:140
 msgid "Rok produkcji"
 msgstr "Build year"
 
-#: machines/forms.py:53 machines/models.py:143 reservations/forms.py:53
-#: reservations/forms.py:210 reservations/models.py:90
-#: reservations/models.py:194
+#: machines/forms.py:55 machines/models.py:143 reservations/forms.py:64
+#: reservations/forms.py:274 reservations/forms.py:496
+#: reservations/models.py:104 reservations/models.py:241
 msgid "Notatki"
 msgstr "Notes"
 
-#: machines/forms.py:54 machines/models.py:149
+#: machines/forms.py:56 machines/models.py:149
 msgid "Zdjęcie"
 msgstr "Photo"
 
-#: machines/forms.py:57
+#: machines/forms.py:59
 msgid "np. KOP-001"
 msgstr "e.g. KOP-001"
 
-#: machines/forms.py:80
+#: machines/forms.py:90 machines/forms.py:124
 msgid "Wszystkie"
 msgstr "All"
 
-#: machines/forms.py:81
+#: machines/forms.py:91
 msgid "Przegląd aktualny"
 msgstr "Inspection current"
 
-#: machines/forms.py:82
+#: machines/forms.py:92
 msgid "Wkrótce przegląd"
 msgstr "Inspection upcoming"
 
-#: machines/forms.py:83
+#: machines/forms.py:93
 msgid "Przegląd przeterminowany"
 msgstr "Inspection overdue"
 
-#: machines/forms.py:84
+#: machines/forms.py:94
 msgid "Brak daty przeglądu"
 msgstr "No inspection date"
 
-#: machines/forms.py:89
+#: machines/forms.py:99 reservations/forms.py:181 templates/core/search.html:57
 msgid "Szukaj"
 msgstr "Search"
 
-#: machines/forms.py:90
+#: machines/forms.py:100
 msgid "UID lub nazwa…"
 msgstr "UID or name…"
 
-#: machines/forms.py:95 reservations/forms.py:120
+#: machines/forms.py:105 reservations/forms.py:169
 msgid "Wszystkie statusy"
 msgstr "All statuses"
 
-#: machines/forms.py:101 service/forms.py:226
+#: machines/forms.py:111 service/forms.py:243
 msgid "Wszystkie typy"
 msgstr "All types"
 
-#: machines/forms.py:106
+#: machines/forms.py:116
 msgid "Przegląd"
 msgstr "Inspection"
 
 #: machines/forms.py:122
+msgid "Rezerwowalność"
+msgstr "Reservability"
+
+#: machines/forms.py:125
+msgid "Tylko rezerwowalne"
+msgstr "Reservable only"
+
+#: machines/forms.py:126
+msgid "Tylko magazynowe (bez rezerwacji)"
+msgstr "Warehouse only (no reservations)"
+
+#: machines/forms.py:142
 msgid "Plik XLSX"
 msgstr "XLSX file"
 
-#: machines/forms.py:123
+#: machines/forms.py:143
 msgid "Maksymalnie 5 MB. Wymagane kolumny: uid, name, machine_type."
 msgstr "Maximum 5 MB. Required columns: uid, name, machine_type."
 
-#: machines/forms.py:135
+#: machines/forms.py:155
 msgid "Plik nie może być większy niż 5 MB."
 msgstr "File cannot be larger than 5 MB."
 
-#: machines/forms.py:137
+#: machines/forms.py:157
 msgid "Dozwolone tylko pliki .xlsx."
 msgstr "Only .xlsx files allowed."
 
-#: machines/forms.py:148
+#: machines/forms.py:168
 msgid "Plik nie jest poprawnym XLSX (nieprawidłowa sygnatura magic bytes)."
 msgstr "File is not a valid XLSX (invalid magic bytes signature)."
+
+#: machines/models.py:70
+msgid "W magazynie"
+msgstr "In warehouse"
+
+#: machines/models.py:71
+msgid "Na budowie"
+msgstr "On site"
+
+#: machines/models.py:72
+msgid "Zarezerwowana"
+msgstr "Reserved"
+
+#: machines/models.py:73
+msgid "W serwisie"
+msgstr "In service"
+
+#: machines/models.py:74
+msgid "Wycofana z floty"
+msgstr "Retired from fleet"
+
+#: machines/models.py:79
+msgid "Koparka"
+msgstr "Excavator"
+
+#: machines/models.py:80
+msgid "Minikoparka"
+msgstr "Mini excavator"
+
+#: machines/models.py:81
+msgid "Podnośnik nożycowy"
+msgstr "Scissor lift"
+
+#: machines/models.py:82
+msgid "Podnośnik teleskopowy"
+msgstr "Telescopic handler"
+
+#: machines/models.py:83
+msgid "Agregat prądotwórczy"
+msgstr "Power generator"
+
+#: machines/models.py:84
+msgid "Wózek widłowy"
+msgstr "Forklift"
+
+#: machines/models.py:85
+msgid "Walec"
+msgstr "Roller"
+
+#: machines/models.py:86
+msgid "Zagęszczarka"
+msgstr "Plate compactor"
+
+#: machines/models.py:87
+msgid "Spawarka"
+msgstr "Welder"
+
+#: machines/models.py:88
+msgid "Inne"
+msgstr "Other"
 
 #: machines/models.py:95
 msgid "UID maszyny"
@@ -202,584 +478,1332 @@ msgstr "Lifting capacity / power"
 msgid "Data ostatniego przeglądu"
 msgstr "Last inspection date"
 
-#: machines/models.py:157 reservations/forms.py:47 reservations/forms.py:133
-#: reservations/models.py:178 service/forms.py:62 service/forms.py:238
+#: machines/models.py:167 reservations/forms.py:57 reservations/forms.py:195
+#: reservations/models.py:204
+#: reservations/templates/reservations/email/confirmation.html:21
+#: reservations/templates/reservations/email/confirmation.txt:6
+#: service/forms.py:75 service/forms.py:255
 msgid "Maszyna"
 msgstr "Machine"
 
-#: machines/models.py:158 service/forms.py:124 templates/base.html:183
+#: machines/models.py:168 reservations/forms.py:428 service/forms.py:139
+#: templates/base.html:200
 msgid "Maszyny"
 msgstr "Machines"
 
-#: machines/services.py:62
-#, fuzzy
-#| msgid "Koszt nie może być ujemny."
+#: machines/services.py:63
 msgid "UID maszyny nie może być pusty."
-msgstr "Cost cannot be negative."
+msgstr "Machine UID cannot be empty."
 
-#: machines/services.py:151
+#: machines/services.py:154
 msgid ""
 "Ręczna zmiana statusu na 'Na budowie' — typowo to się dzieje automatycznie "
 "przez rezerwację. Upewnij się że nie pomijasz logiki biznesowej (np. "
 "konflikt rezerwacji)."
 msgstr ""
-
-#: machines/services.py:238
-#, fuzzy, python-format
-#| msgid "Maszyna %(uid)s została wysłana do serwisu."
-msgid "Maszyna %(uid)s jest już w serwisie."
-msgstr "Machine %(uid)s has been sent to service."
+"Manual status change to 'On site' — this usually happens automatically "
+"through a reservation. Make sure you are not bypassing the business logic "
+"(e.g. a reservation conflict)."
 
 #: machines/services.py:242
-#, fuzzy, python-format
-#| msgid "Maszyna %(uid)s została zwrócona do magazynu."
+#, python-format
+msgid "Maszyna %(uid)s jest już w serwisie."
+msgstr "Machine %(uid)s is already in service."
+
+#: machines/services.py:245
+#, python-format
 msgid ""
 "Maszyna %(uid)s jest na budowie — najpierw zarejestruj zwrot do magazynu."
-msgstr "Machine %(uid)s has been returned to the warehouse."
+msgstr ""
+"Machine %(uid)s is on site — first register its return to the warehouse."
 
-#: machines/services.py:252
+#: machines/services.py:255
 #, python-format
 msgid ""
 "Maszyna %(uid)s ma %(count)d potwierdzonych rezerwacji w przyszłości "
 "(najbliższa: %(next_start)s). Najpierw anuluj lub przenieś rezerwacje."
 msgstr ""
+"Machine %(uid)s has %(count)d confirmed reservations in the future "
+"(nearest: %(next_start)s). First cancel or move the reservations."
 
-#: machines/services.py:364
+#: machines/services.py:367
 #, python-format
 msgid ""
 "Nie można zakończyć naprawy maszyny ze statusem '%(status)s' — wymaga 'W "
 "serwisie'."
 msgstr ""
+"Cannot finish the repair of a machine with status '%(status)s' — requires "
+"'In service'."
 
-#: machines/views.py:91
+#: machines/views.py:101
 #, python-format
 msgid ""
 "Pominięto nieprawidłowe wartości filtrów: %(fields)s. Wyświetlono wszystkie "
 "maszyny."
 msgstr ""
+"Skipped invalid filter values: %(fields)s. All machines have been shown."
 
-#: machines/views.py:165
+#: machines/views.py:202
 #, python-format
 msgid "Maszyna %(uid)s została dodana."
 msgstr "Machine %(uid)s has been added."
 
-#: machines/views.py:170 machines/views.py:171
+#: machines/views.py:207 machines/views.py:208
 msgid "Dodaj maszynę"
 msgstr "Add machine"
 
-#: machines/views.py:193
+#: machines/views.py:231
 #, python-format
 msgid "Maszyna %(uid)s została zaktualizowana."
 msgstr "Machine %(uid)s has been updated."
 
-#: machines/views.py:201
+#: machines/views.py:239
 #, python-format
 msgid "Edytuj maszynę %(uid)s"
 msgstr "Edit machine %(uid)s"
 
-#: machines/views.py:202
+#: machines/views.py:240
 msgid "Zapisz zmiany"
 msgstr "Save changes"
 
-#: machines/views.py:219
+#: machines/views.py:258
 #, python-format
 msgid "Maszyna %(uid)s została usunięta."
 msgstr "Machine %(uid)s has been deleted."
 
-#: machines/views.py:264
+#: machines/views.py:307
 #, python-format
 msgid "Nie udało się odczytać pliku XLSX: %(error)s"
 msgstr "Failed to read XLSX file: %(error)s"
 
-#: machines/views.py:300
+#: machines/views.py:343
 #, python-format
 msgid "Wiersz %(row)d (%(uid)s): %(error)s"
 msgstr "Row %(row)d (%(uid)s): %(error)s"
 
-#: machines/views.py:306
+#: machines/views.py:349
 #, python-format
 msgid "Zaimportowano %(count)d maszyn."
 msgstr "%(count)d machines imported."
 
-#: machines/views.py:311
+#: machines/views.py:354
 #, python-format
 msgid "Pominięto %(count)d pustych wierszy."
 msgstr "%(count)d empty rows skipped."
 
-#: machines/views.py:318
+#: machines/views.py:361
 #, python-format
 msgid "...oraz %(count)d dalszych błędów."
 msgstr "...and %(count)d more errors."
 
-#: machines/views.py:404
+#: machines/views.py:448
 #, python-format
 msgid "Maszyna %(uid)s została wysłana do serwisu."
 msgstr "Machine %(uid)s has been sent to service."
 
-#: machines/views.py:422
+#: machines/views.py:467
 #, python-format
 msgid ""
 "Maszyna %(uid)s została zwrócona do magazynu (zamknięto %(closed)d aktywnych "
 "rezerwacji)."
 msgstr ""
+"Machine %(uid)s has been returned to the warehouse (%(closed)d active "
+"reservations closed)."
 
-#: machines/views.py:430
+#: machines/views.py:475
 #, python-format
 msgid "Maszyna %(uid)s została zwrócona do magazynu."
 msgstr "Machine %(uid)s has been returned to the warehouse."
 
-#: machines/views.py:449
+#: machines/views.py:495
 #, python-format
 msgid "Naprawa zakończona — maszyna %(uid)s dostępna w magazynie."
 msgstr "Repair completed — machine %(uid)s available in warehouse."
 
-#: planer_config/settings/base.py:337
+#: machines/views.py:526
+#, python-format
+msgid "Maszyna %(uid)s została wycofana z floty."
+msgstr "Machine %(uid)s has been retired from the fleet."
+
+#: planer_config/settings/base.py:395
 msgid "Polski"
 msgstr "Polish"
 
-#: planer_config/settings/base.py:338
-msgid "Nederlands"
-msgstr "Dutch"
-
-#: planer_config/settings/base.py:339
-msgid "Français"
-msgstr "French"
-
-#: planer_config/settings/base.py:340
+#: planer_config/settings/base.py:396
 msgid "English"
 msgstr "English"
 
-#: reservations/forms.py:48 reservations/forms.py:140 reservations/models.py:95
-#: reservations/models.py:186
+#: reservations/emails.py:53
+#, python-format
+msgid "Potwierdzenie rezerwacji %(uid)s"
+msgstr "Reservation confirmation %(uid)s"
+
+#: reservations/forms.py:58 reservations/forms.py:202 reservations/forms.py:441
+#: reservations/models.py:109 reservations/models.py:212
+#: reservations/templates/reservations/email/confirmation.html:28
+#: reservations/templates/reservations/email/confirmation.txt:9
 msgid "Budowa"
 msgstr "Construction site"
 
-#: reservations/forms.py:49 reservations/models.py:188
+#: reservations/forms.py:59 reservations/forms.py:454
+#: reservations/models.py:214
 msgid "Data początku"
 msgstr "Start date"
 
-#: reservations/forms.py:50 reservations/models.py:189
+#: reservations/forms.py:60 reservations/forms.py:466
+#: reservations/models.py:215
 msgid "Data końca"
 msgstr "End date"
 
-#: reservations/forms.py:51 reservations/models.py:190
+#: reservations/forms.py:61 reservations/forms.py:478
+#: reservations/models.py:216
+#: reservations/templates/reservations/email/confirmation.html:25
+#: reservations/templates/reservations/email/confirmation.txt:8
 msgid "Osoba rezerwująca"
 msgstr "Booked by"
 
-#: reservations/forms.py:52 reservations/models.py:192
+#: reservations/forms.py:62 reservations/models.py:236
+msgid "Osoba odpowiedzialna na budowie"
+msgstr "Person responsible on site"
+
+#: reservations/forms.py:63 reservations/forms.py:490
+#: reservations/models.py:224
 msgid "Adres dostawy"
 msgstr "Delivery address"
 
-#: reservations/forms.py:75
+#: reservations/forms.py:88
 msgid "Imię i nazwisko"
 msgstr "Full name"
 
-#: reservations/forms.py:78
-msgid "Adres dostawy (opcjonalnie)"
-msgstr "Delivery address (optional)"
+#: reservations/forms.py:93
+msgid "Imię i nazwisko kierownika / brygadzisty"
+msgstr "Full name of the manager / foreman"
 
-#: reservations/forms.py:96
+#: reservations/forms.py:97
+msgid "Adres dostawy (ulica, miasto)"
+msgstr "Delivery address (street, city)"
+
+#: reservations/forms.py:121 reservations/forms.py:439
 msgid "— bez budowy —"
 msgstr "— no site —"
 
-#: reservations/forms.py:103 reservations/services.py:112
-#: reservations/services.py:171 reservations/services.py:250
+#: reservations/forms.py:128
+msgid "Adres budowy/dostawy maszyny. Wymagane — pojawi sie w PDF wydruku."
+msgstr ""
+"Site/delivery address of the machine. Required — it appears on the printed "
+"PDF."
+
+#: reservations/forms.py:132 reservations/models.py:238
+msgid ""
+"Imie i nazwisko kierownika/brygadzisty odpowiedzialnego za maszyne na "
+"budowie."
+msgstr ""
+"Full name of the manager/foreman responsible for the machine on site."
+
+#: reservations/forms.py:140 reservations/forms.py:515
+#: reservations/services.py:130 reservations/services.py:207
+#: reservations/services.py:364 reservations/services.py:1293
 msgid "Data końca musi być >= data początku."
 msgstr "End date must be >= start date."
 
-#: reservations/forms.py:132 service/forms.py:237
+#: reservations/forms.py:146 reservations/services.py:205
+msgid "Adres dostawy jest wymagany."
+msgstr "Delivery address is required."
+
+#: reservations/forms.py:151
+msgid "Imie i nazwisko osoby odpowiedzialnej na budowie jest wymagane."
+msgstr "The full name of the person responsible on site is required."
+
+#: reservations/forms.py:177
+msgid "Osoba, notatki, budowa..."
+msgstr "Person, notes, site..."
+
+#: reservations/forms.py:178
+msgid "Globalne wyszukiwanie rezerwacji"
+msgstr "Global reservation search"
+
+#: reservations/forms.py:182
+msgid "Przeszukuje osobę, adres, notatki oraz nazwę/numer budowy."
+msgstr "Searches the person, address, notes and the site name/number."
+
+#: reservations/forms.py:194 service/forms.py:254
 msgid "Wszystkie maszyny"
 msgstr "All machines"
 
-#: reservations/forms.py:139
+#: reservations/forms.py:201
 msgid "Wszystkie budowy"
 msgstr "All sites"
 
-#: reservations/forms.py:145
+#: reservations/forms.py:207
 msgid "Szukaj po osobie"
 msgstr "Search by person"
 
-#: reservations/forms.py:146
+#: reservations/forms.py:208
 msgid "Osoba"
 msgstr "Person"
 
-#: reservations/forms.py:158
+#: reservations/forms.py:221
 msgid "Początek po"
 msgstr "Starts after"
 
-#: reservations/forms.py:170
+#: reservations/forms.py:234
 msgid "Koniec przed"
 msgstr "Ends before"
 
-#: reservations/forms.py:202 reservations/models.py:74
+#: reservations/forms.py:266 reservations/models.py:88
 msgid "Numer projektu"
 msgstr "Project number"
 
-#: reservations/forms.py:203 reservations/models.py:77
+#: reservations/forms.py:267 reservations/models.py:91
 msgid "Nazwa budowy"
 msgstr "Site name"
 
-#: reservations/forms.py:204 reservations/models.py:78
+#: reservations/forms.py:268 reservations/models.py:92
 msgid "Klient"
 msgstr "Client"
 
-#: reservations/forms.py:205 reservations/models.py:79
+#: reservations/forms.py:269 reservations/models.py:93
 msgid "Adres"
 msgstr "Address"
 
-#: reservations/forms.py:206 reservations/models.py:80
+#: reservations/forms.py:270 reservations/models.py:94
 msgid "Miasto"
 msgstr "City"
 
-#: reservations/forms.py:208 reservations/models.py:88
+#: reservations/forms.py:272 reservations/models.py:102
 msgid "Data rozpoczęcia"
 msgstr "Start date"
 
-#: reservations/forms.py:209 reservations/models.py:89
+#: reservations/forms.py:273 reservations/models.py:103
 msgid "Planowana data zakończenia"
 msgstr "Planned end date"
 
-#: reservations/forms.py:245
+#: reservations/forms.py:314
 msgid "Numer projektu nie podlega edycji po utworzeniu budowy."
 msgstr "Project number cannot be edited after site creation."
 
-#: reservations/forms.py:254
+#: reservations/forms.py:323
 msgid "Planowana data zakończenia musi być >= data rozpoczęcia."
 msgstr "Planned end date must be >= start date."
 
-#: reservations/models.py:96 templates/base.html:213
+#: reservations/forms.py:347 reservations/forms.py:564
+msgid "np. Sven Olsen"
+msgstr "e.g. Sven Olsen"
+
+#: reservations/forms.py:352 reservations/forms.py:568
+msgid "Nowa osoba"
+msgstr "New person"
+
+#: reservations/forms.py:353
+msgid "Imię i nazwisko nowego operatora (min. 3 znaki)."
+msgstr "Full name of the new operator (min. 3 characters)."
+
+#: reservations/forms.py:376
+msgid "Maszyna zastępcza"
+msgstr "Replacement machine"
+
+#: reservations/forms.py:377
+msgid "— wybierz maszynę zastępczą —"
+msgstr "— select a replacement machine —"
+
+#: reservations/forms.py:378
+msgid "Maszyna, która przejmie rezerwację od dziś do końca okresu."
+msgstr "The machine that will take over the reservation from today until the end of the period."
+
+#: reservations/forms.py:387
+msgid "np. Awaria silnika KOP-001, klient wymaga ciągłej pracy"
+msgstr "e.g. KOP-001 engine failure, the client requires continuous operation"
+
+#: reservations/forms.py:391
+msgid "Powód wymiany"
+msgstr "Replacement reason"
+
+#: reservations/forms.py:392
+msgid "Opcjonalny — trafia do notatek obu rezerwacji (audit)."
+msgstr "Optional — added to the notes of both reservations (audit)."
+
+#: reservations/forms.py:430
+msgid ""
+"Zaznacz wszystkie maszyny dla tej grupy rezerwacji (każda dostanie osobny "
+"wpis z tym samym ID grupy)."
+msgstr ""
+"Select all machines for this reservation group (each one gets a separate "
+"entry with the same group ID)."
+
+#: reservations/forms.py:442
+msgid "Opcjonalna — wspólna budowa dla wszystkich rezerwacji w grupie."
+msgstr "Optional — a shared site for all reservations in the group."
+
+#: reservations/forms.py:474
+msgid "Imię i nazwisko kierownika / operatora"
+msgstr "Full name of the manager / operator"
+
+#: reservations/forms.py:479
+msgid "Wspólna osoba odpowiedzialna za wszystkie maszyny w grupie."
+msgstr "A shared person responsible for all machines in the group."
+
+#: reservations/forms.py:487
+msgid "Adres dostawy (opcjonalnie)"
+msgstr "Delivery address (optional)"
+
+#: reservations/forms.py:491
+msgid ""
+"Opcjonalny — jeśli wszystkie maszyny mają być dostarczone na ten sam adres."
+msgstr ""
+"Optional — if all machines are to be delivered to the same address."
+
+#: reservations/forms.py:497
+msgid "Opcjonalne — wspólne notatki kopiowane do każdej rezerwacji w grupie."
+msgstr ""
+"Optional — shared notes copied to every reservation in the group."
+
+#: reservations/forms.py:536
+msgid "— wybierz powód —"
+msgstr "— select a reason —"
+
+#: reservations/forms.py:538 reservations/models.py:260
+msgid "Powód anulowania"
+msgstr "Cancellation reason"
+
+#: reservations/forms.py:539
+msgid "Wspólny powód dla wszystkich rezerwacji w grupie."
+msgstr "A shared reason for all reservations in the group."
+
+#: reservations/forms.py:548
+msgid "Dodatkowy kontekst (opcjonalnie)"
+msgstr "Additional context (optional)"
+
+#: reservations/forms.py:551
+msgid "Notatka"
+msgstr "Note"
+
+#: reservations/forms.py:570
+msgid ""
+"Imię i nazwisko nowego operatora — zostanie zaktualizowane na wszystkich "
+"aktywnych rezerwacjach."
+msgstr ""
+"Full name of the new operator — it will be updated on all active "
+"reservations."
+
+#: reservations/models.py:79
+msgid "Aktywna"
+msgstr "Active"
+
+#: reservations/models.py:80 reservations/models.py:180
+msgid "Zakończona"
+msgstr "Completed"
+
+#: reservations/models.py:110 templates/base.html:224
 msgid "Budowy"
 msgstr "Construction sites"
 
-#: reservations/models.py:208
+#: reservations/models.py:177
+msgid "Oczekująca"
+msgstr "Pending"
+
+#: reservations/models.py:178
+msgid "Potwierdzona"
+msgstr "Confirmed"
+
+#: reservations/models.py:179
+msgid "Anulowana"
+msgstr "Cancelled"
+
+#: reservations/models.py:188
+msgid "Klient zrezygnował"
+msgstr "Client withdrew"
+
+#: reservations/models.py:189
+msgid "Awaria maszyny"
+msgstr "Machine failure"
+
+#: reservations/models.py:190
+msgid "Zmiana terminu / przesunięcie"
+msgstr "Reschedule / shift"
+
+#: reservations/models.py:191
+msgid "Brak dostępności maszyny"
+msgstr "Machine not available"
+
+#: reservations/models.py:192
+msgid "Inne (zobacz notatkę)"
+msgstr "Other (see note)"
+
+#: reservations/models.py:261
+msgid "Wymagane jeśli rezerwacja jest anulowana — używane w raportach."
+msgstr "Required if the reservation is cancelled — used in reports."
+
+#: reservations/models.py:266
+msgid "Notatka do powodu anulowania"
+msgstr "Note for the cancellation reason"
+
+#: reservations/models.py:267
+msgid "Opcjonalna — dodatkowy kontekst (np. przyczyna awarii, kto odwołał)."
+msgstr ""
+"Optional — additional context (e.g. cause of failure, who cancelled)."
+
+#: reservations/models.py:277
+msgid "Faktyczna data zwrotu"
+msgstr "Actual return date"
+
+#: reservations/models.py:279
+msgid ""
+"Wcześniejszy zwrot — jeśli ustawione, używamy do konfliktów zamiast "
+"planowanej daty końca."
+msgstr ""
+"Early return — if set, it is used for conflicts instead of the planned end "
+"date."
+
+#: reservations/models.py:296
+msgid "Zastąpiona przez"
+msgstr "Replaced by"
+
+#: reservations/models.py:298
+msgid ""
+"Jeśli rezerwacja została wymieniona mid-flight na inną maszynę — wskazuje na "
+"zastępczą rezerwację."
+msgstr ""
+"If the reservation was swapped mid-flight to another machine — points to the "
+"replacement reservation."
+
+#: reservations/models.py:314
+msgid "ID grupy rezerwacji"
+msgstr "Reservation group ID"
+
+#: reservations/models.py:316
+msgid ""
+"Jeśli rezerwacja należy do grupy (multi-maszynowa), wszystkie rezerwacje w "
+"grupie mają ten sam UUID."
+msgstr ""
+"If the reservation belongs to a group (multi-machine), all reservations in "
+"the group share the same UUID."
+
+#: reservations/models.py:327
+msgid "Utworzona przez"
+msgstr "Created by"
+
+#: reservations/models.py:329
+msgid ""
+"Użytkownik, który utworzył rezerwację. Decyduje o adresacie powiadomienia e-"
+"mail po potwierdzeniu oraz o widoczności w edycji dla pracowników "
+"niebędących administratorami."
+msgstr ""
+"The user who created the reservation. Determines the recipient of the email "
+"notification after confirmation and the editing visibility for non-"
+"administrator employees."
+
+#: reservations/models.py:337
+msgid "E-mail potwierdzający — zakolejkowany"
+msgstr "Confirmation email — queued"
+
+#: reservations/models.py:338
+msgid "Znacznik czasu zakolejkowania powiadomienia po potwierdzeniu."
+msgstr "Timestamp of when the notification was queued after confirmation."
+
+#: reservations/models.py:343
+msgid "E-mail potwierdzający — wysłany"
+msgstr "Confirmation email — sent"
+
+#: reservations/models.py:344
+msgid "Znacznik czasu skutecznego wysłania powiadomienia."
+msgstr "Timestamp of the successful delivery of the notification."
+
+#: reservations/models.py:352
 msgid "Rezerwacja"
 msgstr "Reservation"
 
-#: reservations/models.py:209 templates/base.html:193
+#: reservations/models.py:353 templates/base.html:210
 msgid "Rezerwacje"
 msgstr "Reservations"
 
-#: reservations/services.py:75
+#: reservations/services.py:93
 #, python-format
 msgid "Nielegalne przejście statusu rezerwacji: %(current)s → %(target)s"
-msgstr ""
+msgstr "Illegal reservation status transition: %(current)s → %(target)s"
 
-#: reservations/services.py:169
+#: reservations/services.py:198 reservations/services.py:1291
 msgid "Pole 'osoba rezerwująca' nie może być puste."
-msgstr ""
+msgstr "The 'booked by' field cannot be empty."
 
-#: reservations/services.py:173
+#: reservations/services.py:203
+msgid "Osoba odpowiedzialna jest wymagana."
+msgstr "A responsible person is required."
+
+#: reservations/services.py:209 reservations/services.py:1295
 msgid "Nie można tworzyć rezerwacji w przeszłości."
-msgstr ""
+msgstr "Reservations cannot be created in the past."
 
-#: reservations/services.py:181
-#, fuzzy
-#| msgid "Maszyna o UID %(uid)s nie istnieje."
+#: reservations/services.py:217
 msgid "Wskazana maszyna nie istnieje."
-msgstr "Machine with UID %(uid)s does not exist."
+msgstr "The specified machine does not exist."
 
-#: reservations/services.py:189
+#: reservations/services.py:227
+#, python-format
+msgid ""
+"Maszyna %(uid)s została wycofana z floty — nie można tworzyć dla niej nowych "
+"rezerwacji."
+msgstr ""
+"Machine %(uid)s has been retired from the fleet — no new reservations can be "
+"created for it."
+
+#: reservations/services.py:242
+#, python-format
+msgid ""
+"Maszyna %(uid)s jest oznaczona jako magazynowa — nie można jej rezerwować na "
+"budowę."
+msgstr ""
+"Machine %(uid)s is marked as warehouse-only — it cannot be reserved for a "
+"site."
+
+#: reservations/services.py:257
+msgid "Wskazana budowa nie istnieje."
+msgstr "The specified construction site does not exist."
+
+#: reservations/services.py:262
+#, python-format
+msgid ""
+"Budowa %(project_number)s ma status %(status)s — nie można na niej tworzyć "
+"nowych rezerwacji."
+msgstr ""
+"Site %(project_number)s has status %(status)s — no new reservations can be "
+"created for it."
+
+#: reservations/services.py:278
 #, python-format
 msgid ""
 "Maszyna %(uid)s ma %(count)d kolidujących rezerwacji w tym terminie: "
 "%(details)s"
 msgstr ""
+"Machine %(uid)s has %(count)d conflicting reservations in this period: "
+"%(details)s"
 
-#: reservations/services.py:240
+#: reservations/services.py:331
 msgid ""
 "Nie można ustawić statusu ZAKONCZONA bezpośrednio. Użyj "
 "complete_reservation() — zwraca też maszynę do magazynu."
 msgstr ""
+"The COMPLETED status cannot be set directly. Use complete_reservation() — it "
+"also returns the machine to the warehouse."
 
-#: reservations/services.py:258
+#: reservations/services.py:344
+#, python-format
+msgid ""
+"Nie można edytować rezerwacji o statusie %(status)s — jest terminalna. Aby "
+"zmienić dane, utwórz nową rezerwację."
+msgstr ""
+"A reservation with status %(status)s cannot be edited — it is terminal. To "
+"change the data, create a new reservation."
+
+#: reservations/services.py:372
 msgid "Nowy termin koliduje z inną rezerwacją tej maszyny."
-msgstr ""
+msgstr "The new period conflicts with another reservation of this machine."
 
-#: reservations/services.py:303
-msgid "Konflikt rezerwacji wykryty podczas zatwierdzania (race condition)."
+#: reservations/services.py:434
+#, python-format
+msgid ""
+"Nie można potwierdzić — rezerwacja #%(pk)s (%(start)s→%(end)s) nakłada się z "
+"%(count)d innymi rezerwacjami: %(details)s"
 msgstr ""
+"Cannot confirm — reservation #%(pk)s (%(start)s→%(end)s) overlaps with "
+"%(count)d other reservations: %(details)s"
 
-#: reservations/services.py:539
+#: reservations/services.py:496 reservations/services.py:1482
+msgid "Powód anulowania jest wymagany."
+msgstr "A cancellation reason is required."
+
+#: reservations/services.py:499
+#, python-format
+msgid "Nieznany powód anulowania: %(reason)s"
+msgstr "Unknown cancellation reason: %(reason)s"
+
+#: reservations/services.py:554
+#, python-format
+msgid ""
+"Nie można zakończyć rezerwacji #%(pk)s — start (%(start)s) jeszcze nie "
+"nadszedł, maszyna nie wyjechała na budowę. Użyj 'Anuluj rezerwację' jeśli "
+"chcesz cofnąć wynajem."
+msgstr ""
+"Cannot complete reservation #%(pk)s — the start (%(start)s) has not arrived "
+"yet, the machine has not left for the site. Use 'Cancel reservation' if you "
+"want to revoke the rental."
+
+#: reservations/services.py:567
+msgid ""
+"Faktyczna data zwrotu nie może być wcześniejsza niż data początku rezerwacji."
+msgstr ""
+"The actual return date cannot be earlier than the reservation start date."
+
+#: reservations/services.py:573
+msgid "Faktyczna data zwrotu nie może być w przyszłości."
+msgstr "The actual return date cannot be in the future."
+
+#: reservations/services.py:802
 #, python-format
 msgid ""
 "Nie można usunąć budowy %(project_number)s: posiada %(count)d aktywnych "
 "rezerwacji."
 msgstr ""
+"Cannot delete site %(project_number)s: it has %(count)d active reservations."
 
-#: reservations/views.py:169
+#: reservations/services.py:861
+msgid "Opis awarii musi mieć co najmniej 5 znaków."
+msgstr "The failure description must be at least 5 characters long."
+
+#: reservations/services.py:868
+#, python-format
+msgid "Nie można zgłosić awarii dla zamkniętej rezerwacji (status=%(status)s)."
+msgstr ""
+"A failure cannot be reported for a closed reservation (status=%(status)s)."
+
+#: reservations/services.py:958
+#, python-format
+msgid "Nie można zmienić osoby dla zamkniętej rezerwacji (status=%(status)s)."
+msgstr ""
+"The person cannot be changed for a closed reservation (status=%(status)s)."
+
+#: reservations/services.py:964 reservations/services.py:1543
+msgid "Nowa osoba jest wymagana."
+msgstr "A new person is required."
+
+#: reservations/services.py:968 reservations/services.py:1547
+#, python-format
+msgid "Imię i nazwisko musi mieć co najmniej %(n)d znaki."
+msgstr "The full name must be at least %(n)d characters long."
+
+#: reservations/services.py:976
+msgid "Nowa osoba musi się różnić od obecnej."
+msgstr "The new person must differ from the current one."
+
+#: reservations/services.py:1053
+#, python-format
+msgid ""
+"Nie można wymienić maszyny dla zamkniętej rezerwacji (status=%(status)s)."
+msgstr ""
+"The machine cannot be replaced for a closed reservation (status=%(status)s)."
+
+#: reservations/services.py:1057
+msgid "Maszyna zastępcza musi się różnić od obecnej."
+msgstr "The replacement machine must differ from the current one."
+
+#: reservations/services.py:1062
+#, python-format
+msgid "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
+msgstr ""
+"Machine %(uid)s has been retired from the fleet — it cannot be a "
+"replacement."
+
+#: reservations/services.py:1071
+#, python-format
+msgid ""
+"Maszyna %(uid)s jest oznaczona jako magazynowa — nie może być zastępcą na "
+"budowie."
+msgstr ""
+"Machine %(uid)s is marked as warehouse-only — it cannot be a replacement on "
+"site."
+
+#: reservations/services.py:1106
+#, python-format
+msgid ""
+"Maszyna zastępcza %(uid)s ma %(count)d kolidujących rezerwacji w okresie "
+"%(start)s — %(end)s: %(details)s"
+msgstr ""
+"Replacement machine %(uid)s has %(count)d conflicting reservations in the "
+"period %(start)s — %(end)s: %(details)s"
+
+#: reservations/services.py:1280
+msgid "Wybierz minimum 1 maszynę dla grupy rezerwacji."
+msgstr "Select at least 1 machine for the reservation group."
+
+#: reservations/services.py:1283
+#, python-format
+msgid ""
+"Grupa może zawierać maksymalnie %(n)d maszyn. Podziel na mniejsze grupy."
+msgstr ""
+"A group can contain at most %(n)d machines. Split it into smaller groups."
+
+#: reservations/services.py:1288
+msgid "Lista maszyn zawiera duplikaty — każda maszyna może być tylko raz."
+msgstr ""
+"The machine list contains duplicates — each machine can appear only once."
+
+#: reservations/services.py:1309
+#, python-format
+msgid "Następujące maszyny nie istnieją: %(ids)s"
+msgstr "The following machines do not exist: %(ids)s"
+
+#: reservations/services.py:1317
+#, python-format
+msgid "Maszyna %(uid)s ma status '%(status)s' — nie można jej zarezerwować."
+msgstr "Machine %(uid)s has status '%(status)s' — it cannot be reserved."
+
+#: reservations/services.py:1333
+#, python-format
+msgid "Maszyna %(uid)s: %(count)d kolidujących rezerwacji (%(details)s)"
+msgstr "Machine %(uid)s: %(count)d conflicting reservations (%(details)s)"
+
+#: reservations/services.py:1416 reservations/services.py:1487
+#: reservations/services.py:1555
+#, python-format
+msgid "Grupa rezerwacji %(batch_id)s nie istnieje lub jest pusta."
+msgstr "Reservation group %(batch_id)s does not exist or is empty."
+
+#: reservations/services.py:1435 reservations/services.py:1577
+#, python-format
+msgid "Rezerwacja %(uid)s #%(pk)d: %(msg)s"
+msgstr "Reservation %(uid)s #%(pk)d: %(msg)s"
+
+#: reservations/templates/reservations/email/confirmation.html:10
+#: reservations/templates/reservations/email/confirmation.html:33
+#: reservations/templates/reservations/email/confirmation.txt:12
+#: templates/base.html:11 templates/base.html:567
+msgid "Planer Maszyn Budowlanych"
+msgstr "Construction Machine Planner"
+
+#: reservations/templates/reservations/email/confirmation.html:14
+#: reservations/templates/reservations/email/confirmation.txt:1
+#, python-format
+msgid "Dzień dobry %(name)s,"
+msgstr "Hello %(name)s,"
+
+#: reservations/templates/reservations/email/confirmation.html:17
+#, python-format
+msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."
+msgstr "The reservation of machine <strong>%(uid)s</strong> has been confirmed."
+
+#: reservations/templates/reservations/email/confirmation.html:23
+#: reservations/templates/reservations/email/confirmation.txt:7
+msgid "Termin"
+msgstr "Period"
+
+#: reservations/templates/reservations/email/confirmation.html:33
+#: reservations/templates/reservations/email/confirmation.txt:11
+msgid "Pozdrawiamy,"
+msgstr "Best regards,"
+
+#: reservations/templates/reservations/email/confirmation.txt:3
+#, python-format
+msgid "Rezerwacja maszyny %(uid)s została potwierdzona."
+msgstr "The reservation of machine %(uid)s has been confirmed."
+
+#: reservations/templates/reservations/email/confirmation.txt:5
+msgid "Szczegóły rezerwacji:"
+msgstr "Reservation details:"
+
+#: reservations/views.py:322
 #, python-format
 msgid "Rezerwacja %(title)s została utworzona."
 msgstr "Reservation %(title)s has been created."
 
-#: reservations/views.py:228
+#: reservations/views.py:415
 msgid "Rezerwacja zaktualizowana."
 msgstr "Reservation updated."
 
-#: reservations/views.py:257
+#: reservations/views.py:480
 msgid "Rezerwacja potwierdzona."
 msgstr "Reservation confirmed."
 
-#: reservations/views.py:275
+#: reservations/views.py:570
 msgid "Rezerwacja anulowana."
 msgstr "Reservation cancelled."
 
-#: reservations/views.py:293
+#: reservations/views.py:596
 msgid "Rezerwacja zakończona, maszyna wróciła do magazynu."
 msgstr "Reservation completed, machine returned to warehouse."
 
-#: reservations/views.py:440
+#: reservations/views.py:616 reservations/views.py:653
+#: reservations/views.py:1487 reservations/views.py:1522
+#, python-format
+msgid "Niepoprawne dane: %(err)s"
+msgstr "Invalid data: %(err)s"
+
+#: reservations/views.py:629
+#, python-format
+msgid "Osoba zmieniona na: %(person)s"
+msgstr "Person changed to: %(person)s"
+
+#: reservations/views.py:668
+#, python-format
+msgid "Maszyna wymieniona — nowa rezerwacja #%(new_id)s na %(uid)s utworzona."
+msgstr ""
+"Machine replaced — new reservation #%(new_id)s for %(uid)s created."
+
+#: reservations/views.py:702
+#, python-format
+msgid "Awaria zgłoszona — maszyna %(uid)s w serwisie, rezerwacja zamknięta."
+msgstr ""
+"Failure reported — machine %(uid)s in service, reservation closed."
+
+#: reservations/views.py:848
 #, python-format
 msgid "Budowa %(project_number)s została utworzona."
 msgstr "Site %(project_number)s has been created."
 
-#: reservations/views.py:472
+#: reservations/views.py:881
 #, python-format
 msgid "Budowa %(project_number)s zaktualizowana."
 msgstr "Site %(project_number)s updated."
 
-#: reservations/views.py:495
+#: reservations/views.py:912
 #, python-format
 msgid "Budowa %(project_number)s została usunięta."
 msgstr "Site %(project_number)s has been deleted."
 
-#: reservations/views.py:758
+#: reservations/views.py:1290
 msgid "Brak wymaganych pól: maszyna i data początku."
 msgstr "Required fields missing: machine and start date."
 
-#: reservations/views.py:768
+#: reservations/views.py:1300
 msgid "Niepoprawny format daty (oczekiwany YYYY-MM-DD)."
 msgstr "Invalid date format (expected YYYY-MM-DD)."
 
-#: reservations/views.py:777
+#: reservations/views.py:1309
 #, python-format
 msgid "Maszyna o UID %(uid)s nie istnieje."
 msgstr "Machine with UID %(uid)s does not exist."
 
-#: reservations/views.py:805
+#: reservations/views.py:1338
 #, python-format
 msgid "Rezerwacja %(uid)s utworzona."
 msgstr "Reservation %(uid)s created."
 
-#: service/forms.py:63
+#: reservations/views.py:1385
+#, python-format
+msgid "Utworzono %(n)d rezerwacji w grupie (ID: %(short)s)."
+msgstr "Created %(n)d reservations in the group (ID: %(short)s)."
+
+#: reservations/views.py:1415
+msgid "Grupa rezerwacji nie istnieje."
+msgstr "The reservation group does not exist."
+
+#: reservations/views.py:1468
+#, python-format
+msgid "Potwierdzono %(n)d rezerwacji w grupie (pominięto %(s)d)."
+msgstr "Confirmed %(n)d reservations in the group (%(s)d skipped)."
+
+#: reservations/views.py:1502
+#, python-format
+msgid "Anulowano %(n)d rezerwacji w grupie (pominięto %(s)d)."
+msgstr "Cancelled %(n)d reservations in the group (%(s)d skipped)."
+
+#: reservations/views.py:1536
+#, python-format
+msgid "Zmieniono operatora w %(n)d rezerwacjach (pominięto %(s)d)."
+msgstr "Changed the operator on %(n)d reservations (%(s)d skipped)."
+
+#: reservations/views.py:1558
+msgid "Tylko personel administracyjny może synchronizować statusy."
+msgstr "Only administrative staff can synchronize statuses."
+
+#: reservations/views.py:1565
+#, python-format
+msgid ""
+"Synchronizacja statusów wykonana: %(updated)d 'Na budowie', %(extended)d "
+"przedłużono (Hard Return), %(reserved)d 'Zarezerwowana'."
+msgstr ""
+"Status synchronization completed: %(updated)d 'On site', %(extended)d "
+"extended (Hard Return), %(reserved)d 'Reserved'."
+
+#: service/forms.py:59
+msgid "Koszt (EUR)"
+msgstr "Cost (EUR)"
+
+#: service/forms.py:76
 msgid "Typ wpisu"
 msgstr "Entry type"
 
-#: service/forms.py:64
+#: service/forms.py:77
 msgid "Data wykonania"
 msgstr "Performed date"
 
-#: service/forms.py:65 service/forms.py:146
+#: service/forms.py:78 service/forms.py:162
 msgid "Wykonawca"
 msgstr "Performed by"
 
-#: service/forms.py:66
+#: service/forms.py:79
 msgid "Opis"
 msgstr "Description"
 
-#: service/forms.py:67
-msgid "Koszt"
-msgstr "Cost"
-
-#: service/forms.py:68
+#: service/forms.py:80
 msgid "Protokół (PDF)"
 msgstr "Protocol (PDF)"
 
-#: service/forms.py:82 service/forms.py:147
+#: service/forms.py:95 service/forms.py:163
 msgid "np. Jan Kowalski"
 msgstr "e.g. John Smith"
 
-#: service/forms.py:104
+#: service/forms.py:119
 msgid "Koszt nie może być ujemny."
 msgstr "Cost cannot be negative."
 
-#: service/forms.py:125
+#: service/forms.py:140
 msgid "Zaznacz wszystkie maszyny objęte tym przeglądem."
 msgstr "Select all machines covered by this inspection."
 
-#: service/forms.py:129
+#: service/forms.py:144
 msgid "Typ przeglądu"
 msgstr "Inspection type"
 
-#: service/forms.py:155
+#: service/forms.py:171
 msgid "Koszt na maszynę (PLN)"
 msgstr "Cost per machine (PLN)"
 
-#: service/forms.py:160
+#: service/forms.py:176
 msgid "Opis (wspólny)"
 msgstr "Description (shared)"
 
-#: service/forms.py:165
+#: service/forms.py:181
 msgid "Protokół (PDF, wspólny)"
 msgstr "Protocol (PDF, shared)"
 
-#: service/forms.py:166
+#: service/forms.py:182
 msgid "Jeden plik PDF dołączony do każdego utworzonego wpisu."
 msgstr "One PDF file attached to every created entry."
 
-#: service/forms.py:180
+#: service/forms.py:197
 msgid "Data przeglądu nie może być w przyszłości."
 msgstr "Inspection date cannot be in the future."
 
-#: service/forms.py:193
+#: service/forms.py:210
 msgid "Q1 (sty-mar)"
 msgstr "Q1 (Jan-Mar)"
 
-#: service/forms.py:194
+#: service/forms.py:211
 msgid "Q2 (kwi-cze)"
 msgstr "Q2 (Apr-Jun)"
 
-#: service/forms.py:195
+#: service/forms.py:212
 msgid "Q3 (lip-wrz)"
 msgstr "Q3 (Jul-Sep)"
 
-#: service/forms.py:196
+#: service/forms.py:213
 msgid "Q4 (paź-gru)"
 msgstr "Q4 (Oct-Dec)"
 
-#: service/forms.py:203
+#: service/forms.py:220
 msgid "Rok"
 msgstr "Year"
 
-#: service/forms.py:209
+#: service/forms.py:226
 msgid "Kwartał"
 msgstr "Quarter"
 
-#: service/forms.py:243
+#: service/forms.py:260
 msgid "Wykonano po"
 msgstr "Performed after"
 
-#: service/forms.py:255
+#: service/forms.py:273
 msgid "Wykonano przed"
 msgstr "Performed before"
 
-#: service/forms.py:270
+#: service/forms.py:289
 msgid "Koszt min"
 msgstr "Min cost"
 
-#: service/forms.py:278
+#: service/forms.py:297
 msgid "Koszt max"
 msgstr "Max cost"
 
-#: service/services.py:74
-#, fuzzy
-#| msgid "Data przeglądu nie może być w przyszłości."
+#: service/forms.py:302
+msgid "Tylko drogie naprawy (powyżej 1000 PLN)"
+msgstr "Expensive repairs only (over 1000 PLN)"
+
+#: service/forms.py:314
+msgid "Tylko przeglądy (bez napraw)"
+msgstr "Inspections only (no repairs)"
+
+#: service/models.py:62
+msgid "Przegląd kwartalny (3 mc)"
+msgstr "Quarterly inspection (3 mo)"
+
+#: service/models.py:63
+msgid "Przegląd półroczny (6 mc)"
+msgstr "Semi-annual inspection (6 mo)"
+
+#: service/models.py:64
+msgid "Przegląd roczny (12 mc)"
+msgstr "Annual inspection (12 mo)"
+
+#: service/models.py:65
+msgid "Naprawa"
+msgstr "Repair"
+
+#: service/services.py:73 service/services.py:162
 msgid "Data wykonania nie może być w przyszłości."
-msgstr "Inspection date cannot be in the future."
+msgstr "The performed date cannot be in the future."
+
+#: service/views.py:426
+#, python-format
+msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
+msgstr "Service completed — machine %(uid)s returns to the warehouse."
 
 #: templates/base.html:8
 msgid ""
 "Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy "
 "budowlanej."
 msgstr ""
+"Construction Machine Planner — a machine reservation and service system for "
+"a construction company."
 
-#: templates/base.html:11 templates/base.html:433
-msgid "Planer Maszyn Budowlanych"
-msgstr "Construction Machine Planner"
-
-#: templates/base.html:87
+#: templates/base.html:71
 msgid "Przejdź do treści głównej"
 msgstr "Skip to main content"
 
-#: templates/base.html:115
+#: templates/base.html:99
 msgid "Główna nawigacja"
 msgstr "Main navigation"
 
-#: templates/base.html:121 templates/base.html:385
+#: templates/base.html:105 templates/base.html:502
 msgid "Planer Maszyn — strona główna"
 msgstr "Machine Planner — home"
 
-#: templates/base.html:127 templates/base.html:434
+#: templates/base.html:111 templates/base.html:568 templates/core/search.html:4
 msgid "Planer Maszyn"
 msgstr "Machine Planner"
 
-#: templates/base.html:133
+#: templates/base.html:117
 msgid "Zamknij menu nawigacji"
 msgstr "Close navigation menu"
 
-#: templates/base.html:145
+#: templates/base.html:129
 msgid "Otwórz profil użytkownika"
 msgstr "Open user profile"
 
-#: templates/base.html:155
-msgid "Administrator"
-msgstr "Administrator"
-
-#: templates/base.html:155
+#: templates/base.html:139
 msgid "Pracownik"
 msgstr "Employee"
 
-#: templates/base.html:173
+#: templates/base.html:167
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: templates/base.html:203
-msgid "Timeline"
+#: templates/base.html:177
+msgid "Oś czasu"
 msgstr "Timeline"
 
-#: templates/base.html:224
+#: templates/base.html:189
+msgid "Mapy"
+msgstr "Maps"
+
+#: templates/base.html:238
 msgid "Serwis"
 msgstr "Service"
 
-#: templates/base.html:230
+#: templates/base.html:255
+msgid "Raporty"
+msgstr "Reports"
+
+#: templates/base.html:261
 msgid "Administracja"
 msgstr "Administration"
 
-#: templates/base.html:237
+#: templates/base.html:277
+msgid "Pracownicy"
+msgstr "Employees"
+
+#: templates/base.html:286
 msgid "Panel admina"
 msgstr "Admin panel"
 
-#: templates/base.html:250
+#: templates/base.html:299
 msgid "Wyloguj się"
 msgstr "Log out"
 
-#: templates/base.html:254
+#: templates/base.html:303
 msgid "Wyloguj"
 msgstr "Log out"
 
-#: templates/base.html:263
+#: templates/base.html:312
 msgid "Zaloguj się"
 msgstr "Log in"
 
-#: templates/base.html:299
+#: templates/base.html:350
 msgid "Otwórz menu nawigacji"
 msgstr "Open navigation menu"
 
-#: templates/base.html:314
-msgid "Szukaj maszyn, rezerwacji…"
-msgstr "Search machines, reservations…"
-
-#: templates/base.html:315
+#: templates/base.html:389 templates/base.html:402
 msgid "Szukaj w aplikacji"
 msgstr "Search in app"
 
-#: templates/base.html:317
-msgid "Wyszukiwanie globalne — wkrótce dostępne (Milestone 3)"
-msgstr "Global search — coming soon (Milestone 3)"
+#: templates/base.html:401
+msgid "Szukaj maszyn, rezerwacji, budów…"
+msgstr "Search machines, reservations, sites…"
 
-#: templates/base.html:342 templates/base.html:353
+#: templates/base.html:437 templates/core/_search_results.html:16
+msgid "Wyniki wyszukiwania"
+msgstr "Search results"
+
+#: templates/base.html:459 templates/base.html:470
 msgid "Wybierz język"
 msgstr "Choose language"
 
-#: templates/base.html:365
+#: templates/base.html:482
 msgid "Włącz tryb jasny"
 msgstr "Enable light mode"
 
-#: templates/base.html:365
+#: templates/base.html:482
 msgid "Włącz tryb ciemny"
 msgstr "Enable dark mode"
 
-#: templates/base.html:422
+#: templates/base.html:556
 msgid "Witaj w Planerze Maszyn Budowlanych"
 msgstr "Welcome to the Construction Machine Planner"
 
-#: templates/base.html:423
+#: templates/base.html:557
 msgid ""
 "Strona w budowie. Przejdź do\n"
 "                            <a href=\"/admin/\" class=\"text-brand-600 "
 "dark:text-brand-400\">panelu admina</a>\n"
 "                            żeby zalogować się jako administrator."
 msgstr ""
+"Page under construction. Go to the\n"
+"                            <a href=\"/admin/\" class=\"text-brand-600 "
+"dark:text-brand-400\">admin panel</a>\n"
+"                            to log in as an administrator."
 
-#: templates/base.html:433
+#: templates/base.html:567
 msgid "Milestone 2"
 msgstr "Milestone 2"
+
+#: templates/core/_search_results.html:64
+#, python-format
+msgid "Zobacz wszystkie wyniki dla &laquo;%(query)s&raquo;"
+msgstr "See all results for &laquo;%(query)s&raquo;"
+
+#: templates/core/_search_results.html:80 templates/core/search.html:124
+#, python-format
+msgid "Brak wyników dla &laquo;%(query)s&raquo;"
+msgstr "No results for &laquo;%(query)s&raquo;"
+
+#: templates/core/_search_results.html:83
+msgid "Spróbuj inną frazę lub pełnego UID-u."
+msgstr "Try a different phrase or the full UID."
+
+#: templates/core/maps.html:21 templates/core/maps.html:34
+msgid "Mapy maszyn"
+msgstr "Machine maps"
+
+#: templates/core/maps.html:38
+#, python-format
+msgid "%(counter)s maszyna na mapie. Klik pin -> szczegoly."
+msgid_plural "%(counter)s maszyn na mapie. Klik pin -> szczegoly."
+msgstr[0] "%(counter)s machine on the map. Click a pin -> details."
+msgstr[1] "%(counter)s machines on the map. Click a pin -> details."
+
+#: templates/core/maps.html:44
+msgid "Wroc do osi czasu"
+msgstr "Back to the timeline"
+
+#: templates/core/maps.html:56
+msgid "Brak klucza Google Maps API"
+msgstr "No Google Maps API key"
+
+#: templates/core/maps.html:59
+msgid "Aby aktywowac widok mapy, ustaw zmienna srodowiskowa"
+msgstr "To enable the map view, set the environment variable"
+
+#: templates/core/maps.html:61
+msgid "w pliku"
+msgstr "in the file"
+
+#: templates/core/maps.html:62
+msgid "i zrestartuj serwer."
+msgstr "and restart the server."
+
+#: templates/core/maps.html:65
+msgid ""
+"Klucz mozesz pobrac w Google Cloud Console: Maps JavaScript API + Geocoding "
+"API. Polecane: zabezpieczenie kluczem przez HTTP referrer (np. "
+"localhost:8002/*)."
+msgstr ""
+"You can obtain the key in the Google Cloud Console: Maps JavaScript API + "
+"Geocoding API. Recommended: secure the key with an HTTP referrer (e.g. "
+"localhost:8002/*)."
+
+#: templates/core/maps.html:77
+msgid "Mapa maszyn budowlanych"
+msgstr "Map of construction machines"
+
+#: templates/core/maps.html:298
+msgid "Legenda:"
+msgstr "Legend:"
+
+#: templates/core/maps.html:301
+msgid "Przeglad aktualny"
+msgstr "Inspection current"
+
+#: templates/core/maps.html:305
+msgid "Wkrotce przeglad (14 dni)"
+msgstr "Inspection upcoming (14 days)"
+
+#: templates/core/maps.html:309
+msgid "Przeglad przeterminowany"
+msgstr "Inspection overdue"
+
+#: templates/core/maps.html:313
+msgid "Brak danych"
+msgstr "No data"
+
+#: templates/core/search.html:4
+#, python-format
+msgid "Wyniki: %(query)s"
+msgstr "Results: %(query)s"
+
+#: templates/core/search.html:4
+msgid "Wyszukiwanie"
+msgstr "Search"
+
+#: templates/core/search.html:18
+msgid "Wyszukiwanie globalne"
+msgstr "Global search"
+
+#: templates/core/search.html:21
+msgid "Szukaj po wszystkich modułach: maszyny, rezerwacje, budowy, serwis."
+msgstr ""
+"Search across all modules: machines, reservations, sites, service."
+
+#: templates/core/search.html:28
+msgid "Fraza wyszukiwania"
+msgstr "Search phrase"
+
+#: templates/core/search.html:42
+msgid "Np. KOP-001, BUD-2026-014, Kowalski..."
+msgstr "E.g. KOP-001, BUD-2026-014, Kowalski..."
+
+#: templates/core/search.html:61
+msgid ""
+"Minimum 2 znaki. Wyniki przeszukują UID, nazwy, osoby, adresy, opisy "
+"serwisowe."
+msgstr ""
+"Minimum 2 characters. Results search UIDs, names, people, addresses and "
+"service descriptions."
+
+#: templates/core/search.html:70
+#, python-format
+msgid "Znaleziono %(total)s wynik dla"
+msgid_plural "Znaleziono %(total)s wyników dla"
+msgstr[0] "Found %(total)s result for"
+msgstr[1] "Found %(total)s results for"
+
+#: templates/core/search.html:127
+msgid ""
+"Spróbuj innej frazy — np. UID maszyny (KOP-001), numer budowy (BUD-2026-001) "
+"lub imię osoby rezerwującej."
+msgstr ""
+"Try a different phrase — e.g. a machine UID (KOP-001), a site number "
+"(BUD-2026-001) or the name of the person who booked it."
+
+#: templates/core/search.html:135
+msgid "Wpisz frazę powyżej, żeby zacząć przeszukiwać aplikację."
+msgstr "Enter a phrase above to start searching the application."
+
+#~ msgid "Nederlands"
+#~ msgstr "Dutch"
+
+#~ msgid "Français"
+#~ msgstr "French"
+
+#~ msgid "Timeline"
+#~ msgstr "Timeline"
+
+#~ msgid "Wyszukiwanie globalne — wkrótce dostępne (Milestone 3)"
+#~ msgstr "Global search — coming soon (Milestone 3)"
