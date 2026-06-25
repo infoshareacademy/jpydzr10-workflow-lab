@@ -125,6 +125,43 @@ class TestSitePermissions:
         )
         assert response.status_code == 403
 
+    def test_site_delete_with_permission_removes_site(self, client_logged, site):
+        """User Z ``delete_constructionsite`` faktycznie usuwa budowę (302 + zniknięcie).
+
+        Pozytywny kontrapunkt do testu 403: gwarantuje, że ``permission_required``
+        egzekwuje WŁAŚCIWE uprawnienie (a nie tylko że jakikolwiek guard istnieje)
+        — i że ścieżka usuwania działa, gdy uprawnienie jest nadane.
+        """
+        from reservations.models import ConstructionSite
+
+        pk = site.pk
+        response = client_logged.post(reverse("reservations:site_delete", args=[pk]))
+        assert response.status_code == 302
+        assert not ConstructionSite.objects.filter(pk=pk).exists()
+
+    def test_site_create_with_permission_creates_site(self, client_logged):
+        """User Z ``add_constructionsite`` tworzy budowę (302 + obiekt w bazie)."""
+        from reservations.models import ConstructionSite
+
+        project_number = "BUD-2099-777"
+        assert not ConstructionSite.objects.filter(project_number=project_number).exists()
+        response = client_logged.post(
+            reverse("reservations:site_create"),
+            data={
+                "project_number": project_number,
+                "name": "Budowa OK",
+                "client_name": "",
+                "address": "ul. Pozytywna 7",
+                "city": "Warszawa",
+                "status": "aktywna",
+                "start_date": "",
+                "end_date": "",
+                "notes": "",
+            },
+        )
+        assert response.status_code == 302
+        assert ConstructionSite.objects.filter(project_number=project_number).exists()
+
 
 @pytest.mark.django_db
 class TestUpdateViewOwnership:

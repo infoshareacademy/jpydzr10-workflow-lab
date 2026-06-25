@@ -34,7 +34,10 @@ def send_confirmation_email(reservation_pk: int) -> None:
 
     creator = reservation.created_by
     if not (creator and creator.email):
-        logger.info(
+        # WARNING (nie INFO): brak adresata to anomalia danych (rezerwacja bez
+        # twórcy / twórca bez maila) — musi być widoczna w monitoringu, bo
+        # oznacza ciche niewysłanie potwierdzenia (import/batch bez created_by).
+        logger.warning(
             "Confirmation email: rezerwacja pk=%s bez adresata (created_by/email puste) — pomijam.",
             reservation_pk,
         )
@@ -48,6 +51,9 @@ def send_confirmation_email(reservation_pk: int) -> None:
         "machine": reservation.machine,
         "site": reservation.site,
         "recipient_name": creator.get_full_name() or creator.get_username(),
+        # Jawnie przekazany do szablonu (atrybut html lang) — bez polegania na
+        # |default w templatce, żeby override języka faktycznie działał.
+        "LANGUAGE_CODE": recipient_lang,
     }
     with translation.override(recipient_lang):
         subject = str(_("Potwierdzenie rezerwacji %(uid)s") % {"uid": reservation.machine.uid})
@@ -69,3 +75,13 @@ def send_confirmation_email(reservation_pk: int) -> None:
             confirmation_email_sent_at=timezone.now()
         )
         logger.info("Confirmation email wysłany dla rezerwacji pk=%s.", reservation_pk)
+    else:
+        # ``send()`` zwróciło 0 — backend SMTP odrzucił/nie dostarczył maila
+        # (timeout, błędne dane logowania, odrzucony adresat). NIE ustawiamy
+        # ``confirmation_email_sent_at`` (zostaje NULL → retry idempotentny),
+        # ale logujemy ERROR, bo inaczej awaria byłaby całkowicie niewidoczna:
+        # ``queued_at`` ustawione, ``sent_at`` NULL = wygląda jak "w toku".
+        logger.error(
+            "Confirmation email NIE został wysłany (send()=0) dla rezerwacji pk=%s.",
+            reservation_pk,
+        )

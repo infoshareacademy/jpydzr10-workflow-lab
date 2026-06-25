@@ -20,12 +20,19 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django_otp import login as otp_login
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 RECOVERY_CODE_COUNT = 10
 _SESSION_RECOVERY_KEY = "_2fa_recovery_codes"
+
+# Komunikat throttlingu django-otp: po serii błędnych prób urządzenie blokuje
+# weryfikację na rosnący czas (cooldown). Rozróżnienie tego stanu od „zły kod"
+# jest istotne dla UX — użytkownik z poprawnym kodem nie powinien dostawać
+# komunikatu „nieprawidłowy kod", gdy realnie jest tymczasowo zablokowany.
+_THROTTLE_MESSAGE = gettext_lazy("Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.")
 
 
 def _build_qr_data_uri(device: TOTPDevice) -> str:
@@ -67,14 +74,17 @@ def two_factor_setup(request):
     if request.method == "POST":
         token = (request.POST.get("token") or "").strip()
         allowed, _meta = device.verify_is_allowed()
-        if allowed and token and device.verify_token(token):
+        if not allowed:
+            messages.error(request, _THROTTLE_MESSAGE)
+        elif token and device.verify_token(token):
             device.confirmed = True
             device.save()
             otp_login(request, device)
             codes = _generate_recovery_codes(user)
             request.session[_SESSION_RECOVERY_KEY] = codes
             return render(request, "accounts/2fa_recovery.html", {"codes": codes})
-        messages.error(request, _("Nieprawidłowy kod. Spróbuj ponownie."))
+        else:
+            messages.error(request, _("Nieprawidłowy kod. Spróbuj ponownie."))
 
     return render(
         request,
@@ -99,20 +109,32 @@ def two_factor_verify(request):
         if allowed and token and device.verify_token(token):
             otp_login(request, device)
             return redirect("home")
-        # Fallback: jednorazowy kod zapasowy ze StaticDevice.
+        # Fallback: jednorazowy kod zapasowy ze StaticDevice (osobny throttling —
+        # blokada urządzenia TOTP nie blokuje wpisania kodu zapasowego).
         static_device = StaticDevice.objects.filter(user=user, name="recovery").first()
         if static_device and token and static_device.verify_token(token):
             otp_login(request, static_device)
             return redirect("home")
-        messages.error(request, _("Nieprawidłowy kod uwierzytelniający lub zapasowy."))
+        # Jeśli TOTP jest pod throttlingiem (a kod zapasowy nie zadziałał),
+        # pokaż komunikat o blokadzie zamiast mylącego „nieprawidłowy kod".
+        if not allowed:
+            messages.error(request, _THROTTLE_MESSAGE)
+        else:
+            messages.error(request, _("Nieprawidłowy kod uwierzytelniający lub zapasowy."))
 
     return render(request, "accounts/2fa_verify.html", {})
 
 
 @login_required
 def recovery_codes_download(request):
-    """Pobranie wygenerowanych kodów zapasowych jako pliku TXT (jednorazowo)."""
-    codes = request.session.get(_SESSION_RECOVERY_KEY)
+    """Pobranie wygenerowanych kodów zapasowych jako pliku TXT (jednorazowo).
+
+    Kody są usuwane z sesji natychmiast po wygenerowaniu odpowiedzi: leżenie
+    listy kodów w sesji przez cały jej cykl życia pozwoliłoby na ich wielokrotne
+    pobranie (np. po przejęciu sesji). Po pierwszym pobraniu kolejne wywołania
+    przekierowują na stronę główną.
+    """
+    codes = request.session.pop(_SESSION_RECOVERY_KEY, None)
     if not codes:
         return redirect("home")
     content = "\n".join(codes) + "\n"

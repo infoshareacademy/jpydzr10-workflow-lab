@@ -47,6 +47,33 @@ def test_service_record_form_negative_cost_rejected(machine):
 
 
 @pytest.mark.django_db
+def test_service_record_form_cost_initial_shows_amount(machine):
+    """Edycja istniejącego wpisu: pole kosztu pokazuje samą kwotę (bez waluty)."""
+    from service.factories import ServiceRecordFactory
+
+    record = ServiceRecordFactory(machine=machine, cost=Decimal("321.00"))
+    form = ServiceRecordForm(instance=record)
+    # MoneyField initial to obiekt Money — kwota (bez waluty) jest w .amount.
+    assert form.initial["cost"].amount == Decimal("321.00")
+
+
+@pytest.mark.django_db
+@freeze_time("2026-05-16")
+def test_bulk_inspection_form_negative_cost_rejected(machine):
+    """BulkInspectionForm odrzuca ujemny koszt (``min_value=0``)."""
+    form = BulkInspectionForm(
+        data={
+            "machines": [machine.pk],
+            "record_type": ServiceRecord.RecordType.PRZEGLAD_KWARTALNY,
+            "performed_date": "2026-05-16",
+            "cost": "-1.00",
+        }
+    )
+    assert not form.is_valid()
+    assert "cost" in form.errors
+
+
+@pytest.mark.django_db
 def test_bulk_inspection_form_requires_machines(machine):
     form = BulkInspectionForm(
         data={

@@ -379,6 +379,9 @@ class ReportDataView(LoginRequiredMixin, View):
         from django.db.models import Sum
         from django.http import JsonResponse
 
+        # Po normalizacji waluty (migracja 0004) wszystkie koszty są w EUR, więc
+        # Sum('cost') + sortowanie po sumie + top-N są jednowalutowe i poprawne
+        # liczbowo — nie sumujemy już PLN z EUR.
         qs = filter_service_records(request.GET)
         rows = list(
             qs.values("machine__uid").annotate(total=Sum("cost")).order_by("-total", "machine__uid")

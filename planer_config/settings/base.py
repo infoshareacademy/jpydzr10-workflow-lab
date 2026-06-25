@@ -512,27 +512,57 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 # Nie inicjalizujemy SDK pod pytest (nawet gdyby ktoś miał DSN w lokalnym .env).
 _RUNNING_TESTS = "pytest" in sys.modules
 
-_SENTRY_REDACT_KEYS = ("password", "passwd", "token", "secret", "csrf", "authorization", "api_key")
+# Dokładne (case-insensitive) nazwy kluczy do redakcji. Świadomie NIE używamy
+# dopasowania po podłańcuchu — `"token" in "session_tokens"` redagowałoby
+# legalne pola (`session_tokens`, `api_key_hash`, `user_secret_answer`). Tu
+# redagujemy wyłącznie klucze, których nazwa DOKŁADNIE pasuje (po lowercase).
+_SENTRY_REDACT_KEYS = frozenset(
+    {
+        "password",
+        "passwd",
+        "token",
+        "secret",
+        "csrf",
+        "csrftoken",
+        "csrfmiddlewaretoken",
+        "authorization",
+        "api_key",
+        "apikey",
+        "x-api-key",
+        "access_token",
+        "refresh_token",
+    }
+)
+
+# Pola zdarzenia Sentry, w których realnie pojawiają się dane wejściowe
+# użytkownika / nagłówki / breadcrumbs. Walk po nich wystarcza, by spełnić
+# minimalizację danych z ADR-006 bez przepisywania całego eventu (stacktrace
+# vars zostają — to celowe, do diagnostyki; PII i tak wyłączone send_default_pii).
+_SENTRY_SCRUB_FIELDS = ("request", "extra", "breadcrumbs", "contexts", "tags", "user")
 
 
 def _sentry_before_send(event, hint):  # pragma: no cover - wywoływane tylko z aktywnym DSN
-    """Wycina wrażliwe wartości z payloadu zanim trafi do GlitchTip."""
+    """Wycina wrażliwe wartości z payloadu zanim trafi do GlitchTip.
+
+    Redaguje wartość, gdy DOKŁADNA (lowercase) nazwa klucza znajduje się w
+    ``_SENTRY_REDACT_KEYS``. Przechodzi rekurencyjnie po zagnieżdżonych dict/list,
+    więc tablice słowników (np. ``breadcrumbs``) też są czyszczone.
+    """
 
     def _scrub(obj):
         if isinstance(obj, dict):
             return {
-                k: ("[redacted]" if any(s in k.lower() for s in _SENTRY_REDACT_KEYS) else _scrub(v))
+                k: ("[redacted]" if str(k).lower() in _SENTRY_REDACT_KEYS else _scrub(v))
                 for k, v in obj.items()
             }
         if isinstance(obj, list):
             return [_scrub(v) for v in obj]
         return obj
 
-    request = event.get("request")
-    if isinstance(request, dict):
-        event["request"] = _scrub(request)
-    if "extra" in event:
-        event["extra"] = _scrub(event["extra"])
+    for field in _SENTRY_SCRUB_FIELDS:
+        value = event.get(field)
+        if isinstance(value, (dict, list)):
+            event[field] = _scrub(value)
     return event
 
 

@@ -23,8 +23,16 @@ from PIL import Image, UnidentifiedImageError
 # Numer telefonu w formacie E.164: znak "+" + cyfra 1-9 + 7-14 dalszych cyfr
 # (łącznie 8-15 cyfr po "+"). Pozwala na międzynarodowe numery służbowe i jest
 # wykorzystywany m.in. do identyfikacji dzwoniącego (caller-ID) w module głosowym.
+#
+# Ten sam wzorzec jest CELOWO zduplikowany w migracji
+# ``accounts.0005_normalize_phone_e164`` (``_E164_RE``) — migracje muszą być
+# samowystarczalne (frozen w czasie), więc nie importują z tego modułu. Zmiana
+# wzorca wymaga aktualizacji obu miejsc; test ``test_e164_pattern_matches_migration``
+# pilnuje, że pozostają zgodne.
+E164_PATTERN = r"^\+[1-9]\d{7,14}$"
+E164_RE = re.compile(E164_PATTERN)
 phone_e164_validator = RegexValidator(
-    regex=r"^\+[1-9]\d{7,14}$",
+    regex=E164_PATTERN,
     message="Numer telefonu musi być w formacie międzynarodowym, np. +48123456789.",
 )
 
@@ -34,11 +42,29 @@ _PHONE_SEPARATORS_RE = re.compile(r"[\s\-().]")
 
 
 def normalize_phone_e164(raw: str | None) -> str | None:
-    """Sprowadza numer do ścisłego E.164 (bez separatorów) lub ``None``.
+    """Sprowadza numer do postaci kandydata E.164 (bez separatorów) lub ``None``.
 
-    Nie waliduje wyniku — zwraca oczyszczony string, który następnie przechodzi
-    przez :data:`phone_e164_validator`. Puste/None → ``None`` (sentinel braku
-    numeru, wymagany przez UNIQUE na polu telefonu).
+    KONTRAKT (świadomie nie-walidujący — patrz uzasadnienie niżej):
+
+    * puste/``None`` → ``None`` (sentinel braku numeru, wymagany przez UNIQUE na
+      polu telefonu),
+    * cokolwiek innego → oczyszczony string z separatorów; jeśli to same cyfry
+      bez ``+``, dostawiamy ``+`` (best-effort, zakłada że to już numer z
+      kierunkowym).
+
+    Wynik NIE jest sprawdzany pod kątem zgodności z :data:`E164_RE`. To celowe:
+
+    * formularze (``accounts.forms._clean_phone_field``) potrzebują *oczyszczonej
+      ale potencjalnie błędnej* wartości, by przepuścić ją przez
+      :data:`phone_e164_validator` i pokazać użytkownikowi czytelny błąd —
+      gdyby normalizacja zwracała ``None`` dla błędnego numeru, formularz cicho
+      wyczyściłby pole zamiast zgłosić błąd;
+    * webhook głosowy (``chatbot.voice_views.voice_incoming``) podaje dowolny
+      caller-ID — funkcja musi zwrócić wartość (a nie rzucić), by
+      ``user_for_phone`` mogło zwrócić gościa dla nieznanego numeru.
+
+    Wymuszenie ścisłego E.164 odbywa się w warstwie zapisu
+    (:meth:`accounts.models.EmployeeProfile.save`) i walidacji pola/formularza.
     """
     if not raw:
         return None
@@ -48,6 +74,11 @@ def normalize_phone_e164(raw: str | None) -> str | None:
     if not cleaned.startswith("+") and cleaned.isdigit():
         cleaned = "+" + cleaned
     return cleaned
+
+
+def is_valid_e164(value: str | None) -> bool:
+    """Czy ``value`` to ścisły numer E.164 zgodny z :data:`E164_RE`."""
+    return bool(value and E164_RE.match(value))
 
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB

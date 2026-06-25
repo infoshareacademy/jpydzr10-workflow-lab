@@ -27,6 +27,41 @@ def test_signal_adds_group_for_magazynier():
 
 
 @pytest.mark.django_db
+def test_signal_adds_group_for_admin():
+    """Profil z function="admin" → user dostaje grupę "Administratorzy"."""
+    user = User.objects.create_user(username="adm1", password="x")
+    profile = user.profile
+    profile.function = "admin"
+    profile.save()
+    assert user.groups.filter(name="Administratorzy").exists()
+
+
+@pytest.mark.django_db
+def test_signal_admin_function_transition():
+    """Pełna macierz przejść z udziałem ADMIN: admin → magazynier → admin.
+
+    Sygnał musi sprzątać grupę Administratorzy przy zejściu z funkcji ADMIN
+    i ponownie ją nadać przy powrocie — bez pozostawiania osieroconej grupy.
+    """
+    user = User.objects.create_user(username="admswap", password="x")
+    profile = user.profile
+
+    profile.function = "admin"
+    profile.save()
+    assert set(user.groups.values_list("name", flat=True)) == {"Administratorzy"}
+
+    profile.function = "magazynier"
+    profile.save()
+    names = set(user.groups.values_list("name", flat=True))
+    assert "Administratorzy" not in names
+    assert names == {"Magazynierzy"}
+
+    profile.function = "admin"
+    profile.save()
+    assert set(user.groups.values_list("name", flat=True)) == {"Administratorzy"}
+
+
+@pytest.mark.django_db
 def test_signal_swaps_groups_on_function_change():
     """Zmiana z "magazynier" → "kierownik" usuwa starą grupę, dodaje nową."""
     user = User.objects.create_user(username="swap1", password="x")

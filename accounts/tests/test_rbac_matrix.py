@@ -51,7 +51,10 @@ def role_users(db):
 @pytest.mark.django_db
 class TestRoleMatrix:
     def test_none_of_the_role_accounts_is_superuser(self, role_users):
-        for name in ("kierownik", "magazynier", "montazysta"):
+        # Wszystkie konta ról (w tym ADMIN) dostają uprawnienia wyłącznie przez
+        # członkostwo w grupie RBAC — NIGDY przez flagę is_superuser, która
+        # zamaskowałaby zepsute RBAC (superuser ma has_perm()==True na wszystko).
+        for name in ("admin", "kierownik", "magazynier", "montazysta"):
             assert not role_users[name].is_superuser, f"{name} nie może być superuserem"
 
     def test_role_accounts_have_email(self, role_users):
@@ -61,6 +64,7 @@ class TestRoleMatrix:
     def test_magazynier_permissions(self, role_users):
         mag = role_users["magazynier"]
         assert mag.has_perm("reservations.add_reservation")
+        assert mag.has_perm("reservations.change_reservation")
         assert mag.has_perm("reservations.delete_reservation")
         assert mag.has_perm("machines.change_machine")
         # Magazynier NIE może usuwać budów (to uprawnienie Kierowników).
@@ -89,6 +93,28 @@ class TestRoleMatrix:
         assert admin.has_perm("machines.change_machine")
         assert admin.has_perm("service.add_servicerecord")
 
+    def test_admin_has_every_domain_app_permission(self, role_users):
+        """Administratorzy mają KOMPLET uprawnień z 4 aplikacji domenowych.
+
+        Spot-check 4 uprawnień (powyżej) przeszedłby też, gdyby migracja
+        przypadkiem odebrała grupie część permissions. Tu porównujemy pełen
+        zbiór uprawnień usera z całością uprawnień aplikacji domenowych —
+        ubytek dowolnego permission w grupie Administratorzy zostanie wykryty.
+        """
+        from django.contrib.auth.models import Permission
+
+        admin = role_users["admin"]
+        domain_apps = ("machines", "reservations", "service", "accounts")
+        expected = {
+            f"{perm.content_type.app_label}.{perm.codename}"
+            for perm in Permission.objects.filter(
+                content_type__app_label__in=domain_apps
+            ).select_related("content_type")
+        }
+        assert expected, "fixture migracji nie utworzyła żadnych uprawnień domenowych"
+        missing = {perm for perm in expected if not admin.has_perm(perm)}
+        assert not missing, f"Administratorzy nie mają uprawnień: {sorted(missing)}"
+
 
 @pytest.mark.django_db
 class TestFunctionGroupMapIntegrity:
@@ -101,8 +127,24 @@ class TestFunctionGroupMapIntegrity:
             for group_name in groups:
                 assert group_name in existing, f"Brak grupy '{group_name}' z migracji RBAC"
 
-    def test_montazysta_value_is_accented(self):
-        assert EmployeeProfile.Function.MONTAZYSTA == "montażysta"
+    def test_montazysta_accented_value_round_trips_to_db(self):
+        """Akcentowana wartość ``montażysta`` przechodzi zapis→odczyt z DB.
+
+        Wartość jest load-bearing: seed/fixtures i klucze ``FUNCTION_GROUP_MAP``
+        zakładają dokładnie ``"montażysta"``. Zmiana na ``"montazysta"`` rozjeżdża
+        istniejące rekordy i mapowanie grup. Zamiast porównywać literał stałej
+        (tautologia), zapisujemy profil i czytamy go z bazy, by potwierdzić, że
+        akcentowana wartość faktycznie się utrwala i nie ma 2FA (read-only rola).
+        """
+        user = User.objects.create_user(username="mont-roundtrip", password="x")
+        profile = user.profile
+        profile.function = EmployeeProfile.Function.MONTAZYSTA
+        profile.save(update_fields=["function", "updated_at"])
+
+        reloaded = EmployeeProfile.objects.get(pk=profile.pk)
+        assert reloaded.function == "montażysta"
+        # Montażysta jest rolą read-only — nie dostaje żadnej grupy RBAC.
+        assert reloaded.user.groups.count() == 0
 
 
 @pytest.mark.django_db

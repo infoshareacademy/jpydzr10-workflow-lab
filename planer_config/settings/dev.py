@@ -63,7 +63,13 @@ if os.environ.get("EMAIL_HOST"):
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
     EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
-    DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+    # Fallback: gdy ani DEFAULT_FROM_EMAIL ani EMAIL_HOST_USER nie są ustawione
+    # (np. Mailpit bez auth), nie wolno zostawić pustego stringa — pusty
+    # from_email wysadza EmailMultiAlternatives.send() (ValueError / SMTP odrzuca
+    # nadawcę), a wyjątek ginie cicho w on_commit. Gwarantujemy poprawny adres.
+    DEFAULT_FROM_EMAIL = os.environ.get(
+        "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@localhost"
+    )
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

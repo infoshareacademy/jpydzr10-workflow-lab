@@ -16,13 +16,26 @@ from __future__ import annotations
 
 import logging
 
-from chatbot.tools import WRITE_ACTION_PERMS, _check_user_can, execute_confirmed_action
+from chatbot.tools import (
+    READ_ACTIONS,
+    WRITE_ACTION_PERMS,
+    _check_user_can,
+    execute_confirmed_action,
+    execute_read_action,
+)
 from chatbot.voice_session import VoiceCallSession
 
 logger = logging.getLogger("chatbot")
 
 _REFUSAL = "Nie masz uprawnień do tej operacji."
 _GUEST_REFUSAL = "Ta operacja wymaga zalogowanego konta. Dzwonisz jako gość."
+_UNKNOWN_ACTION = "Nie rozpoznaję tej operacji."
+
+# Maksymalny wiek nonce tożsamości (sekundy). Połączenie głosowe nie żyje
+# dłużej niż kilka minut, więc krótki TTL zamyka okno replay przechwyconego
+# nonce. Egzekwowane przez ``TimestampSigner.unsign(nonce, max_age=...)`` przy
+# domykaniu ``run_voice_socket`` na żywo.
+NONCE_MAX_AGE_SECONDS = 600
 
 
 def build_user_perms_summary(user) -> str:
@@ -50,8 +63,10 @@ def propose_or_execute(session: VoiceCallSession, action: str, params: dict) -> 
             return _REFUSAL
         session.propose(action, params)
         return f"Czy potwierdzasz akcję „{action}”? Powiedz tak, aby wykonać."
-    # Akcje odczytu — bez potwierdzenia.
-    return execute_confirmed_action(action, params, session.user)
+    if action in READ_ACTIONS:
+        # Akcje odczytu — bez potwierdzenia, dostępne także gościom (read-only).
+        return execute_read_action(action, params)
+    return _UNKNOWN_ACTION
 
 
 def confirm_pending(session: VoiceCallSession) -> str:
@@ -72,6 +87,12 @@ async def run_voice_socket(*args, **kwargs):  # pragma: no cover - I/O, bramkowa
     declarations z Pydantic ``*Params``), na ``tool_call`` →
     :func:`propose_or_execute`, na „tak” → :func:`confirm_pending`, każdy zapis
     ORM owinięty w ``database_sync_to_async``. Wymaga ``GEMINI_LIVE_MODEL``.
+
+    Bezpieczeństwo (OBOWIĄZKOWE przy domknięciu): nonce z TwiML weryfikuj
+    ``TimestampSigner(salt='voice-call-identity').unsign(nonce,
+    max_age=NONCE_MAX_AGE_SECONDS)`` i odrzuć połączenie przy
+    ``SignatureExpired`` / ``BadSignature`` — bez ``max_age`` przechwycony nonce
+    działałby aż do rotacji ``SECRET_KEY`` (okno replay).
     """
     raise NotImplementedError(
         "Żywe gniazdo głosowe jest domykane przy uruchomieniu na żywo "

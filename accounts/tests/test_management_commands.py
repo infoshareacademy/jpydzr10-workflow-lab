@@ -50,6 +50,9 @@ class TestSetupGroupsCommand:
         codes = set(kierownicy.permissions.values_list("codename", flat=True))
         assert "delete_constructionsite" in codes
         assert "add_reservation" in codes
+        # Kierownicy mogą też modyfikować rezerwacje (migracja 0003) — bez tej
+        # asercji bug usuwający change_reservation z grupy przeszedłby niezauważony.
+        assert "change_reservation" in codes
 
     def test_administratorzy_have_everything_in_domain_apps(self):
         self._run()

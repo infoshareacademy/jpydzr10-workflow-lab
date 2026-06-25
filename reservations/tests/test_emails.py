@@ -8,12 +8,15 @@ KRYTYCZNE: callback ``transaction.on_commit`` NIE odpala się pod
 from __future__ import annotations
 
 from datetime import date, timedelta
+from unittest import mock
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from machines.models import Machine
+from reservations import emails
+from reservations.factories import ConstructionSiteFactory
 from reservations.models import Reservation
 from reservations.services import (
     confirm_reservation,
@@ -61,9 +64,106 @@ def test_single_confirm_sends_one_email(django_capture_on_commit_callbacks, mail
     msg = mailoutbox[0]
     assert msg.to == ["autor@demo.test"]
     assert machine.uid in msg.subject
+    # Subject jest realnym tekstem, nie lazy proxy (str() wymuszone w emails.py).
+    assert isinstance(msg.subject, str)
+    # Treść tekstowa faktycznie wyrenderowana (nie pusta) i zawiera klucze danych:
+    # imię osoby rezerwującej + daty + nazwę maszyny — gdyby szablon się sypnął
+    # po cichu, body byłoby puste i ten asercja by to złapała.
+    assert msg.body.strip()
+    assert "Jan Kowalski" in msg.body
+    # Daty renderowane są w ludzkim formacie (np. "1 lipca 2026"), nie ISO —
+    # asercja na rok potwierdza, że zakres terminu trafił do treści.
+    assert str(res.start_date.year) in msg.body
+    assert machine.name in msg.body
+    # Powitanie używa nazwy adresata (created_by.get_username()).
+    assert "autor" in msg.body
+    # Alternatywa HTML została dołączona i jest niepusta.
+    assert msg.alternatives
+    html_body, mime = msg.alternatives[0]
+    assert mime == "text/html"
+    assert html_body.strip()
+    assert machine.uid in html_body
     res.refresh_from_db()
     assert res.confirmation_email_queued_at is not None
     assert res.confirmation_email_sent_at is not None
+    # Chronologia audytu: kolejkowanie nastąpiło przed (lub równo) wysyłką.
+    assert res.confirmation_email_queued_at <= res.confirmation_email_sent_at
+
+
+def test_confirm_sends_email_with_site(django_capture_on_commit_callbacks, mailoutbox, machine):
+    """Rezerwacja z budową → szczegóły budowy (nr projektu + nazwa) w treści maila."""
+    creator = _creator()
+    site = ConstructionSiteFactory(
+        project_number="BUD-2026-077", name="Budowa Testowa Centrum"
+    )
+    start = date.today() + timedelta(days=5)
+    res = create_reservation(
+        machine_id=machine.pk,
+        site_id=site.pk,
+        start_date=start,
+        end_date=start + timedelta(days=4),
+        person="Jan Kowalski",
+        created_by=creator,
+    )
+    with django_capture_on_commit_callbacks(execute=True):
+        confirm_reservation(res)
+    assert len(mailoutbox) == 1
+    body = mailoutbox[0].body
+    html_body = mailoutbox[0].alternatives[0][0]
+    # Blok {% if site %} w szablonie musi wstrzyknąć dane budowy.
+    assert site.project_number in body
+    assert site.name in body
+    assert site.project_number in html_body
+
+
+def test_email_send_failure_leaves_sent_at_null_and_logs_error(
+    django_capture_on_commit_callbacks, mailoutbox, machine, caplog
+):
+    """``send()`` zwraca 0 (awaria SMTP) → ``sent_at`` zostaje NULL + log ERROR.
+
+    Krytyczna ścieżka: kolejkowanie (``queued_at``) musi pozostać, by retry był
+    idempotentny, ale brak ``sent_at`` + log ERROR sygnalizują niedostarczenie
+    (inaczej awaria jest całkowicie niewidoczna).
+    """
+    import logging
+
+    creator = _creator()
+    res = _pending(machine, creator)
+    with (
+        caplog.at_level(logging.ERROR, logger="reservations"),
+        mock.patch.object(emails.EmailMultiAlternatives, "send", return_value=0),
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        confirm_reservation(res)
+    res.refresh_from_db()
+    # Kolejkowanie zaszło (guard idempotentny), ale dostarczenie nie.
+    assert res.confirmation_email_queued_at is not None
+    assert res.confirmation_email_sent_at is None
+    # Awaria jest widoczna w logach jako ERROR z PK rezerwacji.
+    assert any(
+        record.levelno == logging.ERROR and str(res.pk) in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_no_email_when_reservation_deleted(
+    django_capture_on_commit_callbacks, mailoutbox, machine, caplog
+):
+    """Rezerwacja usunięta między on_commit a wykonaniem callbacku → 0 maili, brak wyjątku.
+
+    Symulujemy wyścig: callback dostaje PK, ale wiersz już nie istnieje. Funkcja
+    musi zwrócić wcześnie z logiem WARNING zamiast rzucać ``DoesNotExist``.
+    """
+    import logging
+
+    deleted_pk = 9_999_999  # PK którego na pewno nie ma w bazie
+    with caplog.at_level(logging.WARNING, logger="reservations"):
+        emails.send_confirmation_email(deleted_pk)
+    assert len(mailoutbox) == 0
+    assert any(
+        record.levelno == logging.WARNING and str(deleted_pk) in record.getMessage()
+        for record in caplog.records
+    )
 
 
 def test_no_email_when_created_by_missing(django_capture_on_commit_callbacks, mailoutbox, machine):
@@ -108,8 +208,23 @@ def test_bulk_confirm_sends_one_email_per_reservation(
     from reservations.services import bulk_confirm_batch
 
     with django_capture_on_commit_callbacks(execute=True):
-        bulk_confirm_batch(result["batch_id"])
+        outcome = bulk_confirm_batch(result["batch_id"])
+    # Return dict potwierdza, że WSZYSTKIE 3 pozycje zostały potwierdzone — bez
+    # tego len(mailoutbox)==3 mogłoby przejść przez przypadek (np. early-return).
+    assert outcome["confirmed_count"] == 3
+    assert outcome["skipped_count"] == 0
+    assert outcome["errors"] == []
     assert len(mailoutbox) == 3
+    # Każdy mail trafia do twórcy batcha (wspólny created_by) i dotyczy jednej
+    # z maszyn grupy.
+    machine_uids = {m.uid for m in machines}
+    for msg in mailoutbox:
+        assert msg.to == [creator.email]
+        assert any(uid in msg.subject for uid in machine_uids)
+    # Zbiór UID-ów w temacie pokrywa wszystkie maszyny (po jednym mailu na maszynę).
+    subjects = " ".join(msg.subject for msg in mailoutbox)
+    for uid in machine_uids:
+        assert uid in subjects
 
 
 def test_bulk_rollback_sends_zero_emails_on_conflict(

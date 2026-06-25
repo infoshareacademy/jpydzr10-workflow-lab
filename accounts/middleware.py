@@ -26,6 +26,13 @@ _TOTP_REQUIRED_FUNCTIONS = frozenset(
 
 # Prefiksy ścieżek dostępne BEZ przejścia 2FA (logowanie, sam setup 2FA, statyki,
 # przełącznik języka, healthcheck, panel logowania admina, debug-trigger F4).
+#
+# Dopasowanie jest PREFIKSOWE (``str.startswith``): wpisy katalogowe (``/static/``,
+# ``/accounts/2fa/``) celowo obejmują wszystkie podścieżki, a wpisy „tras" (np.
+# ``/accounts/login``) obejmują też ewentualne sufiksy tej samej trasy. To
+# świadomy kompromis — allow-lista wskazuje wyłącznie nieczułe na 2FA obszary
+# (auth, statyki, healthcheck), więc nadmiarowe dopasowanie podścieżek nie
+# odsłania chronionych zasobów.
 _ALLOWED_PREFIXES = (
     "/accounts/login",
     "/accounts/logout",
@@ -64,6 +71,9 @@ class TwoFactorEnforcementMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        # URL strony głównej jest statyczny — rozwiązujemy go raz przy starcie
+        # zamiast wołać ``reverse('home')`` w każdym żądaniu.
+        self.home_url = reverse("home")
 
     def __call__(self, request):
         if self._enforcement_active(request):
@@ -92,6 +102,5 @@ class TwoFactorEnforcementMiddleware:
             return redirect("accounts:2fa_verify")
         return redirect("accounts:2fa_setup")
 
-    @staticmethod
-    def _is_allowed_path(path: str) -> bool:
-        return path == reverse("home") or path.startswith(_ALLOWED_PREFIXES)
+    def _is_allowed_path(self, path: str) -> bool:
+        return path == self.home_url or path.startswith(_ALLOWED_PREFIXES)

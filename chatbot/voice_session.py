@@ -54,7 +54,9 @@ class VoiceCallSession:
         self.state = VoiceState.AWAITING_CONFIRMATION
 
     def has_pending(self) -> bool:
-        return self.state is VoiceState.AWAITING_CONFIRMATION and self.pending_action is not None
+        # Równość (nie tożsamość) — odporne na ustawienie stanu zwykłym stringiem
+        # (StrEnum porównuje się wartością) zamiast instancją enuma.
+        return self.state == VoiceState.AWAITING_CONFIRMATION and self.pending_action is not None
 
     def confirm(self) -> tuple[str, dict[str, Any]]:
         """Zwraca oczekującą akcję i czyści stan (przejście do IDLE).

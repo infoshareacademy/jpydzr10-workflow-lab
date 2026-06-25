@@ -69,13 +69,48 @@ def test_list_filter_by_machine(auth_client, machine, second_machine):
 
 @pytest.mark.django_db
 def test_list_filter_expensive_only(auth_client, machine):
-    """F-2: `expensive_only=1` returns only records with cost > 1000 PLN."""
+    """F-2: `expensive_only=1` returns only records with cost > 1000 EUR."""
     RepairFactory(machine=machine, performed_by="CheapRepairPerson", cost=Decimal("250.00"))
     RepairFactory(machine=machine, performed_by="ExpensiveRepairPerson", cost=Decimal("2500.00"))
     resp = auth_client.get(reverse("service:list"), {"expensive_only": "on"})
     assert resp.status_code == 200
     assert b"ExpensiveRepairPerson" in resp.content
     assert b"CheapRepairPerson" not in resp.content
+
+
+@pytest.mark.django_db
+def test_list_filter_cost_min(auth_client, machine):
+    """`cost_min` ukrywa wpisy tańsze niż próg (EUR)."""
+    RepairFactory(machine=machine, performed_by="BelowMinPerson", cost=Decimal("100.00"))
+    RepairFactory(machine=machine, performed_by="AboveMinPerson", cost=Decimal("900.00"))
+    resp = auth_client.get(reverse("service:list"), {"cost_min": "500"})
+    assert resp.status_code == 200
+    assert b"AboveMinPerson" in resp.content
+    assert b"BelowMinPerson" not in resp.content
+
+
+@pytest.mark.django_db
+def test_list_filter_cost_max(auth_client, machine):
+    """`cost_max` ukrywa wpisy droższe niż próg (EUR)."""
+    RepairFactory(machine=machine, performed_by="BelowMaxPerson", cost=Decimal("100.00"))
+    RepairFactory(machine=machine, performed_by="AboveMaxPerson", cost=Decimal("900.00"))
+    resp = auth_client.get(reverse("service:list"), {"cost_max": "500"})
+    assert resp.status_code == 200
+    assert b"BelowMaxPerson" in resp.content
+    assert b"AboveMaxPerson" not in resp.content
+
+
+@pytest.mark.django_db
+def test_list_filter_cost_range(auth_client, machine):
+    """`cost_min` + `cost_max` razem = przedział [min, max] (AND)."""
+    RepairFactory(machine=machine, performed_by="TooCheapPerson", cost=Decimal("100.00"))
+    RepairFactory(machine=machine, performed_by="InRangePerson", cost=Decimal("700.00"))
+    RepairFactory(machine=machine, performed_by="TooPriceyPerson", cost=Decimal("5000.00"))
+    resp = auth_client.get(reverse("service:list"), {"cost_min": "500", "cost_max": "1000"})
+    assert resp.status_code == 200
+    assert b"InRangePerson" in resp.content
+    assert b"TooCheapPerson" not in resp.content
+    assert b"TooPriceyPerson" not in resp.content
 
 
 @pytest.mark.django_db

@@ -91,7 +91,7 @@ _XLSX_HEADERS: tuple[str, ...] = (
     "Typ",
     "Wykonawca",
     "Opis",
-    "Koszt (PLN)",
+    "Koszt (EUR)",
 )
 
 
@@ -133,6 +133,9 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
         cell.fill = header_fill
         cell.alignment = header_alignment
 
+    # Koszt zapisujemy jako liczbę (nie "123.45 EUR" tekstem) — Excel musi móc
+    # sumować/sortować kolumnę. Waluta jest jednoznaczna: nagłówek "Koszt (EUR)"
+    # + dane wyłącznie w EUR po normalizacji (migracja 0004).
     total = Decimal("0")
     for record in records:
         ws.append(
@@ -171,7 +174,7 @@ _XLSX_HEADERS_FULL: tuple[str, ...] = (
     "Typ",
     "Wykonawca",
     "Opis",
-    "Koszt (PLN)",
+    "Koszt (EUR)",
     "Następny przegląd",
 )
 

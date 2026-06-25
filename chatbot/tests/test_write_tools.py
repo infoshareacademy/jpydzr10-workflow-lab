@@ -859,6 +859,41 @@ class TestPydanticSchemaConstraints:
         assert params.machine_uid == "KOP-001"
         assert params.responsible_person == "Anna Nowak"
 
+    def test_create_service_record_negative_cost_rejected(self):
+        """Koszt < 0 jest niedozwolony (ge=0.0) — reguła biznesowa z forms.py."""
+        from pydantic import ValidationError
+
+        for bad_cost in (-1.0, -100.5):
+            with pytest.raises(ValidationError) as exc:
+                CreateServiceRecordParams(
+                    machine_uid="KOP-001",
+                    record_type="naprawa",
+                    performed_date="2026-06-01",
+                    cost=bad_cost,
+                )
+            assert "cost" in str(exc.value).lower()
+        # Sanity: 0.0 (granica) i wartość dodatnia są dozwolone.
+        assert (
+            CreateServiceRecordParams(
+                machine_uid="KOP-001",
+                record_type="naprawa",
+                performed_date="2026-06-01",
+                cost=0.0,
+            ).cost
+            == 0.0
+        )
+
+    def test_update_service_record_negative_cost_rejected(self):
+        """Korekta wpisu też nie może ustawić ujemnego kosztu (ge=0.0)."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError) as exc:
+            UpdateServiceRecordParams(record_id=1, cost=-50.0)
+        assert "cost" in str(exc.value).lower()
+        # None (brak zmiany) i 0.0 są dozwolone.
+        assert UpdateServiceRecordParams(record_id=1).cost is None
+        assert UpdateServiceRecordParams(record_id=1, cost=0.0).cost == 0.0
+
 
 # =============================================================================
 # Faza A — service write tools (przegląd / naprawa / przesunięcie daty)
@@ -1097,6 +1132,8 @@ class TestExecuteServiceActions:
         assert "zaktualizowany" in result
         record.refresh_from_db()
         assert float(record.cost.amount) == 350.0
+        # Waluta MUSI pozostać EUR po zmianie kwoty (nie zerujemy currency).
+        assert str(record.cost.currency) == "EUR"
         assert record.description == "Nowy opis"
 
     def test_execute_update_machine_inspection_date(self, user_service_perms, koparka_001):

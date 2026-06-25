@@ -1823,6 +1823,46 @@ def propose_report_breakdown(params: ReportBreakdownParams, user) -> str:
 
 
 # =============================================================================
+# READ DISPATCHER — akcje odczytu (bez efektów ubocznych, dostępne gościom)
+# =============================================================================
+
+# Rejestr akcji TYLKO-DO-ODCZYTU. Rozłączny z ``WRITE_ACTION_PERMS`` —
+# dyspozytor głosowy kieruje tu wyłącznie nazwy z tego zbioru, więc gość
+# (``user is None``) nie może tędy wywołać niczego zapisującego.
+READ_ACTIONS: dict[str, Any] = {
+    "get_machine_status": get_machine_status,
+    "check_availability": check_availability,
+    "get_inspections_due": get_inspections_due,
+    "get_service_costs": get_service_costs,
+}
+
+
+def execute_read_action(action: str, params: dict) -> str:
+    """Wykonuje akcję odczytu i zwraca deterministyczny JSON (string).
+
+    Akcje odczytu nie mają efektów ubocznych i NIE wymagają zalogowania —
+    dostępne także gościom (``user is None``). Celowo nie przyjmuje ``user``:
+    brak ścieżki, którą dałoby się tędy wykonać akcję zapisującą. Każde
+    narzędzie odczytu zwraca model Pydantic, więc serializujemy go do JSON
+    spójnie z resztą warstwy narzędzi.
+    """
+    tool = READ_ACTIONS.get(action)
+    if tool is None:
+        return f"Nieznana akcja odczytu: {action}."
+    try:
+        result = tool(**params)
+    except TypeError as exc:
+        # Złe / brakujące argumenty z LLM-a — nie wywracaj rozmowy wyjątkiem.
+        _audit_logger.warning(
+            "CHATBOT READ %s bad_params msg=%s",
+            action,
+            exc,
+        )
+        return f"Nieprawidłowe argumenty akcji odczytu '{action}'."
+    return result.model_dump_json()
+
+
+# =============================================================================
 # EXECUTOR — finalne wykonanie po potwierdzeniu usera
 # =============================================================================
 

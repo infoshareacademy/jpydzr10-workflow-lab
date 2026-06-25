@@ -88,7 +88,8 @@ def test_generate_quarterly_report_includes_headers(machine):
     ws = wb.active
     first_row = next(ws.iter_rows(values_only=True))
     assert "UID maszyny" in first_row
-    assert "Koszt (PLN)" in first_row
+    # Nagłówek kosztu deklaruje EUR — jedyną walutę po normalizacji (migracja 0004).
+    assert "Koszt (EUR)" in first_row
 
 
 @pytest.mark.django_db

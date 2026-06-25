@@ -41,6 +41,9 @@ def filter_service_records(params, base_qs: QuerySet | None = None) -> QuerySet:
         qs = qs.filter(performed_date__gte=data["performed_after"])
     if data.get("performed_before"):
         qs = qs.filter(performed_date__lte=data["performed_before"])
+    # Progi kosztu porównujemy wprost na kwocie. Po normalizacji waluty
+    # (migracja 0004) wszystkie wpisy są w EUR, więc ``cost__gte/lte`` jest
+    # jednowalutowe i jednoznaczne — nie ma już mieszanki PLN+EUR.
     if data.get("cost_min") is not None:
         qs = qs.filter(cost__gte=data["cost_min"])
     if data.get("cost_max") is not None:

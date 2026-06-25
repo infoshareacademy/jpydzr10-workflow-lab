@@ -55,6 +55,7 @@ def healthz(request):
     return JsonResponse({"ok": db_ok, "checks": checks}, status=status)
 
 
+@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def debug_boom(request):
     """Celowo rzuca wyjątek — do weryfikacji integracji z GlitchTip.
@@ -62,6 +63,11 @@ def debug_boom(request):
     Dostępny wyłącznie dla zalogowanego administratora (i poza listą wymuszenia
     2FA). Służy jednorazowemu potwierdzeniu, że nieobsłużone wyjątki trafiają do
     zgrupowanych zgłoszeń w GlitchTip.
+
+    ``@login_required`` (defense-in-depth) jawnie wymusza zalogowanie — nie
+    polegamy wyłącznie na tym, że ``user_passes_test`` przekieruje anonima. Nie
+    tworzymy też cichej zależności od pozycji ``/debug/boom`` na liście wyjątków
+    od wymuszenia 2FA w ``TwoFactorEnforcementMiddleware``.
     """
     raise RuntimeError("Celowy wyjątek testowy GlitchTip (/debug/boom/).")
 

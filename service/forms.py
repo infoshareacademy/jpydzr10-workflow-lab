@@ -174,7 +174,7 @@ class BulkInspectionForm(forms.Form):
         max_digits=10,
         decimal_places=2,
         initial=Decimal("0.00"),
-        label=_("Koszt na maszynę (PLN)"),
+        label=_("Koszt na maszynę (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     description = forms.CharField(
@@ -293,12 +293,15 @@ class ServiceRecordFilterForm(forms.Form):
             },
         ),
     )
+    # Progi kosztu operują na kwocie w EUR (jedyna waluta kosztów serwisowych po
+    # normalizacji — migracja 0004). Porównanie ``cost__gte/lte`` jest więc
+    # jednoznaczne: wszystkie rekordy są w tej samej walucie.
     cost_min = forms.DecimalField(
         required=False,
         min_value=Decimal("0.00"),
         max_digits=10,
         decimal_places=2,
-        label=_("Koszt min"),
+        label=_("Koszt min (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     cost_max = forms.DecimalField(
@@ -306,12 +309,12 @@ class ServiceRecordFilterForm(forms.Form):
         min_value=Decimal("0.00"),
         max_digits=10,
         decimal_places=2,
-        label=_("Koszt max"),
+        label=_("Koszt max (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     expensive_only = forms.BooleanField(
         required=False,
-        label=_("Tylko drogie naprawy (powyżej 1000 PLN)"),
+        label=_("Tylko drogie naprawy (powyżej 1000 EUR)"),
         widget=forms.CheckboxInput(
             attrs={
                 "class": (

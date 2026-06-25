@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-25 23:17+0200\n"
+"POT-Creation-Date: 2026-06-26 00:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: accounts/forms.py:37 accounts/forms.py:109 accounts/models.py:54
+#: accounts/forms.py:37 accounts/forms.py:109 accounts/models.py:55
 #: accounts/templates/accounts/profile.html:251
 msgid "Telefon"
 msgstr "Phone"
 
-#: accounts/forms.py:38 accounts/models.py:59
+#: accounts/forms.py:38 accounts/models.py:60
 #: accounts/templates/accounts/profile.html:268
 msgid "Identyfikator pracownika"
 msgstr "Employee ID"
 
-#: accounts/forms.py:39 accounts/models.py:65
+#: accounts/forms.py:39 accounts/models.py:66
 #: accounts/templates/accounts/profile.html:285
 #: accounts/templates/accounts/profile.html:422
 msgid "Motyw interfejsu"
@@ -98,67 +98,67 @@ msgstr "The passwords do not match."
 msgid "np. jan.kowalski"
 msgstr "e.g. jan.kowalski"
 
-#: accounts/models.py:24
+#: accounts/models.py:25
 msgid "Magazynier"
 msgstr "Warehouse keeper"
 
-#: accounts/models.py:25
+#: accounts/models.py:26
 msgid "Montażysta"
 msgstr "Fitter"
 
-#: accounts/models.py:26
+#: accounts/models.py:27
 msgid "Kierownik"
 msgstr "Manager"
 
-#: accounts/models.py:27 templates/base.html:139
+#: accounts/models.py:28 templates/base.html:139
 msgid "Administrator"
 msgstr "Administrator"
 
-#: accounts/models.py:32 accounts/templates/accounts/profile.html:450
+#: accounts/models.py:33 accounts/templates/accounts/profile.html:450
 msgid "Automatyczny"
 msgstr "Automatic"
 
-#: accounts/models.py:33 accounts/templates/accounts/profile.html:481
+#: accounts/models.py:34 accounts/templates/accounts/profile.html:481
 msgid "Jasny"
 msgstr "Light"
 
-#: accounts/models.py:34 accounts/templates/accounts/profile.html:511
+#: accounts/models.py:35 accounts/templates/accounts/profile.html:511
 msgid "Ciemny"
 msgstr "Dark"
 
-#: accounts/models.py:40 templates/base.html:139
+#: accounts/models.py:41 templates/base.html:139
 msgid "Użytkownik"
 msgstr "User"
 
-#: accounts/models.py:46
+#: accounts/models.py:47
 msgid "Funkcja"
 msgstr "Role"
 
-#: accounts/models.py:69
+#: accounts/models.py:70
 msgid "Aktywny pracownik"
 msgstr "Active employee"
 
-#: accounts/models.py:73
+#: accounts/models.py:74
 msgid "Zanonimizowany"
 msgstr "Anonymized"
 
-#: accounts/models.py:79
+#: accounts/models.py:80
 msgid "Data anonimizacji"
 msgstr "Anonymization date"
 
-#: accounts/models.py:85
+#: accounts/models.py:86
 msgid "Data zakończenia zatrudnienia"
 msgstr "End of employment date"
 
-#: accounts/models.py:91
+#: accounts/models.py:92
 msgid "Powód zakończenia"
 msgstr "Termination reason"
 
-#: accounts/models.py:97 accounts/templates/accounts/profile.html:39
+#: accounts/models.py:98 accounts/templates/accounts/profile.html:39
 msgid "Profil pracownika"
 msgstr "Employee profile"
 
-#: accounts/models.py:98
+#: accounts/models.py:99
 msgid "Profile pracowników"
 msgstr "Employee profiles"
 
@@ -538,6 +538,17 @@ msgstr "Log in — Construction Machine Planner"
 msgid "Planer Maszyn — strona główna"
 msgstr "Machine Planner — home"
 
+#: accounts/templates/accounts/login.html:39
+#: reservations/templates/reservations/detail.html:24
+#: reservations/templates/reservations/form.html:13
+#: reservations/templates/reservations/site_detail.html:15
+#: reservations/templates/reservations/site_form.html:23
+#: service/templates/service/detail.html:4
+#: service/templates/service/form.html:4 templates/base.html:111
+#: templates/base.html:575 templates/core/search.html:4
+msgid "Planer Maszyn"
+msgstr "Machine Planner"
+
 #: accounts/templates/accounts/login.html:56
 #: accounts/templates/accounts/login.html:178 templates/base.html:312
 msgid "Zaloguj się"
@@ -757,11 +768,15 @@ msgstr ""
 "A detailed list of login attempts (success/failure, IP, user-agent) is "
 "available to the administrator in the admin panel (Django Axes)."
 
-#: accounts/twofactor.py:77
+#: accounts/twofactor.py:35
+msgid "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie."
+msgstr "Too many attempts. Wait a moment and try again."
+
+#: accounts/twofactor.py:87
 msgid "Nieprawidłowy kod. Spróbuj ponownie."
 msgstr "Invalid code. Please try again."
 
-#: accounts/twofactor.py:107
+#: accounts/twofactor.py:123
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
@@ -1963,7 +1978,7 @@ msgstr "Repair completed — machine %(uid)s available in warehouse."
 msgid "Maszyna %(uid)s została wycofana z floty."
 msgstr "Machine %(uid)s has been retired from the fleet."
 
-#: reservations/emails.py:53
+#: reservations/emails.py:59
 #, python-format
 msgid "Potwierdzenie rezerwacji %(uid)s"
 msgstr "Reservation confirmation %(uid)s"
@@ -2768,14 +2783,18 @@ msgstr "Print PDF"
 msgid ""
 "Potwierdzić rezerwację #%(pk)s (%(uid)s)? Status zmieni się z oczekującej na "
 "potwierdzoną."
-msgstr "Confirm reservation #%(pk)s (%(uid)s)? The status will change from pending to confirmed."
+msgstr ""
+"Confirm reservation #%(pk)s (%(uid)s)? The status will change from pending "
+"to confirmed."
 
 #: reservations/templates/reservations/_list_table.html:172
 #, python-format
 msgid ""
 "Zakończyć rezerwację #%(pk)s (%(uid)s)? Maszyna wróci do magazynu — tej "
 "operacji NIE da się cofnąć."
-msgstr "Complete reservation #%(pk)s (%(uid)s)? The machine will return to the warehouse — this operation CANNOT be undone."
+msgstr ""
+"Complete reservation #%(pk)s (%(uid)s)? The machine will return to the "
+"warehouse — this operation CANNOT be undone."
 
 #: reservations/templates/reservations/_list_table.html:180
 #: reservations/templates/reservations/_list_table.html:283
@@ -2797,7 +2816,9 @@ msgstr "Confirm reservation #%(pk)s (%(uid)s)?"
 msgid ""
 "Zakończyć rezerwację #%(pk)s? Maszyna %(uid)s wróci do magazynu — nie da się "
 "cofnąć."
-msgstr "Complete reservation #%(pk)s? Machine %(uid)s will return to the warehouse — this cannot be undone."
+msgstr ""
+"Complete reservation #%(pk)s? Machine %(uid)s will return to the warehouse — "
+"this cannot be undone."
 
 #: reservations/templates/reservations/_list_table.html:297
 #: reservations/templates/reservations/site_list.html:230
@@ -2913,7 +2934,10 @@ msgstr "Confirm status"
 msgid ""
 "Zakończyć rezerwację #%(pk)s (%(uid)s)? Maszyna wróci do magazynu, status "
 "zmieni się na zakończoną. Tej operacji NIE da się cofnąć."
-msgstr "Complete reservation #%(pk)s (%(uid)s)? The machine will return to the warehouse and the status will change to completed. This operation CANNOT be undone."
+msgstr ""
+"Complete reservation #%(pk)s (%(uid)s)? The machine will return to the "
+"warehouse and the status will change to completed. This operation CANNOT be "
+"undone."
 
 #: reservations/templates/reservations/_reservation_full_modal.html:146
 msgid "Zakończ i zwróć maszynę"
@@ -3395,16 +3419,6 @@ msgstr "Create"
 #: reservations/templates/reservations/batch_form.html:308
 msgid "rezerwację"
 msgstr "reservation"
-
-#: reservations/templates/reservations/detail.html:24
-#: reservations/templates/reservations/form.html:13
-#: reservations/templates/reservations/site_detail.html:15
-#: reservations/templates/reservations/site_form.html:23
-#: service/templates/service/detail.html:4
-#: service/templates/service/form.html:4 templates/base.html:111
-#: templates/base.html:575 templates/core/search.html:4
-msgid "Planer Maszyn"
-msgstr "Machine Planner"
 
 #: reservations/templates/reservations/detail.html:51
 msgid "Rezerwacja wymieniona na inną maszynę"
@@ -4255,8 +4269,8 @@ msgid "Typ przeglądu"
 msgstr "Inspection type"
 
 #: service/forms.py:177
-msgid "Koszt na maszynę (PLN)"
-msgstr "Cost per machine (PLN)"
+msgid "Koszt na maszynę (EUR)"
+msgstr "Cost per machine (EUR)"
 
 #: service/forms.py:182
 msgid "Opis (wspólny)"
@@ -4310,19 +4324,19 @@ msgstr "Performed after"
 msgid "Wykonano przed"
 msgstr "Performed before"
 
-#: service/forms.py:301
-msgid "Koszt min"
-msgstr "Min cost"
+#: service/forms.py:304
+msgid "Koszt min (EUR)"
+msgstr "Min cost (EUR)"
 
-#: service/forms.py:309
-msgid "Koszt max"
-msgstr "Max cost"
+#: service/forms.py:312
+msgid "Koszt max (EUR)"
+msgstr "Max cost (EUR)"
 
-#: service/forms.py:314
-msgid "Tylko drogie naprawy (powyżej 1000 PLN)"
-msgstr "Expensive repairs only (over 1000 PLN)"
+#: service/forms.py:317
+msgid "Tylko drogie naprawy (powyżej 1000 EUR)"
+msgstr "Expensive repairs only (over 1000 EUR)"
 
-#: service/forms.py:326
+#: service/forms.py:329
 msgid "Tylko przeglądy (bez napraw)"
 msgstr "Inspections only (no repairs)"
 
@@ -4843,7 +4857,7 @@ msgstr "most expensive machines."
 msgid "Pełne zestawienie wszystkich maszyn pobierzesz w eksporcie Excel."
 msgstr "You can download the full list of all machines in the Excel export."
 
-#: service/views.py:445
+#: service/views.py:448
 #, python-format
 msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
 msgstr "Service completed — machine %(uid)s returns to the warehouse."
@@ -5103,7 +5117,8 @@ msgstr "Responsible:"
 msgid ""
 "Nie udało się załadować Google Maps API. Sprawdź konsolę przeglądarki + "
 "klucz API."
-msgstr "Failed to load the Google Maps API. Check the browser console + the API key."
+msgstr ""
+"Failed to load the Google Maps API. Check the browser console + the API key."
 
 #: templates/core/maps.html:301
 msgid "Przeglad aktualny"
@@ -5408,6 +5423,12 @@ msgstr "Add a new machine"
 #: templates/home.html:703
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#~ msgid "Koszt min"
+#~ msgstr "Min cost"
+
+#~ msgid "Koszt max"
+#~ msgstr "Max cost"
 
 #~ msgid "Polski"
 #~ msgstr "Polish"

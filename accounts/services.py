@@ -239,7 +239,7 @@ def anonymize_employee(
         user.is_active = False
         user.save()
 
-        profile.phone = ""
+        profile.phone = None
         profile.is_anonymized = True
         profile.anonymized_at = timezone.now()
         profile.save()
@@ -280,6 +280,11 @@ def anonymize_employee(
     # django-simple-history snapshotuje wszystkie pola, w tym phone — anonymize
     # zmienia obecny rekord, ale historyczne wpisy zachowują oryginalny numer.
     # Bulk update na wszystkich historical entries dla tego profile.
-    profile.history.update(phone="")
+    #
+    # ``None`` (NIE ``""``) — bieżący profil po ``save()`` ma ``phone=None``
+    # (``normalize_phone_e164("")`` → ``None``); historyczne wpisy muszą trzymać
+    # tę samą reprezentację „braku numeru", inaczej powstaje rozjazd ''/NULL
+    # między rekordem bieżącym a historią (audyt RODO oczekuje spójności).
+    profile.history.update(phone=None)
 
     return profile

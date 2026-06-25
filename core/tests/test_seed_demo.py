@@ -65,6 +65,16 @@ def test_seed_demo_creates_role_accounts():
     phones = [user_model.objects.get(username=u).profile.phone for u in expected]
     assert len(set(phones)) == len(phones)
 
+    # RBAC end-to-end: sygnał sync_groups_on_employee_save musi przypisać konta
+    # ról do właściwych grup uprawnień (kierownik→Kierownicy, magazynier→
+    # Magazynierzy). Montażysta celowo NIE ma grupy (least privilege).
+    seba1 = user_model.objects.get(username="seba1")
+    seba2 = user_model.objects.get(username="seba2")
+    seba3 = user_model.objects.get(username="seba3")
+    assert seba1.groups.filter(name="Kierownicy").exists()
+    assert seba2.groups.filter(name="Magazynierzy").exists()
+    assert not seba3.groups.exists()
+
 
 @pytest.mark.django_db
 def test_seed_demo_reset_clears_then_seeds(machine_factory):

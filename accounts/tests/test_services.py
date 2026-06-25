@@ -9,6 +9,7 @@ przyjmuje profil i ustawia ``is_active_employee=False`` oraz
 from __future__ import annotations
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from accounts.models import EmployeeProfile
@@ -18,6 +19,8 @@ from accounts.services import (
     terminate_employee,
     update_profile,
 )
+
+User = get_user_model()
 
 
 @pytest.mark.django_db
@@ -75,6 +78,37 @@ def test_terminate_deactivates_user_and_profile():
 
 
 @pytest.mark.django_db
+def test_register_employee_accepts_valid_phone():
+    """Poprawny numer E.164 jest zapisany w profilu nowego pracownika."""
+    profile = register_employee(
+        username="phoneok",
+        email="phoneok@example.com",
+        password="StrongP@ss!PH1",
+        phone="+48 600 700 800",
+    )
+    assert profile.phone == "+48600700800"
+
+
+@pytest.mark.django_db
+def test_register_employee_rejects_invalid_phone_and_creates_no_user():
+    """Niepoprawny numer → ValidationError; transakcja cofa też utworzenie User.
+
+    register_employee zapisuje przez ``save(update_fields=...)`` bez full_clean,
+    więc wymuszenie E.164 spoczywa na ``EmployeeProfile.save``. Dzięki
+    ``@transaction.atomic`` raise rollbackuje również ``User.objects.create_user``
+    — nie zostaje osierocone konto.
+    """
+    with pytest.raises(ValidationError):
+        register_employee(
+            username="phonebad",
+            email="phonebad@example.com",
+            password="StrongP@ss!PH2",
+            phone="+0123",  # niepoprawny E.164
+        )
+    assert not User.objects.filter(username="phonebad").exists()
+
+
+@pytest.mark.django_db
 def test_register_employee_validates_weak_password():
     """Walidacja hasła (min. długość / common / HIBP) — too short fails fast."""
     with pytest.raises(ValidationError):
@@ -119,6 +153,27 @@ def test_terminate_employee_clears_groups():
     grp, _ = Group.objects.get_or_create(name="Magazynierzy")
     profile.user.groups.add(grp)
     assert profile.user.groups.count() == 1
+
+    terminate_employee(profile)
+    profile.user.refresh_from_db()
+    assert profile.user.groups.count() == 0
+
+
+@pytest.mark.django_db
+def test_terminate_employee_clears_admin_group():
+    """Pełen cykl ADMIN: sygnał nadaje Administratorzy, terminacja je czyści.
+
+    Inaczej niż ``test_terminate_employee_clears_groups`` (ręczne dodanie do
+    grupy), tu grupa pochodzi z sygnału RBAC dla funkcji ADMIN — sprawdzamy, że
+    offboarding rzeczywiście odbiera uprawnienia nadane automatycznie.
+    """
+    profile = register_employee(
+        username="adminterm",
+        email="adminterm@example.com",
+        password="StrongP@ss!ADM",
+        function=EmployeeProfile.Function.ADMIN,
+    )
+    assert profile.user.groups.filter(name="Administratorzy").exists()
 
     terminate_employee(profile)
     profile.user.refresh_from_db()
@@ -212,6 +267,32 @@ def test_update_profile_silently_ignores_unknown_fields():
     # is_anonymized i unknown_field cicho zignorowane
     assert profile.is_anonymized is False
     assert not hasattr(profile, "unknown_field") or getattr(profile, "unknown_field", None) != "x"
+
+
+@pytest.mark.django_db
+def test_anonymize_employee_scrubs_phone_from_history_as_null():
+    """Anonimizacja zeruje telefon w historii spójnie z bieżącym profilem (NULL).
+
+    Bieżący profil po ``save()`` ma ``phone=None``; wszystkie wpisy historyczne
+    muszą mieć tę samą reprezentację braku numeru (``None``, NIE ``""``), inaczej
+    audyt RODO widzi rozjazd ''/NULL między rekordem a historią.
+    """
+    profile = register_employee(
+        username="anonphone",
+        email="anonphone@example.com",
+        password="StrongP@ss!APH",
+        phone="+48600111222",
+    )
+    assert profile.phone == "+48600111222"
+    # Pewność, że historia w ogóle zawiera numer przed anonimizacją.
+    assert profile.history.filter(phone="+48600111222").exists()
+
+    anonymize_employee(profile)
+    profile.refresh_from_db()
+
+    assert profile.phone is None
+    history_phones = set(profile.history.values_list("phone", flat=True))
+    assert history_phones == {None}, f"historia trzyma niespójne wartości: {history_phones}"
 
 
 @pytest.mark.django_db
