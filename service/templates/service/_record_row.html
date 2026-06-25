@@ -8,7 +8,7 @@
     </td>
     <td class="px-3 py-2 text-slate-600 dark:text-slate-300">{{ record.get_record_type_display }}</td>
     <td class="px-3 py-2 text-slate-600 dark:text-slate-300">{{ record.performed_by|default:"—" }}</td>
-    <td class="px-3 py-2 text-right font-mono text-xs">{{ record.cost }} PLN</td>
+    <td class="px-3 py-2 text-right font-mono text-xs">{{ record.cost.amount }} {{ record.cost.currency }}</td>
     <td class="px-3 py-2 text-slate-600 dark:text-slate-300">
         {% if record.next_inspection %}{{ record.next_inspection|date_pl }}{% else %}—{% endif %}
     </td>

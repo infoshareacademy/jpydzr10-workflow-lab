@@ -334,12 +334,12 @@ def get_service_costs(machine_type: str | None = None, days: int = 90) -> Servic
         qs = qs.filter(machine__machine_type=machine_type)
 
     records = list(qs.select_related("machine"))
-    total = sum((r.cost for r in records), Decimal("0"))
+    total = sum((r.cost.amount for r in records), Decimal("0"))
 
     by_type: dict[str, float] = {}
     for r in records:
         key = r.get_record_type_display()
-        by_type[key] = round(by_type.get(key, 0.0) + float(r.cost), 2)
+        by_type[key] = round(by_type.get(key, 0.0) + float(r.cost.amount), 2)
 
     return ServiceCostResult(
         period_start=start.isoformat(),
@@ -1549,8 +1549,8 @@ def propose_update_service_record(params: UpdateServiceRecordParams, user) -> st
     changes: list[str] = []
     if params.description is not None and params.description != record.description:
         changes.append(f"opis: '{record.description[:60]}' → '{params.description[:60]}'")
-    if params.cost is not None and float(params.cost) != float(record.cost):
-        changes.append(f"koszt: {record.cost} EUR → {params.cost:.2f} EUR")
+    if params.cost is not None and float(params.cost) != float(record.cost.amount):
+        changes.append(f"koszt: {record.cost.amount} EUR → {params.cost:.2f} EUR")
     if params.performed_by is not None and params.performed_by != record.performed_by:
         changes.append(f"technik: '{record.performed_by}' → '{params.performed_by}'")
 
@@ -2065,7 +2065,7 @@ def _execute_create_service_record(params: dict) -> str:
         description=params.get("description", ""),
         cost=Decimal(str(params.get("cost", 0))),
     )
-    cost_str = f"{record.cost} EUR" if record.cost else "bez kosztu"
+    cost_str = f"{record.cost.amount} EUR" if record.cost else "bez kosztu"
     if record.next_inspection:
         next_str = f", nast. przegląd: {record.next_inspection.isoformat()}"
     else:

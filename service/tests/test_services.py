@@ -126,7 +126,7 @@ def test_create_service_record_persists_all_fields(machine):
     record.refresh_from_db()
     assert record.performed_by == "Jan Kowalski"
     assert record.description == "Wymiana siłownika hydraulicznego"
-    assert record.cost == Decimal("4500.50")
+    assert record.cost.amount == Decimal("4500.50")
     assert record.next_inspection is None
 
 

@@ -86,10 +86,12 @@ def test_inspection_intervals_constants():
 
 
 @pytest.mark.django_db
-def test_cost_decimal_field(machine):
+def test_cost_money_field(machine):
     record = ServiceRecordFactory(machine=machine, cost=Decimal("123.45"))
     record.refresh_from_db()
-    assert record.cost == Decimal("123.45")
+    # Koszt jest MoneyField — kwota + waluta (domyślnie EUR).
+    assert record.cost.amount == Decimal("123.45")
+    assert str(record.cost.currency) == "EUR"
 
 
 @pytest.mark.django_db

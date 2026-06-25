@@ -143,10 +143,10 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
                 record.get_record_type_display(),
                 _sanitize(record.performed_by),
                 _sanitize(record.description),
-                float(record.cost),
+                float(record.cost.amount),
             ]
         )
-        total += record.cost
+        total += record.cost.amount
 
     # Pusty wiersz separujący + RAZEM.
     ws.append([])
@@ -212,16 +212,14 @@ def _write_records_sheet(ws, records, sheet_title: str, headers: tuple[str, ...]
             record.get_record_type_display(),
             _sanitize(record.performed_by),
             _sanitize(record.description),
-            float(record.cost),
+            float(record.cost.amount),
         ]
         if has_next:
             row.append(
-                record.next_inspection.strftime("%d.%m.%Y")
-                if record.next_inspection
-                else "—"
+                record.next_inspection.strftime("%d.%m.%Y") if record.next_inspection else "—"
             )
         ws.append(row)
-        total += record.cost
+        total += record.cost.amount
 
     # Pusty wiersz separujący + RAZEM.
     ws.append([])
@@ -357,7 +355,7 @@ def generate_inspection_pdf(*, service_record) -> bytes:
         ["Rok produkcji:", str(machine.build_year) if machine.build_year else "-"],
         ["Numer seryjny:", machine.serial_number or "-"],
         ["Wykonawca:", service_record.performed_by or "-"],
-        ["Koszt:", f"{service_record.cost} PLN"],
+        ["Koszt:", f"{service_record.cost.amount:.2f} {service_record.cost.currency}"],
         [
             "Następny przegląd:",
             service_record.next_inspection.strftime("%d.%m.%Y")

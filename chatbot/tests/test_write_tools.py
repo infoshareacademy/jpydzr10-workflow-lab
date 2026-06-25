@@ -1056,7 +1056,7 @@ class TestExecuteServiceActions:
         record = ServiceRecord.objects.get(machine=koparka_001)
         assert record.record_type == "naprawa"
         assert record.description == "Wymiana baterii"
-        assert float(record.cost) == 308.0
+        assert float(record.cost.amount) == 308.0
 
     def test_execute_create_inspection_bumps_machine_date(self, user_service_perms, koparka_001):
         """Przegląd kwartalny → Machine.inspection_date = performed + 3 mc."""
@@ -1096,7 +1096,7 @@ class TestExecuteServiceActions:
         )
         assert "zaktualizowany" in result
         record.refresh_from_db()
-        assert float(record.cost) == 350.0
+        assert float(record.cost.amount) == 350.0
         assert record.description == "Nowy opis"
 
     def test_execute_update_machine_inspection_date(self, user_service_perms, koparka_001):

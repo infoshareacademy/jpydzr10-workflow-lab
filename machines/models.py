@@ -67,25 +67,25 @@ class Machine(TimestampedModel):
     class Status(models.TextChoices):
         """Operational status of a machine. Values are Polish on purpose."""
 
-        W_MAGAZYNIE = "W magazynie", "W magazynie"
-        NA_BUDOWIE = "Na budowie", "Na budowie"
-        ZAREZERWOWANA = "Zarezerwowana", "Zarezerwowana"
-        W_SERWISIE = "W serwisie", "W serwisie"
-        WYCOFANA = "Wycofana", "Wycofana z floty"
+        W_MAGAZYNIE = "W magazynie", _("W magazynie")
+        NA_BUDOWIE = "Na budowie", _("Na budowie")
+        ZAREZERWOWANA = "Zarezerwowana", _("Zarezerwowana")
+        W_SERWISIE = "W serwisie", _("W serwisie")
+        WYCOFANA = "Wycofana", _("Wycofana z floty")
 
     class Type(models.TextChoices):
         """Category of machine — drives filters and grouping in the UI."""
 
-        KOPARKA = "koparka", "Koparka"
-        MINIKOPARKA = "minikoparka", "Minikoparka"
-        PODNOSNIK_NOZYCOWY = "podnośnik nożycowy", "Podnośnik nożycowy"
-        PODNOSNIK_TELESKOPOWY = "podnośnik teleskopowy", "Podnośnik teleskopowy"
-        AGREGAT = "agregat prądotwórczy", "Agregat prądotwórczy"
-        WOZEK_WIDLOWY = "wózek widłowy", "Wózek widłowy"
-        WALEC = "walec", "Walec"
-        ZAGESZCZARKA = "zagęszczarka", "Zagęszczarka"
-        SPAWARKA = "spawarka", "Spawarka"
-        INNE = "inne", "Inne"
+        KOPARKA = "koparka", _("Koparka")
+        MINIKOPARKA = "minikoparka", _("Minikoparka")
+        PODNOSNIK_NOZYCOWY = "podnośnik nożycowy", _("Podnośnik nożycowy")
+        PODNOSNIK_TELESKOPOWY = "podnośnik teleskopowy", _("Podnośnik teleskopowy")
+        AGREGAT = "agregat prądotwórczy", _("Agregat prądotwórczy")
+        WOZEK_WIDLOWY = "wózek widłowy", _("Wózek widłowy")
+        WALEC = "walec", _("Walec")
+        ZAGESZCZARKA = "zagęszczarka", _("Zagęszczarka")
+        SPAWARKA = "spawarka", _("Spawarka")
+        INNE = "inne", _("Inne")
 
     uid = models.CharField(
         max_length=20,

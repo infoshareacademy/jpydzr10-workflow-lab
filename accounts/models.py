@@ -21,17 +21,17 @@ class EmployeeProfile(TimestampedModel):
     class Function(models.TextChoices):
         """Funkcja pracownika w firmie."""
 
-        MAGAZYNIER = "magazynier", "Magazynier"
-        MONTAZYSTA = "montażysta", "Montażysta"
-        KIEROWNIK = "kierownik", "Kierownik"
-        ADMIN = "admin", "Administrator"
+        MAGAZYNIER = "magazynier", _("Magazynier")
+        MONTAZYSTA = "montażysta", _("Montażysta")
+        KIEROWNIK = "kierownik", _("Kierownik")
+        ADMIN = "admin", _("Administrator")
 
     class Theme(models.TextChoices):
         """Preferencja motywu UI (light/dark/auto)."""
 
-        AUTO = "auto", "Automatyczny"
-        LIGHT = "light", "Jasny"
-        DARK = "dark", "Ciemny"
+        AUTO = "auto", _("Automatyczny")
+        LIGHT = "light", _("Jasny")
+        DARK = "dark", _("Ciemny")
 
     user = models.OneToOneField(
         User,

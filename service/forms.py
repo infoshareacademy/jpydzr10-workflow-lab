@@ -48,6 +48,18 @@ class ServiceRecordForm(forms.ModelForm):
     the form as a non-field error.
     """
 
+    # Koszt jest modelowo MoneyField (kwota + waluta), ale w formularzu zostaje
+    # pojedynczym polem kwoty — waluta to domyślne EUR (ustawiane przez model).
+    # Dzięki temu UI nie zyskuje selektora waluty, a warstwa serwisowa zapisuje
+    # Decimal, który MoneyField opakowuje w EUR.
+    cost = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        label=_("Koszt (EUR)"),
+        widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
+    )
+
     class Meta:
         model = ServiceRecord
         fields = [
@@ -65,7 +77,6 @@ class ServiceRecordForm(forms.ModelForm):
             "performed_date": _("Data wykonania"),
             "performed_by": _("Wykonawca"),
             "description": _("Opis"),
-            "cost": _("Koszt"),
             "inspection_document": _("Protokół (PDF)"),
         }
         widgets = {
@@ -84,7 +95,6 @@ class ServiceRecordForm(forms.ModelForm):
                 attrs={"class": INPUT_CSS, "placeholder": _("np. Jan Kowalski")}
             ),
             "description": forms.Textarea(attrs={"class": TEXTAREA_CSS, "rows": 3}),
-            "cost": forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
             "inspection_document": forms.ClearableFileInput(
                 attrs={"class": FILE_INPUT_CSS, "accept": "application/pdf"}
             ),
@@ -95,6 +105,9 @@ class ServiceRecordForm(forms.ModelForm):
         # Default to a sensible "today" so the input is not blank.
         if not self.is_bound and not self.initial.get("performed_date"):
             self.initial["performed_date"] = date.today()
+        # Edycja istniejącego wpisu: pole kwoty pokazuje samą wartość (bez waluty).
+        if self.instance and self.instance.pk and self.instance.cost is not None:
+            self.initial.setdefault("cost", self.instance.cost.amount)
         # All machines are addable — even in-service / on-site (operator may
         # log post-factum a repair done on a machine that is currently
         # somewhere else). Order by UID for predictable dropdown ordering.

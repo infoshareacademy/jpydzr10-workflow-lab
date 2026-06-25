@@ -76,8 +76,8 @@ class ConstructionSite(TimestampedModel):
     class Status(models.TextChoices):
         """Lifecycle of the site. Values are Polish on purpose (ZASADA #2)."""
 
-        AKTYWNA = "aktywna", "Aktywna"
-        ZAKONCZONA = "zakończona", "Zakończona"
+        AKTYWNA = "aktywna", _("Aktywna")
+        ZAKONCZONA = "zakończona", _("Zakończona")
         ANULOWANA = "anulowana", "Anulowana"
 
     project_number = models.CharField(
@@ -174,10 +174,10 @@ class Reservation(TimestampedModel):
     class Status(models.TextChoices):
         """Lifecycle of a reservation. Values are Polish (M1-compatible)."""
 
-        OCZEKUJACA = "oczekująca", "Oczekująca"
-        POTWIERDZONA = "potwierdzona", "Potwierdzona"
-        ANULOWANA = "anulowana", "Anulowana"
-        ZAKONCZONA = "zakończona", "Zakończona"
+        OCZEKUJACA = "oczekująca", _("Oczekująca")
+        POTWIERDZONA = "potwierdzona", _("Potwierdzona")
+        ANULOWANA = "anulowana", _("Anulowana")
+        ZAKONCZONA = "zakończona", _("Zakończona")
 
     class CancellationReason(models.TextChoices):
         """Powód anulowania rezerwacji (B-2) — używane do raportów miesięcznych.
@@ -185,11 +185,11 @@ class Reservation(TimestampedModel):
         Wartości DB są ASCII snake_case (compatibility z fixturami), labele PL.
         """
 
-        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", "Klient zrezygnował"
-        AWARIA = "awaria", "Awaria maszyny"
-        ZMIANA_TERMINU = "zmiana_terminu", "Zmiana terminu / przesunięcie"
-        BRAK_DOSTEPNOSCI = "brak_dostepnosci", "Brak dostępności maszyny"
-        INNE = "inne", "Inne (zobacz notatkę)"
+        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", _("Klient zrezygnował")
+        AWARIA = "awaria", _("Awaria maszyny")
+        ZMIANA_TERMINU = "zmiana_terminu", _("Zmiana terminu / przesunięcie")
+        BRAK_DOSTEPNOSCI = "brak_dostepnosci", _("Brak dostępności maszyny")
+        INNE = "inne", _("Inne (zobacz notatkę)")
 
     # ------------------------------------------------------------------
     # Fields

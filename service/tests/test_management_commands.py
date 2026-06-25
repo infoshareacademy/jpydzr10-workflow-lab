@@ -228,7 +228,7 @@ class TestImportServiceCommand:
         call_command("import_service", str(f), stdout=StringIO(), stderr=StringIO())
         rec = ServiceRecord.objects.get(machine=machine)
         # cost zfallbackował do 0.00.
-        assert rec.cost is None or float(rec.cost) == 0.0
+        assert rec.cost is None or float(rec.cost.amount) == 0.0
 
 
 # =============================================================================

@@ -1,4 +1,4 @@
-.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run shell superuser clean css css-watch
+.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run shell superuser clean css css-watch messages compilemessages
 
 help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
@@ -76,7 +76,13 @@ superuser:
 seed:
 	uv run python manage.py seed_demo
 
-run:
+messages:
+	uv run python manage.py makemessages -l en --ignore=.venv --ignore=node_modules --ignore=static/vendor --ignore=archive
+
+compilemessages:
+	uv run python manage.py compilemessages --ignore=.venv --ignore=node_modules --ignore=archive
+
+run: compilemessages
 	uv run python manage.py runserver 0.0.0.0:8002
 
 shell:

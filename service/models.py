@@ -25,6 +25,8 @@ from datetime import date
 from decimal import Decimal
 
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+from djmoney.models.fields import MoneyField
 from simple_history.models import HistoricalRecords
 
 from core.models import TimestampedModel
@@ -57,10 +59,10 @@ class ServiceRecord(TimestampedModel):
     class RecordType(models.TextChoices):
         """Rodzaj wpisu — wartości w DB po polsku (snake_case dla compatibility)."""
 
-        PRZEGLAD_KWARTALNY = "przegląd_kwartalny", "Przegląd kwartalny (3 mc)"
-        PRZEGLAD_POLROCZNY = "przegląd_polroczny", "Przegląd półroczny (6 mc)"
-        PRZEGLAD_ROCZNY = "przegląd_roczny", "Przegląd roczny (12 mc)"
-        NAPRAWA = "naprawa", "Naprawa"
+        PRZEGLAD_KWARTALNY = "przegląd_kwartalny", _("Przegląd kwartalny (3 mc)")
+        PRZEGLAD_POLROCZNY = "przegląd_polroczny", _("Przegląd półroczny (6 mc)")
+        PRZEGLAD_ROCZNY = "przegląd_roczny", _("Przegląd roczny (12 mc)")
+        NAPRAWA = "naprawa", _("Naprawa")
 
     machine = models.ForeignKey(
         "machines.Machine",
@@ -92,11 +94,12 @@ class ServiceRecord(TimestampedModel):
         verbose_name="Opis",
         help_text="Szczegóły wykonanych prac, wymienione części, uwagi.",
     )
-    cost = models.DecimalField(
+    cost = MoneyField(
         max_digits=10,
         decimal_places=2,
+        default_currency="EUR",
         default=Decimal("0.00"),
-        verbose_name="Koszt (PLN)",
+        verbose_name="Koszt",
     )
     inspection_document = models.FileField(
         upload_to="inspections/%Y/%m/",

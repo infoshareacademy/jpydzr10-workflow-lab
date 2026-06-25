@@ -71,6 +71,7 @@ THIRD_PARTY_APPS = [
     "widget_tweaks",  # widget.attrs class injection w template
     "axes",  # brute-force protection na login
     "django_cleanup.apps.CleanupConfig",  # auto-delete orphan FileField uploads
+    "djmoney",  # MoneyField (kwota + waluta) dla kosztów serwisowych
 ]
 
 LOCAL_APPS = [
@@ -375,13 +376,20 @@ USE_TZ = True
 
 LANGUAGES = [
     ("pl", _("Polski")),
-    ("nl", _("Nederlands")),
-    ("fr", _("Français")),
     ("en", _("English")),
 ]
 
 # LOCALE_PATHS — Django szuka tu .po/.mo files dla każdej języka.
 LOCALE_PATHS = [BASE_DIR / "locale"]
+
+# =============================================================================
+# WALUTY (django-money)
+# =============================================================================
+# Koszty serwisowe trzymamy jako MoneyField (kwota + waluta). Domyślnie EUR
+# (operacje w Belgii); PLN dostępne dla danych historycznych z Milestone 1.
+CURRENCIES = ("EUR", "PLN")
+CURRENCY_CHOICES = [("EUR", "EUR €"), ("PLN", "PLN zł")]
+DEFAULT_CURRENCY = "EUR"
 
 
 # =============================================================================
