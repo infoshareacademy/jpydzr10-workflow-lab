@@ -1,4 +1,4 @@
-.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run shell superuser clean css css-watch messages compilemessages
+.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run voice shell superuser clean css css-watch messages compilemessages
 
 help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
@@ -84,6 +84,12 @@ compilemessages:
 
 run: compilemessages
 	uv run python manage.py runserver 0.0.0.0:8002
+
+# Agent głosowy — uvicorn pod dedykowanym modułem ustawień `voice` (DEBUG=False,
+# bez debug_toolbar, host tunelu w ALLOWED_HOSTS). Webhook /voice/incoming/ działa;
+# żywe gniazdo WS domykane przy uruchomieniu na żywo (patrz chatbot/voice_consumer.py).
+voice: compilemessages
+	DJANGO_SETTINGS_MODULE=planer_config.settings.voice uv run uvicorn planer_config.asgi:application --host 0.0.0.0 --port 8010
 
 shell:
 	uv run python manage.py shell

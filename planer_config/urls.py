@@ -31,6 +31,8 @@ urlpatterns = [
     path("rezerwacje/", include("reservations.urls")),
     path("serwis/", include("service.urls")),
     path("asystent/", include("chatbot.urls")),
+    # Webhook agenta głosowego (Twilio → TwiML ConversationRelay).
+    path("voice/", include("chatbot.voice_routing")),
     path("", include("core.urls")),  # healthz
 ]
 
