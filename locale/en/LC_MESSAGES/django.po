@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-25 19:14+0200\n"
+"POT-Creation-Date: 2026-06-25 19:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -225,8 +225,8 @@ msgid ""
 "Wpisz sześciocyfrowy kod z aplikacji uwierzytelniającej. Możesz też użyć "
 "jednorazowego kodu zapasowego."
 msgstr ""
-"Enter the six-digit code from your authenticator app. You can also use a "
-"one-time recovery code."
+"Enter the six-digit code from your authenticator app. You can also use a one-"
+"time recovery code."
 
 #: accounts/templates/accounts/2fa_verify.html:27
 msgid "Kod uwierzytelniający lub zapasowy"
@@ -266,8 +266,7 @@ msgstr "You cannot anonymize your own profile."
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
-"Profile anonymized in accordance with GDPR (Art. 17 — right to be "
-"forgotten)."
+"Profile anonymized in accordance with GDPR (Art. 17 — right to be forgotten)."
 
 #: machines/forms.py:43
 msgid "UID"
@@ -523,8 +522,8 @@ msgid ""
 "Maszyna %(uid)s ma %(count)d potwierdzonych rezerwacji w przyszłości "
 "(najbliższa: %(next_start)s). Najpierw anuluj lub przenieś rezerwacje."
 msgstr ""
-"Machine %(uid)s has %(count)d confirmed reservations in the future "
-"(nearest: %(next_start)s). First cancel or move the reservations."
+"Machine %(uid)s has %(count)d confirmed reservations in the future (nearest: "
+"%(next_start)s). First cancel or move the reservations."
 
 #: machines/services.py:367
 #, python-format
@@ -625,11 +624,11 @@ msgstr "Repair completed — machine %(uid)s available in warehouse."
 msgid "Maszyna %(uid)s została wycofana z floty."
 msgstr "Machine %(uid)s has been retired from the fleet."
 
-#: planer_config/settings/base.py:395
+#: planer_config/settings/base.py:397
 msgid "Polski"
 msgstr "Polish"
 
-#: planer_config/settings/base.py:396
+#: planer_config/settings/base.py:398
 msgid "English"
 msgstr "English"
 
@@ -689,7 +688,7 @@ msgstr "— no site —"
 
 #: reservations/forms.py:128
 msgid "Adres budowy/dostawy maszyny. Wymagane — pojawi sie w PDF wydruku."
-msgstr ""
+msgstr "Machine delivery/site address. Required — appears on the printed PDF."
 "Site/delivery address of the machine. Required — it appears on the printed "
 "PDF."
 
@@ -697,8 +696,7 @@ msgstr ""
 msgid ""
 "Imie i nazwisko kierownika/brygadzisty odpowiedzialnego za maszyne na "
 "budowie."
-msgstr ""
-"Full name of the manager/foreman responsible for the machine on site."
+msgstr "Full name of the manager/foreman responsible for the machine on site."
 
 #: reservations/forms.py:140 reservations/forms.py:515
 #: reservations/services.py:130 reservations/services.py:207
@@ -808,7 +806,9 @@ msgstr "— select a replacement machine —"
 
 #: reservations/forms.py:378
 msgid "Maszyna, która przejmie rezerwację od dziś do końca okresu."
-msgstr "The machine that will take over the reservation from today until the end of the period."
+msgstr "The machine that will take over the reservation from today to the end of the period."
+"The machine that will take over the reservation from today until the end of "
+"the period."
 
 #: reservations/forms.py:387
 msgid "np. Awaria silnika KOP-001, klient wymaga ciągłej pracy"
@@ -849,13 +849,11 @@ msgstr "Delivery address (optional)"
 #: reservations/forms.py:491
 msgid ""
 "Opcjonalny — jeśli wszystkie maszyny mają być dostarczone na ten sam adres."
-msgstr ""
-"Optional — if all machines are to be delivered to the same address."
+msgstr "Optional — if all machines are to be delivered to the same address."
 
 #: reservations/forms.py:497
 msgid "Opcjonalne — wspólne notatki kopiowane do każdej rezerwacji w grupie."
-msgstr ""
-"Optional — shared notes copied to every reservation in the group."
+msgstr "Optional — shared notes copied to every reservation in the group."
 
 #: reservations/forms.py:536
 msgid "— wybierz powód —"
@@ -939,8 +937,7 @@ msgstr "Note for the cancellation reason"
 
 #: reservations/models.py:267
 msgid "Opcjonalna — dodatkowy kontekst (np. przyczyna awarii, kto odwołał)."
-msgstr ""
-"Optional — additional context (e.g. cause of failure, who cancelled)."
+msgstr "Optional — additional context (e.g. cause of failure, who cancelled)."
 
 #: reservations/models.py:277
 msgid "Faktyczna data zwrotu"
@@ -1152,13 +1149,13 @@ msgstr "The failure description must be at least 5 characters long."
 #: reservations/services.py:868
 #, python-format
 msgid "Nie można zgłosić awarii dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr ""
+msgstr "Cannot report a breakdown for a closed reservation (status=%(status)s)."
 "A failure cannot be reported for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:958
 #, python-format
 msgid "Nie można zmienić osoby dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr ""
+msgstr "Cannot change the person for a closed reservation (status=%(status)s)."
 "The person cannot be changed for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:964 reservations/services.py:1543
@@ -1188,9 +1185,8 @@ msgstr "The replacement machine must differ from the current one."
 #: reservations/services.py:1062
 #, python-format
 msgid "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
-msgstr ""
-"Machine %(uid)s has been retired from the fleet — it cannot be a "
-"replacement."
+msgstr "Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
+"Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
 
 #: reservations/services.py:1071
 #, python-format
@@ -1223,7 +1219,7 @@ msgstr ""
 
 #: reservations/services.py:1288
 msgid "Lista maszyn zawiera duplikaty — każda maszyna może być tylko raz."
-msgstr ""
+msgstr "The machine list contains duplicates — each machine may appear only once."
 "The machine list contains duplicates — each machine can appear only once."
 
 #: reservations/services.py:1309
@@ -1268,7 +1264,8 @@ msgstr "Hello %(name)s,"
 #: reservations/templates/reservations/email/confirmation.html:17
 #, python-format
 msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."
-msgstr "The reservation of machine <strong>%(uid)s</strong> has been confirmed."
+msgstr "Reservation of machine <strong>%(uid)s</strong> has been confirmed."
+"The reservation of machine <strong>%(uid)s</strong> has been confirmed."
 
 #: reservations/templates/reservations/email/confirmation.html:23
 #: reservations/templates/reservations/email/confirmation.txt:7
@@ -1324,14 +1321,12 @@ msgstr "Person changed to: %(person)s"
 #: reservations/views.py:668
 #, python-format
 msgid "Maszyna wymieniona — nowa rezerwacja #%(new_id)s na %(uid)s utworzona."
-msgstr ""
-"Machine replaced — new reservation #%(new_id)s for %(uid)s created."
+msgstr "Machine replaced — new reservation #%(new_id)s for %(uid)s created."
 
 #: reservations/views.py:702
 #, python-format
 msgid "Awaria zgłoszona — maszyna %(uid)s w serwisie, rezerwacja zamknięta."
-msgstr ""
-"Failure reported — machine %(uid)s in service, reservation closed."
+msgstr "Failure reported — machine %(uid)s in service, reservation closed."
 
 #: reservations/views.py:848
 #, python-format
@@ -1535,6 +1530,30 @@ msgstr "The performed date cannot be in the future."
 #, python-format
 msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
 msgstr "Service completed — machine %(uid)s returns to the warehouse."
+
+#: templates/403.html:4 templates/403.html:28
+msgid "Brak uprawnień"
+msgstr "Access denied"
+
+#: templates/403.html:31
+msgid "Nie masz uprawnień do tej operacji."
+msgstr "You do not have permission for this action."
+
+#: templates/403.html:34
+msgid ""
+"Ta akcja wymaga wyższej roli (np. magazynier lub kierownik). Jeśli uważasz, "
+"że to pomyłka, skontaktuj się z administratorem."
+msgstr ""
+"This action requires a higher role (e.g. warehouse keeper or manager). If you "
+"believe this is a mistake, contact your administrator."
+
+#: templates/403.html:43
+msgid "Wróć do dashboardu"
+msgstr "Back to dashboard"
+
+#: templates/403.html:51
+msgid "Wstecz"
+msgstr "Back"
 
 #: templates/base.html:8
 msgid ""
@@ -1758,8 +1777,7 @@ msgstr "Global search"
 
 #: templates/core/search.html:21
 msgid "Szukaj po wszystkich modułach: maszyny, rezerwacje, budowy, serwis."
-msgstr ""
-"Search across all modules: machines, reservations, sites, service."
+msgstr "Search across all modules: machines, reservations, sites, service."
 
 #: templates/core/search.html:28
 msgid "Fraza wyszukiwania"
