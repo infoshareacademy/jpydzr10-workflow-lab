@@ -14,7 +14,7 @@ import json
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import connection
 from django.db.models import Count, Q
 from django.http import JsonResponse
@@ -53,6 +53,17 @@ def healthz(request):
     checks["database"] = db_ok
     status = 200 if db_ok else 503
     return JsonResponse({"ok": db_ok, "checks": checks}, status=status)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def debug_boom(request):
+    """Celowo rzuca wyjątek — do weryfikacji integracji z GlitchTip.
+
+    Dostępny wyłącznie dla zalogowanego administratora (i poza listą wymuszenia
+    2FA). Służy jednorazowemu potwierdzeniu, że nieobsłużone wyjątki trafiają do
+    zgrupowanych zgłoszeń w GlitchTip.
+    """
+    raise RuntimeError("Celowy wyjątek testowy GlitchTip (/debug/boom/).")
 
 
 @login_required

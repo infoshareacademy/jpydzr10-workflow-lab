@@ -12,7 +12,9 @@ Konwencja:
 - Brak SECRET_KEY w tym pliku — każde środowisko musi go mieć w .env.
 """
 
+import logging
 import os
+import sys
 from pathlib import Path
 
 from django.utils.translation import gettext_lazy as _
@@ -495,3 +497,57 @@ LOGGING = {
         },
     },
 }
+
+
+# =============================================================================
+# OBSERVABILITY — GlitchTip (Sentry SDK), opcjonalne i sterowane DSN
+# =============================================================================
+# Self-hosted GlitchTip (kompatybilny z Sentry SDK). Bez ``SENTRY_DSN`` w
+# środowisku inicjalizacja jest pomijana — aplikacja działa normalnie i NIE
+# wysyła żadnych zdarzeń (zero kosztu, brak zależności od usługi zewnętrznej).
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
+
+# Nie inicjalizujemy SDK pod pytest (nawet gdyby ktoś miał DSN w lokalnym .env).
+_RUNNING_TESTS = "pytest" in sys.modules
+
+_SENTRY_REDACT_KEYS = ("password", "passwd", "token", "secret", "csrf", "authorization", "api_key")
+
+
+def _sentry_before_send(event, hint):  # pragma: no cover - wywoływane tylko z aktywnym DSN
+    """Wycina wrażliwe wartości z payloadu zanim trafi do GlitchTip."""
+
+    def _scrub(obj):
+        if isinstance(obj, dict):
+            return {
+                k: ("[redacted]" if any(s in k.lower() for s in _SENTRY_REDACT_KEYS) else _scrub(v))
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [_scrub(v) for v in obj]
+        return obj
+
+    request = event.get("request")
+    if isinstance(request, dict):
+        event["request"] = _scrub(request)
+    if "extra" in event:
+        event["extra"] = _scrub(event["extra"])
+    return event
+
+
+if SENTRY_DSN and not _RUNNING_TESTS:  # pragma: no cover - ścieżka z aktywnym DSN
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(event_level=logging.ERROR),
+        ],
+        send_default_pii=False,
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "development"),
+        release=os.environ.get("APP_RELEASE"),
+        before_send=_sentry_before_send,
+    )

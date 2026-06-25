@@ -1,0 +1,88 @@
+# =============================================================================
+# GlitchTip — samodzielny stos obserwowalności (kompatybilny z Sentry SDK)
+# =============================================================================
+#
+# OSOBNY projekt compose — NIE miesza się z `docker-compose.yml` aplikacji,
+# więc `make db-up` / `make db-down` go nie dotykają. Uruchamiaj jawnie:
+#
+#     docker compose -f docker-compose.glitchtip.yml -p glitchtip-obs up -d
+#     docker compose -f docker-compose.glitchtip.yml -p glitchtip-obs down
+#
+# ⚠️ NIGDY `docker system prune` / `docker network prune` gdy działają inne
+#    lokalne kontenery (wytnie ich sieci/wolumeny).
+#
+# Porty: web 9000 (host) → 8000 (kontener); 9000 omija app:8002 oraz inne
+# lokalne usługi nasłuchujące na :8000.
+#
+# Pierwszy `up` trwa 5–10 min (migracje GlitchTip). Po starcie:
+#   1) http://localhost:9000 → rejestracja pierwszego konta (owner),
+#   2) utwórz organizację + projekt (Django) → skopiuj DSN do `.env` (SENTRY_DSN),
+#   3) ustaw ENABLE_OPEN_USER_REGISTRATION=False po założeniu ownera.
+#
+# 🔒 PIN OBRAZÓW: gt-web/gt-worker przypięte po DIGEST (6.1.8, opublikowany
+#    2026-06-05 — >14 dni). Przed uruchomieniem na maszynie docelowej zweryfikuj
+#    i ewentualnie przypnij po digeście także `postgres` i `valkey`
+#    (`docker buildx imagetools inspect <obraz:tag>`), zgodnie z polityką
+#    supply-chain (tylko obrazy starsze niż 14 dni, z zaufanych źródeł).
+
+x-glitchtip-image: &glitchtip_image
+  glitchtip/glitchtip@sha256:7e497103d3694e95fce232e83193cc2ef6865569314c66eb577b97c7c651008b
+
+services:
+  gt-postgres:
+    image: postgres:16-alpine
+    container_name: glitchtip-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:-glitchtip_obs}
+    volumes:
+      # Nazwany, trwały wolumen — DSN/projekt przeżywają cold restart.
+      - glitchtip_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gt-valkey:
+    image: valkey/valkey:8.1-alpine
+    container_name: glitchtip-valkey
+    restart: unless-stopped
+
+  gt-web:
+    image: *glitchtip_image
+    container_name: glitchtip-web
+    restart: unless-stopped
+    depends_on:
+      gt-postgres:
+        condition: service_healthy
+      gt-valkey:
+        condition: service_started
+    ports:
+      - "9000:8000"
+    environment: &glitchtip_env
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:-glitchtip_obs}@gt-postgres:5432/glitchtip
+      REDIS_URL: redis://gt-valkey:6379/0
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:9000}
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+      DEFAULT_FROM_EMAIL: observability@planer.local
+      ENABLE_OPEN_USER_REGISTRATION: ${GLITCHTIP_OPEN_REGISTRATION:-"True"}
+
+  gt-worker:
+    image: *glitchtip_image
+    container_name: glitchtip-worker
+    restart: unless-stopped
+    depends_on:
+      gt-postgres:
+        condition: service_healthy
+      gt-valkey:
+        condition: service_started
+    command: ./bin/run-celery-with-beat.sh
+    environment: *glitchtip_env
+
+volumes:
+  glitchtip_pg_data:
+    name: glitchtip_obs_pg_data

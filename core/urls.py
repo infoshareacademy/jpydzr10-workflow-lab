@@ -16,4 +16,6 @@ urlpatterns = [
     path("healthz/", views.healthz, name="healthz"),
     # Wave 14-D — global search (HTMX typeahead + full page fallback).
     path("szukaj/", views.global_search_view, name="search"),
+    # Wyzwalacz testowy obserwowalności (tylko superuser) — patrz docs/adr/006.
+    path("debug/boom/", views.debug_boom, name="debug_boom"),
 ]
