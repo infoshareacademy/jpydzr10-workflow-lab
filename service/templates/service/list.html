@@ -341,7 +341,7 @@
                                     </td>
                                     <td class="px-3 py-2.5 text-right whitespace-nowrap">
                                         <a href="{% url 'service:detail' pk=record.pk %}"
-                                           class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                           class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
                                         {% if record.is_inspection %}
                                             <span class="text-slate-300 dark:text-slate-600 mx-1" aria-hidden="true">·</span>
                                             <a href="{% url 'service:pdf' pk=record.pk %}"

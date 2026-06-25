@@ -128,7 +128,7 @@
                                         <td class="px-3 py-2.5 text-slate-600 dark:text-slate-300 text-xs">{{ machine.location }}</td>
                                         <td class="px-3 py-2.5 text-right whitespace-nowrap">
                                             <a href="{% url 'machines:detail' uid=machine.uid %}"
-                                               class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                               class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
                                             {% if perms.machines.change_machine %}
                                                 <span class="text-slate-300 dark:text-slate-600 mx-1" aria-hidden="true">·</span>
                                                 <a href="{% url 'machines:update' uid=machine.uid %}"
