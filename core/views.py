@@ -340,9 +340,14 @@ def maps_view(request):
             # spadaly na default warehouse. Teraz idą tam jawnie + frontend jitter
             # rozsuwa je w mini-spirali zeby nie nakladaly sie na jednym pinie.
             non_addresses = (
-                "magazyn", "warehouse", "magazynow",
-                "magazyn glowny", "magazyn główny",
-                "serwis", "service", "warsztat",
+                "magazyn",
+                "warehouse",
+                "magazynow",
+                "magazyn glowny",
+                "magazyn główny",
+                "serwis",
+                "service",
+                "warsztat",
             )
             if not stripped or stripped.lower() in non_addresses:
                 return None

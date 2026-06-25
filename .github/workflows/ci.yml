@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, testy i bezpieczeństwo
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: planer_test
+          POSTGRES_USER: planer
+          POSTGRES_PASSWORD: planer_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U planer -d planer_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key-not-used-in-production-0123456789
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: planer_test
+      POSTGRES_USER: planer
+      POSTGRES_PASSWORD: planer_ci
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      GEMINI_API_KEY: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalacja uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Synchronizacja zależności
+        run: uv sync --frozen
+
+      - name: Ruff — lint
+        run: uv run ruff check .
+
+      - name: Ruff — format check
+        run: uv run ruff format --check .
+
+      - name: Sprawdzenie migracji
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Kompilacja tłumaczeń
+        run: uv run python manage.py compilemessages --ignore=.venv --ignore=archive
+
+      - name: Testy + pokrycie
+        run: uv run pytest -n auto --cov=. --cov-report=term-missing --cov-fail-under=80
+
+      # Skanery bezpieczeństwa traktujemy jako doradcze (Python 3.14 wyprzedza
+      # wsparcie AST części narzędzi) — raportują, ale nie blokują pipeline'u.
+      - name: Bandit — analiza bezpieczeństwa kodu
+        continue-on-error: true
+        run: uv run --with "bandit==1.8.6" bandit -r . -x ./tests,./archive,./.venv,./scripts -ll
+
+      - name: pip-audit — podatności zależności
+        continue-on-error: true
+        run: uv run --with "pip-audit==2.9.0" pip-audit

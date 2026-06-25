@@ -25,8 +25,7 @@ STATUS_COLOR_CLASSES = {
     "Zarezerwowana": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
     "W serwisie": "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200",
     "Wycofana": (
-        "bg-slate-200 text-slate-600 line-through "
-        "dark:bg-slate-700/60 dark:text-slate-400"
+        "bg-slate-200 text-slate-600 line-through dark:bg-slate-700/60 dark:text-slate-400"
     ),
     # Statusy rezerwacji
     "oczekująca": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",

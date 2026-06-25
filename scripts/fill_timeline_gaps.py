@@ -157,9 +157,7 @@ def find_gaps(machine: Machine) -> list[tuple[date, date]]:
 # ---------------------------------------------------------------------------
 
 
-def plan_reservations_for_gap(
-    gap_start: date, gap_end: date
-) -> list[tuple[date, date]]:
+def plan_reservations_for_gap(gap_start: date, gap_end: date) -> list[tuple[date, date]]:
     """Planuje 1-2 zakresy dat wewnatrz dziury.
 
     Jesli dziura < 25 dni -> 1 rezerwacja (4..min(14, gap)).
@@ -216,7 +214,7 @@ def plan_reservations_for_gap(
 def main() -> None:
     persons, responsibles, sites = get_pools()
 
-    print(f"Pula danych z bazy:")
+    print("Pula danych z bazy:")
     print(f"  - person:             {len(persons)} unique")
     print(f"  - responsible_person: {len(responsibles)} unique")
     print(f"  - sites (aktywne):    {len(sites)}")
@@ -274,15 +272,12 @@ def main() -> None:
                         machine_created += 1
                     except Exception as exc:
                         failed += 1
-                        print(
-                            f"  FAIL {machine.uid} {s}..{e}: {type(exc).__name__}: {exc}"
-                        )
+                        print(f"  FAIL {machine.uid} {s}..{e}: {type(exc).__name__}: {exc}")
 
             if machine_created > 0:
                 machines_filled += 1
                 print(
-                    f"  + {machine.uid}: dodano {machine_created} rezerwacji "
-                    f"(dziur: {len(gaps)})"
+                    f"  + {machine.uid}: dodano {machine_created} rezerwacji (dziur: {len(gaps)})"
                 )
 
     print("=" * 70)

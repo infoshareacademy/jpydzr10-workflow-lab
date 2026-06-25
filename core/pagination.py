@@ -22,7 +22,7 @@ def resolve_per_page(request) -> int:
     raw = (request.GET.get("per_page") or "").strip()
     try:
         n = int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return DEFAULT_PER_PAGE
     return n if n in PER_PAGE_CHOICES else DEFAULT_PER_PAGE
 

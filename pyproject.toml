@@ -164,6 +164,11 @@ ignore = [
     "E501",   # line too long — ruff format zajmie się tym
     "SIM108", # ternary operator — czasem if/else jest czytelniejsze
     "RUF012", # mutable class attrs — Django Meta lists/dicts to standardowy wzorzec
+    # Reguły "ambiguous unicode" — szum w kodzie z polskimi tekstami i celowymi
+    # non-breaking spaces (np. separator w PDF), bez realnej wartości tutaj.
+    "RUF001", # ambiguous char w stringu
+    "RUF002", # ambiguous char w docstringu
+    "RUF003", # ambiguous char w komentarzu
 ]
 
 [tool.ruff.lint.per-file-ignores]
