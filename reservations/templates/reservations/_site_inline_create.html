@@ -1,4 +1,4 @@
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
 {% comment %}
     HTMX modal partial — „Dodaj nową budowę" z poziomu reservation form.
@@ -31,14 +31,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
                     </svg>
                 </span>
-                <span>Nowa budowa</span>
+                <span>{% trans "Nowa budowa" %}</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Szybkie tworzenie — pełne pola w sekcji Budowy.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% trans "Szybkie tworzenie — pełne pola w sekcji Budowy." %}</p>
         </div>
         <button type="button"
                 @click="$dispatch('site-created')"
                 class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                aria-label="Zamknij okno">
+                aria-label="{% trans 'Zamknij okno' %}">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -70,7 +70,7 @@
         <div>
             <label for="{{ form.project_number.id_for_label }}"
                    class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                {{ form.project_number.label }}{% if form.project_number.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                {{ form.project_number.label }}{% if form.project_number.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
             </label>
             {{ form.project_number|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono" }}
             {% if form.project_number.help_text %}
@@ -85,7 +85,7 @@
         <div>
             <label for="{{ form.name.id_for_label }}"
                    class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                {{ form.name.label }}{% if form.name.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                {{ form.name.label }}{% if form.name.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
             </label>
             {{ form.name|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
             {% for err in form.name.errors %}
@@ -110,7 +110,7 @@
             <div>
                 <label for="{{ form.address.id_for_label }}"
                        class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                 </label>
                 {{ form.address|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                 {% for err in form.address.errors %}
@@ -134,14 +134,14 @@
             <button type="button"
                     @click="$dispatch('site-created')"
                     class="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                Anuluj
+                {% trans "Anuluj" %}
             </button>
             <button type="submit"
                     class="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                Utwórz budowę
+                {% trans "Utwórz budowę" %}
             </button>
         </div>
     </form>

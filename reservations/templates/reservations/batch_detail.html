@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load planer_tags %}
+{% load planer_tags i18n %}
 
 {% comment %}
     B-7 — Batch reservation detail.
@@ -23,21 +23,21 @@
         - accessible status badges (color + icon + text, never color-only)
 {% endcomment %}
 
-{% block title %}Grupa rezerwacji {{ batch_id_short }} — Planer Maszyn{% endblock %}
+{% block title %}{% blocktrans %}Grupa rezerwacji {{ batch_id_short }} — Planer Maszyn{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="space-y-5">
 
     {# ============================== BREADCRUMB ============================== #}
-    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="Ścieżka">
+    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="{% trans 'Ścieżka' %}">
         <a href="{% url 'reservations:list' %}"
            class="hover:text-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 -mx-1">
-            Rezerwacje
+            {% trans "Rezerwacje" %}
         </a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
         </svg>
-        <span class="text-slate-700 dark:text-slate-200">Grupa <span class="font-mono">{{ batch_id_short }}</span></span>
+        <span class="text-slate-700 dark:text-slate-200">{% trans "Grupa" %} <span class="font-mono">{{ batch_id_short }}</span></span>
     </nav>
 
     {# ============================== HERO HEADER + STATS ============================== #}
@@ -48,15 +48,15 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
-                    <span>Grupa rezerwacji</span>
+                    <span>{% trans "Grupa rezerwacji" %}</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                     <span class="font-mono">#{{ batch_id_short }}</span>
                 </h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">
-                    <span class="font-semibold tabular-nums">{{ total_count }}</span> {% if total_count == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                    <span class="font-semibold tabular-nums">{{ total_count }}</span> {% if total_count == 1 %}{% trans "rezerwacja" %}{% else %}{% trans "rezerwacji" %}{% endif %}
                     {% if representative.site %}
-                        na budowie
+                        {% trans "na budowie" %}
                         <a href="{% url 'reservations:site_detail' representative.site.pk %}"
                            class="font-medium text-brand-700 dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                             {{ representative.site.project_number }}
@@ -68,33 +68,33 @@
             </div>
 
             {# Per-status counters (visual key + accessible color-not-only) #}
-            <div class="flex flex-wrap gap-2" aria-label="Statystyki statusów">
+            <div class="flex flex-wrap gap-2" aria-label="{% trans 'Statystyki statusów' %}">
                 {% if status_counts.oczekująca %}
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span class="tabular-nums">{{ status_counts.oczekująca }}</span>
-                        <span>oczekujących</span>
+                        <span>{% trans "oczekujących" %}</span>
                     </span>
                 {% endif %}
                 {% if status_counts.potwierdzona %}
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span class="tabular-nums">{{ status_counts.potwierdzona }}</span>
-                        <span>potwierdzonych</span>
+                        <span>{% trans "potwierdzonych" %}</span>
                     </span>
                 {% endif %}
                 {% if status_counts.zakończona %}
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span class="tabular-nums">{{ status_counts.zakończona }}</span>
-                        <span>zakończonych</span>
+                        <span>{% trans "zakończonych" %}</span>
                     </span>
                 {% endif %}
                 {% if status_counts.anulowana %}
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span class="tabular-nums">{{ status_counts.anulowana }}</span>
-                        <span>anulowanych</span>
+                        <span>{% trans "anulowanych" %}</span>
                     </span>
                 {% endif %}
             </div>
@@ -110,10 +110,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
-                <span>Akcje grupowe</span>
+                <span>{% trans "Akcje grupowe" %}</span>
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-6">
-                Operacje wykonywane na wszystkich aktywnych rezerwacjach w grupie jednocześnie.
+                {% trans "Operacje wykonywane na wszystkich aktywnych rezerwacjach w grupie jednocześnie." %}
             </p>
         </header>
         <div class="p-5 space-y-3">
@@ -127,7 +127,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Potwierdź wszystkie oczekujące ({{ status_counts.oczekująca }})
+                        {% blocktrans with count=status_counts.oczekująca %}Potwierdź wszystkie oczekujące ({{ count }}){% endblocktrans %}
                     </button>
                 </form>
             {% endif %}
@@ -143,7 +143,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
-                            Zmień operatora wszystkim aktywnym
+                            {% trans "Zmień operatora wszystkim aktywnym" %}
                         </span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" x-bind:class="openChangeOperator ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -169,7 +169,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Zastosuj zmianę
+                            {% trans "Zastosuj zmianę" %}
                         </button>
                     </form>
                 </div>
@@ -186,7 +186,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
-                            Anuluj wszystkie aktywne rezerwacje w grupie
+                            {% trans "Anuluj wszystkie aktywne rezerwacje w grupie" %}
                         </span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" x-bind:class="openCancel ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -202,7 +202,7 @@
                         <div>
                             <label for="{{ cancel_form.cancellation_reason.id_for_label }}"
                                    class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                                {{ cancel_form.cancellation_reason.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                                {{ cancel_form.cancellation_reason.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>
                             </label>
                             {{ cancel_form.cancellation_reason }}
                             <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ cancel_form.cancellation_reason.help_text }}</p>
@@ -219,7 +219,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
-                            Potwierdź anulowanie grupy
+                            {% trans "Potwierdź anulowanie grupy" %}
                         </button>
                     </form>
                 </div>
@@ -235,17 +235,17 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
-                <span>Rezerwacje w grupie ({{ total_count }})</span>
+                <span>{% blocktrans with count=total_count %}Rezerwacje w grupie ({{ count }}){% endblocktrans %}</span>
             </h2>
         </header>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 dark:bg-slate-900/30 text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                        <th scope="col" class="px-4 py-3 text-left font-semibold">Maszyna</th>
-                        <th scope="col" class="px-4 py-3 text-left font-semibold">Status</th>
-                        <th scope="col" class="px-4 py-3 text-left font-semibold hidden sm:table-cell">Daty</th>
-                        <th scope="col" class="px-4 py-3 text-right font-semibold">Akcje</th>
+                        <th scope="col" class="px-4 py-3 text-left font-semibold">{% trans "Maszyna" %}</th>
+                        <th scope="col" class="px-4 py-3 text-left font-semibold">{% trans "Status" %}</th>
+                        <th scope="col" class="px-4 py-3 text-left font-semibold hidden sm:table-cell">{% trans "Daty" %}</th>
+                        <th scope="col" class="px-4 py-3 text-right font-semibold">{% trans "Akcje" %}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -261,34 +261,34 @@
                                 {% if res.status == 'oczekująca' %}
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50">
                                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                                        Oczekująca
+                                        {% trans "Oczekująca" %}
                                     </span>
                                 {% elif res.status == 'potwierdzona' %}
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/50">
                                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                                        Potwierdzona
+                                        {% trans "Potwierdzona" %}
                                     </span>
                                 {% elif res.status == 'zakończona' %}
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                                        Zakończona
+                                        {% trans "Zakończona" %}
                                     </span>
                                 {% elif res.status == 'anulowana' %}
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">
                                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                                        Anulowana
+                                        {% trans "Anulowana" %}
                                     </span>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 hidden sm:table-cell text-slate-600 dark:text-slate-300">
                                 <span class="tabular-nums">{{ res.start_date|date:"d.m.Y" }} — {{ res.end_date|date:"d.m.Y" }}</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">{{ res.duration_days }} {% if res.duration_days == 1 %}dzień{% else %}dni{% endif %}</span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400">{{ res.duration_days }} {% if res.duration_days == 1 %}{% trans "dzień" %}{% else %}{% trans "dni" %}{% endif %}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{% url 'reservations:detail' res.pk %}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:border-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[36px]"
-                                   aria-label="Otwórz szczegóły rezerwacji {{ res.machine.uid }}">
-                                    Otwórz
+                                   aria-label="{% blocktrans with uid=res.machine.uid %}Otwórz szczegóły rezerwacji {{ uid }}{% endblocktrans %}">
+                                    {% trans "Otwórz" %}
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                                     </svg>
@@ -303,7 +303,7 @@
 
     {# ============================== INFO FOOTER ============================== #}
     <p class="text-xs text-slate-500 dark:text-slate-400 px-1">
-        Pełny identyfikator grupy: <span class="font-mono">{{ batch_id }}</span>
+        {% trans "Pełny identyfikator grupy:" %} <span class="font-mono">{{ batch_id }}</span>
     </p>
 </div>
 {% endblock %}

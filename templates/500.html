@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Wystąpił błąd serwera — 500 — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Wystąpił błąd serwera" %} — 500 — Planer Maszyn Budowlanych{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -49,15 +50,14 @@
             </svg>
             <h1 id="error-500-title"
                 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50">
-                Wystąpił błąd serwera
+                {% trans "Wystąpił błąd serwera" %}
             </h1>
         </div>
         <p class="text-base text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-2">
-            Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.
+            {% trans "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę." %}
         </p>
         <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
-            Jeśli problem się powtarza, skontaktuj się z administratorem —
-            wewnętrzny błąd serwera został odnotowany i nasz zespół już go bada.
+            {% trans "Jeśli problem się powtarza, skontaktuj się z administratorem — wewnętrzny błąd serwera został odnotowany i nasz zespół już go bada." %}
         </p>
 
         {% comment %} === CTAs — primary "Wróć do dashboardu" + secondary "Zgłoś problem" ===
@@ -78,7 +78,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
-                <span>Wróć do dashboardu</span>
+                <span>{% trans "Wróć do dashboardu" %}</span>
             </a>
 
             {% comment %} Secondary — mailto: placeholder do podmiany. Pre-filled subject + body
@@ -100,13 +100,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <span>Zgłoś problem</span>
+                <span>{% trans "Zgłoś problem" %}</span>
             </a>
         </div>
 
         {# === Footer hint — error tracker info === #}
         <p class="mt-8 text-xs text-slate-400 dark:text-slate-500">
-            Błąd został automatycznie zarejestrowany. Spróbuj odświeżyć stronę za moment.
+            {% trans "Błąd został automatycznie zarejestrowany. Spróbuj odświeżyć stronę za moment." %}
         </p>
     </div>
 </section>

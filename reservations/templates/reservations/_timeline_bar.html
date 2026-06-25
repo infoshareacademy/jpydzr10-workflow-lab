@@ -1,4 +1,4 @@
-{% load planer_tags %}
+{% load i18n planer_tags %}
 {% comment %} Pojedynczy pasek rezerwacji. Pozycjonowany przez CSS variables
    (--row, --col-start, --col-span) ustawiane inline z `bar.offset_days` +
    `bar.length_days`. Klik -> link do detail, hover -> tooltip Alpine.
@@ -19,7 +19,7 @@
      @blur="hover = false"
      tabindex="0"
      role="button"
-     aria-label="Rezerwacja {{ machine_uid }} — {{ bar.person }} od {{ bar.start_date }} do {{ bar.end_date }}, status {{ bar.status_display|default:bar.status }} — kliknij aby otworzyc popup"
+     aria-label="{% blocktrans with uid=machine_uid person=bar.person start=bar.start_date end=bar.end_date status=bar.status_display|default:bar.status %}Rezerwacja {{ uid }} — {{ person }} od {{ start }} do {{ end }}, status {{ status }} — kliknij aby otworzyc popup{% endblocktrans %}"
      {# Wave 14-A Bundle 2 -- klik bar -> popup modal pelnej rezerwacji (HTMX). #}
      hx-get="{% url 'reservations:modal' bar.id %}"
      hx-target="#reservation-modal-body"
@@ -53,9 +53,9 @@
         <div class="text-slate-300 space-y-0.5 text-[0.6875rem]">
             <div class="font-mono tabular-nums">{{ bar.start_date }} → {{ bar.end_date }}</div>
             {% if bar.site_number %}
-                <div>Budowa: <span class="font-mono">{{ bar.site_number }}</span>{% if bar.site_name %} · {{ bar.site_name }}{% endif %}</div>
+                <div>{% trans "Budowa:" %} <span class="font-mono">{{ bar.site_number }}</span>{% if bar.site_name %} · {{ bar.site_name }}{% endif %}</div>
             {% endif %}
-            <div>Status: <span class="font-semibold text-white">{{ bar.status_display|default:bar.status }}</span></div>
+            <div>{% trans "Status:" %} <span class="font-semibold text-white">{{ bar.status_display|default:bar.status }}</span></div>
         </div>
     </div>
 </div>

@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 
 from core.forms import INPUT_CSS, SELECT_CSS
@@ -152,3 +153,18 @@ class RegisterEmployeeForm(forms.Form):
         if pwd1 and pwd2 and pwd1 != pwd2:
             self.add_error("password2", _("Hasła nie pasują do siebie."))
         return cleaned
+
+
+class PlanerAuthenticationForm(AuthenticationForm):
+    """Formularz logowania z tłumaczalnym placeholderem na polu loginu.
+
+    Rozszerza ``AuthenticationForm`` tylko o ``placeholder`` (przez
+    ``gettext_lazy``), żeby tekst podpowiedzi reagował na język UI zamiast
+    być wpisanym na stałe w szablonie.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.setdefault(
+            "placeholder", _("np. jan.kowalski")
+        )

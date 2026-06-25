@@ -1,4 +1,4 @@
-{% load planer_tags %}
+{% load i18n planer_tags %}
 {% comment %}
     Wave 14-A Bundle 2 + 3 — Pelny modal rezerwacji (popup na timeline).
 
@@ -51,9 +51,9 @@
                     </svg>
                 </span>
                 {% if mode == 'edit' and reservation %}
-                    Rezerwacja #{{ reservation.pk }}
+                    {% blocktrans with pk=reservation.pk %}Rezerwacja #{{ pk }}{% endblocktrans %}
                 {% else %}
-                    Nowa rezerwacja
+                    {% trans "Nowa rezerwacja" %}
                 {% endif %}
             </h2>
             {% if mode == 'edit' and reservation %}
@@ -71,10 +71,10 @@
                 </p>
             {% elif mode == 'create' and preselect_machine_uid %}
                 <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 ml-10">
-                    Maszyna <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ preselect_machine_uid }}</span>
+                    {% trans "Maszyna" %} <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ preselect_machine_uid }}</span>
                     {% if preselect_day %}
                         <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
-                        od dnia <span class="font-mono tabular-nums">{{ preselect_day }}</span>
+                        {% trans "od dnia" %} <span class="font-mono tabular-nums">{{ preselect_day }}</span>
                     {% endif %}
                 </p>
             {% endif %}
@@ -82,7 +82,7 @@
         <button type="button"
                 @click="closeReservationModal()"
                 class="flex-shrink-0 p-2 -m-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                aria-label="Zamknij okno rezerwacji">
+                aria-label="{% trans 'Zamknij okno rezerwacji' %}">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -107,8 +107,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
             </svg>
             <p class="text-[11px] leading-tight text-amber-900 dark:text-amber-200">
-                <strong>Akcje terminalne</strong> — zmieniają status rezerwacji.
-                Aby zapisać zmiany w formularzu użyj <em>"Zapisz zmiany"</em> poniżej.
+                {% blocktrans %}<strong>Akcje terminalne</strong> — zmieniają status rezerwacji.
+                Aby zapisać zmiany w formularzu użyj <em>"Zapisz zmiany"</em> poniżej.{% endblocktrans %}
             </p>
         </div>
 
@@ -123,27 +123,27 @@
         {% if reservation.is_pending %}
             <form hx-post="{% url 'reservations:confirm' reservation.pk %}"
                   hx-swap="none"
-                  hx-confirm="Potwierdzić rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Status zmieni się z oczekującej na potwierdzoną."
+                  hx-confirm="{% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Potwierdzić rezerwację #{{ pk }} ({{ uid }})? Status zmieni się z oczekującej na potwierdzoną.{% endblocktrans %}"
                   hx-on::after-request="window.dispatchEvent(new CustomEvent('reservation-updated'))"
                   class="inline">
                 {% csrf_token %}
                 <button type="submit"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Potwierdź status
+                    {% trans "Potwierdź status" %}
                 </button>
             </form>
         {% elif reservation.is_confirmed %}
             <form hx-post="{% url 'reservations:complete' reservation.pk %}"
                   hx-swap="none"
-                  hx-confirm="Zakończyć rezerwację #{{ reservation.pk }} ({{ reservation.machine.uid }})? Maszyna wróci do magazynu, status zmieni się na zakończoną. Tej operacji NIE da się cofnąć."
+                  hx-confirm="{% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Zakończyć rezerwację #{{ pk }} ({{ uid }})? Maszyna wróci do magazynu, status zmieni się na zakończoną. Tej operacji NIE da się cofnąć.{% endblocktrans %}"
                   hx-on::after-request="window.dispatchEvent(new CustomEvent('reservation-updated'))"
                   class="inline">
                 {% csrf_token %}
                 <button type="submit"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9M3 7l9 6 9-6M3 7l9-4 9 4"/></svg>
-                    Zakończ i zwróć maszynę
+                    {% trans "Zakończ i zwróć maszynę" %}
                 </button>
             </form>
         {% endif %}
@@ -154,7 +154,7 @@
                         @click="openAction = openAction === 'cancel' ? null : 'cancel'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 focus:outline-none focus:ring-2 focus:ring-rose-500 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    Anuluj
+                    {% trans "Anuluj" %}
                 </button>
                 <div x-show="openAction === 'cancel'" x-cloak x-transition
                      @click.outside="openAction = null"
@@ -164,19 +164,19 @@
                           hx-on::after-request="if (event.detail.successful) {window.dispatchEvent(new CustomEvent('reservation-updated')); openAction = null;}"
                           class="space-y-2">
                         {% csrf_token %}
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">Powód anulowania *</label>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">{% trans "Powód anulowania" %} *</label>
                         <select name="cancellation_reason" required
                                 class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
-                            <option value="">— wybierz —</option>
+                            <option value="">{% trans "— wybierz —" %}</option>
                             {% for value, label in cancellation_reasons %}
                                 <option value="{{ value }}">{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mt-2">Notatka (opcjonalnie)</label>
-                        <textarea name="cancellation_note" maxlength="500" rows="2" placeholder="Dodatkowe szczegóły…"
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mt-2">{% trans "Notatka (opcjonalnie)" %}</label>
+                        <textarea name="cancellation_note" maxlength="500" rows="2" placeholder="{% trans 'Dodatkowe szczegóły…' %}"
                                   class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"></textarea>
                         <button type="submit" class="w-full mt-2 px-3 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white">
-                            Anuluj rezerwację #{{ reservation.pk }}
+                            {% blocktrans with pk=reservation.pk %}Anuluj rezerwację #{{ pk }}{% endblocktrans %}
                         </button>
                     </form>
                 </div>
@@ -189,7 +189,7 @@
                         @click="openAction = openAction === 'breakdown' ? null : 'breakdown'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 focus:outline-none focus:ring-2 focus:ring-orange-500 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126Z"/></svg>
-                    Zgłoś awarię
+                    {% trans "Zgłoś awarię" %}
                 </button>
                 <div x-show="openAction === 'breakdown'" x-cloak x-transition
                      @click.outside="openAction = null"
@@ -199,12 +199,12 @@
                           hx-on::after-request="if (event.detail.successful) {window.dispatchEvent(new CustomEvent('reservation-updated')); openAction = null;}"
                           class="space-y-2">
                         {% csrf_token %}
-                        <p class="text-xs text-slate-600 dark:text-slate-400">Maszyna trafi do serwisu, rezerwacja zostanie zamknięta dziś, utworzymy ServiceRecord typu "naprawa".</p>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">Opis awarii *</label>
-                        <textarea name="description" required minlength="5" rows="3" placeholder="np. Pęknięty wąż hydrauliczny, silnik nie startuje…"
+                        <p class="text-xs text-slate-600 dark:text-slate-400">{% trans 'Maszyna trafi do serwisu, rezerwacja zostanie zamknięta dziś, utworzymy ServiceRecord typu "naprawa".' %}</p>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">{% trans "Opis awarii" %} *</label>
+                        <textarea name="description" required minlength="5" rows="3" placeholder="{% trans 'np. Pęknięty wąż hydrauliczny, silnik nie startuje…' %}"
                                   class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"></textarea>
                         <button type="submit" class="w-full mt-2 px-3 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white">
-                            Zgłoś awarię i wyślij do serwisu
+                            {% trans "Zgłoś awarię i wyślij do serwisu" %}
                         </button>
                     </form>
                 </div>
@@ -217,7 +217,7 @@
                         @click="openAction = openAction === 'operator' ? null : 'operator'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    Zmień osobę
+                    {% trans "Zmień osobę" %}
                 </button>
                 <div x-show="openAction === 'operator'" x-cloak x-transition
                      @click.outside="openAction = null"
@@ -227,13 +227,13 @@
                           hx-on::after-request="if (event.detail.successful) {window.dispatchEvent(new CustomEvent('reservation-updated')); openAction = null;}"
                           class="space-y-2">
                         {% csrf_token %}
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">Nowa osoba *</label>
-                        <input type="text" name="new_person" required minlength="3" maxlength="100" placeholder="np. Sven Olsen"
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">{% trans "Nowa osoba" %} *</label>
+                        <input type="text" name="new_person" required minlength="3" maxlength="100" placeholder="{% trans 'np. Sven Olsen' %}"
                                value=""
                                class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Aktualnie: <strong>{{ reservation.person }}</strong></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">{% blocktrans with person=reservation.person %}Aktualnie: <strong>{{ person }}</strong>{% endblocktrans %}</p>
                         <button type="submit" class="w-full mt-2 px-3 py-2 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white">
-                            Zapisz nową osobę
+                            {% trans "Zapisz nową osobę" %}
                         </button>
                     </form>
                 </div>
@@ -246,7 +246,7 @@
                         @click="openAction = openAction === 'swap' ? null : 'swap'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    Wymień maszynę
+                    {% trans "Wymień maszynę" %}
                 </button>
                 <div x-show="openAction === 'swap'" x-cloak x-transition
                      @click.outside="openAction = null"
@@ -256,20 +256,20 @@
                           hx-on::after-request="if (event.detail.successful) {window.dispatchEvent(new CustomEvent('reservation-updated')); openAction = null;}"
                           class="space-y-2">
                         {% csrf_token %}
-                        <p class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">⚠ Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na zastępczej, (3) wyślij starą maszynę do serwisu.</p>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">Maszyna zastępcza *</label>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">{% trans "⚠ Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na zastępczej, (3) wyślij starą maszynę do serwisu." %}</p>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">{% trans "Maszyna zastępcza" %} *</label>
                         <select name="new_machine" required
                                 class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
-                            <option value="">— wybierz —</option>
+                            <option value="">{% trans "— wybierz —" %}</option>
                             {% for m in swap_choices %}
                                 <option value="{{ m.pk }}">{{ m.uid }} — {{ m.name|truncatechars:30 }}</option>
                             {% endfor %}
                         </select>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mt-2">Powód (opcjonalnie)</label>
-                        <textarea name="reason" maxlength="500" rows="2" placeholder="np. Awaria silnika, klient wymaga ciągłej pracy"
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mt-2">{% trans "Powód (opcjonalnie)" %}</label>
+                        <textarea name="reason" maxlength="500" rows="2" placeholder="{% trans 'np. Awaria silnika, klient wymaga ciągłej pracy' %}"
                                   class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"></textarea>
                         <button type="submit" class="w-full mt-2 px-3 py-2 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white">
-                            Wymień maszynę
+                            {% trans "Wymień maszynę" %}
                         </button>
                     </form>
                 </div>
@@ -281,7 +281,7 @@
             <a href="{% url 'reservations:detail' reservation.pk %}"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition ml-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                Pełny widok
+                {% trans "Pełny widok" %}
             </a>
         </div>
     </footer>

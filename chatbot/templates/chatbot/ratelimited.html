@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Limit zapytań osiągnięty — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Limit zapytań osiągnięty — Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -58,25 +59,25 @@
                         text-xs font-semibold uppercase tracking-wider">
                 <span class="tabular-nums">429</span>
                 <span aria-hidden="true">·</span>
-                <span>Limit dzienny</span>
+                <span>{% trans "Limit dzienny" %}</span>
             </div>
 
             {# === Heading === #}
             <h1 id="ratelimit-title"
                 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3 tracking-tight">
-                Osiągnąłeś dzienny limit
+                {% trans "Osiągnąłeś dzienny limit" %}
             </h1>
 
             {# === Body — przyczyna + reset === #}
             <p class="text-base text-slate-600 dark:text-slate-300 mb-2">
-                Wykorzystałeś dzisiaj <span class="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">50 zapytań</span>
+                {% blocktrans %}Wykorzystałeś dzisiaj <span class="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">50 zapytań</span>
                 do asystenta. Limit resetuje się o północy
-                <span class="whitespace-nowrap">(00:00 czasu lokalnego)</span>.
+                <span class="whitespace-nowrap">(00:00 czasu lokalnego)</span>.{% endblocktrans %}
             </p>
 
             {# === Sub-text — uzasadnienie biznesowe === #}
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">
-                Ten limit pomaga utrzymać niski koszt operacyjny systemu.
+                {% trans "Ten limit pomaga utrzymać niski koszt operacyjny systemu." %}
             </p>
 
             {% comment %} === CTAs — jeden primary (dashboard) + jeden secondary (kontakt) ===
@@ -97,7 +98,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
-                    <span>Wróć do dashboardu</span>
+                    <span>{% trans "Wróć do dashboardu" %}</span>
                 </a>
 
                 {# Secondary — mailto placeholder do administratora (do M3 ⇒ /docs/) #}
@@ -118,13 +119,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
-                    <span>Skontaktuj się z administratorem</span>
+                    <span>{% trans "Skontaktuj się z administratorem" %}</span>
                 </a>
             </div>
 
             {# === Tip — kiedy limit się resetuje (info-text mały) === #}
             <p class="mt-6 text-xs text-slate-400 dark:text-slate-500">
-                Wskazówka: zapytania liczy się per użytkownik, nie per urządzenie.
+                {% trans "Wskazówka: zapytania liczy się per użytkownik, nie per urządzenie." %}
             </p>
         </div>
     </div>

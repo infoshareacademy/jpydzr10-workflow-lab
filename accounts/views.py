@@ -18,7 +18,7 @@ from django_ratelimit.decorators import ratelimit
 from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors
 
-from .forms import ProfileForm, RegisterEmployeeForm
+from .forms import PlanerAuthenticationForm, ProfileForm, RegisterEmployeeForm
 from .models import EmployeeProfile
 from .services import anonymize_employee, register_employee, terminate_employee, update_profile
 
@@ -39,6 +39,7 @@ class PlanerLoginView(LoginView):
     """
 
     template_name = "accounts/login.html"
+    authentication_form = PlanerAuthenticationForm
     redirect_authenticated_user = True
 
 

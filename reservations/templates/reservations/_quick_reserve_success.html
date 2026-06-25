@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %} Sukces — zielony banner. Backend dodatkowo wysyla HX-Trigger showToast +
    refreshTimeline, ktore obsluguja Alpine komponenty toast() i timelineShell().
    Banner sam fade-out po 3s. {% endcomment %}
@@ -13,7 +14,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
         </svg>
         <div class="flex-1">
-            <p class="font-semibold text-emerald-900 dark:text-emerald-200">Rezerwacja utworzona</p>
+            <p class="font-semibold text-emerald-900 dark:text-emerald-200">{% trans "Rezerwacja utworzona" %}</p>
             {% if reservation %}
                 <p class="text-emerald-800 dark:text-emerald-200 mt-0.5">
                     {{ reservation.machine.uid }} · {{ reservation.start_date }} – {{ reservation.end_date }}

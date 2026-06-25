@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
-{% block title %}Dodaj pracownika — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Dodaj pracownika — Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -35,15 +35,13 @@
                 <path stroke-linecap="round" stroke-linejoin="round"
                       d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72M6 18.719a9.094 9.094 0 01-3.741-.479 3 3 0 014.682-2.72M15 6.75a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
-            <span>Administracja &middot; Pracownicy</span>
+            <span>{% trans "Administracja &middot; Pracownicy" %}</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Dodaj pracownika
+            {% trans "Dodaj pracownika" %}
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-            Zarejestruj nowego pracownika w systemie. Konto użytkownika i profil
-            pracownika powstają w jednej transakcji, hasło sprawdzane jest przez
-            Have I Been Pwned, a funkcja RBAC od razu nadaje odpowiednie uprawnienia.
+            {% trans "Zarejestruj nowego pracownika w systemie. Konto użytkownika i profil pracownika powstają w jednej transakcji, hasło sprawdzane jest przez Have I Been Pwned, a funkcja RBAC od razu nadaje odpowiednie uprawnienia." %}
         </p>
     </header>
 
@@ -86,7 +84,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
-                    Dane logowania
+                    {% trans "Dane logowania" %}
                 </legend>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -135,7 +133,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Dane osobowe
+                    {% trans "Dane osobowe" %}
                 </legend>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -179,7 +177,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
-                    Funkcja i kontakt
+                    {% trans "Funkcja i kontakt" %}
                 </legend>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -204,7 +202,7 @@
                         <label for="{{ form.phone.id_for_label }}"
                                class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
                             {{ form.phone.label }}
-                            <span class="text-slate-400 text-xs font-normal ml-1">(opcjonalnie)</span>
+                            <span class="text-slate-400 text-xs font-normal ml-1">{% trans "(opcjonalnie)" %}</span>
                         </label>
                         {% render_field form.phone class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
                         {% if form.phone.errors %}
@@ -226,7 +224,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    Hasło
+                    {% trans "Hasło" %}
                 </legend>
 
                 {# HIBP info banner — semantic info, NIE warning #}
@@ -238,9 +236,7 @@
                                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <span>
-                            Hasło sprawdzane jest przez bazę <strong>Have I Been Pwned</strong> —
-                            jeśli pojawiło się kiedykolwiek w publicznym wycieku, system je odrzuci.
-                            Minimum <strong>10 znaków</strong>. Zalecane: 12+ znaków, mieszanka liter / cyfr / znaków specjalnych.
+                            {% blocktrans %}Hasło sprawdzane jest przez bazę <strong>Have I Been Pwned</strong> — jeśli pojawiło się kiedykolwiek w publicznym wycieku, system je odrzuci. Minimum <strong>10 znaków</strong>. Zalecane: 12+ znaków, mieszanka liter / cyfr / znaków specjalnych.{% endblocktrans %}
                         </span>
                     </p>
                 </div>
@@ -259,7 +255,7 @@
                             <button type="button"
                                     @click="show1 = !show1; $refs.pwd1.type = show1 ? 'text' : 'password'"
                                     :aria-pressed="show1"
-                                    :aria-label="show1 ? 'Ukryj hasło' : 'Pokaż hasło'"
+                                    :aria-label="show1 ? '{% trans "Ukryj hasło" %}' : '{% trans "Pokaż hasło" %}'"
                                     class="absolute inset-y-0 right-0 flex items-center justify-center px-3 min-w-[44px]
                                            text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300
                                            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset rounded-r-lg
@@ -297,7 +293,7 @@
                             <button type="button"
                                     @click="show2 = !show2; $refs.pwd2.type = show2 ? 'text' : 'password'"
                                     :aria-pressed="show2"
-                                    :aria-label="show2 ? 'Ukryj hasło' : 'Pokaż hasło'"
+                                    :aria-label="show2 ? '{% trans "Ukryj hasło" %}' : '{% trans "Pokaż hasło" %}'"
                                     class="absolute inset-y-0 right-0 flex items-center justify-center px-3 min-w-[44px]
                                            text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300
                                            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset rounded-r-lg
@@ -334,7 +330,7 @@
                           hover:bg-slate-100 dark:hover:bg-slate-700/40
                           focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400
                           transition-colors">
-                    Anuluj
+                    {% trans "Anuluj" %}
                 </a>
 
                 <button type="submit"
@@ -351,7 +347,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                     </svg>
-                    <span>Utwórz konto pracownika</span>
+                    <span>{% trans "Utwórz konto pracownika" %}</span>
                 </button>
             </div>
         </form>
@@ -359,7 +355,7 @@
 
     {# === Footer hint === #}
     <p class="text-center text-xs text-slate-500 dark:text-slate-400">
-        Po utworzeniu konta pracownik otrzyma uprawnienia zgodne z wybraną funkcją (RBAC).
+        {% trans "Po utworzeniu konta pracownik otrzyma uprawnienia zgodne z wybraną funkcją (RBAC)." %}
     </p>
 </section>
 {% endblock %}

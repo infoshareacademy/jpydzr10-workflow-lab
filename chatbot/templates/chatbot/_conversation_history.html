@@ -5,6 +5,7 @@
 {# OOB swap'uje hidden input conversation_id zeby kolejne pytania          #}
 {# trafialy do TEJ konwersacji (a nie zakladaly nowej).                    #}
 {# ====================================================================== #}
+{% load i18n %}
 
 {# OOB: hidden input conversation_id w form'ie — bedzie podmieniony po     #}
 {# stronie klienta przez HTMX (zachowanie swap-oob).                       #}
@@ -34,7 +35,7 @@
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M15.75 19.5L8.25 12l7.5-7.5"/>
         </svg>
-        Wszystkie konwersacje
+        {% trans "Wszystkie konwersacje" %}
     </button>
     {% if conversation %}
         <span class="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">

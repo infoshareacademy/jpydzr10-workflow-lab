@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Per-page selector dla ListView (Sebastian: 100 domyslnie, opcje 10/20/50/100/500/5000).
 
@@ -17,18 +18,18 @@ resetowany do 1 przy zmianie per_page, bo indeksowanie sie zmienia).
             <input type="hidden" name="{{ key }}" value="{{ value }}">
         {% endif %}
     {% endfor %}
-    <label for="per_page_selector" class="font-medium">Pokaż:</label>
+    <label for="per_page_selector" class="font-medium">{% trans "Pokaż:" %}</label>
     <select id="per_page_selector"
             name="per_page"
             onchange="this.form.submit()"
-            aria-label="Ile rekordow na stronie"
+            aria-label="{% trans 'Ile rekordow na stronie' %}"
             class="px-2 py-1 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition">
         {% for choice in per_page_choices %}
             <option value="{{ choice }}" {% if choice == current_per_page %}selected{% endif %}>{{ choice }}</option>
         {% endfor %}
     </select>
-    <span class="text-slate-400">na stronie</span>
+    <span class="text-slate-400">{% trans "na stronie" %}</span>
     <noscript>
-        <button type="submit" class="px-2 py-1 text-xs rounded-md bg-brand-600 text-white">Zastosuj</button>
+        <button type="submit" class="px-2 py-1 text-xs rounded-md bg-brand-600 text-white">{% trans "Zastosuj" %}</button>
     </noscript>
 </form>

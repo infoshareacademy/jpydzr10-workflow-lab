@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Strona nie znaleziona — 404 — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Strona nie znaleziona" %} — 404 — Planer Maszyn Budowlanych{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -41,14 +42,13 @@
         {# === Heading + body === #}
         <h1 id="error-404-title"
             class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3">
-            Strona nie znaleziona
+            {% trans "Strona nie znaleziona" %}
         </h1>
         <p class="text-base text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-2">
-            Hmm, ta strona zniknęła jak młotek z budowy.
+            {% trans "Hmm, ta strona zniknęła jak młotek z budowy." %}
         </p>
         <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
-            Nie znaleziono strony pod tym adresem. Sprawdź URL albo wróć do dashboardu —
-            wszystkie maszyny i rezerwacje są tam, gdzie powinny być.
+            {% trans "Nie znaleziono strony pod tym adresem. Sprawdź URL albo wróć do dashboardu — wszystkie maszyny i rezerwacje są tam, gdzie powinny być." %}
         </p>
 
         {% comment %} === CTAs — primary "Wróć do dashboardu" + secondary "Wstecz" ===
@@ -70,7 +70,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
-                <span>Wróć do dashboardu</span>
+                <span>{% trans "Wróć do dashboardu" %}</span>
             </a>
 
             {# Secondary — history.back() z fallback (jeśli brak historii to no-op) #}
@@ -92,13 +92,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                <span>Wstecz</span>
+                <span>{% trans "Wstecz" %}</span>
             </button>
         </div>
 
         {# === Footer hint — kontakt do admina (low priority, mały tekst) === #}
         <p class="mt-8 text-xs text-slate-400 dark:text-slate-500">
-            Jeśli ten link dał ci administrator, daj mu znać — coś jest do naprawy.
+            {% trans "Jeśli ten link dał ci administrator, daj mu znać — coś jest do naprawy." %}
         </p>
     </div>
 </section>

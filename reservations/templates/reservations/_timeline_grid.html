@@ -1,4 +1,4 @@
-{% load planer_tags %}
+{% load i18n planer_tags %}
 {% comment %} Siatka Gantt: pierwszy rzad = naglowki dat, kolejne rzedy = maszyny z barami.
    `var(--days)` ustawia ile dni ma okres — komorki rozkladaja sie rownomiernie.
    HTMX hx-get tutaj robi swap przy filtrach (`reservations:timeline` z htmx
@@ -22,7 +22,7 @@
      hx-target="#timeline-grid"
      hx-swap="outerHTML"
      role="grid"
-     aria-label="Siatka rezerwacji maszyn">
+     aria-label="{% trans 'Siatka rezerwacji maszyn' %}">
 
     {% if machine_rows %}
         <div class="timeline-grid" data-period="{{ period }}" style="--days: {{ day_list|length }}" role="rowgroup">
@@ -34,8 +34,8 @@
             <div class="timeline-corner" role="columnheader">
                 <span class="inline-flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2"/></svg>
-                    Maszyna
-                    <span class="ml-1 px-1.5 py-0.5 rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[0.625rem] font-semibold tabular-nums" title="Liczba maszyn po aktualnych filtrach">{{ machine_rows|length }}</span>
+                    {% trans "Maszyna" %}
+                    <span class="ml-1 px-1.5 py-0.5 rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[0.625rem] font-semibold tabular-nums" title="{% trans 'Liczba maszyn po aktualnych filtrach' %}">{{ machine_rows|length }}</span>
                 </span>
             </div>
             {% for day in day_list %}
@@ -43,7 +43,7 @@
                     <div class="font-semibold text-slate-700 dark:text-slate-200 {% if day|is_today %}text-brand-700 dark:text-brand-300{% endif %}">{{ day|day_short }}</div>
                     <div class="font-mono tabular-nums text-[0.6875rem] text-slate-500 dark:text-slate-400 {% if day|is_today %}!text-brand-600 dark:!text-brand-400 font-semibold{% endif %}">{{ day|date:"d.m" }}</div>
                     {% if day|is_today %}
-                        <div class="mt-0.5 inline-block px-1 py-0 text-[0.5625rem] uppercase tracking-wider font-bold rounded-sm bg-brand-600 text-white" aria-label="Dzisiaj">Dziś</div>
+                        <div class="mt-0.5 inline-block px-1 py-0 text-[0.5625rem] uppercase tracking-wider font-bold rounded-sm bg-brand-600 text-white" aria-label="{% trans 'Dzisiaj' %}">{% trans "Dziś" %}</div>
                     {% endif %}
                 </div>
             {% endfor %}
@@ -60,7 +60,7 @@
                     {% if row.inspection_date_pl %}
                         <span class="text-[0.625rem] leading-tight {% if row.inspection_status == 'overdue' %}text-rose-700 dark:text-rose-300 font-semibold{% elif row.inspection_status == 'warning' %}text-amber-700 dark:text-amber-300 font-medium{% else %}text-slate-500 dark:text-slate-400{% endif %}"
                               title="{{ row.inspection_status_label }}">
-                            przegląd ważny do <span class="font-mono tabular-nums">{{ row.inspection_date_pl }}</span>
+                            {% trans "przegląd ważny do" %} <span class="font-mono tabular-nums">{{ row.inspection_date_pl }}</span>
                         </span>
                     {% endif %}
                     {% status_badge row.status as cls %}
@@ -69,9 +69,9 @@
                             {{ row.status }}
                         </span>
                         {% if not row.is_reservable %}
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="Maszyna magazynowa — nie można jej rezerwować na budowę. Widoczna na linii czasu tylko po to, żeby śledzić status przeglądu.">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="{% trans 'Maszyna magazynowa — nie można jej rezerwować na budowę. Widoczna na linii czasu tylko po to, żeby śledzić status przeglądu.' %}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                Magazyn
+                                {% trans "Magazyn" %}
                             </span>
                         {% endif %}
                     </div>
@@ -92,13 +92,13 @@
                              @click.self="$dispatch('open-reservation-modal')"
                              role="gridcell"
                              tabindex="-1"
-                             aria-label="Rezerwuj {{ row.uid }} na {{ day|date:'d.m.Y' }} -- otwiera modal pelnej rezerwacji"></div>
+                             aria-label="{% blocktrans with uid=row.uid day=day|date:'d.m.Y' %}Rezerwuj {{ uid }} na {{ day }} -- otwiera modal pelnej rezerwacji{% endblocktrans %}"></div>
                     {% else %}
                         <div class="timeline-day-cell timeline-day-cell--locked {% if day|is_weekend %}is-weekend{% endif %} {% if day|is_today %}is-today{% endif %}"
                              style="grid-row: {{ forloop.parentloop.counter|add:1 }}; grid-column: {{ forloop.counter|add:1 }};"
                              role="gridcell"
                              aria-disabled="true"
-                             aria-label="Maszyna magazynowa — rezerwacja niedostępna"></div>
+                             aria-label="{% trans 'Maszyna magazynowa — rezerwacja niedostępna' %}"></div>
                     {% endif %}
                 {% endfor %}
 
@@ -115,19 +115,19 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
             </div>
-            <h3 class="text-base font-semibold text-slate-900 dark:text-white">Brak rezerwacji w tym zakresie</h3>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">{% trans "Brak rezerwacji w tym zakresie" %}</h3>
             <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Nie znaleziono maszyn pasujących do bieżących filtrów. Zmień kryteria lub przejdź do listy maszyn, aby zacząć od podstaw.
+                {% trans "Nie znaleziono maszyn pasujących do bieżących filtrów. Zmień kryteria lub przejdź do listy maszyn, aby zacząć od podstaw." %}
             </p>
             <div class="mt-5 flex flex-wrap justify-center gap-2">
                 <a href="{% url 'reservations:create' %}"
                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    Nowa rezerwacja
+                    {% trans "Nowa rezerwacja" %}
                 </a>
                 <a href="{% url 'machines:list' %}"
                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
-                    Lista maszyn
+                    {% trans "Lista maszyn" %}
                 </a>
             </div>
         </div>

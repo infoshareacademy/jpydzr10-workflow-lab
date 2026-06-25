@@ -94,7 +94,13 @@ class ServiceRecordForm(forms.ModelForm):
             "performed_by": forms.TextInput(
                 attrs={"class": INPUT_CSS, "placeholder": _("np. Jan Kowalski")}
             ),
-            "description": forms.Textarea(attrs={"class": TEXTAREA_CSS, "rows": 3}),
+            "description": forms.Textarea(
+                attrs={
+                    "class": TEXTAREA_CSS,
+                    "rows": 3,
+                    "placeholder": _("Szczegóły wykonanych prac, wymienione części (jedna na linię), uwagi…"),
+                }
+            ),
             "inspection_document": forms.ClearableFileInput(
                 attrs={"class": FILE_INPUT_CSS, "accept": "application/pdf"}
             ),
@@ -174,7 +180,13 @@ class BulkInspectionForm(forms.Form):
     description = forms.CharField(
         required=False,
         label=_("Opis (wspólny)"),
-        widget=forms.Textarea(attrs={"class": TEXTAREA_CSS, "rows": 2}),
+        widget=forms.Textarea(
+            attrs={
+                "class": TEXTAREA_CSS,
+                "rows": 2,
+                "placeholder": _("Wspólny opis przeglądu — np. zakres prac, użyte materiały."),
+            }
+        ),
     )
     inspection_document = forms.FileField(
         required=False,

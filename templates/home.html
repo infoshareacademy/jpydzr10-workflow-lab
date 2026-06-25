@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load planer_tags %}
+{% load i18n planer_tags %}
 
 {% comment %} ==========================================================================
    home.html — FLAGSHIP DASHBOARD (Bento Grid layout)
@@ -16,7 +16,7 @@
    - Priority 7 (motion): fade-in via custom.css respect prefers-reduced-motion.
 ========================================================================== {% endcomment %}
 
-{% block title %}Strona główna — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Strona główna" %} — Planer Maszyn Budowlanych{% endblock %}
 
 {% block content %}
 <div class="space-y-8">
@@ -29,14 +29,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
             </svg>
-            <span>Panel główny</span>
+            <span>{% trans "Panel główny" %}</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Witaj{% if user.is_authenticated %}, {{ user.get_full_name|default:user.username }}{% endif %}
+            {% trans "Witaj" %}{% if user.is_authenticated %}, {{ user.get_full_name|default:user.username }}{% endif %}
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-            Przegląd kluczowych wskaźników: maszyny, rezerwacje, przeglądy techniczne.
-            Wszystko czego potrzebujesz na pierwszy rzut oka.
+            {% trans "Przegląd kluczowych wskaźników: maszyny, rezerwacje, przeglądy techniczne. Wszystko czego potrzebujesz na pierwszy rzut oka." %}
         </p>
     </section>
 
@@ -44,7 +43,7 @@
     {# KPI BENTO ROW — 4 metrics, mobile 1col → sm 2col → lg 4col #}
     {# Każda karta = link clickable → odpowiednia lista z filtrem. #}
     {# ==================================================================== #}
-    <section aria-label="Kluczowe wskaźniki" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section aria-label="{% trans 'Kluczowe wskaźniki' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {# KPI #1 — Dostepne maszyny (emerald accent — pozytywny status) #}
         {# Dostepne = fizycznie w magazynie (W_MAGAZYNIE + ZAREZERWOWANA).            #}
@@ -52,9 +51,9 @@
         {# zarezerwowanych (sa w magazynie ale z przyszla potwierdzona rezerwacja).   #}
         <a href="{% url 'machines:list' %}?status=W+magazynie"
            class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="Dostępne maszyny — przejdź do listy">
+           aria-label="{% trans 'Dostępne maszyny — przejdź do listy' %}">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dostępne maszyny</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Dostępne maszyny" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -66,12 +65,12 @@
                 <div class="text-sm text-slate-500 dark:text-slate-400 tabular-nums">/ {{ kpi.machines_total }}</div>
             </div>
             <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-                <span class="font-semibold text-emerald-700 dark:text-emerald-400">{{ kpi.machines_in_warehouse_free }}</span> wolnych
+                <span class="font-semibold text-emerald-700 dark:text-emerald-400">{{ kpi.machines_in_warehouse_free }}</span> {% trans "wolnych" %}
                 <span class="text-slate-300 dark:text-slate-600 mx-1">+</span>
-                <span class="font-semibold text-amber-700 dark:text-amber-400">{{ kpi.machines_in_warehouse_booked }}</span> z przyszłą rezerwacją
+                <span class="font-semibold text-amber-700 dark:text-amber-400">{{ kpi.machines_in_warehouse_booked }}</span> {% trans "z przyszłą rezerwacją" %}
             </div>
             <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
-                <span>Zobacz listę</span>
+                <span>{% trans "Zobacz listę" %}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -81,9 +80,9 @@
         {# KPI #2 — Aktualnie na budowie (brand blue) #}
         <a href="{% url 'machines:list' %}?status=Na+budowie"
            class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="Maszyny na budowie — przejdź do listy">
+           aria-label="{% trans 'Maszyny na budowie — przejdź do listy' %}">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Aktualnie na budowie</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Aktualnie na budowie" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
@@ -92,7 +91,7 @@
             </div>
             <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.machines_on_site }}</div>
             <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
-                <span>Zobacz listę</span>
+                <span>{% trans "Zobacz listę" %}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -102,9 +101,9 @@
         {# KPI #3 — Aktywne rezerwacje (amber/yellow — uwaga, w toku) #}
         <a href="{% url 'reservations:timeline' %}"
            class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="Aktywne rezerwacje — otwórz timeline">
+           aria-label="{% trans 'Aktywne rezerwacje — otwórz timeline' %}">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Aktywne rezerwacje</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Aktywne rezerwacje" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -114,11 +113,11 @@
             <div class="flex items-baseline gap-2 flex-wrap">
                 <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.reservations_active }}</div>
                 {% if kpi.reservations_pending %}
-                    <span class="badge-warning">+ {{ kpi.reservations_pending }} oczek.</span>
+                    <span class="badge-warning">{% blocktrans with pending=kpi.reservations_pending %}+ {{ pending }} oczek.{% endblocktrans %}</span>
                 {% endif %}
             </div>
             <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
-                <span>Otwórz timeline</span>
+                <span>{% trans "Otwórz timeline" %}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -140,10 +139,10 @@
                 hx-swap="innerHTML"
                 hx-on::after-request="window.dispatchEvent(new CustomEvent('open-inspections-modal'))"
                 class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border text-left w-full {% if kpi.inspections_overdue %}border-rose-300 dark:border-rose-800{% else %}border-slate-200 dark:border-slate-700{% endif %} p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
-                aria-label="Przeglądy techniczne — otwórz listę maszyn z datami przeglądów"
+                aria-label="{% trans 'Przeglądy techniczne — otwórz listę maszyn z datami przeglądów' %}"
                 aria-haspopup="dialog">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Przeglądy techniczne</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Przeglądy techniczne" %}</span>
                 <span class="relative flex items-center justify-center w-9 h-9 rounded-xl {% if kpi.inspections_overdue %}bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400{% else %}bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400{% endif %}">
                     {% if kpi.inspections_overdue %}
                         <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800 status-dot-pulse" aria-hidden="true"></span>
@@ -156,14 +155,14 @@
             <div class="flex items-baseline gap-2 flex-wrap">
                 {% if kpi.inspections_overdue %}
                     <div class="text-4xl font-bold text-rose-600 dark:text-rose-400 tabular-nums leading-none">{{ kpi.inspections_overdue }}</div>
-                    <div class="text-xs font-medium text-rose-700 dark:text-rose-300">przeterminowane</div>
+                    <div class="text-xs font-medium text-rose-700 dark:text-rose-300">{% trans "przeterminowane" %}</div>
                 {% else %}
                     <div class="text-4xl font-bold text-slate-900 dark:text-slate-50 tabular-nums leading-none">{{ kpi.inspections_upcoming }}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">w 14 dniach</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">{% trans "w 14 dniach" %}</div>
                 {% endif %}
             </div>
             <div class="mt-3 flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 group-hover:gap-2 transition-all">
-                <span>Pokaż listę maszyn</span>
+                <span>{% trans "Pokaż listę maszyn" %}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                 </svg>
@@ -221,14 +220,14 @@
                             </svg>
                         </span>
                         <h2 id="inspections-modal-title" class="text-base font-semibold text-slate-900 dark:text-slate-50">
-                            Maszyny z przeglądem
+                            {% trans "Maszyny z przeglądem" %}
                         </h2>
                     </div>
                     <button type="button"
                             x-ref="closeBtn"
                             @click="open = false"
                             class="p-2 -mr-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
-                            aria-label="Zamknij okno">
+                            aria-label="{% trans 'Zamknij okno' %}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -247,7 +246,7 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                             </svg>
-                            <span class="ml-2 text-sm">Ładowanie listy maszyn…</span>
+                            <span class="ml-2 text-sm">{% trans "Ładowanie listy maszyn…" %}</span>
                         </div>
                     </div>
                 </div>
@@ -256,7 +255,7 @@
                 <footer class="flex items-center justify-end gap-3 px-5 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0">
                     <a href="{% url 'machines:list' %}?inspection_status={% if kpi.inspections_overdue %}overdue{% else %}warning{% endif %}"
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors">
-                        <span>Otwórz pełną listę z filtrem</span>
+                        <span>{% trans "Otwórz pełną listę z filtrem" %}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
@@ -264,7 +263,7 @@
                     <button type="button"
                             @click="open = false"
                             class="inline-flex items-center px-4 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-colors">
-                        Zamknij
+                        {% trans "Zamknij" %}
                     </button>
                 </footer>
             </div>
@@ -291,11 +290,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                     </svg>
-                    <span>Dziś w magazynie</span>
+                    <span>{% trans "Dziś w magazynie" %}</span>
                 </h2>
                 <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    Plan operacyjny na <time datetime="{{ today|date:'Y-m-d' }}" class="font-medium">{{ today|date:'d.m.Y' }}</time>
-                    — kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie.
+                    {% trans "Plan operacyjny na" %} <time datetime="{{ today|date:'Y-m-d' }}" class="font-medium">{{ today|date:'d.m.Y' }}</time>
+                    {% trans "— kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie." %}
                 </p>
             </div>
             {% if user.is_staff %}
@@ -306,9 +305,9 @@
                     {% csrf_token %}
                     <button type="submit"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-                            title="Wymuś teraz daily-sync — zaktualizuje status maszyn na podstawie aktywnych rezerwacji (normalnie cron, raz dziennie).">
+                            title="{% trans 'Wymuś teraz daily-sync — zaktualizuje status maszyn na podstawie aktywnych rezerwacji (normalnie cron, raz dziennie).' %}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Synchronizuj statusy
+                        {% trans "Synchronizuj statusy" %}
                     </button>
                 </form>
             {% endif %}
@@ -330,9 +329,9 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Wyjeżdżają dziś</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">{% trans "Wyjeżdżają dziś" %}</h3>
                         <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
-                            {{ starting_today|length }} {% if starting_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                            {{ starting_today|length }} {% if starting_today|length == 1 %}{% trans "rezerwacja" %}{% else %}{% trans "rezerwacji" %}{% endif %}
                         </p>
                     </div>
                 </header>
@@ -343,7 +342,7 @@
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
                                    class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 focus:outline-none focus-visible:bg-emerald-50/60 dark:focus-visible:bg-emerald-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 transition-colors"
-                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — wyjazd {{ res.start_date|date:'d.m.Y' }}">
+                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.start_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — wyjazd {{ date }}{% endblocktrans %}">
                                     <span class="font-mono font-semibold text-xs text-emerald-700 dark:text-emerald-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
@@ -364,7 +363,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji wyjeżdżających dziś.</p>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{% trans "Brak rezerwacji wyjeżdżających dziś." %}</p>
                     </div>
                 {% endif %}
             </article>
@@ -383,9 +382,9 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Wracają dziś</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">{% trans "Wracają dziś" %}</h3>
                         <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
-                            {{ ending_today|length }} {% if ending_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                            {{ ending_today|length }} {% if ending_today|length == 1 %}{% trans "rezerwacja" %}{% else %}{% trans "rezerwacji" %}{% endif %}
                         </p>
                     </div>
                 </header>
@@ -396,7 +395,7 @@
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
                                    class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-amber-50/40 dark:hover:bg-amber-900/10 focus:outline-none focus-visible:bg-amber-50/60 dark:focus-visible:bg-amber-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 transition-colors"
-                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — zwrot {{ res.end_date|date:'d.m.Y' }}">
+                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.end_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — zwrot {{ date }}{% endblocktrans %}">
                                     <span class="font-mono font-semibold text-xs text-amber-700 dark:text-amber-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
@@ -416,7 +415,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji wracających dziś.</p>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{% trans "Brak rezerwacji wracających dziś." %}</p>
                     </div>
                 {% endif %}
             </article>
@@ -435,9 +434,9 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Dziś w trasie</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-50">{% trans "Dziś w trasie" %}</h3>
                         <p class="text-[0.6875rem] text-slate-500 dark:text-slate-400 tabular-nums">
-                            {{ active_today|length }} {% if active_today|length == 1 %}rezerwacja{% else %}rezerwacji{% endif %}
+                            {{ active_today|length }} {% if active_today|length == 1 %}{% trans "rezerwacja" %}{% else %}{% trans "rezerwacji" %}{% endif %}
                         </p>
                     </div>
                 </header>
@@ -448,12 +447,12 @@
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
                                    class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-brand-50/40 dark:hover:bg-brand-900/10 focus:outline-none focus-visible:bg-brand-50/60 dark:focus-visible:bg-brand-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 transition-colors"
-                                   aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }} — koniec {{ res.end_date|date:'d.m.Y' }}">
+                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.end_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — koniec {{ date }}{% endblocktrans %}">
                                     <span class="font-mono font-semibold text-xs text-brand-700 dark:text-brand-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
                                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                            do <time datetime="{{ res.end_date|date:'Y-m-d' }}" class="tabular-nums font-mono">{{ res.end_date|date:'d.m.Y' }}</time>
+                                            {% trans "do" %} <time datetime="{{ res.end_date|date:'Y-m-d' }}" class="tabular-nums font-mono">{{ res.end_date|date:'d.m.Y' }}</time>
                                             {% if res.site %} · {{ res.site.project_number }}{% endif %}
                                         </p>
                                     </div>
@@ -469,7 +468,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Brak rezerwacji w trasie.</p>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{% trans "Brak rezerwacji w trasie." %}</p>
                     </div>
                 {% endif %}
             </article>
@@ -486,17 +485,16 @@
     {% if kpi.reservations_overdue %}
     <a href="{% url 'reservations:list' %}?status=potwierdzona&amp;end_before={{ today|date:'Y-m-d' }}"
        class="group block rounded-2xl p-5 bg-rose-50/70 dark:bg-rose-900/20 border-l-4 border-rose-500 dark:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 animate-fade-in"
-       aria-label="Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę">
+       aria-label="{% trans 'Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę' %}">
         <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
                     <span class="inline-block h-2 w-2 rounded-full bg-rose-500 status-dot-pulse" aria-hidden="true"></span>
-                    Maszyny do zwrotu
+                    {% trans "Maszyny do zwrotu" %}
                 </p>
                 <p class="text-3xl sm:text-4xl font-bold text-rose-900 dark:text-rose-100 tabular-nums leading-none mt-1">{{ kpi.reservations_overdue }}</p>
                 <p class="text-xs sm:text-sm text-rose-700 dark:text-rose-300 mt-2 max-w-xl">
-                    Spóźnione zwroty — rezerwacje potwierdzone, których planowy koniec już minął.
-                    Kliknij żeby zobaczyć listę i podjąć kontakt z osobą wynajmującą.
+                    {% trans "Spóźnione zwroty — rezerwacje potwierdzone, których planowy koniec już minął. Kliknij żeby zobaczyć listę i podjąć kontakt z osobą wynajmującą." %}
                 </p>
             </div>
             <span class="flex-shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform">
@@ -521,11 +519,10 @@
         </span>
         <div class="flex-1 min-w-0">
             <h2 class="text-sm font-semibold text-rose-900 dark:text-rose-100">
-                {{ kpi.inspections_overdue }} maszyn z przeterminowanym przeglądem technicznym
+                {% blocktrans with count=kpi.inspections_overdue %}{{ count }} maszyn z przeterminowanym przeglądem technicznym{% endblocktrans %}
             </h2>
             <p class="text-xs sm:text-sm text-rose-800 dark:text-rose-200 mt-1">
-                Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym przeglądem
-                nie mogą legalnie pracować na budowie.
+                {% trans "Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym przeglądem nie mogą legalnie pracować na budowie." %}
             </p>
         </div>
     </section>
@@ -544,12 +541,12 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span>Ostatnie rezerwacje</span>
+                    <span>{% trans "Ostatnie rezerwacje" %}</span>
                 </h2>
                 <a href="{% url 'reservations:list' %}"
                    class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
-                   aria-label="Zobacz wszystkie rezerwacje">
-                    <span>Wszystkie</span>
+                   aria-label="{% trans 'Zobacz wszystkie rezerwacje' %}">
+                    <span>{% trans "Wszystkie" %}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -576,7 +573,7 @@
                         <li>
                             <a href="{% url 'reservations:detail' res.pk %}"
                                class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-                               aria-label="Rezerwacja {{ res.machine.uid }} dla {{ res.person }}, {{ res.start_date|date:'d.m.Y' }} – {{ res.end_date|date:'d.m.Y' }}, status {{ res.get_status_display }}">
+                               aria-label="{% blocktrans with uid=res.machine.uid person=res.person start=res.start_date|date:'d.m.Y' end=res.end_date|date:'d.m.Y' status=res.get_status_display %}Rezerwacja {{ uid }} dla {{ person }}, {{ start }} – {{ end }}, status {{ status }}{% endblocktrans %}">
 
                                 {# Avatar -- inicjal osoby rezerwujacej. #}
                                 <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold text-sm" aria-hidden="true">
@@ -619,12 +616,12 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
-                    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">Brak rezerwacji.</p>
+                    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{% trans "Brak rezerwacji." %}</p>
                     <a href="{% url 'reservations:create' %}" class="btn-primary mt-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
-                        Dodaj pierwszą
+                        {% trans "Dodaj pierwszą" %}
                     </a>
                 </div>
             {% endif %}
@@ -632,12 +629,12 @@
 
         {# === Quick actions — 1/3 width on desktop, stacked tiles === #}
         <div class="space-y-3 animate-fade-in">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Szybkie akcje</h2>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">{% trans "Szybkie akcje" %}</h2>
 
             {# Primary action — gradient brand card (one primary CTA per screen) #}
             <a href="{% url 'reservations:create' %}"
                class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="Utwórz nową rezerwację">
+               aria-label="{% trans 'Utwórz nową rezerwację' %}">
                 <div class="flex items-start gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -645,8 +642,8 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="font-semibold text-sm leading-tight">Nowa rezerwacja</div>
-                        <div class="text-xs text-brand-100/90 mt-0.5">Zarezerwuj maszynę na konkretny termin</div>
+                        <div class="font-semibold text-sm leading-tight">{% trans "Nowa rezerwacja" %}</div>
+                        <div class="text-xs text-brand-100/90 mt-0.5">{% trans "Zarezerwuj maszynę na konkretny termin" %}</div>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -657,7 +654,7 @@
             {# Secondary — timeline #}
             <a href="{% url 'reservations:timeline' %}"
                class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="Otwórz timeline rezerwacji">
+               aria-label="{% trans 'Otwórz timeline rezerwacji' %}">
                 <div class="flex items-start gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -665,8 +662,8 @@
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="font-semibold text-sm text-slate-900 dark:text-slate-50">Timeline</div>
-                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Wizualny harmonogram wszystkich maszyn</div>
+                        <div class="font-semibold text-sm text-slate-900 dark:text-slate-50">{% trans "Timeline" %}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% trans "Wizualny harmonogram wszystkich maszyn" %}</div>
                     </div>
                 </div>
             </a>
@@ -674,28 +671,28 @@
             {# Secondary — add machine #}
             <a href="{% url 'machines:create' %}"
                class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="Dodaj nową maszynę">
+               aria-label="{% trans 'Dodaj nową maszynę' %}">
                 <div class="flex items-center gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                     </span>
-                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">Dodaj maszynę</div>
+                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">{% trans "Dodaj maszynę" %}</div>
                 </div>
             </a>
 
             {# Secondary — add construction site #}
             <a href="{% url 'reservations:site_create' %}"
                class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="Dodaj nową budowę">
+               aria-label="{% trans 'Dodaj nową budowę' %}">
                 <div class="flex items-center gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
                         </svg>
                     </span>
-                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">Dodaj budowę</div>
+                    <div class="font-medium text-sm text-slate-900 dark:text-slate-50">{% trans "Dodaj budowę" %}</div>
                 </div>
             </a>
         </div>

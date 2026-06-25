@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
 {% comment %}
     Construction site create / edit — sectioned card form.
@@ -20,17 +20,17 @@
 {% endcomment %}
 
 {% block title %}
-    {% if mode == 'edit' %}Edytuj budowę {{ site.project_number }}{% else %}Nowa budowa{% endif %} — Planer Maszyn
+    {% if mode == 'edit' %}{% trans "Edytuj budowę" %} {{ site.project_number }}{% else %}{% trans "Nowa budowa" %}{% endif %} — {% trans "Planer Maszyn" %}
 {% endblock %}
 
 {% block content %}
 <div class="space-y-5">
 
     {# ============================== BREADCRUMB ============================== #}
-    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="Ścieżka">
+    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="{% trans 'Ścieżka' %}">
         <a href="{% url 'reservations:site_list' %}"
            class="hover:text-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 -mx-1">
-            Budowy
+            {% trans "Budowy" %}
         </a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -43,9 +43,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
             </svg>
-            <span class="text-slate-700 dark:text-slate-200">Edytuj</span>
+            <span class="text-slate-700 dark:text-slate-200">{% trans "Edytuj" %}</span>
         {% else %}
-            <span class="text-slate-700 dark:text-slate-200">Nowa</span>
+            <span class="text-slate-700 dark:text-slate-200">{% trans "Nowa" %}</span>
         {% endif %}
     </nav>
 
@@ -54,17 +54,17 @@
         <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {% if mode == 'edit' %}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <span>Edycja budowy</span>
+                <span>{% trans "Edycja budowy" %}</span>
             {% else %}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                <span>Nowy wpis</span>
+                <span>{% trans "Nowy wpis" %}</span>
             {% endif %}
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {% if mode == 'edit' %}Edytuj budowę {{ site.project_number }}{% else %}Nowa budowa{% endif %}
+            {% if mode == 'edit' %}{% trans "Edytuj budowę" %} {{ site.project_number }}{% else %}{% trans "Nowa budowa" %}{% endif %}
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-            Numer projektu w formacie <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-xs font-mono">BUD-RRRR-NNN</code>{% if mode == 'edit' %} — nie podlega edycji po utworzeniu{% endif %}.
+            {% trans "Numer projektu w formacie" %} <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-xs font-mono">BUD-RRRR-NNN</code>{% if mode == 'edit' %} {% trans "— nie podlega edycji po utworzeniu" %}{% endif %}.
         </p>
     </header>
 
@@ -85,7 +85,7 @@
                         </svg>
                     </span>
                     <div class="min-w-0 flex-1">
-                        <h2 class="font-semibold text-rose-900 dark:text-rose-100">Nie można zapisać budowy</h2>
+                        <h2 class="font-semibold text-rose-900 dark:text-rose-100">{% trans "Nie można zapisać budowy" %}</h2>
                         <ul class="mt-1 space-y-0.5 text-sm text-rose-700 dark:text-rose-300 list-disc list-inside">
                             {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
                         </ul>
@@ -98,16 +98,16 @@
                 <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">1</span>
-                        <span>Podstawowe informacje</span>
+                        <span>{% trans "Podstawowe informacje" %}</span>
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Numer projektu i nazwa budowy.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Numer projektu i nazwa budowy." %}</p>
                 </header>
                 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                     <div>
                         <label for="{{ form.project_number.id_for_label }}"
                                class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                            {{ form.project_number.label }}{% if form.project_number.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                            {{ form.project_number.label }}{% if form.project_number.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                         </label>
                         {{ form.project_number|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors font-mono disabled:bg-slate-50 dark:disabled:bg-slate-900/50 disabled:text-slate-500 disabled:cursor-not-allowed" }}
                         {% if form.project_number.help_text %}
@@ -121,7 +121,7 @@
                     <div>
                         <label for="{{ form.name.id_for_label }}"
                                class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                            {{ form.name.label }}{% if form.name.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                            {{ form.name.label }}{% if form.name.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                         </label>
                         {{ form.name|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                         {% for err in form.name.errors %}
@@ -136,9 +136,9 @@
                 <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">2</span>
-                        <span>Klient i lokalizacja</span>
+                        <span>{% trans "Klient i lokalizacja" %}</span>
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Dla kogo i gdzie realizowana jest budowa.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Dla kogo i gdzie realizowana jest budowa." %}</p>
                 </header>
                 <div class="p-5 space-y-4">
 
@@ -157,7 +157,7 @@
                         <div>
                             <label for="{{ form.address.id_for_label }}"
                                    class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                                {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                                {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                             </label>
                             {{ form.address|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                             {% for err in form.address.errors %}
@@ -183,16 +183,16 @@
                 <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">3</span>
-                        <span>Status i harmonogram</span>
+                        <span>{% trans "Status i harmonogram" %}</span>
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Bieżący status projektu + planowane ramy czasowe.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Bieżący status projektu + planowane ramy czasowe." %}</p>
                 </header>
                 <div class="p-5 space-y-4">
 
                     <div>
                         <label for="{{ form.status.id_for_label }}"
                                class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                            {{ form.status.label }}{% if form.status.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                            {{ form.status.label }}{% if form.status.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                         </label>
                         {{ form.status|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                         {% for err in form.status.errors %}
@@ -230,9 +230,9 @@
                 <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">4</span>
-                        <span>Notatki</span>
+                        <span>{% trans "Notatki" %}</span>
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Dodatkowe informacje, kontakty, uwagi (opcjonalne).</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Dodatkowe informacje, kontakty, uwagi (opcjonalne)." %}</p>
                 </header>
                 <div class="p-5">
                     <label for="{{ form.notes.id_for_label }}" class="sr-only">{{ form.notes.label }}</label>
@@ -250,16 +250,16 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
-                    Anuluj
+                    {% trans "Anuluj" %}
                 </a>
                 <button type="submit"
                         class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
                     {% if mode == 'edit' %}
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Zapisz zmiany
+                        {% trans "Zapisz zmiany" %}
                     {% else %}
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                        Utwórz budowę
+                        {% trans "Utwórz budowę" %}
                     {% endif %}
                 </button>
             </div>

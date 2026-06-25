@@ -15,6 +15,7 @@
 {# ==================================================================== #}
 
 {% load static %}
+{% load i18n %}
 
 <div x-data="chatbotDrawer()"
      x-cloak
@@ -29,7 +30,7 @@
             type="button"
             :aria-expanded="open"
             aria-controls="chatbot-drawer-panel"
-            aria-label="Otwórz asystenta"
+            aria-label="{% trans 'Otwórz asystenta' %}"
             class="fixed bottom-6 right-6 z-40
                    inline-flex items-center justify-center
                    w-14 h-14 rounded-full
@@ -49,7 +50,7 @@
                   d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"/>
         </svg>
         {# Sr-only label — uzupełnia aria-label, np. dla screenreaderów IE. #}
-        <span class="sr-only">Asystent — czat</span>
+        <span class="sr-only">{% trans "Asystent — czat" %}</span>
     </button>
 
     {# ============================================================== #}
@@ -113,10 +114,10 @@
                 <div class="min-w-0">
                     <h2 id="chatbot-drawer-title"
                         class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        Asystent
+                        {% trans "Asystent" %}
                     </h2>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                        Planer Maszyn · czyta i edytuje (za zgodą)
+                        {% trans "Planer Maszyn · czyta i edytuje (za zgodą)" %}
                     </p>
                 </div>
             </div>
@@ -126,8 +127,8 @@
                 <button @click="resetConversation()"
                         type="button"
                         x-ref="firstFocusable"
-                        aria-label="Nowa konwersacja"
-                        title="Nowa konwersacja"
+                        aria-label="{% trans 'Nowa konwersacja' %}"
+                        title="{% trans 'Nowa konwersacja' %}"
                         class="p-2 rounded-md
                                text-slate-500 dark:text-slate-400
                                hover:bg-slate-100 dark:hover:bg-slate-800
@@ -140,13 +141,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
                     </svg>
-                    <span class="sr-only">Nowa konwersacja</span>
+                    <span class="sr-only">{% trans "Nowa konwersacja" %}</span>
                 </button>
 
                 {# Close button — X. #}
                 <button @click="close()"
                         type="button"
-                        aria-label="Zamknij asystenta"
+                        aria-label="{% trans 'Zamknij asystenta' %}"
                         class="p-2 rounded-md
                                text-slate-500 dark:text-slate-400
                                hover:bg-slate-100 dark:hover:bg-slate-800
@@ -169,7 +170,7 @@
         <div id="chatbot-stream"
              role="log"
              aria-live="polite"
-             aria-label="Historia konwersacji"
+             aria-label="{% trans 'Historia konwersacji' %}"
              class="flex-1 overflow-y-auto px-4 py-4 space-y-3
                     bg-slate-50 dark:bg-slate-950/40
                     scroll-smooth">
@@ -208,7 +209,7 @@
                     <span class="chat-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
                     <span class="chat-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
                 </span>
-                <span>Asystent myśli…</span>
+                <span>{% trans "Asystent myśli…" %}</span>
             </div>
 
             <label for="id_question" class="sr-only">{{ form.question.label }}</label>
@@ -224,7 +225,7 @@
                           rows="2"
                           minlength="3"
                           maxlength="2000"
-                          placeholder="Np. Czy KOP-001 jest dostępna od 1 do 5 czerwca?"
+                          placeholder="{% trans 'Np. Czy KOP-001 jest dostępna od 1 do 5 czerwca?' %}"
                           aria-describedby="chatbot-char-count chatbot-hint"
                           class="block w-full resize-none
                                  rounded-lg
@@ -244,7 +245,7 @@
                 <button type="submit"
                         :disabled="charCount < 3 || charCount > 2000 || pending"
                         :aria-disabled="charCount < 3 || charCount > 2000 || pending"
-                        aria-label="Wyślij pytanie"
+                        aria-label="{% trans 'Wyślij pytanie' %}"
                         class="absolute bottom-1.5 right-1.5
                                inline-flex items-center justify-center
                                h-9 w-9 rounded-md
@@ -273,7 +274,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
                     </svg>
-                    Akcje zapisu zawsze wymagają potwierdzenia.
+                    {% trans "Akcje zapisu zawsze wymagają potwierdzenia." %}
                 </span>
                 <span id="chatbot-char-count"
                       class="tabular-nums"
@@ -399,7 +400,7 @@
                                     "flex items-center justify-center " +
                                     "border border-brand-200/60 dark:border-brand-800/60";
                                 avatar.setAttribute("aria-hidden", "true");
-                                avatar.textContent = "Ty";
+                                avatar.textContent = "{% trans 'Ty' %}";
                                 wrap.appendChild(col);
                                 wrap.appendChild(avatar);
                                 stream.appendChild(wrap);
