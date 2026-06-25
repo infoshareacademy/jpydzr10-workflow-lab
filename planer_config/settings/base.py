@@ -72,6 +72,9 @@ THIRD_PARTY_APPS = [
     "axes",  # brute-force protection na login
     "django_cleanup.apps.CleanupConfig",  # auto-delete orphan FileField uploads
     "djmoney",  # MoneyField (kwota + waluta) dla kosztów serwisowych
+    "django_otp",  # 2FA TOTP (Google Authenticator) dla kont uprzywilejowanych
+    "django_otp.plugins.otp_totp",  # urządzenia TOTP
+    "django_otp.plugins.otp_static",  # kody zapasowe (recovery codes)
 ]
 
 LOCAL_APPS = [
@@ -100,6 +103,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",  # request.user.is_verified() (2FA)
+    "accounts.middleware.TwoFactorEnforcementMiddleware",  # wymuszenie 2FA dla ról
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",  # Content Security Policy
@@ -133,6 +138,18 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "/"  # po login wracamy do home/dashboard, nie do profilu
 LOGOUT_REDIRECT_URL = "home"
+
+# =============================================================================
+# 2FA (django-otp) — TOTP wymagane dla kont uprzywilejowanych
+# =============================================================================
+# Wymuszenie drugiego składnika dla administratorów/kierowników/magazynierów.
+# Domyślnie włączone; w środowisku dev można wyłączyć ustawiając OTP_ENFORCE_2FA=0.
+OTP_ENFORCE_2FA = os.environ.get("OTP_ENFORCE_2FA", "1") == "1"
+# Nazwa wystawcy widoczna w aplikacji authenticator (np. Google Authenticator).
+OTP_TOTP_ISSUER = "Planer Maszyn"
+# Obejście 2FA dla testów — czytane w czasie żądania przez middleware
+# (włączane w settings/test.py oraz przez @override_settings).
+OTP_TESTING_BYPASS = False
 
 # django-axes config — wartości konserwatywne (5 prób, 1h lockout)
 AXES_FAILURE_LIMIT = 5

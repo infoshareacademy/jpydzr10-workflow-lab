@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from . import views
+from . import twofactor, views
 
 app_name = "accounts"
 
@@ -10,6 +10,10 @@ urlpatterns = [
     path("login/", views.PlanerLoginView.as_view(), name="login"),
     path("logout/", views.PlanerLogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    # 2FA (TOTP) — setup urządzenia, weryfikacja sesji, pobranie kodów zapasowych.
+    path("2fa/setup/", twofactor.two_factor_setup, name="2fa_setup"),
+    path("2fa/verify/", twofactor.two_factor_verify, name="2fa_verify"),
+    path("2fa/recovery/download/", twofactor.recovery_codes_download, name="2fa_recovery_download"),
     # Strona docelowa dla ``AXES_LOCKOUT_URL`` — pokazywana po przekroczeniu
     # limitu nieudanych prób logowania (5 prób per username+ip → 1h lockout).
     path("zablokowane/", views.AxesLockedView.as_view(), name="locked"),

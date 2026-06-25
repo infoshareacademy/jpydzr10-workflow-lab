@@ -185,6 +185,31 @@ class Command(BaseCommand):
                 "✓ Konta demo ról: seba1 (kierownik), seba2 (magazynier), seba3 (montażysta)."
             )
         )
+        self._preenroll_2fa()
+
+    # Stałe sekrety TOTP dla kont demo wymagających 2FA (kierownik/magazynier) —
+    # dzięki temu rola jest "gotowa do pokazu" bez ręcznego skanowania QR.
+    # Wartości base32 do wpisania w aplikacji authenticator są udokumentowane lokalnie.
+    DEMO_TOTP_KEYS = {
+        "seba1": "1234567890abcdef1234567890abcdef12345678",
+        "seba2": "fedcba0987654321fedcba0987654321fedcba09",
+    }
+
+    def _preenroll_2fa(self):
+        """Tworzy potwierdzone urządzenia TOTP dla seba1/seba2 (stałe sekrety)."""
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+
+        for username, key in self.DEMO_TOTP_KEYS.items():
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                continue
+            TOTPDevice.objects.update_or_create(
+                user=user,
+                name="default",
+                defaults={"key": key, "confirmed": True},
+            )
+        self.stdout.write(self.style.SUCCESS("✓ 2FA pre-enroll: seba1, seba2 (TOTP)."))
 
     def _import_from_m1(self):
         machines_json = M1_DATA_DIR / "machines.json"

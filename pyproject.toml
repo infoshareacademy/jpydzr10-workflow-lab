@@ -47,6 +47,8 @@ dependencies = [
     # bez ``--frozen`` i crashował production extraction.
     "pydantic-ai-slim[google]>=1.97,<2",  # framework agenta + Google Generative AI provider
     "django-money==3.6.0",
+    "django-otp>=1.7,<2",
+    "qrcode[pil]>=8.2",
 ]
 
 # =============================================================================
