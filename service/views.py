@@ -306,7 +306,12 @@ class ReportPageView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["form"] = ReportFilterForm(self.request.GET or None)
+        # Wiążemy formularz kwartalny TYLKO gdy faktycznie podano year/quarter.
+        # Inaczej parametry filtra wykresu (performed_after/before) z tej samej
+        # strony związałyby formularz jako "niepoprawny" i pokazały błędy +
+        # rok=0 zaraz po wejściu. Bez year/quarter → niezwiązany (initial = rok bieżący).
+        has_quarterly = "year" in self.request.GET or "quarter" in self.request.GET
+        ctx["form"] = ReportFilterForm(self.request.GET if has_quarterly else None)
         return ctx
 
 
@@ -366,14 +371,20 @@ class ReportDataView(LoginRequiredMixin, View):
     """Zwraca dane do wykresu Chart.js: koszt serwisu per maszyna dla aktywnych
     filtrów (ten sam selektor co lista i eksport → identyczny zbiór rekordów)."""
 
+    # Maksymalna liczba słupków na wykresie — przy dziesiątkach maszyn etykiety
+    # osi X stają się nieczytelne. Pokazujemy najdroższe maszyny (top-N).
+    CHART_TOP_N = 15
+
     def get(self, request: HttpRequest) -> HttpResponse:
         from django.db.models import Sum
         from django.http import JsonResponse
 
         qs = filter_service_records(request.GET)
-        rows = (
+        rows = list(
             qs.values("machine__uid").annotate(total=Sum("cost")).order_by("-total", "machine__uid")
         )
+        truncated = len(rows) > self.CHART_TOP_N
+        rows = rows[: self.CHART_TOP_N]
         labels: list[str] = []
         data: list[float] = []
         for row in rows:
@@ -381,7 +392,15 @@ class ReportDataView(LoginRequiredMixin, View):
             amount = getattr(total, "amount", total) or Decimal("0")
             labels.append(row["machine__uid"])
             data.append(float(amount))
-        return JsonResponse({"labels": labels, "data": data, "currency": "EUR"})
+        return JsonResponse(
+            {
+                "labels": labels,
+                "data": data,
+                "currency": "EUR",
+                "truncated": truncated,
+                "top_n": self.CHART_TOP_N,
+            }
+        )
 
 
 class InspectionPdfView(LoginRequiredMixin, View):

@@ -242,6 +242,14 @@
         </p>
     </div>
 
+    <p id="costChartNotice" class="hidden mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="costChartNoticeText"></span>
+    </p>
+
     <div class="mt-4">
         <a href="{% url 'service:export_all_xlsx' %}?{{ request.GET.urlencode }}"
            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
@@ -262,6 +270,8 @@
     (function () {
         const canvas = document.getElementById("costChart");
         const empty = document.getElementById("costChartEmpty");
+        const notice = document.getElementById("costChartNotice");
+        const noticeText = document.getElementById("costChartNoticeText");
         if (!canvas || typeof Chart === "undefined") return;
         const params = new URLSearchParams(window.location.search);
         fetch("{% url 'service:report_data' %}?" + params.toString(), {
@@ -273,6 +283,12 @@
                     canvas.classList.add("hidden");
                     empty.classList.remove("hidden");
                     return;
+                }
+                if (d.truncated && notice && noticeText) {
+                    noticeText.textContent =
+                        "Wykres pokazuje " + d.top_n + " najdroższych maszyn. " +
+                        "Pełne zestawienie wszystkich maszyn pobierzesz w eksporcie Excel.";
+                    notice.classList.remove("hidden");
                 }
                 new Chart(canvas, {
                     type: "bar",
