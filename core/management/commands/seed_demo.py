@@ -24,7 +24,12 @@ M1_DATA_DIR = settings.BASE_DIR / "archive" / "milestone-1" / "data"
 
 
 class Command(BaseCommand):
-    help = "Bulk seed demo data: superuser, budowy, maszyny, rezerwacje."
+    help = "Bulk seed demo data: superuser, budowy, maszyny, rezerwacje, serwis."
+
+    # Domyślna liczba wpisów serwisowych na maszynę (delegowane do
+    # ``seed_service``). Przy ~40 maszynach daje ~120 rekordów — zdrowy zbiór
+    # dla feature raportów (koszt per maszyna + wykres top-N + Excel z filtrami).
+    SERVICE_PER_MACHINE_DEFAULT = 3
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -55,6 +60,15 @@ class Command(BaseCommand):
             default=30,
             help="Liczba rezerwacji do wygenerowania (domyślnie 30).",
         )
+        parser.add_argument(
+            "--service-per-machine",
+            type=int,
+            default=self.SERVICE_PER_MACHINE_DEFAULT,
+            help=(
+                "Liczba wpisów serwisowych na maszynę "
+                f"(domyślnie {self.SERVICE_PER_MACHINE_DEFAULT})."
+            ),
+        )
 
     @transaction.atomic
     def handle(self, *args, **opts):
@@ -72,6 +86,15 @@ class Command(BaseCommand):
         call_command("seed_machines", count=opts["machines"], stdout=self.stdout)
         call_command("seed_sites", count=opts["sites"], stdout=self.stdout)
         call_command("seed_reservations", count=opts["reservations"], stdout=self.stdout)
+        # Wpisy serwisowe — fundament feature raportów (koszt per maszyna +
+        # wykres top-N + Excel z filtrami). ``seed_service`` jest idempotentne
+        # (pomija jeśli wpisy już istnieją), więc bezpiecznie wołać przy każdym
+        # ``seed_demo``. Po ``--reset`` baza wpisów jest pusta → zostaną utworzone.
+        call_command(
+            "seed_service",
+            per_machine=opts["service_per_machine"],
+            stdout=self.stdout,
+        )
         self.stdout.write(self.style.SUCCESS("✓ Demo data zaseedowane."))
 
     def _reset(self):
