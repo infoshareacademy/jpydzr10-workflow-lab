@@ -292,6 +292,21 @@ def generate_all_service_records_xlsx() -> bytes:
     return buffer.getvalue()
 
 
+def generate_filtered_service_records_xlsx(*, records) -> bytes:
+    """Wygeneruj XLSX z PRZEKAZANEJ (już przefiltrowanej) listy wpisów serwisowych.
+
+    Wiersze odpowiadają dokładnie aktywnym filtrom listy serwisowej — eksport
+    "Pobierz Excel" zawiera to samo, co widać na ekranie i na wykresie.
+    """
+    wb = Workbook()
+    ws = wb.active
+    _write_records_sheet(ws, records, "Historia serwisu (filtr)", _XLSX_HEADERS_FULL)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()
+
+
 # ----------------------------------------------------------------------------
 # PDF — pojedynczy protokół przeglądu
 # ----------------------------------------------------------------------------

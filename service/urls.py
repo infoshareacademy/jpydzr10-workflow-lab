@@ -13,6 +13,7 @@ urlpatterns = [
     path("dodaj/", views.ServiceRecordCreateView.as_view(), name="create"),
     path("bulk-przeglady/", views.BulkInspectionView.as_view(), name="bulk_inspection"),
     path("raporty/", views.ReportPageView.as_view(), name="reports"),
+    path("raporty/dane.json", views.ReportDataView.as_view(), name="report_data"),
     path(
         "raporty/xlsx/<int:year>/<int:quarter>/",
         views.ReportXlsxView.as_view(),

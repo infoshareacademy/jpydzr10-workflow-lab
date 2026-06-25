@@ -61,11 +61,12 @@ from .forms import (
 )
 from .models import ServiceRecord
 from .reports import (
-    generate_all_service_records_xlsx,
+    generate_filtered_service_records_xlsx,
     generate_inspection_pdf,
     generate_machine_service_xlsx,
     generate_quarterly_report_xlsx,
 )
+from .selectors import filter_service_records
 from .services import close_service, create_service_record, update_service_record
 
 logger = logging.getLogger("service")
@@ -91,29 +92,11 @@ class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
     context_object_name = "records"
 
     def get_queryset(self):
-        qs = ServiceRecord.objects.select_related("machine").order_by("-performed_date", "-pk")
+        # Filtrowanie delegowane do współdzielonego selektora (te same 8 filtrów
+        # dla listy, eksportu i wykresu). Sortowanie zostaje tu — poza selektorem.
         self.filter_form = ServiceRecordFilterForm(self.request.GET or None)
-        if self.filter_form.is_valid():
-            data = self.filter_form.cleaned_data
-            if data.get("record_type"):
-                qs = qs.filter(record_type=data["record_type"])
-            if data.get("machine"):
-                qs = qs.filter(machine=data["machine"])
-            if data.get("performed_after"):
-                qs = qs.filter(performed_date__gte=data["performed_after"])
-            if data.get("performed_before"):
-                qs = qs.filter(performed_date__lte=data["performed_before"])
-            if data.get("cost_min") is not None:
-                qs = qs.filter(cost__gte=data["cost_min"])
-            if data.get("cost_max") is not None:
-                qs = qs.filter(cost__lte=data["cost_max"])
-            if data.get("expensive_only"):
-                # F-2: enable expensive() manager (cost > 1000 PLN).
-                qs = qs.filter(pk__in=ServiceRecord.objects.expensive().values("pk"))
-            if data.get("only_inspections"):
-                # F-3: enable inspections() manager (excludes naprawa).
-                qs = qs.filter(pk__in=ServiceRecord.objects.inspections().values("pk"))
-        return qs
+        qs = filter_service_records(self.request.GET)
+        return qs.order_by("-performed_date", "-pk")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -369,11 +352,36 @@ class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
     """
 
     def get(self, request: HttpRequest) -> HttpResponse:
-        payload = generate_all_service_records_xlsx()
+        # Eksport respektuje aktywne filtry listy (te same 8 filtrów przez selektor)
+        # — Excel zawiera dokładnie te wiersze, które widać na ekranie.
+        records = filter_service_records(request.GET).order_by("-performed_date", "-pk")
+        payload = generate_filtered_service_records_xlsx(records=records)
         filename = slugify(f"serwis-wszystkie-{date.today().isoformat()}") + ".xlsx"
         response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
+
+
+class ReportDataView(LoginRequiredMixin, View):
+    """Zwraca dane do wykresu Chart.js: koszt serwisu per maszyna dla aktywnych
+    filtrów (ten sam selektor co lista i eksport → identyczny zbiór rekordów)."""
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.db.models import Sum
+        from django.http import JsonResponse
+
+        qs = filter_service_records(request.GET)
+        rows = (
+            qs.values("machine__uid").annotate(total=Sum("cost")).order_by("-total", "machine__uid")
+        )
+        labels: list[str] = []
+        data: list[float] = []
+        for row in rows:
+            total = row["total"]
+            amount = getattr(total, "amount", total) or Decimal("0")
+            labels.append(row["machine__uid"])
+            data.append(float(amount))
+        return JsonResponse({"labels": labels, "data": data, "currency": "EUR"})
 
 
 class InspectionPdfView(LoginRequiredMixin, View):

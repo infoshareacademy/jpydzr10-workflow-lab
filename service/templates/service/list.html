@@ -63,7 +63,7 @@
                 </svg>
                 <span>Raporty</span>
             </a>
-            <a href="{% url 'service:export_all_xlsx' %}"
+            <a href="{% url 'service:export_all_xlsx' %}?{{ request.GET.urlencode }}"
                class="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                title="Pobierz wszystkie wpisy serwisowe w formacie Excel">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"

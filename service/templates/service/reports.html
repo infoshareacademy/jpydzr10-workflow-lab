@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load planer_tags widget_tweaks %}
+{% load static planer_tags widget_tweaks %}
 
 {% block title %}Raporty serwisowe — Planer Maszyn Budowlanych{% endblock %}
 
@@ -202,10 +202,102 @@
         </p>
     </div>
 </form>
+
+{# ============================== Koszt per maszyna (wykres + Excel) ============================== #}
+<section class="surface-card p-5 md:p-6 mt-6">
+    <h2 class="text-base font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Koszt serwisu per maszyna
+    </h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+        Wybierz dowolny okres — wykres, tabela i eksport Excel pokazują dokładnie ten sam zbiór wpisów.
+    </p>
+
+    <form method="get" action="" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div>
+            <label for="chart_after" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Od dnia</label>
+            <input type="date" id="chart_after" name="performed_after" value="{{ request.GET.performed_after }}"
+                   class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
+        </div>
+        <div>
+            <label for="chart_before" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Do dnia</label>
+            <input type="date" id="chart_before" name="performed_before" value="{{ request.GET.performed_before }}"
+                   class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
+        </div>
+        <div class="flex items-end">
+            <button type="submit"
+                    class="w-full min-h-[44px] rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold transition">
+                Pokaż wykres
+            </button>
+        </div>
+    </form>
+
+    <div class="relative" style="min-height:240px;">
+        <canvas id="costChart" height="120" aria-label="Wykres kosztów serwisu per maszyna" role="img"></canvas>
+        <p id="costChartEmpty" class="hidden text-sm text-slate-500 dark:text-slate-400 py-8 text-center">
+            Brak wpisów serwisowych dla wybranego okresu.
+        </p>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'service:export_all_xlsx' %}?{{ request.GET.urlencode }}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Pobierz Excel (ten sam okres)
+        </a>
+    </div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}" nonce="{{ CSP_NONCE }}"></script>
 <script nonce="{{ CSP_NONCE }}">
+    // Wykres "koszt per maszyna" — pobiera dane z tego samego selektora co lista
+    // i eksport (identyczny querystring), więc wykres/tabela/Excel są spójne.
+    (function () {
+        const canvas = document.getElementById("costChart");
+        const empty = document.getElementById("costChartEmpty");
+        if (!canvas || typeof Chart === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        fetch("{% url 'service:report_data' %}?" + params.toString(), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+            .then((r) => r.json())
+            .then((d) => {
+                if (!d.labels || d.labels.length === 0) {
+                    canvas.classList.add("hidden");
+                    empty.classList.remove("hidden");
+                    return;
+                }
+                new Chart(canvas, {
+                    type: "bar",
+                    data: {
+                        labels: d.labels,
+                        datasets: [
+                            {
+                                label: "Koszt (" + d.currency + ")",
+                                data: d.data,
+                                backgroundColor: "rgba(37, 99, 235, 0.7)",
+                                borderColor: "rgba(29, 78, 216, 1)",
+                                borderWidth: 1,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } },
+                        plugins: { legend: { display: true } },
+                    },
+                });
+            })
+            .catch(() => {});
+    })();
     // ---------------------------------------------------------------------
     // reportsPage() — Alpine state:
     //   * `year/quarter` — synced z <input>/<select> przez x-model, używane
