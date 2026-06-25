@@ -23,7 +23,7 @@
         <p><strong>{% trans "UID:" %}</strong> <span class="font-mono">{{ machine.uid }}</span></p>
         <p><strong>{% trans "Nazwa:" %}</strong> {{ machine.name }}</p>
         <p><strong>{% trans "Typ:" %}</strong> {{ machine.get_machine_type_display }}</p>
-        <p><strong>{% trans "Status:" %}</strong> {{ machine.status }}</p>
+        <p><strong>{% trans "Status:" %}</strong> {{ machine.get_status_display }}</p>
     </div>
 
     <form method="post" class="mt-6 flex items-center justify-end gap-3">

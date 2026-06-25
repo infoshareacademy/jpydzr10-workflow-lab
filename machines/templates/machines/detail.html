@@ -40,7 +40,7 @@
                             {% status_badge machine.status as css %}
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {{ css }}">
                                 <span class="w-1.5 h-1.5 rounded-full bg-current opacity-60 mr-1.5" aria-hidden="true"></span>
-                                {{ machine.status }}
+                                {{ machine.get_status_display }}
                             </span>
                             {% if not machine.is_reservable %}
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="{% trans 'Maszyna magazynowa — nie podlega rezerwacjom, jedynie śledzimy jej przeglądy.' %}">
