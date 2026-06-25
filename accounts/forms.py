@@ -165,6 +165,4 @@ class PlanerAuthenticationForm(AuthenticationForm):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.fields["username"].widget.attrs.setdefault(
-            "placeholder", _("np. jan.kowalski")
-        )
+        self.fields["username"].widget.attrs.setdefault("placeholder", _("np. jan.kowalski"))

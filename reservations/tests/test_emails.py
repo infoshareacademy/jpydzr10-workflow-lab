@@ -93,9 +93,7 @@ def test_single_confirm_sends_one_email(django_capture_on_commit_callbacks, mail
 def test_confirm_sends_email_with_site(django_capture_on_commit_callbacks, mailoutbox, machine):
     """Rezerwacja z budową → szczegóły budowy (nr projektu + nazwa) w treści maila."""
     creator = _creator()
-    site = ConstructionSiteFactory(
-        project_number="BUD-2026-077", name="Budowa Testowa Centrum"
-    )
+    site = ConstructionSiteFactory(project_number="BUD-2026-077", name="Budowa Testowa Centrum")
     start = date.today() + timedelta(days=5)
     res = create_reservation(
         machine_id=machine.pk,

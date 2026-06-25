@@ -175,9 +175,7 @@ class TestSetupFlow:
         user = _make_user("kier5", EmployeeProfile.Function.KIEROWNIK)
         client.force_login(user)
         client.get(reverse("accounts:2fa_setup"))
-        response = client.post(
-            reverse("accounts:2fa_setup"), {"token": "000000"}, follow=False
-        )
+        response = client.post(reverse("accounts:2fa_setup"), {"token": "000000"}, follow=False)
         assert response.status_code == 200
         assert not TOTPDevice.objects.get(user=user).confirmed
         # Użytkownik widzi komunikat o błędnym kodzie (a nie cichą porażkę).
@@ -348,9 +346,7 @@ class TestRecoveryCodesDownload:
         response = client.get(reverse("accounts:2fa_recovery_download"))
         assert response.status_code == 200
         assert response["Content-Type"].startswith("text/plain")
-        assert response["Content-Disposition"] == (
-            'attachment; filename="kody-zapasowe-2fa.txt"'
-        )
+        assert response["Content-Disposition"] == ('attachment; filename="kody-zapasowe-2fa.txt"')
         body = response.content.decode()
         for code in expected_codes:
             assert code in body

@@ -120,9 +120,7 @@ def test_record_type_filter(records):
     assert naprawy.count() == 2
     assert all(r.record_type == ServiceRecord.RecordType.NAPRAWA.value for r in naprawy)
 
-    kwartalne = filter_service_records(
-        {"record_type": ServiceRecord.RecordType.PRZEGLAD_KWARTALNY}
-    )
+    kwartalne = filter_service_records({"record_type": ServiceRecord.RecordType.PRZEGLAD_KWARTALNY})
     assert kwartalne.count() == 1
     assert kwartalne.first().cost.amount == Decimal("500.00")
 
@@ -279,9 +277,7 @@ def test_normalize_eur_migration_sets_all_records_to_eur(machines):
 
     from django.apps import apps as global_apps
 
-    migration_0004 = importlib.import_module(
-        "service.migrations.0004_normalize_cost_currency_eur"
-    )
+    migration_0004 = importlib.import_module("service.migrations.0004_normalize_cost_currency_eur")
 
     pln_rec = ServiceRecordFactory(
         machine=machines[0],

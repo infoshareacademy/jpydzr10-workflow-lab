@@ -98,7 +98,9 @@ class ServiceRecordForm(forms.ModelForm):
                 attrs={
                     "class": TEXTAREA_CSS,
                     "rows": 3,
-                    "placeholder": _("Szczegóły wykonanych prac, wymienione części (jedna na linię), uwagi…"),
+                    "placeholder": _(
+                        "Szczegóły wykonanych prac, wymienione części (jedna na linię), uwagi…"
+                    ),
                 }
             ),
             "inspection_document": forms.ClearableFileInput(
