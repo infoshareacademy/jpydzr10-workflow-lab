@@ -54,7 +54,8 @@ def test_profile_post_valid_updates_via_service(client):
     assert resp["Location"] == reverse("accounts:profile")
 
     user.profile.refresh_from_db()
-    assert user.profile.phone == "+48 600 100 200"
+    # Wpis z separatorami jest normalizowany do ścisłego E.164.
+    assert user.profile.phone == "+48600100200"
     assert user.profile.employee_id == "EMP-007"
     assert user.profile.theme_preference == "dark"
 

@@ -115,7 +115,8 @@ def test_terminate_employee_clears_groups():
         password="StrongP@ss!5",
     )
     # Dodajemy do grupy ręcznie (function=MONTAZYSTA nie mapuje się na żadną).
-    grp = Group.objects.create(name="Magazynierzy")
+    # Grupa istnieje już po migracji RBAC, więc get_or_create zamiast create.
+    grp, _ = Group.objects.get_or_create(name="Magazynierzy")
     profile.user.groups.add(grp)
     assert profile.user.groups.count() == 1
 

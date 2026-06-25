@@ -26,10 +26,13 @@ class TestSetupGroupsCommand:
         return out.getvalue()
 
     def test_creates_three_groups(self):
+        # Grupy są tworzone już przez migrację RBAC, więc setup_groups działa
+        # tu jako re-sync (idempotentny) — sprawdzamy obecność grup i to, że
+        # komenda raportuje synchronizację uprawnień Magazynierów.
         output = self._run()
         names = set(Group.objects.values_list("name", flat=True))
         assert {"Magazynierzy", "Kierownicy", "Administratorzy"} <= names
-        assert "Utworzono grupę: Magazynierzy" in output
+        assert "Magazynierzy:" in output
 
     def test_magazynierzy_have_reservation_perms(self):
         self._run()

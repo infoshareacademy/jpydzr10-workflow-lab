@@ -5,10 +5,25 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
 from core.forms import INPUT_CSS, SELECT_CSS
+from core.validators import normalize_phone_e164, phone_e164_validator
 
 from .models import EmployeeProfile
 
 User = get_user_model()
+
+
+def _clean_phone_field(raw: str | None) -> str:
+    """Normalizuje i waliduje numer telefonu z formularza.
+
+    Akceptuje wpis z separatorami ("+48 600 100 200"), sprowadza go do ścisłego
+    E.164 i waliduje; pusty wpis zwraca ``""`` (formularz konwertuje na NULL
+    przez ``EmployeeProfile.save``).
+    """
+    normalized = normalize_phone_e164(raw)
+    if normalized is None:
+        return ""
+    phone_e164_validator(normalized)
+    return normalized
 
 
 class ProfileForm(forms.ModelForm):
@@ -27,6 +42,9 @@ class ProfileForm(forms.ModelForm):
             "employee_id": forms.TextInput(attrs={"class": INPUT_CSS}),
             "theme_preference": forms.Select(attrs={"class": SELECT_CSS}),
         }
+
+    def clean_phone(self):
+        return _clean_phone_field(self.cleaned_data.get("phone"))
 
 
 class RegisterEmployeeForm(forms.Form):
@@ -123,6 +141,9 @@ class RegisterEmployeeForm(forms.Form):
         if User.objects.filter(username__iexact=username).exists():
             raise forms.ValidationError(_("Użytkownik o takim loginie już istnieje."))
         return username
+
+    def clean_phone(self):
+        return _clean_phone_field(self.cleaned_data.get("phone"))
 
     def clean(self):
         cleaned = super().clean()

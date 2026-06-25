@@ -37,7 +37,7 @@ class TestReservationUpdateValidationError:
 
     @freeze_time("2026-05-16")
     def test_update_with_service_validation_error_renders_form(
-        self, client_logged, machine, monkeypatch
+        self, client_logged, user, machine, monkeypatch
     ):
         """Service rzuca VR → form_invalid path (lines 296-298)."""
 
@@ -53,6 +53,7 @@ class TestReservationUpdateValidationError:
 
         res = PendingReservationFactory(
             machine=machine,
+            created_by=user,
             person="tester",
             start_date=date(2030, 1, 1),
             end_date=date(2030, 1, 5),
@@ -75,10 +76,11 @@ class TestReservationUpdateValidationError:
         assert response.status_code == 200
 
     @freeze_time("2026-05-16")
-    def test_update_success_path_redirects_to_detail(self, client_logged, machine):
+    def test_update_success_path_redirects_to_detail(self, client_logged, user, machine):
         """Happy path: form valid + service ok → 302 do detail."""
         res = PendingReservationFactory(
             machine=machine,
+            created_by=user,
             person="tester",
             start_date=date(2030, 1, 1),
             end_date=date(2030, 1, 5),
@@ -131,20 +133,13 @@ class TestReservationUpdateSuperuserBypass:
 
 @pytest.mark.django_db
 class TestReservationUpdateEmptyName:
-    """User z całkowicie pustym imieniem i pustym username → queryset.none()."""
+    """User, który nie utworzył żadnej rezerwacji → queryset.none() (404)."""
 
-    def test_user_with_empty_normalized_name_sees_nothing(self, client, db, machine):
-        """B-5 edge: normalize zwraca '' → get_queryset zwraca .none().
-
-        Tworzymy username z samych znaków cyrylickich — po NFKD + ASCII drop
-        zostaje pusty string. Defense-in-depth check (gdyby ktoś w przyszłości
-        podpiął email-as-username z samych non-ASCII znaków).
-        """
+    def test_user_without_own_reservations_sees_nothing(self, client, db, machine):
+        """Ownership po ``created_by``: cudza rezerwacja (created_by != user) → 404."""
         user_model = get_user_model()
-        # 'абв' to cyrylica — NFKD nie rozkłada, encode('ASCII','ignore') zwraca b''
-        # Django UnicodeUsernameValidator dopuszcza non-ASCII letters.
         user = user_model.objects.create_user(
-            username="абв",  # NFKD+ASCII drop = ''
+            username="bez-wlasnych",
             password="secret-pw-123!",
             first_name="",
             last_name="",
@@ -156,15 +151,16 @@ class TestReservationUpdateEmptyName:
         user.user_permissions.add(*perms)
         client.force_login(user)
 
-        # Stwórz res z dowolnym person — filter zwróci pusty queryset.
+        # Rezerwacja bez created_by (lub utworzona przez innego) → filtr
+        # created_by zwraca pusty queryset dla tego użytkownika.
         res = PendingReservationFactory(
             machine=machine,
-            person="cokolwiek",
+            created_by=None,
             start_date=date.today() + timedelta(days=5),
             end_date=date.today() + timedelta(days=10),
         )
         response = client.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 404  # .none() → 404 z DetailView lookup
+        assert response.status_code == 404  # filter created_by → 404 z lookup
 
 
 # =============================================================================
@@ -995,6 +991,7 @@ class TestReservationCreateHTMX:
             # reservationCreated + refreshTimeline + showToast (z payload z PK
             # rezerwacji i UID maszyny zeby user wiedzial co zostalo zapisane).
             import json as _json
+
             payload = _json.loads(response["HX-Trigger"])
             assert payload["reservationCreated"] is True
             assert payload["refreshTimeline"] is True

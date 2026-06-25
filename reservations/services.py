@@ -169,6 +169,7 @@ def create_reservation(
     responsible_person: str = "",
     today: date | None = None,
     require_full_fields: bool = False,
+    created_by=None,
 ) -> Reservation:
     """Create a new :class:`Reservation` after running all validations.
 
@@ -286,6 +287,7 @@ def create_reservation(
         notes=notes,
         responsible_person=(responsible_person or "").strip(),
         status=Reservation.Status.OCZEKUJACA,
+        created_by=created_by,
     )
     logger.info(
         "Rezerwacja %s utworzona (%s %s - %s)",
@@ -679,9 +681,7 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
             start_date__gt=today,
         ).exists()
 
-        target = (
-            Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
-        )
+        target = Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
         if machine.status != target:
             machine.status = target
             machine.save(update_fields=["status", "updated_at"])
@@ -1223,6 +1223,7 @@ def create_batch_reservation(
     address: str = "",
     notes: str = "",
     today: date | None = None,
+    created_by=None,
 ) -> dict:
     """B-7 — utwórz N rezerwacji jako jedną grupę (batch).
 
@@ -1346,6 +1347,7 @@ def create_batch_reservation(
             notes=notes,
             status=Reservation.Status.OCZEKUJACA,
             batch_id=batch_id,
+            created_by=created_by,
         )
         created.append(reservation)
 

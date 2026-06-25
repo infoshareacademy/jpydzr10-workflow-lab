@@ -70,5 +70,8 @@ class EmployeeProfileFactory(DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     function = EmployeeProfile.Function.MAGAZYNIER
-    phone = factory.Faker("phone_number", locale="pl_PL")
+    # Numer telefonu w formacie E.164 z gwarancją unikalności (Sequence) — pole
+    # ``phone`` jest UNIQUE i walidowane regexem E.164, więc losowy Faker
+    # ("123-456-789", spacje) łamałby zarówno format jak i unikalność.
+    phone = factory.Sequence(lambda n: f"+48600{n:06d}")
     is_active_employee = True

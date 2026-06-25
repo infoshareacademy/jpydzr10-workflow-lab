@@ -19,6 +19,7 @@ without a data migration.
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -314,6 +315,20 @@ class Reservation(TimestampedModel):
         help_text=_(
             "Jeśli rezerwacja należy do grupy (multi-maszynowa), "
             "wszystkie rezerwacje w grupie mają ten sam UUID."
+        ),
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reservations_created",
+        verbose_name=_("Utworzona przez"),
+        help_text=_(
+            "Użytkownik, który utworzył rezerwację. Decyduje o adresacie "
+            "powiadomienia e-mail po potwierdzeniu oraz o widoczności w edycji "
+            "dla pracowników niebędących administratorami."
         ),
     )
 

@@ -12,11 +12,43 @@ Walidacja jest trójwarstwowa:
    ``mal.exe`` przemianowany na ``mal.jpg`` zostanie odrzucony.
 """
 
+import re
 from contextlib import suppress
 from pathlib import Path
 
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from PIL import Image, UnidentifiedImageError
+
+# Numer telefonu w formacie E.164: znak "+" + cyfra 1-9 + 7-14 dalszych cyfr
+# (łącznie 8-15 cyfr po "+"). Pozwala na międzynarodowe numery służbowe i jest
+# wykorzystywany m.in. do identyfikacji dzwoniącego (caller-ID) w module głosowym.
+phone_e164_validator = RegexValidator(
+    regex=r"^\+[1-9]\d{7,14}$",
+    message="Numer telefonu musi być w formacie międzynarodowym, np. +48123456789.",
+)
+
+# Znaki separujące usuwane przy normalizacji numeru (spacje, myślniki, nawiasy, kropki) —
+# użytkownik może wpisać "+48 600 100 200", a my przechowujemy ścisłe E.164.
+_PHONE_SEPARATORS_RE = re.compile(r"[\s\-().]")
+
+
+def normalize_phone_e164(raw: str | None) -> str | None:
+    """Sprowadza numer do ścisłego E.164 (bez separatorów) lub ``None``.
+
+    Nie waliduje wyniku — zwraca oczyszczony string, który następnie przechodzi
+    przez :data:`phone_e164_validator`. Puste/None → ``None`` (sentinel braku
+    numeru, wymagany przez UNIQUE na polu telefonu).
+    """
+    if not raw:
+        return None
+    cleaned = _PHONE_SEPARATORS_RE.sub("", str(raw).strip())
+    if not cleaned:
+        return None
+    if not cleaned.startswith("+") and cleaned.isdigit():
+        cleaned = "+" + cleaned
+    return cleaned
+
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DOCUMENT_SIZE = 20 * 1024 * 1024  # 20 MB

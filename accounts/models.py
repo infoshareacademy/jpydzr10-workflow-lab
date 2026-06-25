@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from core.models import TimestampedModel
+from core.validators import normalize_phone_e164, phone_e164_validator
 
 User = get_user_model()
 
@@ -44,7 +45,14 @@ class EmployeeProfile(TimestampedModel):
         default=Function.MONTAZYSTA,
         verbose_name=_("Funkcja"),
     )
-    phone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefon"))
+    phone = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        unique=True,
+        validators=[phone_e164_validator],
+        verbose_name=_("Telefon"),
+    )
     employee_id = models.CharField(
         max_length=20,
         blank=True,
@@ -88,6 +96,14 @@ class EmployeeProfile(TimestampedModel):
     class Meta:
         verbose_name = _("Profil pracownika")
         verbose_name_plural = _("Profile pracowników")
+
+    def save(self, *args, **kwargs):
+        # Numer telefonu jest UNIQUE — pusty numer musi być przechowywany jako
+        # NULL (dwa profile z ``""`` złamałyby unikalność). Dodatkowo oczyszczamy
+        # separatory ("+48 600…" → "+48600…"), aby każda ścieżka zapisu
+        # (formularz, admin, serwis, sygnał) trzymała ścisłe E.164.
+        self.phone = normalize_phone_e164(self.phone)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         full_name = self.user.get_full_name() or self.user.username

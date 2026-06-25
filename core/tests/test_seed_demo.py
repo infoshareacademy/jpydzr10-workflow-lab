@@ -37,6 +37,36 @@ def test_seed_demo_default_creates_data():
 
 
 @pytest.mark.django_db
+def test_seed_demo_creates_role_accounts():
+    """Seed tworzy 3 konta ról (kierownik/magazynier/montażysta) + admina."""
+    from accounts.models import EmployeeProfile
+
+    call_command(
+        "seed_demo", "--machines", "1", "--sites", "1", "--reservations", "0", stdout=StringIO()
+    )
+    user_model = get_user_model()
+
+    admin = user_model.objects.get(username="sebastian")
+    assert admin.is_superuser
+    assert admin.email  # adres skrzynki demo (adresat powiadomień)
+
+    expected = {
+        "seba1": EmployeeProfile.Function.KIEROWNIK,
+        "seba2": EmployeeProfile.Function.MAGAZYNIER,
+        "seba3": EmployeeProfile.Function.MONTAZYSTA,
+    }
+    for username, function in expected.items():
+        user = user_model.objects.get(username=username)
+        assert not user.is_superuser
+        assert user.profile.function == function
+        assert user.profile.phone  # unikalny numer E.164
+
+    # Numery telefonów są unikalne między kontami.
+    phones = [user_model.objects.get(username=u).profile.phone for u in expected]
+    assert len(set(phones)) == len(phones)
+
+
+@pytest.mark.django_db
 def test_seed_demo_reset_clears_then_seeds(machine_factory):
     """--reset → _reset() przed seedem."""
     # Pre-existing machine

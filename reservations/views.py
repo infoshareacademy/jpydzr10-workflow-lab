@@ -312,6 +312,7 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
                     # address + responsible_person (form sam też enforce'uje,
                     # ale defense-in-depth — formularz może być z bypass).
                     require_full_fields=True,
+                    created_by=request.user,
                 )
             except ValidationError as exc:
                 add_form_errors(form, exc)
@@ -360,36 +361,13 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
     return render(request, template, {"form": form, "mode": "create"})
 
 
-def _normalize_person_name(name: str) -> str:
-    """B-5: case-insensitive + accent-insensitive normalizacja imion.
-
-    Przyklad: ``"Sven Olsén"`` → ``"sven olsen"``, więc ``"Sven Olsen"`` i
-    ``"sven olsén"`` w bazie matchują do siebie. Implementuje NFKD decomposition
-    (rozbija "é" na "e" + combining acute) i odrzuca non-ASCII bytes —
-    standardowy unicode-folding pattern.
-
-    Plan długofalowy (M3): pole ``Reservation.created_by = FK(User)`` zastąpi
-    ten free-text fuzzy match — wtedy ta funkcja zniknie. Aktualnie magazynierka
-    Sven Olsén z polskim akcentem nie mogła edytować rezerwacji wpisanej jako
-    "Sven Olsen" w innym systemie (regression podczas migracji M1→M2).
-    """
-    import unicodedata
-
-    decomposed = unicodedata.normalize("NFKD", name)
-    ascii_only = decomposed.encode("ASCII", "ignore").decode()
-    return ascii_only.casefold().strip()
-
-
 class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     """Edit an existing reservation.
 
     Wymaga uprawnienia ``reservations.change_reservation``. Non-superuserowie
-    widzą tylko swoje rezerwacje (queryset filtered by ``person``); superuser
-    widzi wszystkie. ``raise_exception=True`` daje 403 zamiast cichego redirectu.
-
-    B-5: ownership match jest case-insensitive + accent-insensitive — dzięki
-    temu "Sven Olsén" (z akcentem) matchuje rezerwację wpisaną jako "Sven Olsen"
-    (bez akcentu) i odwrotnie. Patrz :func:`_normalize_person_name`.
+    widzą i edytują wyłącznie rezerwacje, które sami utworzyli (FK
+    ``created_by``); superuser widzi wszystkie. ``raise_exception=True`` daje
+    403 zamiast cichego redirectu.
     """
 
     model = Reservation
@@ -410,23 +388,12 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
         )
         if self.request.user.is_superuser:
             return qs
-        # Ownership check — non-superuser może edytować tylko swoje rezerwacje.
-        # ``person`` jest free-text (M2 limitation) — porównujemy do
-        # get_full_name() albo username (fallback gdy profil pusty).
-        #
-        # B-5: case+accent-insensitive matching. Robimy w Pythonie (nie w SQL)
-        # bo SQLite nie ma natywnego unaccent extension, a Postgres pg_trgm
-        # różnie się zachowuje per-instalacja. Filtr per-row jest O(N) ale
-        # N==(user's reservations) jest małe (~10-100), więc OK na M2.
-        # Plan M3: FK ``created_by`` → zniknie cały ten kod.
-        full_name = self.request.user.get_full_name() or self.request.user.get_username()
-        target = _normalize_person_name(full_name)
-        if not target:
-            return qs.none()
-        matching_pks = [
-            r.pk for r in qs.only("pk", "person") if _normalize_person_name(r.person) == target
-        ]
-        return qs.filter(pk__in=matching_pks)
+        # Ownership: nie-superuser może edytować tylko rezerwacje, które sam
+        # utworzył. Identyfikacja po FK ``created_by`` (jednoznaczna, w
+        # przeciwieństwie do dawnego dopasowania po free-text ``person``).
+        # Rezerwacje bez ``created_by`` (zaimportowane / historyczne) są
+        # widoczne wyłącznie dla superusera.
+        return qs.filter(created_by=self.request.user)
 
     def form_valid(self, form):
         try:
@@ -473,13 +440,15 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
             if not error_msg:
                 error_msg = "Nie udalo sie zapisac zmian — sprawdz formularz."
             response = HttpResponse(status=422)
-            response["HX-Trigger"] = json.dumps({
-                "showToast": {
-                    "kind": "error",
-                    "message": error_msg,
-                    "duration": 6000,
-                },
-            })
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "showToast": {
+                        "kind": "error",
+                        "message": error_msg,
+                        "duration": 6000,
+                    },
+                }
+            )
             return response
         return super().form_invalid(form)
 
@@ -1177,7 +1146,15 @@ class TimelineView(LoginRequiredMixin, View):
 
         filters_active = any(
             request.GET.get(k)
-            for k in ("machine_type", "status", "site", "person", "responsible", "search", "inspection")
+            for k in (
+                "machine_type",
+                "status",
+                "site",
+                "person",
+                "responsible",
+                "search",
+                "inspection",
+            )
         )
 
         # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
@@ -1339,6 +1316,7 @@ class QuickReserveView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 start_date=start_date,
                 end_date=end_date,
                 person=person,
+                created_by=request.user,
             )
         except ValidationError as exc:
             return render(
@@ -1397,6 +1375,7 @@ def batch_create_view(request: HttpRequest) -> HttpResponse:
                     person=form.cleaned_data["person"],
                     address=form.cleaned_data.get("address", ""),
                     notes=form.cleaned_data.get("notes", ""),
+                    created_by=request.user,
                 )
             except ValidationError as exc:
                 add_form_errors(form, exc)

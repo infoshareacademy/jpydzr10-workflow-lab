@@ -6,10 +6,10 @@ mógł tworzyć/edytować/anulować/kończyć rezerwacje. Po naprawie:
 * create / QuickReserve wymagają ``reservations.add_reservation``,
 * update / confirm / cancel / complete wymagają ``reservations.change_reservation``,
 * superuser nadal widzi wszystkie rezerwacje w UpdateView,
-* non-superuser widzi tylko swoje (queryset filtered by ``person``).
+* non-superuser widzi tylko swoje (queryset filtered by ``created_by``).
 
-Decyzja projektowa: ownership check po ``person`` (free-text) bo M2 nie ma
-jeszcze FK do EmployeeProfile. W M3 zmienione na profilu.
+Decyzja projektowa: ownership check po FK ``created_by`` (User) — jednoznaczne
+przypisanie zamiast dawnego dopasowania po free-text ``person``.
 """
 
 from __future__ import annotations
@@ -128,19 +128,17 @@ class TestSitePermissions:
 
 @pytest.mark.django_db
 class TestUpdateViewOwnership:
-    """Non-superuser widzi tylko swoje rezerwacje w UpdateView."""
+    """Non-superuser widzi i edytuje tylko rezerwacje, które sam utworzył (FK
+    ``created_by``)."""
 
     def test_update_404_when_not_owner_and_not_superuser(self, client_logged, machine):
-        """Cudza rezerwacja (po ``person``) → 404 z queryset filter.
+        """Rezerwacja utworzona przez kogoś innego → 404 z queryset filter."""
+        from django.contrib.auth import get_user_model
 
-        ``client_logged`` używa fixture ``user`` (full_name pusty + username
-        "tester"). ``PendingReservationFactory`` ustawia ``person=Faker.name()``
-        czyli na pewno != "tester". get_queryset filter odsiewa wiersz,
-        UpdateView zwraca 404 (zamiast wpuścić edycję).
-        """
+        other = get_user_model().objects.create_user(username="ktos-inny", password="x")
         someone_else_reservation = PendingReservationFactory(
             machine=machine,
-            person="Ktoś Inny",
+            created_by=other,
             start_date=date.today() + timedelta(days=5),
             end_date=date.today() + timedelta(days=10),
         )
@@ -149,99 +147,24 @@ class TestUpdateViewOwnership:
         )
         assert response.status_code == 404
 
-    def test_update_200_when_owner(self, client_logged, machine):
-        """Własna rezerwacja (po ``person``=username) → 200 OK."""
+    def test_update_404_when_created_by_null(self, client_logged, machine):
+        """Rezerwacja bez ``created_by`` (import/historia) → 404 dla nie-superusera."""
+        orphan = PendingReservationFactory(
+            machine=machine,
+            created_by=None,
+            start_date=date.today() + timedelta(days=5),
+            end_date=date.today() + timedelta(days=10),
+        )
+        response = client_logged.get(reverse("reservations:update", args=[orphan.pk]))
+        assert response.status_code == 404
+
+    def test_update_200_when_owner(self, client_logged, user, machine):
+        """Własna rezerwacja (``created_by`` == zalogowany user) → 200 OK."""
         own_reservation = PendingReservationFactory(
             machine=machine,
-            person="tester",  # matches user.get_username()
+            created_by=user,
             start_date=date.today() + timedelta(days=5),
             end_date=date.today() + timedelta(days=10),
         )
         response = client_logged.get(reverse("reservations:update", args=[own_reservation.pk]))
         assert response.status_code == 200
-
-
-@pytest.mark.django_db
-class TestOwnershipMatchAccentInsensitive:
-    """B-5 — Edit ownership case-insensitive + accent-insensitive matching.
-
-    Sven Olsén z polskim akcentem na nazwisku nie powinien być blokowany
-    przed edycją własnej rezerwacji jeśli ktoś wpisał ją jako "Sven Olsen"
-    (bez akcentu) — i odwrotnie.
-    """
-
-    @pytest.fixture
-    def user_with_accent(self, db):
-        """User z accent w nazwisku — pełni rolę 'ofiary' regressji M2."""
-        from django.contrib.auth import get_user_model
-        from django.contrib.auth.models import Permission
-
-        user_model = get_user_model()
-        user = user_model.objects.create_user(
-            username="solsen",
-            password="secret-pw-123!",
-            first_name="Sven",
-            last_name="Olsén",  # z akcentem
-        )
-        perms = Permission.objects.filter(
-            content_type__app_label="reservations",
-            codename__in=("add_reservation", "change_reservation", "delete_reservation"),
-        )
-        user.user_permissions.add(*perms)
-        return user
-
-    @pytest.fixture
-    def client_with_accent(self, client, user_with_accent):
-        client.force_login(user_with_accent)
-        return client
-
-    def test_accent_in_user_matches_no_accent_in_person(self, client_with_accent, machine):
-        """User "Sven Olsén" (akcent) edytuje rezerwację z person="Sven Olsen" (bez)."""
-        res = PendingReservationFactory(
-            machine=machine,
-            person="Sven Olsen",  # BEZ akcentu — wpisana przez kogoś innego
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today() + timedelta(days=10),
-        )
-        response = client_with_accent.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 200
-
-    def test_no_accent_in_user_matches_accent_in_person(self, client_logged, machine):
-        """User "tester" edytuje rezerwację z person="TESTER" (case-insensitive)."""
-        res = PendingReservationFactory(
-            machine=machine,
-            person="TESTER",  # uppercase
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today() + timedelta(days=10),
-        )
-        response = client_logged.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 200
-
-    def test_different_person_still_blocks(self, client_with_accent, machine):
-        """Sanity: zupełnie inna osoba → 404."""
-        res = PendingReservationFactory(
-            machine=machine,
-            person="Adam Nowak",
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today() + timedelta(days=10),
-        )
-        response = client_with_accent.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 404
-
-    def test_normalize_function_basic_cases(self):
-        """Bezpośredni test funkcji normalizującej — chroni przed regression."""
-        from reservations.views import _normalize_person_name
-
-        # Case folding
-        assert _normalize_person_name("Tester") == "tester"
-        assert _normalize_person_name("TESTER") == "tester"
-        # Accent stripping
-        assert _normalize_person_name("Sven Olsén") == "sven olsen"
-        assert _normalize_person_name("Sven Olsen") == "sven olsen"
-        # Polish accents
-        assert _normalize_person_name("Łukasz") == "ukasz"  # Ł→strip, ł→strip
-        assert _normalize_person_name("Łukasz Żółć") == "ukasz zoc"
-        # Whitespace
-        assert _normalize_person_name("  Anna  ") == "anna"
-        # Empty
-        assert _normalize_person_name("") == ""

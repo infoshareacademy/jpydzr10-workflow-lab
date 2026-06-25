@@ -102,7 +102,8 @@ def test_post_creates_user_and_redirects(client):
     # Profile podpięty przez signal + zaktualizowany przez service.
     profile = user.profile
     assert profile.function == EmployeeProfile.Function.MAGAZYNIER
-    assert profile.phone == "+48 600 100 200"
+    # Wpis z separatorami jest normalizowany do ścisłego E.164.
+    assert profile.phone == "+48600100200"
 
 
 @pytest.mark.django_db

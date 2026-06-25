@@ -1864,7 +1864,7 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
 
     try:
         if action == "create_reservation":
-            return _execute_create_reservation(params)
+            return _execute_create_reservation(params, user)
         if action == "cancel_reservation":
             return _execute_cancel_reservation(params)
         if action == "change_operator":
@@ -1928,10 +1928,14 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
     return f"Akcja '{action}' nie jest obsługiwana."
 
 
-def _execute_create_reservation(params: dict) -> str:
+def _execute_create_reservation(params: dict, user) -> str:
     """Wykonuje create_reservation z params zarówno z text-parsed JSON
     (legacy, z ``machine_id`` PK) jak i z ToolCallPart args (Wave 14-H C-1,
-    z ``machine_uid`` string)."""
+    z ``machine_uid`` string).
+
+    ``user`` (zalogowany użytkownik / dzwoniący zidentyfikowany po caller-ID)
+    jest zapisywany jako ``created_by`` rezerwacji — decyduje o adresacie
+    e-maila potwierdzającego po jej potwierdzeniu."""
     from machines.models import Machine
     from reservations.models import ConstructionSite
     from reservations.services import create_reservation
@@ -1967,6 +1971,7 @@ def _execute_create_reservation(params: dict) -> str:
         # Wave 14-H Bundle M-1: chatbot — wymagamy address + responsible_person
         # bo flow chatbota nie ma "quick reserve" semantics jak QuickReserveView.
         require_full_fields=True,
+        created_by=user if getattr(user, "is_authenticated", False) else None,
     )
     return (
         f"Rezerwacja #{reservation.pk} utworzona: "
