@@ -1,0 +1,12 @@
+{% load i18n %}{% blocktrans with name=recipient_name %}Dzień dobry {{ name }},{% endblocktrans %}
+
+{% blocktrans with uid=machine.uid %}Rezerwacja maszyny {{ uid }} została potwierdzona.{% endblocktrans %}
+
+{% trans "Szczegóły rezerwacji:" %}
+- {% trans "Maszyna" %}: {{ machine.uid }} — {{ machine.name }}
+- {% trans "Termin" %}: {{ reservation.start_date }} – {{ reservation.end_date }}
+- {% trans "Osoba rezerwująca" %}: {{ reservation.person }}
+{% if site %}- {% trans "Budowa" %}: {{ site.project_number }} — {{ site.name }}
+{% endif %}
+{% trans "Pozdrawiamy," %}
+{% trans "Planer Maszyn Budowlanych" %}

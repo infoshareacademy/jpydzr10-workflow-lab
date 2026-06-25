@@ -331,6 +331,18 @@ class Reservation(TimestampedModel):
             "dla pracowników niebędących administratorami."
         ),
     )
+    confirmation_email_queued_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("E-mail potwierdzający — zakolejkowany"),
+        help_text=_("Znacznik czasu zakolejkowania powiadomienia po potwierdzeniu."),
+    )
+    confirmation_email_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("E-mail potwierdzający — wysłany"),
+        help_text=_("Znacznik czasu skutecznego wysłania powiadomienia."),
+    )
 
     history = HistoricalRecords()
 

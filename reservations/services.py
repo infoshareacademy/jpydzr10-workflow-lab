@@ -30,8 +30,10 @@ from typing import TYPE_CHECKING
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from .emails import send_confirmation_email
 from .models import ConstructionSite, Reservation
 
 if TYPE_CHECKING:
@@ -442,8 +444,19 @@ def confirm_reservation(reservation: Reservation, *, today: date | None = None) 
         )
 
     locked.status = Reservation.Status.POTWIERDZONA
-    locked.save(update_fields=["status", "updated_at"])
+    # Kolejkujemy powiadomienie tylko przy PIERWSZYM potwierdzeniu (guard na
+    # ``queued_at is None``) — chroni przed podwójną wysyłką przy ewentualnym
+    # ponownym potwierdzeniu. Pole MUSI być w ``update_fields``, inaczej zapis
+    # cicho je gubi i mail wyśle się ponownie.
+    should_send = locked.confirmation_email_queued_at is None
+    if should_send:
+        locked.confirmation_email_queued_at = timezone.now()
+    locked.save(update_fields=["status", "updated_at", "confirmation_email_queued_at"])
     logger.info("Rezerwacja %s → potwierdzona", locked.pk)
+    if should_send:
+        # Wysyłka PO commit transakcji — rollback = zero maili. ``confirm_reservation``
+        # ma własny @transaction.atomic, więc to najbardziej zewnętrzny commit.
+        transaction.on_commit(lambda: send_confirmation_email(locked.pk))
     return locked
 
 
