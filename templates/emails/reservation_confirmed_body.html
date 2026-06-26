@@ -1,0 +1,10 @@
+{% load i18n %}
+<p style="margin:0 0 16px;font-size:15px;">{% blocktrans with name=recipient_name %}Dzień dobry {{ name }},{% endblocktrans %}</p>
+<p style="margin:0 0 20px;font-size:15px;">{% blocktrans with uid=machine.uid %}rezerwacja maszyny <strong>{{ uid }}</strong> została potwierdzona.{% endblocktrans %}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+  <tr><td style="padding:7px 0;color:#64748b;width:170px;">{% trans "Maszyna" %}</td><td style="padding:7px 0;">{{ machine.uid }} — {{ machine.name }}</td></tr>
+  <tr><td style="padding:7px 0;color:#64748b;">{% trans "Termin" %}</td><td style="padding:7px 0;">{{ reservation.start_date|date:'d.m.Y' }} – {{ reservation.end_date|date:'d.m.Y' }}</td></tr>
+  <tr><td style="padding:7px 0;color:#64748b;">{% trans "Osoba rezerwująca" %}</td><td style="padding:7px 0;">{{ reservation.person }}</td></tr>
+  {% if site %}<tr><td style="padding:7px 0;color:#64748b;">{% trans "Budowa" %}</td><td style="padding:7px 0;">{{ site.project_number }} — {{ site.name }}</td></tr>{% endif %}
+</table>
+<p style="margin:22px 0 0;font-size:14px;color:#64748b;">{% trans "Pozdrawiamy," %}<br>Planer Maszyn Budowlanych</p>

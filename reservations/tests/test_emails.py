@@ -271,3 +271,51 @@ def test_bulk_rollback_sends_zero_emails_on_conflict(
         Reservation.objects.filter(batch_id=result["batch_id"]).values_list("status", flat=True)
     )
     assert statuses == {Reservation.Status.OCZEKUJACA}
+
+
+# =============================================================================
+# Maile dwujęzyczne (PL + EN) — anulowanie + powiadomienie o wniosku
+# =============================================================================
+
+
+def test_cancellation_email_is_bilingual(mailoutbox):
+    """Anulowanie → mail PL+EN do twórcy, temat dwujęzyczny."""
+    machine = _machine("CANC-1")
+    creator = _creator("canc", "canc@demo.test")
+    res = _pending(machine, creator)
+    res.cancellation_reason = "klient_zrezygnowal"
+    res.save(update_fields=["cancellation_reason"])
+
+    emails.send_cancellation_email(res.pk)
+
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    assert "Anulowanie" in msg.subject
+    assert "cancelled" in msg.subject
+    assert msg.to == ["canc@demo.test"]
+    html = next(c for c, t in msg.alternatives if t == "text/html")
+    assert "została anulowana" in html  # sekcja PL
+    assert "has been cancelled" in html  # sekcja EN
+
+
+def test_request_notification_goes_to_approvers_only(mailoutbox):
+    """Powiadomienie o wniosku trafia do userów z change_reservation + email."""
+    from django.contrib.auth.models import Permission
+
+    approver = User.objects.create_user("approver", password="x", email="approver@demo.test")
+    approver.user_permissions.add(Permission.objects.get(codename="change_reservation"))
+    # User bez uprawnienia — NIE powinien dostać maila.
+    User.objects.create_user("nobody", password="x", email="nobody@demo.test")
+
+    machine = _machine("REQ-1")
+    creator = _creator("reqc", "reqc@demo.test")
+    res = _pending(machine, creator)  # on_commit nie odpala w teście (django_db)
+
+    emails.send_request_notification_email(res.pk)
+
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    assert "approver@demo.test" in msg.to
+    assert "nobody@demo.test" not in msg.to
+    assert "Nowy wniosek" in msg.subject
+    assert "request" in msg.subject

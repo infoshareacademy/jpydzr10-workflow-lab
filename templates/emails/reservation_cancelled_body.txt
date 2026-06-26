@@ -1,0 +1,10 @@
+{% load i18n %}{% blocktrans with name=recipient_name %}Dzień dobry {{ name }},{% endblocktrans %}
+
+{% blocktrans with uid=machine.uid %}rezerwacja maszyny {{ uid }} została anulowana.{% endblocktrans %}
+
+{% trans "Maszyna" %}: {{ machine.uid }} — {{ machine.name }}
+{% trans "Termin" %}: {{ reservation.start_date|date:'d.m.Y' }} – {{ reservation.end_date|date:'d.m.Y' }}
+{% trans "Powód anulowania" %}: {{ reservation.get_cancellation_reason_display }}
+
+{% trans "Pozdrawiamy," %}
+Planer Maszyn Budowlanych

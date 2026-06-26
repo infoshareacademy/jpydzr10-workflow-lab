@@ -33,7 +33,11 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .emails import send_confirmation_email
+from .emails import (
+    send_cancellation_email,
+    send_confirmation_email,
+    send_request_notification_email,
+)
 from .models import ConstructionSite, Reservation
 
 if TYPE_CHECKING:
@@ -298,6 +302,9 @@ def create_reservation(
         start_date,
         end_date,
     )
+    # Powiadom zatwierdzających (magazynier/admin) o nowym wniosku — to oni
+    # zatwierdzają (kierownik tylko składa). on_commit: mail dopiero po commit.
+    transaction.on_commit(lambda: send_request_notification_email(reservation.pk))
     return reservation
 
 
@@ -511,6 +518,7 @@ def cancel_reservation(
         ]
     )
     logger.info("Rezerwacja %s → anulowana (powód=%s)", locked.pk, reason)
+    transaction.on_commit(lambda: send_cancellation_email(locked.pk))
     return locked
 
 
