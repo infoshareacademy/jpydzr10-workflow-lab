@@ -285,14 +285,18 @@
                         </form>
                     {% endif %}
 
-                    <form method="post" action="{% url 'machines:return' uid=machine.uid %}">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                            {% trans "Zwrot do magazynu" %}
-                        </button>
-                    </form>
+                    {# Zwrot — tylko gdy maszyna NIE jest już w magazynie (ani wycofana);
+                       inaczej był to no-op z mylącym komunikatem sukcesu. #}
+                    {% if machine.status != "W magazynie" and machine.status != "Wycofana" %}
+                        <form method="post" action="{% url 'machines:return' uid=machine.uid %}">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                {% trans "Zwrot do magazynu" %}
+                            </button>
+                        </form>
+                    {% endif %}
                 {% endif %}
 
                 {% if perms.machines.change_machine and machine.status != "Wycofana" %}
