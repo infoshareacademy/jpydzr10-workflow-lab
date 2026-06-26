@@ -163,7 +163,11 @@
     /* Flatpickr auto-init dla pol z klasa .flatpickr / input[type=date]. */
     document.addEventListener("DOMContentLoaded", function () {
         if (window.flatpickr) {
-            if (window.flatpickr.l10ns && window.flatpickr.l10ns.pl) {
+            // Lokalizuj kalendarz do polskiego TYLKO gdy interfejs jest po polsku.
+            // W trybie EN zostaje wbudowany angielski flatpickr (nazwy dni/miesięcy
+            // nie mieszają się z językiem UI).
+            const uiLang = (document.documentElement.lang || "pl").toLowerCase();
+            if (uiLang.startsWith("pl") && window.flatpickr.l10ns && window.flatpickr.l10ns.pl) {
                 window.flatpickr.localize(window.flatpickr.l10ns.pl);
             }
             document.querySelectorAll(".flatpickr, input[type='date']").forEach((el) => {
