@@ -14,26 +14,31 @@ from django.utils.text import slugify
 register = template.Library()
 
 
-_INSPECTION_ICONS: dict[str, str] = {
-    "ok": "✅",
-    "warning": "⚠️",
-    "overdue": "🔴",
-    "unknown": "❓",
+# Kolor kropki statusu przeglądu (Tailwind) per bucket — zamiast emoji.
+# Kropka (``rounded-full``) jest wektorowa: ostra na każdym DPI, spójna
+# cross-OS i z dark mode; emoji renderują się różnie na różnych systemach
+# i łamią spójność ikon. Filtr zwraca SAMĄ klasę koloru (zwykły string,
+# bez ``mark_safe``); HTML kropki składa szablon, a znaczenie niesie kolor
+# + ``aria-label`` na tym samym ``<span>`` (spełnia „nie tylko kolor").
+_INSPECTION_DOT_CLASSES: dict[str, str] = {
+    "ok": "bg-emerald-500",
+    "warning": "bg-amber-500",
+    "overdue": "bg-rose-500",
+    "unknown": "bg-slate-400 dark:bg-slate-500",
 }
 
 
 @register.filter
-def inspection_icon(status: str) -> str:
-    """Return the emoji icon for an inspection-status bucket.
+def inspection_dot(status: str) -> str:
+    """Return the Tailwind background-colour class for an inspection bucket.
 
-    Usage::
+    The template renders the dot itself, keeping the colour decision here::
 
         {% load machines_tags %}
-        <span title="{{ machine.inspection_status_label }}">
-            {{ machine.inspection_status|inspection_icon }}
-        </span>
+        <span class="inline-block h-3 w-3 rounded-full {{ machine.inspection_status|inspection_dot }}"
+              aria-label="{{ machine.inspection_status_label }}"></span>
     """
-    return _INSPECTION_ICONS.get(status, "❓")
+    return _INSPECTION_DOT_CLASSES.get(status, _INSPECTION_DOT_CLASSES["unknown"])
 
 
 # Manual Polish → ASCII transliteracja — sync z

@@ -79,6 +79,7 @@
               hx-target="#reservations-table"
               hx-swap="innerHTML"
               hx-push-url="true"
+              hx-indicator="#res-loading"
               hx-trigger="change from:select, submit, change from:input[type='date'], keyup changed delay:300ms from:input[name='person'], keyup changed delay:300ms from:input[name='q']"
               class="space-y-3">
 
@@ -100,7 +101,7 @@
                     <button type="submit" name="status" value="oczekująca"
                             aria-pressed="{% if filter_form.status.value == 'oczekująca' %}true{% else %}false{% endif %}"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
-                                   {% if filter_form.status.value == 'oczekująca' %}bg-amber-500 text-white border-amber-500 dark:bg-amber-500 dark:border-amber-500{% else %}bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40{% endif %}">
+                                   {% if filter_form.status.value == 'oczekująca' %}bg-amber-600 text-white border-amber-600 dark:bg-amber-600 dark:border-amber-600{% else %}bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
                         <span>{% trans "Oczekująca" %}</span>
                     </button>
@@ -211,6 +212,11 @@
     </div>
 
     {# ============================== RESULTS (HTMX target) ============================== #}
+    {# Loading indicator — widoczny tylko podczas requestu HTMX (klasa .htmx-indicator). #}
+    <span id="res-loading" class="htmx-indicator inline-flex items-center text-xs text-brand-600 dark:text-brand-300 mb-2" aria-hidden="true">
+        <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+        {% trans "Ładuję…" %}
+    </span>
     <div id="reservations-table">
         {% include "reservations/_list_table.html" %}
     </div>

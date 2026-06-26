@@ -49,7 +49,7 @@
                                 </span>
                             {% endif %}
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                <span class="inline-block h-2.5 w-2.5 rounded-full {{ machine.inspection_status|inspection_dot }}" aria-hidden="true"></span>
                                 <span>{{ machine.inspection_status_label }}</span>
                             </span>
                             {% if machine.location %}

@@ -256,7 +256,10 @@
                           hx-on::after-request="if (event.detail.successful) {window.dispatchEvent(new CustomEvent('reservation-updated')); openAction = null;}"
                           class="space-y-2">
                         {% csrf_token %}
-                        <p class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">{% trans "⚠ Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na zastępczej, (3) wyślij starą maszynę do serwisu." %}</p>
+                        <p class="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                            <span>{% trans "Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na zastępczej, (3) wyślij starą maszynę do serwisu." %}</span>
+                        </p>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">{% trans "Maszyna zastępcza" %} *</label>
                         <select name="new_machine" required
                                 class="w-full px-2 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">

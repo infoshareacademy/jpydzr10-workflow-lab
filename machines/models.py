@@ -60,8 +60,8 @@ class Machine(TimestampedModel):
     The model tracks an optional ``inspection_date`` (next mandatory periodic
     inspection). :attr:`inspection_status` collapses the date into one of four
     UI buckets (``ok``/``warning``/``overdue``/``unknown``) — the template tag
-    :func:`machines.templatetags.machines_tags.inspection_icon` turns those
-    into emoji.
+    :func:`machines.templatetags.machines_tags.inspection_dot` turns those
+    into a coloured status dot.
     """
 
     class Status(models.TextChoices):

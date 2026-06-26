@@ -2,7 +2,7 @@
 
 Sprawdzamy:
 
-* ``inspection_icon`` — mapping bucket → emoji, fallback dla unknown,
+* ``inspection_dot`` — mapping bucket → klasa koloru kropki, fallback dla unknown,
 * ``machine_image_url`` — uploaded ImageField wygrywa, fallback po
   ``machine_type`` z Polish ASCII transliteracją (``ł``→``l``, etc.).
 """
@@ -15,27 +15,29 @@ import pytest
 from django.template import Context, Template
 
 from machines.models import Machine
-from machines.templatetags.machines_tags import inspection_icon, machine_image_url
+from machines.templatetags.machines_tags import inspection_dot, machine_image_url
 
 # =============================================================================
-# inspection_icon
+# inspection_dot
 # =============================================================================
+
+_UNKNOWN_DOT = "bg-slate-400 dark:bg-slate-500"
 
 
 @pytest.mark.parametrize(
     ("status", "expected"),
     [
-        ("ok", "✅"),
-        ("warning", "⚠️"),
-        ("overdue", "🔴"),
-        ("unknown", "❓"),
-        ("nieznany_bucket", "❓"),  # fallback dla nieznanego stringa
-        ("", "❓"),  # pusty string → fallback
+        ("ok", "bg-emerald-500"),
+        ("warning", "bg-amber-500"),
+        ("overdue", "bg-rose-500"),
+        ("unknown", _UNKNOWN_DOT),
+        ("nieznany_bucket", _UNKNOWN_DOT),  # fallback dla nieznanego stringa
+        ("", _UNKNOWN_DOT),  # pusty string → fallback
     ],
 )
-def test_inspection_icon_mapping(status: str, expected: str) -> None:
-    """Każdy bucket statusu przeglądu mapuje się na właściwą emoji."""
-    assert inspection_icon(status) == expected
+def test_inspection_dot_mapping(status: str, expected: str) -> None:
+    """Każdy bucket statusu przeglądu mapuje się na właściwą klasę koloru."""
+    assert inspection_dot(status) == expected
 
 
 # =============================================================================

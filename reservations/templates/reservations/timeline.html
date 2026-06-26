@@ -333,7 +333,7 @@
 {# uzywa tej zmiennej w `top: var(--tl-ctrl-h)` dla CSS sticky — przykleja sie   #}
 {# DOKLADNIE pod paskiem zamiast na top viewportu. Po resize licznik leci pono- #}
 {# wnie. Pure CSS sticky + 1 numer z JS = zero scroll listenerow, zero IntObs.  #}
-<script>
+<script nonce="{{ CSP_NONCE }}">
 (function () {
     var ctrl = document.getElementById('tl-controls');
     if (!ctrl) return;

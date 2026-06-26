@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 11:34+0200\n"
+"POT-Creation-Date: 2026-06-26 12:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -924,7 +924,9 @@ msgstr "Pending action"
 msgid ""
 "Write tool zaproponowany przez agenta, czekający na potwierdzenie "
 "użytkownika w następnej wiadomości (Wave 14-C confirmation step)."
-msgstr "Write tool proposed by the agent, awaiting user confirmation in the next message (Wave 14-C confirmation step)."
+msgstr ""
+"Write tool proposed by the agent, awaiting user confirmation in the next "
+"message (Wave 14-C confirmation step)."
 
 #: chatbot/models.py:69
 msgid "Pending action utworzona o"
@@ -934,7 +936,9 @@ msgstr "Pending action created at"
 msgid ""
 "Timestamp utworzenia pending_action — używane do TTL (10 minut). Po "
 "wygaśnięciu proposal jest odrzucany przy próbie potwierdzenia."
-msgstr "Creation timestamp of pending_action — used for TTL (10 minutes). After it expires, the proposal is rejected on the confirmation attempt."
+msgstr ""
+"Creation timestamp of pending_action — used for TTL (10 minutes). After it "
+"expires, the proposal is rejected on the confirmation attempt."
 
 #: chatbot/models.py:78
 msgid "Konwersacje"
@@ -978,7 +982,9 @@ msgstr "Message"
 msgid ""
 "Proponowana akcja: utworzenie rezerwacji maszyny %(uid)s od %(start)s do "
 "%(end)s dla osoby '%(person)s'."
-msgstr "Proposed action: create a reservation of machine %(uid)s from %(start)s to %(end)s for '%(person)s'."
+msgstr ""
+"Proposed action: create a reservation of machine %(uid)s from %(start)s to "
+"%(end)s for '%(person)s'."
 
 #: chatbot/services.py:253
 #, python-format
@@ -988,13 +994,16 @@ msgstr "Proposed action: cancel reservation #%(rid)s (reason: %(reason)s)."
 #: chatbot/services.py:260
 #, python-format
 msgid "Proponowana akcja: zmiana osoby rezerwacji #%(rid)s na '%(person)s'."
-msgstr "Proposed action: change the person of reservation #%(rid)s to '%(person)s'."
+msgstr ""
+"Proposed action: change the person of reservation #%(rid)s to '%(person)s'."
 
 #: chatbot/services.py:267
 #, python-format
 msgid ""
 "Proponowana akcja: wymiana maszyny w rezerwacji #%(rid)s na maszynę %(uid)s."
-msgstr "Proposed action: replace the machine in reservation #%(rid)s with machine %(uid)s."
+msgstr ""
+"Proposed action: replace the machine in reservation #%(rid)s with machine "
+"%(uid)s."
 
 #: chatbot/services.py:273
 #, python-format
@@ -1026,7 +1035,9 @@ msgstr "no cost"
 msgid ""
 "Proponowana akcja: wpis serwisowy dla maszyny %(uid)s (%(type)s, "
 "%(performed)s%(desc)s, %(cost)s)."
-msgstr "Proposed action: service entry for machine %(uid)s (%(type)s, %(performed)s%(desc)s, %(cost)s)."
+msgstr ""
+"Proposed action: service entry for machine %(uid)s (%(type)s, "
+"%(performed)s%(desc)s, %(cost)s)."
 
 #: chatbot/services.py:300
 #, python-format
@@ -1037,7 +1048,8 @@ msgstr "Proposed action: update service entry #%(rid)s."
 #, python-format
 msgid ""
 "Proponowana akcja: przesunięcie daty przeglądu maszyny %(uid)s na %(date)s."
-msgstr "Proposed action: shift the inspection date of machine %(uid)s to %(date)s."
+msgstr ""
+"Proposed action: shift the inspection date of machine %(uid)s to %(date)s."
 
 #: chatbot/services.py:310
 #, python-format
@@ -1064,7 +1076,9 @@ msgstr "Proposed action: edit reservation #%(rid)s."
 msgid ""
 "Proponowana akcja: zgłoszenie awarii rezerwacji #%(rid)s (opis: "
 "„%(desc)s%(ellipsis)s”)."
-msgstr "Proposed action: report a breakdown for reservation #%(rid)s (description: „%(desc)s%(ellipsis)s”)."
+msgstr ""
+"Proposed action: report a breakdown for reservation #%(rid)s (description: "
+"„%(desc)s%(ellipsis)s”)."
 
 #: chatbot/services.py:334
 #, python-format
@@ -1117,14 +1131,17 @@ msgstr "Proposed action: delete construction site %(pn)s."
 msgid ""
 "Proponowana akcja: zakończenie zatrudnienia '%(username)s' (powód: "
 "%(reason)s)."
-msgstr "Proposed action: end the employment of '%(username)s' (reason: %(reason)s)."
+msgstr ""
+"Proposed action: end the employment of '%(username)s' (reason: %(reason)s)."
 
 #: chatbot/services.py:378
 #, python-format
 msgid ""
 "Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR pracownika "
 "'%(username)s'."
-msgstr "Proposed action: ⚠ IRREVERSIBLE GDPR anonymization of employee '%(username)s'."
+msgstr ""
+"Proposed action: ⚠ IRREVERSIBLE GDPR anonymization of employee "
+"'%(username)s'."
 
 #: chatbot/services.py:380
 #, python-format
@@ -1142,7 +1159,11 @@ msgid ""
 "\n"
 "Aby wykonać tę akcję, odpisz **TAK** lub **potwierdzam** w następnej "
 "wiadomości. Aby anulować — odpisz **NIE** lub **anuluj**."
-msgstr "%(preview)s\n\nTo perform this action, reply **YES** or **confirm** in the next message. To cancel — reply **NO** or **cancel**."
+msgstr ""
+"%(preview)s\n"
+"\n"
+"To perform this action, reply **YES** or **confirm** in the next message. To "
+"cancel — reply **NO** or **cancel**."
 
 #: chatbot/services.py:454
 msgid "(puste pytanie)"
@@ -1161,18 +1182,23 @@ msgstr "The question is too long (max %(max)s characters)."
 msgid ""
 "Asystent jest tymczasowo niedostępny. Administrator musi skonfigurować klucz "
 "GEMINI_API_KEY."
-msgstr "The assistant is temporarily unavailable. The administrator must configure the GEMINI_API_KEY."
+msgstr ""
+"The assistant is temporarily unavailable. The administrator must configure "
+"the GEMINI_API_KEY."
 
 #: chatbot/services.py:704
 msgid "Propozycja wygasła (limit 10 minut). Wpisz ponownie swoje zapytanie."
-msgstr "The proposal has expired (10-minute limit). Please enter your query again."
+msgstr ""
+"The proposal has expired (10-minute limit). Please enter your query again."
 
 #: chatbot/services.py:742
 #, python-format
 msgid ""
 "Przekroczono dzienny limit %(limit)s operacji modyfikujących dla asystenta. "
 "Spróbuj ponownie jutro lub użyj formularzy w aplikacji."
-msgstr "The daily limit of %(limit)s modifying operations for the assistant has been exceeded. Try again tomorrow or use the forms in the application."
+msgstr ""
+"The daily limit of %(limit)s modifying operations for the assistant has been "
+"exceeded. Try again tomorrow or use the forms in the application."
 
 #: chatbot/services.py:782 chatbot/tools.py:1990
 msgid "Wystąpił nieoczekiwany błąd podczas wykonywania akcji."
@@ -1187,11 +1213,14 @@ msgstr "Action cancelled — nothing was changed."
 msgid ""
 "Asystent nie odpowiedział w wyznaczonym czasie (%(seconds)ss). Spróbuj "
 "ponownie."
-msgstr "The assistant did not respond within the allotted time (%(seconds)ss). Please try again."
+msgstr ""
+"The assistant did not respond within the allotted time (%(seconds)ss). "
+"Please try again."
 
 #: chatbot/services.py:848
 msgid "Przekroczono limit zapytań do asystenta. Spróbuj ponownie za chwilę."
-msgstr "The assistant query limit has been exceeded. Please try again in a moment."
+msgstr ""
+"The assistant query limit has been exceeded. Please try again in a moment."
 
 #: chatbot/services.py:856
 msgid "Brak połączenia z asystentem. Sprawdź połączenie internetowe."
@@ -1205,7 +1234,9 @@ msgstr "The assistant is temporarily unavailable (configuration problem)."
 msgid ""
 "Wystąpił nieoczekiwany błąd podczas komunikacji z asystentem. Spróbuj "
 "ponownie."
-msgstr "An unexpected error occurred while communicating with the assistant. Please try again."
+msgstr ""
+"An unexpected error occurred while communicating with the assistant. Please "
+"try again."
 
 #: chatbot/templates/chatbot/_confirmation_card.html:27
 msgid "Wymagane potwierdzenie akcji"
@@ -1501,7 +1532,8 @@ msgstr "The full name must be at least 3 characters long."
 msgid ""
 "Rezerwacja #%(rid)s jest zamknięta (%(status)s) — nie można zmienić "
 "operatora."
-msgstr "Reservation #%(rid)s is closed (%(status)s) — the operator cannot be changed."
+msgstr ""
+"Reservation #%(rid)s is closed (%(status)s) — the operator cannot be changed."
 
 #: chatbot/tools.py:1349 reservations/services.py:976
 msgid "Nowa osoba musi się różnić od obecnej."
@@ -1511,7 +1543,8 @@ msgstr "The new person must differ from the current one."
 #, python-format
 msgid ""
 "Rezerwacja #%(rid)s jest zamknięta (%(status)s) — nie można wymienić maszyny."
-msgstr "Reservation #%(rid)s is closed (%(status)s) — the machine cannot be replaced."
+msgstr ""
+"Reservation #%(rid)s is closed (%(status)s) — the machine cannot be replaced."
 
 #: chatbot/tools.py:1393
 #, python-format
@@ -1525,7 +1558,8 @@ msgstr "The replacement machine must differ from the current one."
 #: chatbot/tools.py:1400
 #, python-format
 msgid "Maszyna %(uid)s jest wycofana z floty — nie może być zastępcą."
-msgstr "Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
+msgstr ""
+"Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
 
 #: chatbot/tools.py:1440 machines/services.py:242
 #, python-format
@@ -1561,21 +1595,26 @@ msgstr "Service entry #%(rid)s does not exist."
 msgid ""
 "Brak zmian do wykonania na wpisie #%(rid)s (przekazane wartości są "
 "identyczne z aktualnymi)."
-msgstr "No changes to apply to entry #%(rid)s (the provided values are identical to the current ones)."
+msgstr ""
+"No changes to apply to entry #%(rid)s (the provided values are identical to "
+"the current ones)."
 
 #: chatbot/tools.py:1672
 #, python-format
 msgid ""
 "Rezerwacja #%(rid)s ma status '%(status)s' — można potwierdzić tylko "
 "OCZEKUJACA."
-msgstr "Reservation #%(rid)s has status '%(status)s' — only PENDING can be confirmed."
+msgstr ""
+"Reservation #%(rid)s has status '%(status)s' — only PENDING can be confirmed."
 
 #: chatbot/tools.py:1706
 #, python-format
 msgid ""
 "Rezerwacja #%(rid)s ma status '%(status)s' — można zakończyć tylko "
 "POTWIERDZONA."
-msgstr "Reservation #%(rid)s has status '%(status)s' — only CONFIRMED can be completed."
+msgstr ""
+"Reservation #%(rid)s has status '%(status)s' — only CONFIRMED can be "
+"completed."
 
 #: chatbot/tools.py:1716
 #, python-format
@@ -1593,7 +1632,9 @@ msgstr "The actual return date cannot be in the future."
 #: chatbot/tools.py:1760
 #, python-format
 msgid "Rezerwacja #%(rid)s jest terminalna (%(status)s) — nie można edytować."
-msgstr "Reservation #%(rid)s is in a terminal state (%(status)s) — it cannot be edited."
+msgstr ""
+"Reservation #%(rid)s is in a terminal state (%(status)s) — it cannot be "
+"edited."
 
 #: chatbot/tools.py:1776
 #, python-format
@@ -1605,7 +1646,9 @@ msgstr "No changes to apply to reservation #%(rid)s."
 msgid ""
 "Rezerwacja #%(rid)s jest już zamknięta (%(status)s) — nie można zgłosić "
 "awarii."
-msgstr "Reservation #%(rid)s is already closed (%(status)s) — a breakdown cannot be reported."
+msgstr ""
+"Reservation #%(rid)s is already closed (%(status)s) — a breakdown cannot be "
+"reported."
 
 #: chatbot/tools.py:1872
 #, python-format
@@ -1640,7 +1683,8 @@ msgstr "Action '%(action)s' is not supported."
 #, python-format
 msgid ""
 "Rezerwacja #%(rid)s utworzona: %(uid)s %(start)s - %(end)s dla '%(person)s'."
-msgstr "Reservation #%(rid)s created: %(uid)s %(start)s - %(end)s for '%(person)s'."
+msgstr ""
+"Reservation #%(rid)s created: %(uid)s %(start)s - %(end)s for '%(person)s'."
 
 #: chatbot/tools.py:2059
 #, python-format
@@ -1657,7 +1701,9 @@ msgstr "Operator of reservation #%(rid)s changed to '%(person)s'."
 msgid ""
 "Maszyna wymieniona: rezerwacja #%(orig)s zamknięta, nowa rezerwacja #%(new)s "
 "na maszynę %(uid)s."
-msgstr "Machine replaced: reservation #%(orig)s closed, new reservation #%(new)s for machine %(uid)s."
+msgstr ""
+"Machine replaced: reservation #%(orig)s closed, new reservation #%(new)s for "
+"machine %(uid)s."
 
 #: chatbot/tools.py:2118
 #, python-format
@@ -1673,7 +1719,8 @@ msgstr ", next inspection: %(date)s"
 #, python-format
 msgid ""
 "Wpis serwisowy #%(rid)s utworzony dla %(uid)s: %(type)s (%(cost)s)%(next)s."
-msgstr "Service entry #%(rid)s created for %(uid)s: %(type)s (%(cost)s)%(next)s."
+msgstr ""
+"Service entry #%(rid)s created for %(uid)s: %(type)s (%(cost)s)%(next)s."
 
 #: chatbot/tools.py:2175
 #, python-format
@@ -1693,7 +1740,8 @@ msgstr "Reservation #%(rid)s confirmed."
 #: chatbot/tools.py:2223
 #, python-format
 msgid "Rezerwacja #%(rid)s zakończona, maszyna wraca do magazynu%(actual)s."
-msgstr "Reservation #%(rid)s completed, machine returns to the warehouse%(actual)s."
+msgstr ""
+"Reservation #%(rid)s completed, machine returns to the warehouse%(actual)s."
 
 #: chatbot/tools.py:2245
 #, python-format
@@ -1760,7 +1808,9 @@ msgstr "Machine %(uid)s has been retired from the fleet."
 msgid ""
 "Awaria zgłoszona: rezerwacja #%(rid)s zamknięta, maszyna %(uid)s → W "
 "serwisie, wpis serwisowy #%(srid)s utworzony."
-msgstr "Breakdown reported: reservation #%(rid)s closed, machine %(uid)s → In service, service entry #%(srid)s created."
+msgstr ""
+"Breakdown reported: reservation #%(rid)s closed, machine %(uid)s → In "
+"service, service entry #%(srid)s created."
 
 #: chatbot/tools.py:2446
 #, python-format
@@ -1782,7 +1832,9 @@ msgstr "Machine %(uid)s is already in the warehouse."
 msgid ""
 "Maszyna %(uid)s ma status '%(status)s' — można zakończyć naprawę tylko dla "
 "'W serwisie'."
-msgstr "Machine %(uid)s has status '%(status)s' — a repair can only be finished for 'In service'."
+msgstr ""
+"Machine %(uid)s has status '%(status)s' — a repair can only be finished for "
+"'In service'."
 
 #: chatbot/tools.py:2607
 #, python-format
@@ -1797,7 +1849,8 @@ msgstr "No changes to apply to construction site %(pn)s."
 #: chatbot/tools.py:2706
 #, python-format
 msgid "Nie można usunąć budowy %(pn)s: ma %(count)s aktywnych rezerwacji."
-msgstr "Cannot delete construction site %(pn)s: it has %(count)s active reservations."
+msgstr ""
+"Cannot delete construction site %(pn)s: it has %(count)s active reservations."
 
 #: chatbot/tools.py:2746 chatbot/tools.py:2798
 #, python-format
@@ -1807,13 +1860,15 @@ msgstr "Employee with username '%(username)s' does not exist."
 #: chatbot/tools.py:2751
 #, python-format
 msgid "Pracownik '%(username)s' jest już zanonimizowany — nie można zwalniać."
-msgstr "Employee '%(username)s' is already anonymized — they cannot be dismissed."
+msgstr ""
+"Employee '%(username)s' is already anonymized — they cannot be dismissed."
 
 #: chatbot/tools.py:2756
 #, python-format
 msgid ""
 "Pracownik '%(username)s' już jest zwolniony (data zakończenia: %(date)s)."
-msgstr "Employee '%(username)s' has already been dismissed (end date: %(date)s)."
+msgstr ""
+"Employee '%(username)s' has already been dismissed (end date: %(date)s)."
 
 #: chatbot/tools.py:2759
 msgid "nieznana"
@@ -2028,7 +2083,7 @@ msgid "np. KOP-001"
 msgstr "e.g. KOP-001"
 
 #: machines/forms.py:90 machines/forms.py:124
-#: reservations/templates/reservations/list.html:97
+#: reservations/templates/reservations/list.html:98
 #: reservations/templates/reservations/site_list.html:64
 #: templates/home.html:556
 msgid "Wszystkie"
@@ -2103,7 +2158,9 @@ msgstr "File is not a valid XLSX (invalid magic bytes signature)."
 #: machines/models.py:47
 msgid ""
 "UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik."
-msgstr "The UID may contain only uppercase letters A-Z, digits 0-9, underscore and hyphen."
+msgstr ""
+"The UID may contain only uppercase letters A-Z, digits 0-9, underscore and "
+"hyphen."
 
 #: machines/models.py:70 reservations/templates/reservations/detail.html:518
 msgid "W magazynie"
@@ -2182,7 +2239,9 @@ msgstr "Lifting capacity / power"
 #: machines/models.py:110
 msgid ""
 "Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu)."
-msgstr "Numeric value depending on the type (e.g. kg for an excavator, l/min for a generator)."
+msgstr ""
+"Numeric value depending on the type (e.g. kg for an excavator, l/min for a "
+"generator)."
 
 #: machines/models.py:116
 msgid "Data ostatniego przeglądu"
@@ -2192,7 +2251,8 @@ msgstr "Last inspection date"
 msgid ""
 "Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie "
 "'Przegląd')."
-msgstr "Empty value = no inspection data (see the status in the 'Inspection' column)."
+msgstr ""
+"Empty value = no inspection data (see the status in the 'Inspection' column)."
 
 #: machines/models.py:143
 msgid "0 = nieznany."
@@ -2203,7 +2263,10 @@ msgid ""
 "Maszyna magazynowa (np. wózek widłowy obsługujący magazyn) zostaje w bazie i "
 "jest widoczna na timeline (śledzimy przegląd), ale nie można jej rezerwować "
 "na budowę."
-msgstr "A warehouse machine (e.g. a forklift servicing the warehouse) stays in the database and is visible on the timeline (we track its inspection), but it cannot be reserved for a construction site."
+msgstr ""
+"A warehouse machine (e.g. a forklift servicing the warehouse) stays in the "
+"database and is visible on the timeline (we track its inspection), but it "
+"cannot be reserved for a construction site."
 
 #: machines/models.py:169 reservations/forms.py:57 reservations/forms.py:195
 #: reservations/models.py:206
@@ -2218,7 +2281,7 @@ msgstr "A warehouse machine (e.g. a forklift servicing the warehouse) stays in t
 #: reservations/templates/reservations/detail.html:518
 #: reservations/templates/reservations/email/confirmation.html:21
 #: reservations/templates/reservations/email/confirmation.txt:6
-#: reservations/templates/reservations/list.html:192
+#: reservations/templates/reservations/list.html:193
 #: reservations/templates/reservations/site_detail.html:142 service/forms.py:75
 #: service/forms.py:269 service/models.py:71
 #: service/templates/service/_record_table.html:8
@@ -2312,7 +2375,7 @@ msgid "Rozwiń"
 msgstr "Expand"
 
 #: machines/templates/machines/_filters.html:72
-#: reservations/templates/reservations/list.html:176
+#: reservations/templates/reservations/list.html:177
 #: reservations/templates/reservations/site_list.html:118
 #: reservations/templates/reservations/timeline.html:77
 #: service/templates/service/list.html:111
@@ -2596,7 +2659,7 @@ msgstr ""
 "be available in new reservations."
 
 #: machines/templates/machines/detail.html:324
-#: reservations/templates/reservations/_reservation_full_modal.html:268
+#: reservations/templates/reservations/_reservation_full_modal.html:271
 msgid "Powód (opcjonalnie)"
 msgstr "Reason (optional)"
 
@@ -2959,7 +3022,9 @@ msgstr "Period"
 msgid ""
 "<code>actual_return_date</code> — faktyczny zwrot maszyny (B-3). Jeśli "
 "ustawiony i &lt; end_date, rezerwacja zwolniła maszynę wcześniej."
-msgstr "<code>actual_return_date</code> — the actual return of the machine (B-3). If set and &lt; end_date, the reservation released the machine earlier."
+msgstr ""
+"<code>actual_return_date</code> — the actual return of the machine (B-3). If "
+"set and &lt; end_date, the reservation released the machine earlier."
 
 #: reservations/admin.py:149
 msgid "Personel"
@@ -2970,7 +3035,10 @@ msgid ""
 "<code>person</code> = osoba w biurze, która utworzyła rezerwację. "
 "<code>responsible_person</code> (B-4) = kierownik/brygadzista fizycznie "
 "odpowiedzialny za maszynę na budowie."
-msgstr "<code>person</code> = the office person who created the reservation. <code>responsible_person</code> (B-4) = the manager/foreman physically responsible for the machine on site."
+msgstr ""
+"<code>person</code> = the office person who created the reservation. "
+"<code>responsible_person</code> (B-4) = the manager/foreman physically "
+"responsible for the machine on site."
 
 #: reservations/admin.py:160
 msgid "Anulowanie (B-2)"
@@ -2980,7 +3048,9 @@ msgstr "Cancellation (B-2)"
 msgid ""
 "Wypełniane automatycznie przez <code>cancel_reservation</code> service gdy "
 "status zmienia się na <em>anulowana</em>."
-msgstr "Filled automatically by the <code>cancel_reservation</code> service when the status changes to <em>cancelled</em>."
+msgstr ""
+"Filled automatically by the <code>cancel_reservation</code> service when the "
+"status changes to <em>cancelled</em>."
 
 #: reservations/admin.py:171
 msgid "Wymiana maszyny i batch (B-6 / B-7)"
@@ -2991,7 +3061,10 @@ msgid ""
 "<code>replaced_by</code> — FK do rezerwacji-następczyni po <em>swap_machine</"
 "em>. <code>batch_id</code> (UUID) grupuje rezerwacje utworzone jednym "
 "kliknięciem 'Grupa rezerwacji'."
-msgstr "<code>replaced_by</code> — FK to the successor reservation after <em>swap_machine</em>. <code>batch_id</code> (UUID) groups reservations created with a single click of 'Reservation group'."
+msgstr ""
+"<code>replaced_by</code> — FK to the successor reservation after "
+"<em>swap_machine</em>. <code>batch_id</code> (UUID) groups reservations "
+"created with a single click of 'Reservation group'."
 
 #: reservations/admin.py:202
 #, python-format
@@ -3040,7 +3113,7 @@ msgstr "Reservation confirmation %(uid)s"
 #: reservations/templates/reservations/detail.html:177
 #: reservations/templates/reservations/email/confirmation.html:28
 #: reservations/templates/reservations/email/confirmation.txt:9
-#: reservations/templates/reservations/list.html:197
+#: reservations/templates/reservations/list.html:198
 msgid "Budowa"
 msgstr "Construction site"
 
@@ -3145,11 +3218,11 @@ msgstr "Search by person"
 msgid "Osoba"
 msgstr "Person"
 
-#: reservations/forms.py:221 reservations/templates/reservations/list.html:202
+#: reservations/forms.py:221 reservations/templates/reservations/list.html:203
 msgid "Początek po"
 msgstr "Starts after"
 
-#: reservations/forms.py:234 reservations/templates/reservations/list.html:207
+#: reservations/forms.py:234 reservations/templates/reservations/list.html:208
 msgid "Koniec przed"
 msgstr "Ends before"
 
@@ -3211,7 +3284,7 @@ msgid "Imię i nazwisko nowego operatora (min. 3 znaki)."
 msgstr "Full name of the new operator (min. 3 characters)."
 
 #: reservations/forms.py:376
-#: reservations/templates/reservations/_reservation_full_modal.html:260
+#: reservations/templates/reservations/_reservation_full_modal.html:263
 #: reservations/templates/reservations/detail.html:877
 msgid "Maszyna zastępcza"
 msgstr "Replacement machine"
@@ -3308,7 +3381,9 @@ msgstr ""
 msgid ""
 "Numer projektu musi byc w formacie 10YYNNNNN (np. 10260000001) lub starym "
 "BUD-RRRR-NNN (np. BUD-2026-001)."
-msgstr "The project number must be in the format 10YYNNNNN (e.g. 10260000001) or the old BUD-RRRR-NNN (e.g. BUD-2026-001)."
+msgstr ""
+"The project number must be in the format 10YYNNNNN (e.g. 10260000001) or the "
+"old BUD-RRRR-NNN (e.g. BUD-2026-001)."
 
 #: reservations/models.py:79
 #: reservations/templates/reservations/site_list.html:71
@@ -3320,7 +3395,7 @@ msgstr "Active"
 #: reservations/templates/reservations/detail.html:396
 #: reservations/templates/reservations/detail.html:517
 #: reservations/templates/reservations/detail.html:920
-#: reservations/templates/reservations/list.html:125
+#: reservations/templates/reservations/list.html:126
 #: reservations/templates/reservations/site_list.html:78
 #: reservations/templates/reservations/timeline.html:191
 msgid "Zakończona"
@@ -3328,7 +3403,7 @@ msgstr "Completed"
 
 #: reservations/models.py:81 reservations/models.py:181
 #: reservations/templates/reservations/batch_detail.html:279
-#: reservations/templates/reservations/list.html:134
+#: reservations/templates/reservations/list.html:135
 #: reservations/templates/reservations/site_list.html:85
 #: reservations/templates/reservations/timeline.html:192
 msgid "Anulowana"
@@ -3338,7 +3413,9 @@ msgstr "Cancelled"
 msgid ""
 "Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). "
 "Stare numery BUD-RRRR-NNN dalej akceptowane."
-msgstr "Format: 10YYNNNNNNN (11 digits: 10 + year + 7-digit seq, e.g. 10260000001). Old BUD-RRRR-NNN numbers are still accepted."
+msgstr ""
+"Format: 10YYNNNNNNN (11 digits: 10 + year + 7-digit seq, e.g. 10260000001). "
+"Old BUD-RRRR-NNN numbers are still accepted."
 
 #: reservations/models.py:112
 #: reservations/templates/reservations/site_detail.html:24
@@ -3351,14 +3428,14 @@ msgstr "Construction sites"
 #: reservations/models.py:179
 #: reservations/templates/reservations/batch_detail.html:264
 #: reservations/templates/reservations/detail.html:353
-#: reservations/templates/reservations/list.html:106
+#: reservations/templates/reservations/list.html:107
 msgid "Oczekująca"
 msgstr "Pending"
 
 #: reservations/models.py:180
 #: reservations/templates/reservations/batch_detail.html:269
 #: reservations/templates/reservations/detail.html:377
-#: reservations/templates/reservations/list.html:116
+#: reservations/templates/reservations/list.html:117
 #: reservations/templates/reservations/timeline.html:190
 msgid "Potwierdzona"
 msgstr "Confirmed"
@@ -4028,7 +4105,7 @@ msgid "Zakończ i zwróć maszynę"
 msgstr "Complete and return the machine"
 
 #: reservations/templates/reservations/_reservation_full_modal.html:170
-#: reservations/templates/reservations/_reservation_full_modal.html:263
+#: reservations/templates/reservations/_reservation_full_modal.html:266
 msgid "— wybierz —"
 msgstr "— select —"
 
@@ -4088,25 +4165,23 @@ msgid "Zapisz nową osobę"
 msgstr "Save the new person"
 
 #: reservations/templates/reservations/_reservation_full_modal.html:249
-#: reservations/templates/reservations/_reservation_full_modal.html:272
+#: reservations/templates/reservations/_reservation_full_modal.html:275
 #: reservations/templates/reservations/detail.html:826
 #: reservations/templates/reservations/detail.html:940
 msgid "Wymień maszynę"
 msgstr "Replace machine"
 
-#: reservations/templates/reservations/_reservation_full_modal.html:259
+#: reservations/templates/reservations/_reservation_full_modal.html:261
 msgid ""
-"⚠ Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na "
+"Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na "
 "zastępczej, (3) wyślij starą maszynę do serwisu."
-msgstr ""
-"⚠ Replacement = 3 actions: (1) close the reservation today, (2) create a new "
-"one on the replacement, (3) send the old machine to service."
+msgstr "Swap = 3 actions: (1) close today's reservation, (2) create a new one on the replacement, (3) send the old machine to service."
 
-#: reservations/templates/reservations/_reservation_full_modal.html:269
+#: reservations/templates/reservations/_reservation_full_modal.html:272
 msgid "np. Awaria silnika, klient wymaga ciągłej pracy"
 msgstr "e.g. Engine failure, the client requires continuous operation"
 
-#: reservations/templates/reservations/_reservation_full_modal.html:284
+#: reservations/templates/reservations/_reservation_full_modal.html:287
 msgid "Pełny widok"
 msgstr "Full view"
 
@@ -4888,20 +4963,25 @@ msgstr "All machine reservations — filter by status, person or period."
 msgid "Timeline"
 msgstr "Timeline"
 
-#: reservations/templates/reservations/list.html:89
+#: reservations/templates/reservations/list.html:90
 #: reservations/templates/reservations/site_list.html:59
 msgid "Filtruj po statusie"
 msgstr "Filter by status"
 
-#: reservations/templates/reservations/list.html:162
+#: reservations/templates/reservations/list.html:163
 msgid "Więcej filtrów"
 msgstr "More filters"
 
-#: reservations/templates/reservations/list.html:172
+#: reservations/templates/reservations/list.html:173
 #: reservations/templates/reservations/site_list.html:114
 #: reservations/templates/reservations/timeline.html:75
 msgid "Wyczyść wszystkie filtry"
 msgstr "Clear all filters"
+
+#: reservations/templates/reservations/list.html:219
+#: reservations/templates/reservations/timeline.html:180
+msgid "Ładuję…"
+msgstr "Loading…"
 
 #: reservations/templates/reservations/site_detail.html:52
 msgid "Klient:"
@@ -5111,10 +5191,6 @@ msgstr "+30 days"
 #: reservations/templates/reservations/timeline.html:174
 msgid "Przesun o 30 dni do przodu"
 msgstr "Move forward 30 days"
-
-#: reservations/templates/reservations/timeline.html:180
-msgid "Ładuję…"
-msgstr "Loading…"
 
 #: reservations/templates/reservations/timeline.html:188
 #: templates/core/maps.html:298
@@ -5426,7 +5502,8 @@ msgstr "The actual date the inspection or repair was performed."
 
 #: service/models.py:89
 msgid "Imię i nazwisko serwisanta lub nazwa firmy zewnętrznej."
-msgstr "Full name of the service technician or the name of the external company."
+msgstr ""
+"Full name of the service technician or the name of the external company."
 
 #: service/models.py:95
 msgid "Szczegóły wykonanych prac, wymienione części, uwagi."
@@ -5534,7 +5611,9 @@ msgstr "Performer's signature"
 msgid ""
 "Nie można zakończyć serwisu — maszyna %(uid)s nie jest w stanie 'W serwisie' "
 "(obecny status: %(status)s)."
-msgstr "Cannot finish service — machine %(uid)s is not in the 'In service' state (current status: %(status)s)."
+msgstr ""
+"Cannot finish service — machine %(uid)s is not in the 'In service' state "
+"(current status: %(status)s)."
 
 #: service/templates/service/_empty_state.html:8
 msgid "Brak wpisów serwisowych"
