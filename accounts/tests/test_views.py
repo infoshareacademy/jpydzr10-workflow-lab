@@ -48,6 +48,7 @@ def test_profile_post_valid_updates_via_service(client):
             "phone": "+48 600 100 200",
             "employee_id": "EMP-007",
             "theme_preference": "dark",
+            "preferred_language": "en",
         },
     )
     assert resp.status_code == 302
@@ -58,6 +59,7 @@ def test_profile_post_valid_updates_via_service(client):
     assert user.profile.phone == "+48600100200"
     assert user.profile.employee_id == "EMP-007"
     assert user.profile.theme_preference == "dark"
+    assert user.profile.preferred_language == "en"
 
 
 @pytest.mark.django_db

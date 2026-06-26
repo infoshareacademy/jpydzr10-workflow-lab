@@ -293,6 +293,23 @@
                                     </p>
                                 {% endif %}
                             </div>
+
+                            {# === Preferred language (select) — domyślny język UI po zalogowaniu === #}
+                            <div>
+                                <label for="{{ form.preferred_language.id_for_label }}"
+                                       class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
+                                    {% trans "Preferowany język" %}
+                                </label>
+                                {% render_field form.preferred_language class+="form-input block w-full px-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" %}
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    {% trans "Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)." %}
+                                </p>
+                                {% if form.preferred_language.errors %}
+                                    <p class="mt-1 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                                        {{ form.preferred_language.errors|join:" " }}
+                                    </p>
+                                {% endif %}
+                            </div>
                         </fieldset>
 
                         {# === Actions — Save primary, Cancel secondary === #}

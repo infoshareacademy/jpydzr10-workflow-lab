@@ -1,5 +1,6 @@
 """Modele aplikacji accounts (EmployeeProfile rozszerzający Django User)."""
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -64,6 +65,15 @@ class EmployeeProfile(TimestampedModel):
         choices=Theme.choices,
         default=Theme.AUTO,
         verbose_name=_("Motyw interfejsu"),
+    )
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=settings.LANGUAGES,
+        default=settings.LANGUAGE_CODE,
+        verbose_name=_("Preferowany język"),
+        help_text=_(
+            "Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)."
+        ),
     )
     is_active_employee = models.BooleanField(
         default=True,

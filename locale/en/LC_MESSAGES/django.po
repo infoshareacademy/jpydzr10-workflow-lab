@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 21:47+0200\n"
+"POT-Creation-Date: 2026-06-26 22:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -60,60 +60,65 @@ msgstr "Anonymized %(count)s employees."
 msgid "Konta i profile pracowników"
 msgstr "Employee accounts and profiles"
 
-#: accounts/forms.py:37 accounts/forms.py:109 accounts/models.py:55
+#: accounts/forms.py:37 accounts/forms.py:111 accounts/models.py:56
 #: accounts/templates/accounts/profile.html:251
 msgid "Telefon"
 msgstr "Phone"
 
-#: accounts/forms.py:38 accounts/models.py:60
+#: accounts/forms.py:38 accounts/models.py:61
 #: accounts/templates/accounts/profile.html:268
 msgid "Identyfikator pracownika"
 msgstr "Employee ID"
 
-#: accounts/forms.py:39 accounts/models.py:66
+#: accounts/forms.py:39 accounts/models.py:67
 #: accounts/templates/accounts/profile.html:285
-#: accounts/templates/accounts/profile.html:422
+#: accounts/templates/accounts/profile.html:439
 msgid "Motyw interfejsu"
 msgstr "Interface theme"
 
-#: accounts/forms.py:69
+#: accounts/forms.py:40 accounts/models.py:73
+#: accounts/templates/accounts/profile.html:302
+msgid "Preferowany język"
+msgstr "Preferred language"
+
+#: accounts/forms.py:71
 msgid "Login"
 msgstr "Login"
 
-#: accounts/forms.py:77
+#: accounts/forms.py:79
 msgid "Krótki identyfikator do logowania (bez spacji)."
 msgstr "Short identifier for logging in (no spaces)."
 
-#: accounts/forms.py:81
+#: accounts/forms.py:83
 msgid "Imię"
 msgstr "First name"
 
-#: accounts/forms.py:86
+#: accounts/forms.py:88
 msgid "Nazwisko"
 msgstr "Last name"
 
-#: accounts/forms.py:90 accounts/templates/accounts/profile.html:94
+#: accounts/forms.py:92 accounts/templates/accounts/profile.html:94
 msgid "Email"
 msgstr "Email"
 
-#: accounts/forms.py:102
+#: accounts/forms.py:104
 msgid "Funkcja w firmie"
 msgstr "Role in the company"
 
-#: accounts/forms.py:104
+#: accounts/forms.py:106
 msgid ""
 "Funkcja definiuje grupy RBAC i uprawnienia (Magazynierzy, Kierownicy itd.)."
 msgstr ""
 "The role defines RBAC groups and permissions (Warehouse keepers, Managers, "
 "etc.)."
 
-#: accounts/forms.py:120 accounts/templates/accounts/employee_register.html:232
+#: accounts/forms.py:122 accounts/templates/accounts/employee_register.html:232
 #: accounts/templates/accounts/login.html:113
-#: accounts/templates/accounts/profile.html:349
+#: accounts/templates/accounts/profile.html:366
 msgid "Hasło"
 msgstr "Password"
 
-#: accounts/forms.py:128
+#: accounts/forms.py:130
 msgid ""
 "Min. 10 znaków. Hasło jest sprawdzane przez Have I Been Pwned — wycieki "
 "publicznych baz są odrzucane."
@@ -121,104 +126,109 @@ msgstr ""
 "Min. 10 characters. The password is checked against Have I Been Pwned — "
 "leaks from public databases are rejected."
 
-#: accounts/forms.py:134
+#: accounts/forms.py:136
 msgid "Potwierdź hasło"
 msgstr "Confirm password"
 
-#: accounts/forms.py:141
+#: accounts/forms.py:143
 msgid "Login jest wymagany."
 msgstr "Login is required."
 
-#: accounts/forms.py:143
+#: accounts/forms.py:145
 msgid "Użytkownik o takim loginie już istnieje."
 msgstr "A user with this login already exists."
 
-#: accounts/forms.py:154
+#: accounts/forms.py:156
 msgid "Hasła nie pasują do siebie."
 msgstr "The passwords do not match."
 
-#: accounts/forms.py:168
+#: accounts/forms.py:170
 msgid "np. jan.kowalski"
 msgstr "e.g. jan.kowalski"
 
-#: accounts/models.py:25
+#: accounts/models.py:26
 msgid "Magazynier"
 msgstr "Warehouse keeper"
 
-#: accounts/models.py:26
+#: accounts/models.py:27
 msgid "Montażysta"
 msgstr "Fitter"
 
-#: accounts/models.py:27
+#: accounts/models.py:28
 msgid "Kierownik"
 msgstr "Manager"
 
-#: accounts/models.py:28 templates/base.html:139
+#: accounts/models.py:29 templates/base.html:139
 msgid "Administrator"
 msgstr "Administrator"
 
-#: accounts/models.py:33 accounts/templates/accounts/profile.html:450
+#: accounts/models.py:34 accounts/templates/accounts/profile.html:467
 msgid "Automatyczny"
 msgstr "Automatic"
 
-#: accounts/models.py:34 accounts/templates/accounts/profile.html:481
+#: accounts/models.py:35 accounts/templates/accounts/profile.html:498
 msgid "Jasny"
 msgstr "Light"
 
-#: accounts/models.py:35 accounts/templates/accounts/profile.html:511
+#: accounts/models.py:36 accounts/templates/accounts/profile.html:528
 msgid "Ciemny"
 msgstr "Dark"
 
-#: accounts/models.py:41 chatbot/models.py:34 chatbot/models.py:100
+#: accounts/models.py:42 chatbot/models.py:34 chatbot/models.py:100
 #: core/models.py:45 templates/base.html:139
 msgid "Użytkownik"
 msgstr "User"
 
-#: accounts/models.py:47
+#: accounts/models.py:48
 msgid "Funkcja"
 msgstr "Role"
 
-#: accounts/models.py:70
+#: accounts/models.py:75 accounts/templates/accounts/profile.html:306
+msgid ""
+"Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)."
+msgstr "Default UI language after sign-in (emails are always bilingual PL+EN)."
+
+#: accounts/models.py:80
 msgid "Aktywny pracownik"
 msgstr "Active employee"
 
-#: accounts/models.py:74
+#: accounts/models.py:84
 msgid "Zanonimizowany"
 msgstr "Anonymized"
 
-#: accounts/models.py:75
+#: accounts/models.py:85
 msgid "Czy profil został zanonimizowany (GDPR Art.17)."
 msgstr "Whether the profile has been anonymized (GDPR Art.17)."
 
-#: accounts/models.py:80
+#: accounts/models.py:90
 msgid "Data anonimizacji"
 msgstr "Anonymization date"
 
-#: accounts/models.py:81
+#: accounts/models.py:91
 msgid "Data anonimizacji (UTC)."
 msgstr "Anonymization date (UTC)."
 
-#: accounts/models.py:86
+#: accounts/models.py:96
 msgid "Data zakończenia zatrudnienia"
 msgstr "End of employment date"
 
-#: accounts/models.py:87
+#: accounts/models.py:97
 msgid "Data rozwiązania umowy/zakończenia zatrudnienia."
 msgstr "Date of contract termination / end of employment."
 
-#: accounts/models.py:92
+#: accounts/models.py:102
 msgid "Powód zakończenia"
 msgstr "Termination reason"
 
-#: accounts/models.py:93
+#: accounts/models.py:103
 msgid "Powód zakończenia (opcjonalnie)."
 msgstr "Termination reason (optional)."
 
-#: accounts/models.py:98 accounts/templates/accounts/profile.html:39
+#: accounts/models.py:108 accounts/templates/accounts/profile.html:39
 msgid "Profil pracownika"
 msgstr "Employee profile"
 
-#: accounts/models.py:99
+#: accounts/models.py:109
 msgid "Profile pracowników"
 msgstr "Employee profiles"
 
@@ -505,7 +515,7 @@ msgid "Pokaż hasło"
 msgstr "Show password"
 
 #: accounts/templates/accounts/employee_register.html:338
-#: accounts/templates/accounts/profile.html:323
+#: accounts/templates/accounts/profile.html:340
 #: chatbot/templates/chatbot/_confirmation_card.html:134
 #: machines/templates/machines/delete_confirm.html:33
 #: machines/templates/machines/detail.html:341
@@ -657,7 +667,7 @@ msgid "ID pracownika"
 msgstr "Employee ID"
 
 #: accounts/templates/accounts/profile.html:103
-#: accounts/templates/accounts/profile.html:547
+#: accounts/templates/accounts/profile.html:564
 msgid "Ostatnie logowanie"
 msgstr "Last login"
 
@@ -721,29 +731,29 @@ msgstr "Internal company identifier (optional)."
 msgid "Wizualnie wybierzesz motyw w zakładce „Preferencje\"."
 msgstr "You can select a theme visually in the „Preferences\" tab."
 
-#: accounts/templates/accounts/profile.html:313 machines/views.py:240
+#: accounts/templates/accounts/profile.html:330 machines/views.py:240
 #: reservations/templates/reservations/_form_partial.html:268
 #: reservations/templates/reservations/site_form.html:259
 msgid "Zapisz zmiany"
 msgstr "Save changes"
 
-#: accounts/templates/accounts/profile.html:351
+#: accounts/templates/accounts/profile.html:368
 msgid "Zmiana hasła wymaga kontaktu z administratorem systemu."
 msgstr "Changing the password requires contacting the system administrator."
 
-#: accounts/templates/accounts/profile.html:362
+#: accounts/templates/accounts/profile.html:379
 msgid "Zmień hasło"
 msgstr "Change password"
 
-#: accounts/templates/accounts/profile.html:381
+#: accounts/templates/accounts/profile.html:398
 msgid "Uwierzytelnianie dwuskładnikowe (2FA)"
 msgstr "Two-factor authentication (2FA)"
 
-#: accounts/templates/accounts/profile.html:383
+#: accounts/templates/accounts/profile.html:400
 msgid "Wkrótce"
 msgstr "Coming soon"
 
-#: accounts/templates/accounts/profile.html:387
+#: accounts/templates/accounts/profile.html:404
 msgid ""
 "Dodatkowa warstwa zabezpieczeń przez kod TOTP z aplikacji autentykacyjnej. "
 "Planowane w Milestone 3."
@@ -751,11 +761,11 @@ msgstr ""
 "An extra layer of security through a TOTP code from an authenticator app. "
 "Planned for Milestone 3."
 
-#: accounts/templates/accounts/profile.html:402
+#: accounts/templates/accounts/profile.html:419
 msgid "Aktualna sesja"
 msgstr "Current session"
 
-#: accounts/templates/accounts/profile.html:404
+#: accounts/templates/accounts/profile.html:421
 #, python-format
 msgid ""
 "Zalogowany jako <span class=\"font-medium text-slate-700 dark:text-"
@@ -766,7 +776,7 @@ msgstr ""
 "slate-300\">%(username)s</span>. Log out via the menu in the left sidebar "
 "when you finish working."
 
-#: accounts/templates/accounts/profile.html:425
+#: accounts/templates/accounts/profile.html:442
 msgid ""
 "Wybierz motyw kolorystyczny. „Automatyczny\" dostosowuje się do ustawień "
 "systemowych Twojego urządzenia. Aby zapisać preferencję, użyj „Zapisz "
@@ -775,23 +785,23 @@ msgstr ""
 "Choose a color theme. „Automatic\" adapts to your device's system settings. "
 "To save your preference, use „Save changes\" in the „Profile\" tab."
 
-#: accounts/templates/accounts/profile.html:430
+#: accounts/templates/accounts/profile.html:447
 msgid "Wybór motywu interfejsu"
 msgstr "Interface theme selection"
 
-#: accounts/templates/accounts/profile.html:451
+#: accounts/templates/accounts/profile.html:468
 msgid "Wg systemu"
 msgstr "By system"
 
-#: accounts/templates/accounts/profile.html:482
+#: accounts/templates/accounts/profile.html:499
 msgid "Białe tło"
 msgstr "White background"
 
-#: accounts/templates/accounts/profile.html:512
+#: accounts/templates/accounts/profile.html:529
 msgid "Niskie światło"
 msgstr "Low light"
 
-#: accounts/templates/accounts/profile.html:524
+#: accounts/templates/accounts/profile.html:541
 #, python-format
 msgid ""
 "Aktualne ustawienie: <span class=\"font-medium text-slate-700 dark:text-"
@@ -802,23 +812,23 @@ msgstr ""
 "slate-300\">%(theme)s</span>. To change it, use the selector on the "
 "„Profile\" tab and click „Save changes\"."
 
-#: accounts/templates/accounts/profile.html:538
+#: accounts/templates/accounts/profile.html:555
 msgid "Ostatnia aktywność konta"
 msgstr "Last account activity"
 
-#: accounts/templates/accounts/profile.html:552
+#: accounts/templates/accounts/profile.html:569
 msgid "Pierwsze logowanie — brak historii"
 msgstr "First login — no history"
 
-#: accounts/templates/accounts/profile.html:565
+#: accounts/templates/accounts/profile.html:582
 msgid "Konto utworzone"
 msgstr "Account created"
 
-#: accounts/templates/accounts/profile.html:579
+#: accounts/templates/accounts/profile.html:596
 msgid "Pełna historia logowań"
 msgstr "Full login history"
 
-#: accounts/templates/accounts/profile.html:581
+#: accounts/templates/accounts/profile.html:598
 msgid ""
 "Szczegółowa lista prób logowania (sukces/błąd, IP, user-agent) jest dostępna "
 "dla administratora w panelu admina (Django Axes)."
@@ -838,25 +848,25 @@ msgstr "Invalid code. Please try again."
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:131
+#: accounts/views.py:165
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:229
+#: accounts/views.py:263
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:241
+#: accounts/views.py:275
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:260
+#: accounts/views.py:294
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:271
+#: accounts/views.py:305
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -2341,7 +2351,9 @@ msgstr "Upcoming inspection alert — sent"
 msgid ""
 "Znacznik wysłania alertu o zbliżającym się przeglądzie (idempotency — "
 "resetowany po wykonaniu przeglądu)."
-msgstr "Timestamp of the upcoming-inspection alert (idempotency — reset after the inspection is done)."
+msgstr ""
+"Timestamp of the upcoming-inspection alert (idempotency — reset after the "
+"inspection is done)."
 
 #: machines/models.py:152
 msgid "0 = nieznany."
@@ -3660,7 +3672,9 @@ msgstr "T-1 reminder — sent"
 msgid ""
 "Znacznik wysłania przypomnienia o jutrzejszym starcie rezerwacji "
 "(idempotency — cron wysyła tylko gdy puste)."
-msgstr "Timestamp of the reminder about the reservation starting tomorrow (idempotency — cron sends only when empty)."
+msgstr ""
+"Timestamp of the reminder about the reservation starting tomorrow "
+"(idempotency — cron sends only when empty)."
 
 #: reservations/pdf.py:73
 #, python-format
@@ -6631,8 +6645,12 @@ msgid ""
 msgid_plural ""
 "Poniższe maszyny mają <strong>przeterminowany przegląd</strong> i wymagają "
 "uwagi:"
-msgstr[0] "The machine below has an <strong>overdue inspection</strong> and needs attention:"
-msgstr[1] "The machines below have an <strong>overdue inspection</strong> and need attention:"
+msgstr[0] ""
+"The machine below has an <strong>overdue inspection</strong> and needs "
+"attention:"
+msgstr[1] ""
+"The machines below have an <strong>overdue inspection</strong> and need "
+"attention:"
 
 #: templates/emails/inspection_overdue_body.html:18
 #: templates/emails/inspection_overdue_body.txt:7
@@ -6665,8 +6683,12 @@ msgid ""
 msgid_plural ""
 "Poniższe maszyny mają <strong>zbliżający się przegląd</strong> — zaplanuj je "
 "z wyprzedzeniem:"
-msgstr[0] "The machine below has an <strong>upcoming inspection</strong> — plan it ahead:"
-msgstr[1] "The machines below have an <strong>upcoming inspection</strong> — plan them ahead:"
+msgstr[0] ""
+"The machine below has an <strong>upcoming inspection</strong> — plan it "
+"ahead:"
+msgstr[1] ""
+"The machines below have an <strong>upcoming inspection</strong> — plan them "
+"ahead:"
 
 #: templates/emails/inspection_upcoming_body.txt:3
 msgid ""
@@ -6707,12 +6729,14 @@ msgid "rezerwacja maszyny %(uid)s została potwierdzona."
 msgstr "reservation for machine %(uid)s has been confirmed."
 
 #: templates/emails/reservation_reminder_body.html:3
+#, python-format
 msgid ""
 "przypominamy, że rezerwacja maszyny <strong>%(uid)s</strong> rozpoczyna się "
 "jutro."
 msgstr "the reservation for machine <strong>%(uid)s</strong> starts tomorrow."
 
 #: templates/emails/reservation_reminder_body.txt:3
+#, python-format
 msgid "przypominamy, że rezerwacja maszyny %(uid)s rozpoczyna się jutro."
 msgstr "the reservation for machine %(uid)s starts tomorrow."
 

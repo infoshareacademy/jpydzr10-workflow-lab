@@ -72,7 +72,7 @@ def update_profile(profile: EmployeeProfile, **data) -> EmployeeProfile:
     walidację niezależnie od miejsca wywołania (view, admin, API).
 
     Akceptowane pola (whitelist): ``phone``, ``function``, ``theme_preference``,
-    ``employee_id``. Pola nieznane (np. ``is_anonymized``) są ignorowane —
+    ``employee_id``, ``preferred_language``. Pola nieznane (np. ``is_anonymized``) są ignorowane —
     to defensive default chroniący przed przypadkowymi nadpisaniami.
 
     @transaction.atomic (Wave 4 E2 P1 #12): full_clean() i save() są nieatomowe
@@ -80,7 +80,7 @@ def update_profile(profile: EmployeeProfile, **data) -> EmployeeProfile:
     profil zostaje w DB ale grupy nie zsynchronizowane (split-brain). @atomic
     rollbackuje całość jako jednostkę.
     """
-    allowed = {"phone", "function", "theme_preference", "employee_id"}
+    allowed = {"phone", "function", "theme_preference", "employee_id", "preferred_language"}
     for key, value in data.items():
         if key in allowed:
             setattr(profile, key, value)

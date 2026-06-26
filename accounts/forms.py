@@ -32,16 +32,18 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = EmployeeProfile
-        fields = ["phone", "employee_id", "theme_preference"]
+        fields = ["phone", "employee_id", "theme_preference", "preferred_language"]
         labels = {
             "phone": _("Telefon"),
             "employee_id": _("Identyfikator pracownika"),
             "theme_preference": _("Motyw interfejsu"),
+            "preferred_language": _("Preferowany język"),
         }
         widgets = {
             "phone": forms.TextInput(attrs={"class": INPUT_CSS, "placeholder": "+48 …"}),
             "employee_id": forms.TextInput(attrs={"class": INPUT_CSS}),
             "theme_preference": forms.Select(attrs={"class": SELECT_CSS}),
+            "preferred_language": forms.Select(attrs={"class": SELECT_CSS}),
         }
 
     def clean_phone(self):

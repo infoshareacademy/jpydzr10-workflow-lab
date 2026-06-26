@@ -1,5 +1,6 @@
 """Widoki aplikacji accounts (login, logout, profile, employee management)."""
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -23,6 +24,29 @@ from .models import EmployeeProfile
 from .services import anonymize_employee, register_employee, terminate_employee, update_profile
 
 
+def _apply_language_cookie(response: HttpResponse, lang_code: str) -> HttpResponse:
+    """Ustawia ciasteczko języka (mechanizm Django LocaleMiddleware) na odpowiedzi.
+
+    Pozwala utrwalić wybór języka profilu (``preferred_language``) jako domyślny
+    język UI — odczytywany przez ``LocaleMiddleware`` przy kolejnych żądaniach.
+    Mirror logiki ``django.views.i18n.set_language``. Świadomie NIE wołamy
+    ``translation.activate`` — odpowiedź to redirect (brak renderowanej treści),
+    a aktywacja per-wątek wyciekałaby do kolejnych żądań/testów.
+    """
+    if lang_code:
+        response.set_cookie(
+            settings.LANGUAGE_COOKIE_NAME,
+            lang_code,
+            max_age=settings.LANGUAGE_COOKIE_AGE,
+            path=settings.LANGUAGE_COOKIE_PATH,
+            domain=settings.LANGUAGE_COOKIE_DOMAIN,
+            secure=settings.LANGUAGE_COOKIE_SECURE,
+            httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+            samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+        )
+    return response
+
+
 @method_decorator(
     ratelimit(key="ip", rate="20/h", method="POST", block=True),
     name="dispatch",
@@ -41,6 +65,14 @@ class PlanerLoginView(LoginView):
     template_name = "accounts/login.html"
     authentication_form = PlanerAuthenticationForm
     redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        """Po zalogowaniu ustaw język UI na preferencję profilu użytkownika."""
+        response = super().form_valid(form)
+        profile = getattr(self.request.user, "profile", None)
+        if profile is not None:
+            _apply_language_cookie(response, profile.preferred_language)
+        return response
 
 
 class AxesLockedView(TemplateView):
@@ -72,7 +104,9 @@ def profile(request):
         form = ProfileForm(request.POST, instance=employee_profile)
         if form.is_valid():
             update_profile(employee_profile, **form.cleaned_data)
-            return redirect("accounts:profile")
+            # Zmiana języka w profilu od razu przełącza UI (utrwalenie w cookie).
+            response = redirect("accounts:profile")
+            return _apply_language_cookie(response, employee_profile.preferred_language)
     else:
         form = ProfileForm(instance=employee_profile)
 
