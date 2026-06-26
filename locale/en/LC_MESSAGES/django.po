@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 22:02+0200\n"
+"POT-Creation-Date: 2026-06-26 22:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -615,7 +615,7 @@ msgstr "Machine Planner — home"
 #: reservations/templates/reservations/site_form.html:23
 #: service/templates/service/detail.html:4
 #: service/templates/service/form.html:4 templates/base.html:111
-#: templates/base.html:579 templates/core/search.html:4
+#: templates/base.html:584 templates/core/search.html:4
 msgid "Planer Maszyn"
 msgstr "Machine Planner"
 
@@ -848,25 +848,25 @@ msgstr "Invalid code. Please try again."
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:165
+#: accounts/views.py:227
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:263
+#: accounts/views.py:325
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:275
+#: accounts/views.py:337
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:294
+#: accounts/views.py:356
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:305
+#: accounts/views.py:367
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -2066,7 +2066,7 @@ msgstr "The document must be in PDF format."
 msgid "Plik nie jest prawidłowym PDF."
 msgstr "The file is not a valid PDF."
 
-#: core/views.py:409
+#: core/views.py:418
 msgid "brak danych"
 msgstr "no data"
 
@@ -3684,7 +3684,7 @@ msgstr "Reservation %(pk)s"
 #: reservations/pdf.py:74 service/templates/service/bulk_inspection.html:4
 #: service/templates/service/list.html:4
 #: service/templates/service/reports.html:4 templates/base.html:11
-#: templates/base.html:578
+#: templates/base.html:578 templates/core/privacy.html:4
 msgid "Planer Maszyn Budowlanych"
 msgstr "Construction Machine Planner"
 
@@ -4834,7 +4834,7 @@ msgstr "Machine %(uid)s will return to the warehouse"
 #: reservations/templates/reservations/detail.html:609
 #: reservations/templates/reservations/detail.html:733
 #: reservations/templates/reservations/detail.html:866
-#: reservations/templates/reservations/detail.html:1035 templates/base.html:694
+#: reservations/templates/reservations/detail.html:1035 templates/base.html:718
 #: templates/core/maps.html:232 templates/home.html:270
 msgid "Zamknij"
 msgstr "Close"
@@ -6484,6 +6484,25 @@ msgstr ""
 msgid "Milestone 3"
 msgstr "Milestone 3"
 
+#: templates/base.html:580 templates/base.html:598
+#: templates/core/privacy.html:4 templates/core/privacy.html:8
+msgid "Polityka prywatności"
+msgstr "Privacy policy"
+
+#: templates/base.html:582
+msgid "Moje dane (eksport)"
+msgstr "My data (export)"
+
+#: templates/base.html:597
+msgid ""
+"Ta aplikacja używa wyłącznie niezbędnych ciasteczek (sesja, język, "
+"bezpieczeństwo) — bez śledzenia ani reklam."
+msgstr "This application uses only essential cookies (session, language, security) — no tracking or advertising."
+
+#: templates/base.html:603
+msgid "Rozumiem"
+msgstr "I understand"
+
 #: templates/core/_search_results.html:64
 #, python-format
 msgid "Zobacz wszystkie wyniki dla &laquo;%(query)s&raquo;"
@@ -6577,6 +6596,101 @@ msgstr "Inspection overdue"
 #: templates/core/maps.html:313
 msgid "Brak danych"
 msgstr "No data"
+
+#: templates/core/privacy.html:9
+msgid "Zgodna z RODO (GDPR — rozporządzenie UE 2016/679)."
+msgstr "Compliant with the GDPR (EU Regulation 2016/679)."
+
+#: templates/core/privacy.html:11
+msgid "1. Administrator danych"
+msgstr "1. Data controller"
+
+#: templates/core/privacy.html:12
+msgid ""
+"Administratorem danych jest operator aplikacji Planer Maszyn Budowlanych. "
+"Kontakt w sprawach ochrony danych: info@werkstroomlab.be."
+msgstr "The data controller is the operator of the Construction Machine Planner application. Data protection contact: info@werkstroomlab.be."
+
+#: templates/core/privacy.html:14
+msgid "2. Jakie dane przetwarzamy"
+msgstr "2. What data we process"
+
+#: templates/core/privacy.html:15
+msgid ""
+"Przetwarzamy dane konta pracownika (imię, nazwisko, adres e-mail, numer "
+"telefonu, funkcja), dane rezerwacji i serwisu maszyn oraz techniczne "
+"dzienniki zdarzeń (adres IP, czas i rodzaj akcji) niezbędne do "
+"bezpieczeństwa i rozliczalności."
+msgstr "We process employee account data (first name, last name, email address, phone number, role), machine reservation and service data, and technical event logs (IP address, time and type of action) necessary for security and accountability."
+
+#: templates/core/privacy.html:17
+msgid "3. Cele i podstawy prawne"
+msgstr "3. Purposes and legal bases"
+
+#: templates/core/privacy.html:18
+msgid ""
+"Dane przetwarzamy w celu świadczenia usługi planowania pracy maszyn "
+"(wykonanie umowy), zapewnienia bezpieczeństwa systemu (prawnie uzasadniony "
+"interes) oraz spełnienia obowiązków prawnych. Nie wykorzystujemy danych do "
+"profilowania ani reklamy."
+msgstr "We process data to provide the machine-planning service (performance of a contract), to ensure system security (legitimate interest) and to comply with legal obligations. We do not use data for profiling or advertising."
+
+#: templates/core/privacy.html:20
+msgid "4. Ciasteczka"
+msgstr "4. Cookies"
+
+#: templates/core/privacy.html:21
+msgid ""
+"Używamy wyłącznie niezbędnych ciasteczek: sesji (logowanie), preferencji "
+"języka oraz ochrony przed atakami (CSRF). Nie stosujemy ciasteczek "
+"śledzących ani analitycznych."
+msgstr "We use only essential cookies: session (sign-in), language preference and attack protection (CSRF). We do not use tracking or analytics cookies."
+
+#: templates/core/privacy.html:23
+msgid "5. Okres przechowywania"
+msgstr "5. Retention period"
+
+#: templates/core/privacy.html:24
+msgid ""
+"Dane konta przechowujemy przez czas zatrudnienia i okres wymagany "
+"przepisami. Wpisy dziennika zdarzeń są usuwane po 90 dniach. Po zakończeniu "
+"zatrudnienia dane mogą zostać zanonimizowane."
+msgstr "We keep account data for the duration of employment and the period required by law. Event-log entries are deleted after 90 days. After employment ends, data may be anonymised."
+
+#: templates/core/privacy.html:26
+msgid "6. Twoje prawa"
+msgstr "6. Your rights"
+
+#: templates/core/privacy.html:27
+msgid ""
+"Masz prawo dostępu do danych, ich sprostowania, usunięcia (prawo do bycia "
+"zapomnianym), ograniczenia przetwarzania oraz przenoszenia danych. "
+"Zalogowany użytkownik może pobrać kopię swoich danych w formacie JSON ze "
+"stopki aplikacji („Moje dane (eksport)\")."
+msgstr "You have the right to access, rectify, erase (right to be forgotten), restrict processing of and port your data. A signed-in user can download a copy of their data in JSON format from the application footer (\"My data (export)\")."
+
+#: templates/core/privacy.html:29
+msgid "7. Eksport i usunięcie danych"
+msgstr "7. Data export and erasure"
+
+#: templates/core/privacy.html:30
+msgid ""
+"Eksport danych jest dostępny samoobsługowo po zalogowaniu. Usunięcie "
+"(anonimizację) danych pracownika przeprowadza administrator na żądanie — "
+"operacja jest nieodwracalna i obejmuje także powiązane dzienniki zdarzeń i "
+"historię czatu."
+msgstr "Data export is available self-service after signing in. Erasure (anonymisation) of an employee’s data is performed by an administrator on request — the operation is irreversible and also covers related event logs and chat history."
+
+#: templates/core/privacy.html:32
+msgid "8. Kontakt"
+msgstr "8. Contact"
+
+#: templates/core/privacy.html:33
+msgid ""
+"W sprawach dotyczących ochrony danych skontaktuj się z administratorem: "
+"info@werkstroomlab.be. Masz również prawo wniesienia skargi do organu "
+"nadzorczego."
+msgstr "For data protection matters, contact the administrator: info@werkstroomlab.be. You also have the right to lodge a complaint with a supervisory authority."
 
 #: templates/core/search.html:4
 #, python-format

@@ -14,6 +14,8 @@ app_name = "core"
 
 urlpatterns = [
     path("healthz/", views.healthz, name="healthz"),
+    # Polityka prywatności (RODO/GDPR) — publiczna, dwujęzyczna.
+    path("prywatnosc/", views.privacy_policy, name="privacy"),
     # Wave 14-D — global search (HTMX typeahead + full page fallback).
     path("szukaj/", views.global_search_view, name="search"),
     # Wyzwalacz testowy obserwowalności (tylko superuser) — patrz docs/adr/006.

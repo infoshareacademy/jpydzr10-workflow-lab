@@ -10,6 +10,8 @@ urlpatterns = [
     path("login/", views.PlanerLoginView.as_view(), name="login"),
     path("logout/", views.PlanerLogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    # Eksport własnych danych (RODO Art. 20) — JSON do pobrania.
+    path("moje-dane/eksport/", views.data_export_view, name="data_export"),
     # 2FA (TOTP) — setup urządzenia, weryfikacja sesji, pobranie kodów zapasowych.
     path("2fa/setup/", twofactor.two_factor_setup, name="2fa_setup"),
     path("2fa/verify/", twofactor.two_factor_verify, name="2fa_verify"),

@@ -28,6 +28,15 @@ from django_ratelimit.decorators import ratelimit
 from core.search import global_search
 
 
+def privacy_policy(request):
+    """Strona polityki prywatności (RODO/GDPR) — dwujęzyczna przez {% trans %}.
+
+    Publiczna (bez logowania) — informuje o administratorze danych, zakresie
+    przetwarzania, podstawach prawnych, prawach osoby i okresie retencji.
+    """
+    return render(request, "core/privacy.html")
+
+
 def healthz(request):
     """Health check endpoint — sprawdza dostępność DB poprzez SELECT 1.
 

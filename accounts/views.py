@@ -7,9 +7,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -115,6 +116,67 @@ def profile(request):
         "accounts/profile.html",
         {"form": form, "profile": employee_profile},
     )
+
+
+@login_required
+def data_export_view(request):
+    """Eksport danych zalogowanego użytkownika (RODO Art. 20 — przenoszalność).
+
+    Zwraca komplet danych usera w formacie JSON (do pobrania): konto, profil,
+    rezerwacje utworzone przez niego oraz wpisy dziennika zdarzeń go dotyczące.
+    Samoobsługowo — każdy widzi WYŁĄCZNIE własne dane.
+    """
+    from core.models import AuditLogEntry
+    from reservations.models import Reservation
+
+    user = request.user
+    profile = user.profile
+    reservations = Reservation.objects.filter(created_by=user).select_related("machine", "site")
+    audit = AuditLogEntry.objects.filter(user=user)
+
+    payload = {
+        "exported_at": timezone.now().isoformat(),
+        "account": {
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "date_joined": user.date_joined.isoformat(),
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+        },
+        "profile": {
+            "function": profile.function,
+            "phone": profile.phone,
+            "employee_id": profile.employee_id,
+            "preferred_language": profile.preferred_language,
+            "theme_preference": profile.theme_preference,
+        },
+        "reservations": [
+            {
+                "id": r.pk,
+                "machine": r.machine.uid if r.machine_id else None,
+                "site": r.site.project_number if r.site_id else None,
+                "start_date": r.start_date.isoformat() if r.start_date else None,
+                "end_date": r.end_date.isoformat() if r.end_date else None,
+                "status": r.status,
+                "person": r.person,
+            }
+            for r in reservations
+        ],
+        "audit_log": [
+            {
+                "timestamp": a.timestamp.isoformat(),
+                "action": a.action,
+                "object_type": a.object_type,
+                "object_id": a.object_id,
+            }
+            for a in audit
+        ],
+    }
+    response = JsonResponse(payload, json_dumps_params={"ensure_ascii": False, "indent": 2})
+    filename = f"moje-dane-{user.username}-{timezone.now():%Y-%m-%d}.json"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

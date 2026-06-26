@@ -276,6 +276,21 @@ def anonymize_employee(
             user.pk,
         )
 
+        # RODO Art.17 — dziennik zdarzeń trzyma dane osobowe zanonimizowanego
+        # użytkownika (adres IP, identyfikator klienta/User-Agent). Sam fakt akcji
+        # zostaje (rozliczalność), ale identyfikatory osobowe wymazujemy. FK
+        # ``user`` celowo zostaje — wskazuje na już zanonimizowane konto.
+        from core.models import AuditLogEntry
+
+        audit_scrubbed = AuditLogEntry.objects.filter(user=user).update(
+            ip_address=None, user_agent=""
+        )
+        logger.info(
+            "GDPR anonymize cascade: scrubbed PII in %d audit log entr(ies) for user pk=%s",
+            audit_scrubbed,
+            user.pk,
+        )
+
     # Wave 11 H-2 RODO fix: HistoricalEmployeeProfile retencja phone PII.
     # django-simple-history snapshotuje wszystkie pola, w tym phone — anonymize
     # zmienia obecny rekord, ale historyczne wpisy zachowują oryginalny numer.
