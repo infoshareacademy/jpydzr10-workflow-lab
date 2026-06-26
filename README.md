@@ -2,30 +2,41 @@
 
 System rezerwacji i serwisu maszyn budowlanych dla małej firmy budowlanej.
 
-> **Status projektu:** Milestone 2 — aplikacja webowa Django (w trakcie budowy).
+> **Status projektu:** Milestone 3 — wersja zaawansowana aplikacji webowej Django.
 > Milestone 1 (aplikacja konsolowa) został zakończony i przeniesiony do
 > [`archive/milestone-1/`](archive/milestone-1/) jako materiał referencyjny.
+> Milestone 2 (aplikacja web w Django) — zakończony i zaprezentowany.
 
-## Cel Milestone 2
+## Cel Milestone 3
 
-Przeniesienie funkcjonalności aplikacji konsolowej (175 testów PASS) na
-interfejs webowy w Django 5.2 LTS, z dojrzałym stackiem produkcyjnym
-(PostgreSQL, HTMX, Alpine.js, Tailwind, django-unfold) oraz panelu
-administracyjnego — wszystko po polsku, gotowe na prezentację 14.06.2026.
+Rozszerzenie aplikacji webowej o funkcje produkcyjne: pełna lokalizacja
+PL/EN, uwierzytelnianie dwuskładnikowe, mailing transakcyjny, raporty
+(wykresy + PDF/XLSX), dostępność WCAG 2.1 AA oraz konwersacyjny asystent.
 
-Pełny plan i podział na sprinty: [`JIRA_TASKS_Milestone2.md`](JIRA_TASKS_Milestone2.md).
-
-## Funkcjonalność (cel końcowy M2)
+## Funkcjonalność
 
 - Inwentarz maszyn z oznaczeniami terminów przeglądów technicznych.
-- Rezerwacje maszyn z wykrywaniem konfliktów terminów.
+- Rezerwacje maszyn z wykrywaniem konfliktów terminów + cykl statusów
+  (oczekująca → potwierdzona → zakończona) z mailem potwierdzającym.
 - Codzienna synchronizacja statusów (Hard Return Policy).
 - Rejestr serwisowy (przeglądy + naprawy) z automatycznym obliczaniem
-  terminu kolejnego przeglądu.
-- Budowy (`ConstructionSite`) z numeracją projektów `BUD-YYYY-NNN`.
+  terminu kolejnego przeglądu; koszty w EUR.
+- Budowy (`ConstructionSite`) z numeracją projektów.
 - Timeline rezerwacji w stylu Gantt — siatka maszyna × dni.
+- **Raporty serwisowe:** kwartalny XLSX, roczny PDF, karta serwisowa
+  maszyny (PDF) oraz wykres kosztów per maszyna (Chart.js) z eksportem
+  Excel respektującym aktywne filtry.
+- **Lokalizacja PL/EN** (`django.utils.translation`, katalogi `.po/.mo`)
+  z przełącznikiem języka w interfejsie.
+- **2FA (TOTP)** dla personelu — `django-otp` + kody zapasowe.
+- **Mailing transakcyjny** (Google Workspace SMTP) — potwierdzenia rezerwacji.
+- **Dostępność WCAG 2.1 AA** — kontrast, focus, cele dotykowe 44 px.
+- **Asystent (chatbot)** — moduł konwersacyjny (Pydantic AI + LLM provider)
+  do zapytań o maszyny i rezerwacje, z potwierdzaniem akcji zapisujących.
 - Panel administracyjny w Django (motyw Tailwind przez `django-unfold`).
 - Audit trail (`django-simple-history`) dla każdego modelu.
+- CI (GitHub Actions): ruff, migracje, kompilacja tłumaczeń, pytest +
+  coverage, bandit, pip-audit.
 
 ## Stack technologiczny
 
@@ -39,11 +50,16 @@ Pełny plan i podział na sprinty: [`JIRA_TASKS_Milestone2.md`](JIRA_TASKS_Miles
 | Date picker | Flatpickr (z polską lokalizacją) |
 | Admin theme | django-unfold |
 | Audit trail | django-simple-history |
-| Security | django-axes (brute-force) + django-csp (CSP headers) |
-| Testy | pytest-django + factory_boy + freezegun + hypothesis |
+| Security | django-axes (brute-force) + django-csp (CSP + nonce) + django-otp (2FA TOTP) |
+| Pieniądze | django-money (EUR) |
+| Raporty | openpyxl (XLSX) + reportlab (PDF) + Chart.js (wykresy) |
+| Lokalizacja | gettext (PL/EN, `.po/.mo`) |
+| Asystent | Pydantic AI + LLM provider (Gemini) |
+| Testy | pytest-django + factory_boy + freezegun + hypothesis + playwright |
 | Linter / formatter | ruff |
+| CI | GitHub Actions (ruff, pytest+coverage, bandit, pip-audit) |
 
-Pełna lista i wersje: zobacz `pyproject.toml` (po inicjalizacji Django).
+Pełna lista i wersje: zobacz `pyproject.toml`.
 
 ## Uruchomienie
 
@@ -89,19 +105,21 @@ uv run pytest --cov                      # z coverage (target ≥ 80%)
 uv run ruff check . && uv run ruff format --check .
 ```
 
-## Struktura projektu (target po M2)
+## Struktura projektu
 
 ```
 planer-maszyn/
 ├── archive/milestone-1/      # zachowany kod M1 (console app, 175 testów)
 ├── planer_config/            # Django project (settings, urls, wsgi)
+├── accounts/                 # app: profile pracowników, auth, 2FA
 ├── machines/                 # app: maszyny, statusy, przeglądy
 ├── reservations/             # app: rezerwacje + budowy + has_conflict
-├── service/                  # app: ServiceRecord + bulk inspection
-├── core/                     # shared: utils, mixins, base templates
+├── service/                  # app: ServiceRecord + raporty + bulk inspection
+├── chatbot/                  # app: asystent konwersacyjny (+ agent głosowy)
+├── core/                     # shared: utils, mixins, base templates, PDF
 ├── templates/                # Django templates (base.html + per-app)
+├── locale/en/                # katalog tłumaczeń EN (.po/.mo)
 ├── static/vendor/            # HTMX, Alpine, Tailwind, Flatpickr (vendored)
-├── tests/                    # pytest-django: unit + integration + e2e
 ├── docker-compose.yml        # PostgreSQL 16 dla dev
 ├── .env.example              # template konfiguracji
 └── pyproject.toml            # Django + uv + ruff + pytest stack
@@ -114,7 +132,7 @@ Aplikacja konsolowa zakończona 12.04.2026 — 175 testów PASS, 20 maszyn demo,
 w [`archive/milestone-1/`](archive/milestone-1/) jako materiał referencyjny
 i baza do migracji danych.
 
-Najważniejsze elementy biznesowe z M1 zachowane w M2:
+Najważniejsze elementy biznesowe z M1 zachowane w aplikacji web:
 
 - **Statusy maszyn:** `W magazynie`, `Na budowie`, `Zarezerwowana`, `W serwisie`.
 - **Statusy rezerwacji:** `oczekująca`, `potwierdzona`, `anulowana`, `zakończona`.
@@ -125,9 +143,9 @@ Najważniejsze elementy biznesowe z M1 zachowane w M2:
 
 ## Dokumenty planistyczne
 
-- [`JIRA_TASKS_Milestone2.md`](JIRA_TASKS_Milestone2.md) — pełny plan M2 (8 sprintów).
-- [`NOTES_FOR_MILESTONE_3.md`](NOTES_FOR_MILESTONE_3.md) — propozycje dla M3 (i18n,
-  RBAC, mailing, deployment, raporty, opcjonalne integracje).
+- [`JIRA_TASKS_Milestone3.md`](JIRA_TASKS_Milestone3.md) — pełny plan M3 z Definition of Done.
+- [`JIRA_TASKS_Milestone2.md`](JIRA_TASKS_Milestone2.md) — historyczny plan M2 (8 sprintów).
+- [`NOTES_FOR_MILESTONE_3.md`](NOTES_FOR_MILESTONE_3.md) — wczesny brainstorm M3.
 
 ## Licencja
 
