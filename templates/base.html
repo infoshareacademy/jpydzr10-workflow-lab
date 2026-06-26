@@ -579,23 +579,24 @@
                 </div>
             </footer>
         </div>
+    </div>
 
-        {# === COOKIE NOTICE (tylko niezbędne ciasteczka — brak śledzenia) === #}
-        <div x-data="{ show: false }"
-             x-init="try { show = !localStorage.getItem('planer-cookie-ack'); } catch (e) { show = false; }"
-             x-show="show" x-cloak
-             class="fixed bottom-0 inset-x-0 z-50 bg-slate-900/95 text-slate-100 border-t border-slate-700 backdrop-blur">
-            <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm">
-                <p class="flex-1">
-                    {% trans "Ta aplikacja używa wyłącznie niezbędnych ciasteczek (sesja, język, bezpieczeństwo) — bez śledzenia ani reklam." %}
-                    <a href="{% url 'core:privacy' %}" class="underline text-brand-300 hover:text-brand-200">{% trans "Polityka prywatności" %}</a>
-                </p>
-                <button type="button"
-                        @click="try { localStorage.setItem('planer-cookie-ack', '1'); } catch (e) {} show = false;"
-                        class="shrink-0 px-4 py-2 min-h-[40px] rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
-                    {% trans "Rozumiem" %}
-                </button>
-            </div>
+    {# === COOKIE NOTICE (poza transformowanym layoutem sidebara, żeby ``fixed`` #}
+    {#     kotwiczyło względem viewportu, nie przodka z transformem) === #}
+    {# bottom:0 inline — klasa ``bottom-0`` nie trafiła do zbudowanego (purged) #}
+    {# tailwind.min.css; CSP style-src dopuszcza 'unsafe-inline'. #}
+    <div x-data="cookieNotice()" x-show="show" x-cloak style="bottom:0"
+         class="fixed inset-x-0 z-50 bg-slate-900/95 text-slate-100 border-t border-slate-700 backdrop-blur">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm">
+            <p class="flex-1">
+                {% trans "Ta aplikacja używa wyłącznie niezbędnych ciasteczek (sesja, język, bezpieczeństwo) — bez śledzenia ani reklam." %}
+                <a href="{% url 'core:privacy' %}" class="underline text-brand-300 hover:text-brand-200">{% trans "Polityka prywatności" %}</a>
+            </p>
+            <button type="button"
+                    @click="ack()"
+                    class="shrink-0 px-4 py-2 min-h-[40px] rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
+                {% trans "Rozumiem" %}
+            </button>
         </div>
     </div>
 
@@ -655,6 +656,28 @@
                     try {
                         localStorage.setItem("planer-theme", this.theme);
                     } catch (e) { /* ignoruj */ }
+                },
+            };
+        }
+
+        // Baner ciasteczek — pokazuje się, dopóki użytkownik nie potwierdzi.
+        // Wyniesione do funkcji (zamiast inline x-init z try/catch) bo Alpine
+        // ewaluuje atrybuty jako WYRAŻENIA, a try/catch to instrukcja → błąd.
+        function cookieNotice() {
+            return {
+                show: false,
+                init() {
+                    try {
+                        this.show = !localStorage.getItem("planer-cookie-ack");
+                    } catch (e) {
+                        this.show = false;
+                    }
+                },
+                ack() {
+                    try {
+                        localStorage.setItem("planer-cookie-ack", "1");
+                    } catch (e) { /* ignoruj */ }
+                    this.show = false;
                 },
             };
         }
