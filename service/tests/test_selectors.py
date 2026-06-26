@@ -31,6 +31,7 @@ def _viewer(username):
     user.user_permissions.add(Permission.objects.get(codename="view_servicerecord"))
     return user
 
+
 pytestmark = pytest.mark.django_db
 
 
