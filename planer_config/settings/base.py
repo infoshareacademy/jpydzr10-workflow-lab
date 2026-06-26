@@ -106,6 +106,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",  # request.user.is_verified() (2FA)
     "accounts.middleware.TwoFactorEnforcementMiddleware",  # wymuszenie 2FA dla ról
+    "core.middleware.AuditLogMiddleware",  # dziennik zdarzeń (POST/PUT/PATCH/DELETE)
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",  # Content Security Policy

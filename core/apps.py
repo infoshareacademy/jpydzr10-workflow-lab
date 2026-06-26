@@ -16,3 +16,7 @@ class CoreConfig(AppConfig):
         # potrafi zjeść kilkadziesiąt GB RAM zanim trafi do naszego validatora.
         # 50 megapikseli ~ 7000x7000 — komfortowy zapas nad realnymi zdjęciami DSLR.
         Image.MAX_IMAGE_PIXELS = 50_000_000
+
+        # Rejestracja sygnałów dziennika zdarzeń (audit log) — przechwytywanie
+        # zmian śledzonych modeli na czas żądania mutującego.
+        from . import audit  # noqa: F401

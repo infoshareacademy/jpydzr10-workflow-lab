@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 16:49+0200\n"
+"POT-Creation-Date: 2026-06-26 21:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -170,7 +170,7 @@ msgid "Ciemny"
 msgstr "Dark"
 
 #: accounts/models.py:41 chatbot/models.py:34 chatbot/models.py:100
-#: templates/base.html:139
+#: core/models.py:45 templates/base.html:139
 msgid "Użytkownik"
 msgstr "User"
 
@@ -1910,6 +1910,54 @@ msgstr ""
 "You have reached the daily limit of 50 assistant queries. Please try again "
 "tomorrow."
 
+#: core/admin.py:80
+msgid "Eksportuj zaznaczone do CSV"
+msgstr "Export selected to CSV"
+
+#: core/models.py:47
+msgid "Czas"
+msgstr "Time"
+
+#: core/models.py:48
+msgid "Akcja"
+msgstr "Action"
+
+#: core/models.py:50
+msgid "Typ obiektu"
+msgstr "Object type"
+
+#: core/models.py:53
+msgid "ID obiektu"
+msgstr "Object ID"
+
+#: core/models.py:55
+msgid "Obiekt"
+msgstr "Object"
+
+#: core/models.py:56
+msgid "Zmiany"
+msgstr "Changes"
+
+#: core/models.py:57
+msgid "Adres IP"
+msgstr "IP address"
+
+#: core/models.py:58
+msgid "Klient (User-Agent)"
+msgstr "Client (User-Agent)"
+
+#: core/models.py:61
+msgid "Wpis dziennika zdarzeń"
+msgstr "Audit log entry"
+
+#: core/models.py:62
+msgid "Dziennik zdarzeń"
+msgstr "Audit log"
+
+#: core/models.py:70
+msgid "anonim"
+msgstr "anonymous"
+
 #: core/templatetags/planer_tags.py:116
 msgid "Pn"
 msgstr "Mon"
@@ -2306,8 +2354,6 @@ msgstr ""
 #: reservations/templates/reservations/batch_detail.html:245
 #: reservations/templates/reservations/detail.html:162
 #: reservations/templates/reservations/detail.html:520
-#: reservations/templates/reservations/email/confirmation.html:21
-#: reservations/templates/reservations/email/confirmation.txt:6
 #: reservations/templates/reservations/list.html:193
 #: reservations/templates/reservations/site_detail.html:142 service/forms.py:75
 #: service/forms.py:269 service/models.py:71
@@ -3046,8 +3092,6 @@ msgstr "Reservation"
 #: reservations/admin.py:138
 #: reservations/templates/reservations/_form_partial.html:85
 #: reservations/templates/reservations/detail.html:196
-#: reservations/templates/reservations/email/confirmation.html:23
-#: reservations/templates/reservations/email/confirmation.txt:7
 #: reservations/templates/reservations/site_detail.html:143
 #: templates/emails/reservation_cancelled_body.html:6
 #: templates/emails/reservation_cancelled_body.txt:6
@@ -3150,8 +3194,6 @@ msgstr "Reservations and construction sites"
 #: reservations/templates/reservations/_list_table.html:251
 #: reservations/templates/reservations/_timeline_filters.html:70
 #: reservations/templates/reservations/detail.html:177
-#: reservations/templates/reservations/email/confirmation.html:28
-#: reservations/templates/reservations/email/confirmation.txt:9
 #: reservations/templates/reservations/list.html:198
 #: templates/emails/reservation_confirmed_body.html:8
 #: templates/emails/reservation_confirmed_body.txt:8
@@ -3175,8 +3217,6 @@ msgstr "End date"
 #: reservations/templates/reservations/_quick_reserve_modal.html:89
 #: reservations/templates/reservations/_timeline_filters.html:87
 #: reservations/templates/reservations/detail.html:207
-#: reservations/templates/reservations/email/confirmation.html:25
-#: reservations/templates/reservations/email/confirmation.txt:8
 #: templates/emails/reservation_confirmed_body.html:7
 #: templates/emails/reservation_confirmed_body.txt:7
 #: templates/emails/reservation_request_body.html:7
@@ -3593,11 +3633,7 @@ msgstr "Timestamp of the successful delivery of the notification."
 msgid "Rezerwacja %(pk)s"
 msgstr "Reservation %(pk)s"
 
-#: reservations/pdf.py:74
-#: reservations/templates/reservations/email/confirmation.html:10
-#: reservations/templates/reservations/email/confirmation.html:33
-#: reservations/templates/reservations/email/confirmation.txt:12
-#: service/templates/service/bulk_inspection.html:4
+#: reservations/pdf.py:74 service/templates/service/bulk_inspection.html:4
 #: service/templates/service/list.html:4
 #: service/templates/service/reports.html:4 templates/base.html:11
 #: templates/base.html:578
@@ -4943,41 +4979,6 @@ msgstr ""
 msgid "Zaktualizowano"
 msgstr "Updated"
 
-#: reservations/templates/reservations/email/confirmation.html:14
-#: reservations/templates/reservations/email/confirmation.txt:1
-#: templates/emails/reservation_cancelled_body.html:2
-#: templates/emails/reservation_cancelled_body.txt:1
-#: templates/emails/reservation_confirmed_body.html:2
-#: templates/emails/reservation_confirmed_body.txt:1
-#, python-format
-msgid "Dzień dobry %(name)s,"
-msgstr "Hello %(name)s,"
-
-#: reservations/templates/reservations/email/confirmation.html:17
-#, python-format
-msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."
-msgstr ""
-"Reservation of machine <strong>%(uid)s</strong> has been confirmed.The "
-"reservation of machine <strong>%(uid)s</strong> has been confirmed."
-
-#: reservations/templates/reservations/email/confirmation.html:33
-#: reservations/templates/reservations/email/confirmation.txt:11
-#: templates/emails/reservation_cancelled_body.html:9
-#: templates/emails/reservation_cancelled_body.txt:9
-#: templates/emails/reservation_confirmed_body.html:10
-#: templates/emails/reservation_confirmed_body.txt:10
-msgid "Pozdrawiamy,"
-msgstr "Best regards,"
-
-#: reservations/templates/reservations/email/confirmation.txt:3
-#, python-format
-msgid "Rezerwacja maszyny %(uid)s została potwierdzona."
-msgstr "The reservation of machine %(uid)s has been confirmed."
-
-#: reservations/templates/reservations/email/confirmation.txt:5
-msgid "Szczegóły rezerwacji:"
-msgstr "Reservation details:"
-
 #: reservations/templates/reservations/form.html:13
 #: reservations/templates/reservations/form.html:54
 msgid "Edytuj rezerwację"
@@ -5863,7 +5864,11 @@ msgid ""
 "Na pewno usunąć wpis <span class=\"font-mono\">#%(pk)s</span>\n"
 "        dla maszyny <span class=\"font-mono\">%(uid)s</span>\n"
 "        z dnia %(performed_date)s?"
-msgstr "Are you sure you want to delete entry <span class=\"font-mono\">#%(pk)s</span>\n        for machine <span class=\"font-mono\">%(uid)s</span>\n        from %(performed_date)s?"
+msgstr ""
+"Are you sure you want to delete entry <span class=\"font-mono\">#%(pk)s</"
+"span>\n"
+"        for machine <span class=\"font-mono\">%(uid)s</span>\n"
+"        from %(performed_date)s?"
 
 #: service/templates/service/detail.html:18
 #: service/templates/service/detail.html:36
@@ -6576,10 +6581,25 @@ msgstr ""
 msgid "Wpisz frazę powyżej, żeby zacząć przeszukiwać aplikację."
 msgstr "Enter a phrase above to start searching the application."
 
+#: templates/emails/reservation_cancelled_body.html:2
+#: templates/emails/reservation_cancelled_body.txt:1
+#: templates/emails/reservation_confirmed_body.html:2
+#: templates/emails/reservation_confirmed_body.txt:1
+#, python-format
+msgid "Dzień dobry %(name)s,"
+msgstr "Hello %(name)s,"
+
 #: templates/emails/reservation_cancelled_body.html:3
 #, python-format
 msgid "rezerwacja maszyny <strong>%(uid)s</strong> została anulowana."
 msgstr "reservation for machine <strong>%(uid)s</strong> has been cancelled."
+
+#: templates/emails/reservation_cancelled_body.html:9
+#: templates/emails/reservation_cancelled_body.txt:9
+#: templates/emails/reservation_confirmed_body.html:10
+#: templates/emails/reservation_confirmed_body.txt:10
+msgid "Pozdrawiamy,"
+msgstr "Best regards,"
 
 #: templates/emails/reservation_cancelled_body.txt:3
 #, python-format
@@ -6606,7 +6626,9 @@ msgstr "Hello,"
 msgid ""
 "wpłynął nowy wniosek o rezerwację maszyny <strong>%(uid)s</strong> — wymaga "
 "zatwierdzenia."
-msgstr "a new reservation request for machine <strong>%(uid)s</strong> has arrived — it requires approval."
+msgstr ""
+"a new reservation request for machine <strong>%(uid)s</strong> has arrived — "
+"it requires approval."
 
 #: templates/emails/reservation_request_body.html:11
 #: templates/emails/reservation_request_body.txt:10
@@ -6617,7 +6639,9 @@ msgstr "Open reservation"
 #, python-format
 msgid ""
 "wpłynął nowy wniosek o rezerwację maszyny %(uid)s — wymaga zatwierdzenia."
-msgstr "a new reservation request for machine %(uid)s has arrived — it requires approval."
+msgstr ""
+"a new reservation request for machine %(uid)s has arrived — it requires "
+"approval."
 
 #: templates/home.html:20
 msgid "Strona główna"
@@ -6850,6 +6874,19 @@ msgstr "Add a new machine"
 #: templates/home.html:708
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#, python-format
+#~ msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."
+#~ msgstr ""
+#~ "Reservation of machine <strong>%(uid)s</strong> has been confirmed.The "
+#~ "reservation of machine <strong>%(uid)s</strong> has been confirmed."
+
+#, python-format
+#~ msgid "Rezerwacja maszyny %(uid)s została potwierdzona."
+#~ msgstr "The reservation of machine %(uid)s has been confirmed."
+
+#~ msgid "Szczegóły rezerwacji:"
+#~ msgstr "Reservation details:"
 
 #, python-format
 #~ msgid "Potwierdzenie rezerwacji %(uid)s"
