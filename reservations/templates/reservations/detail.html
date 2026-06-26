@@ -408,6 +408,8 @@
 
                 <div class="space-y-2">
 
+                    {# Akcje zapisujące — bramkowane change_reservation (montażysta widzi tylko PDF). #}
+                    {% if perms.reservations.change_reservation %}
                     {# Potwierdź — tylko dla pending #}
                     {% if reservation.is_pending %}
                         <form method="post" action="{% url 'reservations:confirm' reservation.pk %}" class="block">
@@ -953,6 +955,7 @@
                             {% trans "Edytuj" %}
                         </a>
                     {% endif %}
+                    {% endif %}{# /perms.change_reservation — PDF poniżej dostępny dla wszystkich ról #}
 
                     {# Drukuj PDF — zawsze dostępne #}
                     <a href="{% url 'reservations:pdf' reservation.pk %}"
@@ -963,6 +966,7 @@
                         {% trans "Drukuj PDF" %}
                     </a>
 
+                    {% if perms.reservations.change_reservation %}
                     {# ============================== ANULUJ (B-2) — modal z dropdown reason ============================== #}
                     {% comment %}
                        B-2 — dropdown reason wymagany przed anulowaniem.
@@ -1090,6 +1094,7 @@
                             </template>
                         </div>
                     {% endif %}
+                    {% endif %}{# /perms.change_reservation (anuluj) #}
                 </div>
             </div>
 

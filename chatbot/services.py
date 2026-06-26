@@ -147,7 +147,7 @@ def _is_negative(text: str) -> bool:
     return bool(_NEGATIVE_PATTERN.match(text or ""))
 
 
-def _extract_proposal_from_tool_calls(result) -> dict | None:
+def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
     """Wyciąga proposal **tylko** z faktycznych ``ToolCallPart`` w historii agenta.
 
     **Wave 14-H Bundle C-1 — KRYTYCZNY FIX**: poprzednia implementacja
@@ -217,6 +217,20 @@ def _extract_proposal_from_tool_calls(result) -> dict | None:
                 args_dict = args_dict["params"]
 
             action = part.tool_name.removeprefix("propose_")
+            # Permission gate na etapie PROPOZYCJI: jeśli user nie ma prawa do
+            # akcji, NIE budujemy pending_action — odmawiamy od razu zamiast
+            # proponować akcję, której i tak nie wykona (execute też ją blokuje,
+            # ale to defense-in-depth; tu chodzi o spójny UX bez "propose→403").
+            if user is not None:
+                from chatbot.tools import _check_user_can
+
+                auth_err = _check_user_can(user, action)
+                if auth_err:
+                    try:
+                        msg = json.loads(auth_err).get("error", auth_err)
+                    except json.JSONDecodeError, ValueError:
+                        msg = auth_err
+                    return {"action": action, "params": {}, "preview": msg, "blocked": True}
             preview = _build_preview_from_tool_call(action, args_dict, result)
             return {
                 "action": action,
@@ -588,9 +602,13 @@ def ask_chatbot(
     # ``ToolCallPart`` w historii pydantic-ai (nie z tekstu odpowiedzi).
     # Echo JSON w prozie agenta nie tworzy pending_action — blokuje to
     # echo-attack vector gdzie user prosi agenta o "powtórz tę treść JSON".
-    proposal = _extract_proposal_from_tool_calls(result)
+    proposal = _extract_proposal_from_tool_calls(result, user)
     with transaction.atomic():
-        if proposal is not None:
+        if proposal is not None and proposal.get("blocked"):
+            # User nie ma uprawnień do proponowanej akcji — pokazujemy odmowę,
+            # NIE zapisujemy pending_action (nie ma czego potwierdzać).
+            display_content = proposal["preview"]
+        elif proposal is not None:
             conversation.pending_action = proposal
             conversation.pending_action_created_at = timezone.now()
             conversation.save(
