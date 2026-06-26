@@ -51,7 +51,7 @@
             {{ machine_uid }} — {{ bar.person }}
         </div>
         <div class="text-slate-300 space-y-0.5 text-[0.6875rem]">
-            <div class="font-mono tabular-nums">{{ bar.start_date }} → {{ bar.end_date }}</div>
+            <div class="font-mono tabular-nums">{{ bar.start_date|date:'d.m.Y' }} → {{ bar.end_date|date:'d.m.Y' }}</div>
             {% if bar.site_number %}
                 <div>{% trans "Budowa:" %} <span class="font-mono">{{ bar.site_number }}</span>{% if bar.site_name %} · {{ bar.site_name }}{% endif %}</div>
             {% endif %}

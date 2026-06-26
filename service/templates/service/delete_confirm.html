@@ -9,7 +9,7 @@
     <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
         {% blocktrans with pk=record.pk uid=record.machine.uid performed_date=record.performed_date %}Na pewno usunąć wpis <span class="font-mono">#{{ pk }}</span>
         dla maszyny <span class="font-mono">{{ uid }}</span>
-        z dnia {{ performed_date }}?{% endblocktrans %}
+        z dnia {{ performed_date|date:'d.m.Y' }}?{% endblocktrans %}
     </p>
     <form method="post" class="flex gap-2">
         {% csrf_token %}

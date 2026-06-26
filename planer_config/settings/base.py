@@ -392,6 +392,11 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Wymuszamy europejski format daty (dd.mm.yyyy) w CAŁYM programie — niezależnie
+# od aktywnego języka (PL/EN) i adminie. Moduł nadpisuje wbudowane formaty
+# locale en/pl (decyzja Sebastiana: data zawsze w formacie europejskim).
+FORMAT_MODULE_PATH = ["planer_config.formats"]
+
 # Nazwy języków podajemy w ich WŁASNYM języku (endonimy) i celowo NIE
 # tłumaczymy — w przełączniku "Polski"/"English" mają wyglądać tak samo
 # niezależnie od aktualnego locale (standard UX selektorów języka).
