@@ -74,6 +74,11 @@ class TestRoleMatrix:
         kier = role_users["kierownik"]
         assert kier.has_perm("reservations.add_reservation")
         assert kier.has_perm("reservations.delete_constructionsite")
+        # Kierownik SKŁADA wnioski, ale NIE zatwierdza — potwierdzanie/anulowanie/
+        # zakończenie/zmiana osoby/swap/awaria wymagają change_reservation, którego
+        # kierownik mieć NIE może (zatwierdza magazynier lub admin). Patrz commit
+        # 1affc11 + migracja accounts.0008.
+        assert not kier.has_perm("reservations.change_reservation")
         # Kierownik NIE może usuwać rezerwacji (tylko Magazynierzy).
         assert not kier.has_perm("reservations.delete_reservation")
         # ani zmieniać maszyn (np. zwrot/serwis robi magazynier).

@@ -176,19 +176,22 @@ class TestVoiceDispatch:
         assert s.pending_params == params
 
     def test_kierownik_write_proposes_confirmation(self):
-        """Środkowy poziom RBAC: KIEROWNIK ma add/change_reservation → może
-        proponować zapisy tak jak admin (granica gość < montażysta < kierownik)."""
+        """Środkowy poziom RBAC: KIEROWNIK ma add_reservation → SKŁADA wnioski
+        (create), ale NIE zatwierdza/anuluje (change_reservation = magazynier/
+        admin). Granica: gość < montażysta < kierownik < magazynier."""
         kier = _role_user("kier_voice", EmployeeProfile.Function.KIEROWNIK, "+48600000077")
         assert kier.has_perm("reservations.add_reservation")
+        assert not kier.has_perm("reservations.change_reservation")
+        # Składanie wniosku (add_reservation) — proponuje zapis jak admin.
         s = VoiceCallSession(call_sid="CA12b", user=kier)
         result = propose_or_execute(s, "create_reservation", {"machine_uid": "KOP-001"})
         assert "potwierdzasz" in result.lower()
         assert s.pending_action == "create_reservation"
-        # I akcję wymagającą change_reservation również.
+        # Akcja wymagająca change_reservation (anulowanie) — kierownik NIE może.
         s2 = VoiceCallSession(call_sid="CA12c", user=kier)
         result2 = propose_or_execute(s2, "cancel_reservation", {"reservation_id": 1})
-        assert "potwierdzasz" in result2.lower()
-        assert s2.has_pending()
+        assert "uprawnień" in result2.lower()
+        assert not s2.has_pending()
 
     def test_confirm_executes_create_reservation(self):
         admin = User.objects.create_superuser("adminexec", "a@a.test", "x")
