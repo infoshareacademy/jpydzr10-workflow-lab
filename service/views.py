@@ -31,7 +31,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -78,15 +78,37 @@ PAGE_SIZE = 20
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
+class ServiceReadPermMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    """Wymaga zalogowania + ``view_servicerecord``.
+
+    Decyzja Sebastiana: monter (montażysta) NIE widzi kosztów maszyn — a serwis,
+    raporty i eksporty są danymi kosztowymi. Montażysta nie ma tej permisji →
+    403 na całym module serwisowym (read), włącznie z raportami i eksportami.
+
+    Niezalogowany → przekierowanie do logowania (302). Zalogowany bez uprawnienia
+    → 403 (custom strona „Brak dostępu"), nie redirect do logowania.
+    """
+
+    permission_required = "service.view_servicerecord"
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            raise PermissionDenied
+        return super().handle_no_permission()
+
+
 # =============================================================================
 # LIST + DETAIL
 # =============================================================================
 
 
-class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
+class ServiceRecordListView(PerPageMixin, ServiceReadPermMixin, ListView):
     """Paginated list of service records with sidebar filters.
 
     PerPageMixin: ?per_page=N (whitelist 10/20/50/100/500/5000), default 100.
+
+    Wymaga ``view_servicerecord`` — montażysta (bez tej permisji) NIE widzi
+    serwisu ani kosztów (decyzja Sebastiana: monter nie widzi kosztów maszyn).
     """
 
     model = ServiceRecord
@@ -114,8 +136,8 @@ class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
         return [self.template_name]
 
 
-class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
-    """Detail page for a single service record."""
+class ServiceRecordDetailView(ServiceReadPermMixin, DetailView):
+    """Detail page for a single service record (wymaga ``view_servicerecord``)."""
 
     model = ServiceRecord
     template_name = "service/detail.html"
@@ -308,7 +330,7 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 # =============================================================================
 
 
-class ReportPageView(LoginRequiredMixin, TemplateView):
+class ReportPageView(ServiceReadPermMixin, TemplateView):
     """Landing page for reports — form to pick year + quarter."""
 
     template_name = "service/reports.html"
@@ -328,7 +350,7 @@ class ReportPageView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class ReportXlsxView(LoginRequiredMixin, View):
+class ReportXlsxView(ServiceReadPermMixin, View):
     """Stream the kwartalny report as a single XLSX attachment."""
 
     def get(self, request: HttpRequest, year: int, quarter: int) -> HttpResponse:
@@ -344,7 +366,7 @@ class ReportXlsxView(LoginRequiredMixin, View):
         return response
 
 
-class MachineServiceXlsxView(LoginRequiredMixin, View):
+class MachineServiceXlsxView(ServiceReadPermMixin, View):
     """Stream historię serwisu pojedynczej maszyny jako XLSX attachment.
 
     URL: ``/serwis/eksport/maszyna/<uid>/`` — pobierany z karty maszyny
@@ -362,7 +384,7 @@ class MachineServiceXlsxView(LoginRequiredMixin, View):
         return response
 
 
-class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
+class AllServiceRecordsXlsxView(ServiceReadPermMixin, View):
     """Stream pełną historię serwisu (wszystkie maszyny) jako XLSX attachment.
 
     URL: ``/serwis/eksport/wszystkie/`` — pobierany z listy serwisów
@@ -380,7 +402,7 @@ class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
         return response
 
 
-class ReportDataView(LoginRequiredMixin, View):
+class ReportDataView(ServiceReadPermMixin, View):
     """Zwraca dane do wykresu Chart.js: koszt serwisu per maszyna dla aktywnych
     filtrów (ten sam selektor co lista i eksport → identyczny zbiór rekordów)."""
 
@@ -419,7 +441,7 @@ class ReportDataView(LoginRequiredMixin, View):
         )
 
 
-class InspectionPdfView(LoginRequiredMixin, View):
+class InspectionPdfView(ServiceReadPermMixin, View):
     """Stream a single PDF protokół for one :class:`ServiceRecord`."""
 
     def get(self, request: HttpRequest, pk: int) -> HttpResponse:
@@ -431,7 +453,7 @@ class InspectionPdfView(LoginRequiredMixin, View):
         return response
 
 
-class AnnualReportPdfView(LoginRequiredMixin, View):
+class AnnualReportPdfView(ServiceReadPermMixin, View):
     """Stream the annual aggregate report as a PDF attachment."""
 
     def get(self, request: HttpRequest, year: int) -> HttpResponse:
@@ -442,7 +464,7 @@ class AnnualReportPdfView(LoginRequiredMixin, View):
         return response
 
 
-class MachineServicePdfView(LoginRequiredMixin, View):
+class MachineServicePdfView(ServiceReadPermMixin, View):
     """Stream a single machine's full service card as a PDF attachment."""
 
     def get(self, request: HttpRequest, uid: str) -> HttpResponse:

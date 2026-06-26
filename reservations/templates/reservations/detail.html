@@ -945,8 +945,8 @@
                         </div>
                     {% endif %}
 
-                    {# Edytuj — dla wszystkich nie-closed #}
-                    {% if not reservation.is_closed %}
+                    {# Edytuj — WYŁĄCZNIE admin/superuser (pozostali tylko przeglądają). #}
+                    {% if user.is_superuser and not reservation.is_closed %}
                         <a href="{% url 'reservations:update' reservation.pk %}"
                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">

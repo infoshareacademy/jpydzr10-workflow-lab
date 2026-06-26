@@ -43,7 +43,12 @@ def user(db):
     user_obj = user_model.objects.create_user(username="tester", password="secret-pw-123!")
     perms = Permission.objects.filter(
         content_type__app_label="service",
-        codename__in=("add_servicerecord", "delete_servicerecord"),
+        codename__in=(
+            "view_servicerecord",
+            "add_servicerecord",
+            "change_servicerecord",
+            "delete_servicerecord",
+        ),
     )
     user_obj.user_permissions.add(*perms)
     return user_obj

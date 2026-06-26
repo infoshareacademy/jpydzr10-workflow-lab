@@ -299,6 +299,9 @@ def _search_service(query: str, user, limit: int) -> list[SearchResult]:
 
     if not user or not getattr(user, "is_authenticated", False):
         return []
+    # Monter (bez view_servicerecord) nie widzi kosztów — także w wyszukiwarce.
+    if not user.has_perm("service.view_servicerecord"):
+        return []
 
     text_q = Q(description__icontains=query) | Q(performed_by__icontains=query)
     stripped = query.lstrip("#")
@@ -321,7 +324,7 @@ def _search_service(query: str, user, limit: int) -> list[SearchResult]:
                 category="Serwis",
                 icon=ICON_SERVICE,
                 title=f"#{r.pk} {machine_uid} — {record_type_label}",
-                subtitle=f"{r.performed_date} · {performer} · {r.cost} PLN",
+                subtitle=f"{r.performed_date} · {performer} · {r.cost.amount:.2f} {r.cost.currency}",
                 url=reverse("service:detail", args=[r.pk]),
             )
         )

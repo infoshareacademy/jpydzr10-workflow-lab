@@ -70,10 +70,12 @@
                             class="tab-button"
                             :aria-selected="active === 'info'"
                             @click="select('info')">{% trans "Dane techniczne" %}</button>
+                    {% if perms.service.view_servicerecord %}
                     <button type="button" role="tab"
                             class="tab-button"
                             :aria-selected="active === 'serwis'"
                             @click="select('serwis')">{% trans "Historia serwisu" %}</button>
+                    {% endif %}
                     <button type="button" role="tab"
                             class="tab-button"
                             :aria-selected="active === 'rezerwacje'"
@@ -137,6 +139,8 @@
         </section>
 
         {# ========================== TAB: Historia serwisu ========================== #}
+        {# Cała sekcja (koszty) tylko dla ról z view_servicerecord — monter nie widzi kosztów. #}
+        {% if perms.service.view_servicerecord %}
         <section class="surface-card p-6" role="tabpanel" aria-label="{% trans 'Historia serwisu' %}"
                  x-show="active === 'serwis'" x-cloak x-transition.opacity>
             <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
@@ -173,9 +177,9 @@
                                             {{ r.get_record_type_display }}
                                         </span>
                                     </div>
-                                    {% if r.cost and r.cost > 0 %}
+                                    {% if r.cost and r.cost.amount > 0 %}
                                         <span class="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums flex-shrink-0">
-                                            {{ r.cost|floatformat:2 }} PLN
+                                            {{ r.cost.amount|floatformat:2 }} {{ r.cost.currency }}
                                         </span>
                                     {% endif %}
                                 </div>
@@ -202,6 +206,7 @@
                 </div>
             {% endif %}
         </section>
+        {% endif %}{# /perms.service.view_servicerecord (zakładka serwisu) #}
 
         {# ========================== TAB: Rezerwacje ========================== #}
         <section class="surface-card p-6" role="tabpanel" aria-label="{% trans 'Rezerwacje' %}"

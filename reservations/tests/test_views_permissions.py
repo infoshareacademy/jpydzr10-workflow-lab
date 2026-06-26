@@ -165,38 +165,14 @@ class TestSitePermissions:
 
 @pytest.mark.django_db
 class TestUpdateViewOwnership:
-    """Non-superuser widzi i edytuje tylko rezerwacje, które sam utworzył (FK
-    ``created_by``)."""
+    """Edycja rezerwacji = WYŁĄCZNIE admin/superuser (decyzja Sebastiana).
 
-    def test_update_404_when_not_owner_and_not_superuser(self, client_logged, machine):
-        """Rezerwacja utworzona przez kogoś innego → 404 z queryset filter."""
-        from django.contrib.auth import get_user_model
+    Pozostałe role mogą rezerwację tylko przeglądać; kierownik dodatkowo SKŁADA
+    wniosek (tworzy nową), a magazynier/admin ją zatwierdza.
+    """
 
-        other = get_user_model().objects.create_user(username="ktos-inny", password="x")
-        someone_else_reservation = PendingReservationFactory(
-            machine=machine,
-            created_by=other,
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today() + timedelta(days=10),
-        )
-        response = client_logged.get(
-            reverse("reservations:update", args=[someone_else_reservation.pk])
-        )
-        assert response.status_code == 404
-
-    def test_update_404_when_created_by_null(self, client_logged, machine):
-        """Rezerwacja bez ``created_by`` (import/historia) → 404 dla nie-superusera."""
-        orphan = PendingReservationFactory(
-            machine=machine,
-            created_by=None,
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today() + timedelta(days=10),
-        )
-        response = client_logged.get(reverse("reservations:update", args=[orphan.pk]))
-        assert response.status_code == 404
-
-    def test_update_200_when_owner(self, client_logged, user, machine):
-        """Własna rezerwacja (``created_by`` == zalogowany user) → 200 OK."""
+    def test_update_403_for_non_superuser_even_own(self, client_logged, user, machine):
+        """Nawet WŁASNA rezerwacja: nie-superuser dostaje 403 (tylko admin edytuje)."""
         own_reservation = PendingReservationFactory(
             machine=machine,
             created_by=user,
@@ -204,4 +180,21 @@ class TestUpdateViewOwnership:
             end_date=date.today() + timedelta(days=10),
         )
         response = client_logged.get(reverse("reservations:update", args=[own_reservation.pk]))
+        assert response.status_code == 403
+
+    def test_update_200_for_superuser_any_reservation(self, client, machine):
+        """Superuser edytuje DOWOLNĄ rezerwację — także bez ``created_by``."""
+        from django.contrib.auth import get_user_model
+
+        admin = get_user_model().objects.create_superuser(
+            username="root-edit", password="x", email="root@example.com"
+        )
+        client.force_login(admin)
+        orphan = PendingReservationFactory(
+            machine=machine,
+            created_by=None,
+            start_date=date.today() + timedelta(days=5),
+            end_date=date.today() + timedelta(days=10),
+        )
+        response = client.get(reverse("reservations:update", args=[orphan.pk]))
         assert response.status_code == 200

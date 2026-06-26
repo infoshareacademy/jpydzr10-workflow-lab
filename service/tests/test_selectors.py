@@ -22,6 +22,15 @@ from service.selectors import filter_service_records
 
 User = get_user_model()
 
+
+def _viewer(username):
+    """User z uprawnieniem view_servicerecord (raporty/eksport tego wymagają)."""
+    from django.contrib.auth.models import Permission
+
+    user = User.objects.create_user(username, password="x")
+    user.user_permissions.add(Permission.objects.get(codename="view_servicerecord"))
+    return user
+
 pytestmark = pytest.mark.django_db
 
 
@@ -177,7 +186,7 @@ def test_date_range_filter(records):
 
 def test_report_data_matches_selector(client, records):
     """Suma słupków wykresu == suma kosztów przefiltrowanych wpisów (spójność)."""
-    user = User.objects.create_user("raporter", password="x")
+    user = _viewer("raporter")
     client.force_login(user)
     params = {"cost_min": "1000"}
     response = client.get(reverse("service:report_data"), params)
@@ -192,7 +201,7 @@ def test_report_data_matches_selector(client, records):
 
 def test_export_respects_filters(client, records):
     """Eksport z filtrem zwraca XLSX (200) i przechodzi przez ten sam selektor."""
-    user = User.objects.create_user("eksporter", password="x")
+    user = _viewer("eksporter")
     client.force_login(user)
     response = client.get(reverse("service:export_all_xlsx"), {"cost_min": "1000"})
     assert response.status_code == 200
@@ -225,7 +234,7 @@ def test_all_records_default_to_eur(records):
 
 def test_report_data_reports_eur_currency(client, records):
     """Endpoint wykresu deklaruje EUR — zgodnie z jedyną walutą danych."""
-    user = User.objects.create_user("waluciarz", password="x")
+    user = _viewer("waluciarz")
     client.force_login(user)
     response = client.get(reverse("service:report_data"))
     payload = json.loads(response.content)
@@ -256,7 +265,7 @@ def test_aggregation_correct_after_eur_normalization(client, machines):
     # Normalizacja do EUR (odpowiednik migracji 0004) — kwoty bez zmian.
     ServiceRecord.objects.exclude(cost_currency="EUR").update(cost_currency="EUR")
 
-    user = User.objects.create_user("agg", password="x")
+    user = _viewer("agg")
     client.force_login(user)
     response = client.get(reverse("service:report_data"), {"machine": machines[0].pk})
     payload = json.loads(response.content)

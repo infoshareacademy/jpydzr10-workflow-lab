@@ -23,7 +23,11 @@ from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
@@ -361,12 +365,12 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
     return render(request, template, {"form": form, "mode": "create"})
 
 
-class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    """Edit an existing reservation.
+class ReservationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Edit an existing reservation — WYŁĄCZNIE admin/superuser.
 
-    Wymaga uprawnienia ``reservations.change_reservation``. Non-superuserowie
-    widzą i edytują wyłącznie rezerwacje, które sami utworzyli (FK
-    ``created_by``); superuser widzi wszystkie. ``raise_exception=True`` daje
+    Decyzja Sebastiana: edytować rezerwację może tylko administrator; pozostałe
+    role mogą ją wyłącznie przeglądać (kierownik dodatkowo SKŁADA wniosek =
+    tworzy nową, a magazynier/admin zatwierdza). ``raise_exception=True`` daje
     403 zamiast cichego redirectu.
     """
 
@@ -374,26 +378,19 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
     form_class = ReservationForm
     template_name = "reservations/form.html"
     context_object_name = "reservation"
-    permission_required = "reservations.change_reservation"
     raise_exception = True
 
+    def test_func(self):
+        return self.request.user.is_superuser
+
     def get_queryset(self):
-        # Terminal status filter — zakonczone i anulowane rezerwacje są
-        # immutable (`update_reservation` rzuca ValidationError). Front-door
-        # blokujemy tutaj — 404 zamiast cichej mutacji po POST.
-        qs = (
+        # Tylko admin tu dociera (test_func). Terminalne statusy (zakończona /
+        # anulowana) pozostają immutable — front-door 404 zamiast cichej mutacji.
+        return (
             super()
             .get_queryset()
             .exclude(status__in=[Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA])
         )
-        if self.request.user.is_superuser:
-            return qs
-        # Ownership: nie-superuser może edytować tylko rezerwacje, które sam
-        # utworzył. Identyfikacja po FK ``created_by`` (jednoznaczna, w
-        # przeciwieństwie do dawnego dopasowania po free-text ``person``).
-        # Rezerwacje bez ``created_by`` (zaimportowane / historyczne) są
-        # widoczne wyłącznie dla superusera.
-        return qs.filter(created_by=self.request.user)
 
     def form_valid(self, form):
         try:

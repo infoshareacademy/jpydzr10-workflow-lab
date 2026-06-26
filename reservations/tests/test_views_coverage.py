@@ -43,6 +43,12 @@ class TestReservationUpdateValidationError:
 
         from django.core.exceptions import ValidationError
 
+        # Edycja rezerwacji = tylko superuser → logujemy admina na ten sam client.
+        admin = get_user_model().objects.create_superuser(
+            username="root-vr", password="x", email="vr@example.com"
+        )
+        client_logged.force_login(admin)
+
         def boom(*args, **kwargs):
             raise ValidationError("Service-level VR forced for coverage test.")
 
@@ -78,6 +84,11 @@ class TestReservationUpdateValidationError:
     @freeze_time("2026-05-16")
     def test_update_success_path_redirects_to_detail(self, client_logged, user, machine):
         """Happy path: form valid + service ok → 302 do detail."""
+        # Edycja rezerwacji = tylko superuser → logujemy admina na ten sam client.
+        admin = get_user_model().objects.create_superuser(
+            username="root-ok", password="x", email="ok@example.com"
+        )
+        client_logged.force_login(admin)
         res = PendingReservationFactory(
             machine=machine,
             created_by=user,
@@ -133,10 +144,10 @@ class TestReservationUpdateSuperuserBypass:
 
 @pytest.mark.django_db
 class TestReservationUpdateEmptyName:
-    """User, który nie utworzył żadnej rezerwacji → queryset.none() (404)."""
+    """Edycja rezerwacji = admin-only — nawet ``change_reservation`` nie wystarcza."""
 
-    def test_user_without_own_reservations_sees_nothing(self, client, db, machine):
-        """Ownership po ``created_by``: cudza rezerwacja (created_by != user) → 404."""
+    def test_non_superuser_with_change_perm_gets_403(self, client, db, machine):
+        """Nie-superuser z ``change_reservation`` na edycji rezerwacji → 403."""
         user_model = get_user_model()
         user = user_model.objects.create_user(
             username="bez-wlasnych",
@@ -151,8 +162,6 @@ class TestReservationUpdateEmptyName:
         user.user_permissions.add(*perms)
         client.force_login(user)
 
-        # Rezerwacja bez created_by (lub utworzona przez innego) → filtr
-        # created_by zwraca pusty queryset dla tego użytkownika.
         res = PendingReservationFactory(
             machine=machine,
             created_by=None,
@@ -160,7 +169,7 @@ class TestReservationUpdateEmptyName:
             end_date=date.today() + timedelta(days=10),
         )
         response = client.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 404  # filter created_by → 404 z lookup
+        assert response.status_code == 403  # edycja tylko dla admina/superusera
 
 
 # =============================================================================

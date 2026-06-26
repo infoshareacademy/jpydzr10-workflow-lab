@@ -223,7 +223,10 @@
                 {% comment %}
                 Wave 14-F UX-3: Serwis przeniesiony z hardcoded "/serwis/" na
                 reverse url 'service:list'. Heroicons: wrench-screwdriver.
+                Serwis + Raporty widoczne tylko dla ról z view_servicerecord —
+                montażysta nie widzi kosztów (decyzja Sebastiana).
                 {% endcomment %}
+                {% if perms.service.view_servicerecord %}
                 <a href="{% url 'service:list' %}"
                    @click="sidebarOpen = false"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px] {% active_link '/serwis/' 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' %}{% if '/serwis/' not in request.path or '/serwis/raporty' in request.path %}text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50{% endif %}">
@@ -248,6 +251,7 @@
                     </svg>
                     <span>{% trans "Raporty" %}</span>
                 </a>
+                {% endif %}{# /perms.service.view_servicerecord #}
 
                 {# Admin (staff/superuser only — destructive-nav separation) #}
                 {% if user.is_staff %}
