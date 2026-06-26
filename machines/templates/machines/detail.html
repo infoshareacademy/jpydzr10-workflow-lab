@@ -290,8 +290,7 @@
                         </form>
                     {% endif %}
 
-                    {# Zwrot — tylko gdy maszyna NIE jest już w magazynie (ani wycofana);
-                       inaczej był to no-op z mylącym komunikatem sukcesu. #}
+                    {# Zwrot — tylko gdy maszyna NIE jest już w magazynie (ani wycofana); inaczej no-op z mylącym komunikatem sukcesu. #}
                     {% if machine.status != "W magazynie" and machine.status != "Wycofana" %}
                         <form method="post" action="{% url 'machines:return' uid=machine.uid %}">
                             {% csrf_token %}
