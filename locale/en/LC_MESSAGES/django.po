@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 12:34+0200\n"
+"POT-Creation-Date: 2026-06-26 12:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -736,8 +736,6 @@ msgid "Uwierzytelnianie dwuskładnikowe (2FA)"
 msgstr "Two-factor authentication (2FA)"
 
 #: accounts/templates/accounts/profile.html:383
-#: service/templates/service/reports.html:140
-#: service/templates/service/reports.html:163
 msgid "Wkrótce"
 msgstr "Coming soon"
 
@@ -1900,7 +1898,9 @@ msgstr "Invalid question."
 #: chatbot/views.py:210
 msgid ""
 "Osiągnąłeś dzienny limit 50 zapytań do asystenta. Spróbuj ponownie jutro."
-msgstr "You have reached the daily limit of 50 assistant queries. Please try again tomorrow."
+msgstr ""
+"You have reached the daily limit of 50 assistant queries. Please try again "
+"tomorrow."
 
 #: core/templatetags/planer_tags.py:116
 msgid "Pn"
@@ -2035,19 +2035,20 @@ msgid "Notatki"
 msgstr "Notes"
 
 #: machines/forms.py:43 machines/templates/machines/list.html:91
+#: service/reports.py:558 service/reports.py:593
 msgid "UID"
 msgstr "UID"
 
 #: machines/forms.py:44 machines/models.py:98
 #: machines/templates/machines/list.html:92
 #: reservations/templates/reservations/site_list.html:134 service/reports.py:91
-#: service/reports.py:176
+#: service/reports.py:176 service/reports.py:559 service/reports.py:593
 msgid "Nazwa"
 msgstr "Name"
 
 #: machines/forms.py:45 machines/forms.py:110 machines/models.py:104
 #: machines/templates/machines/list.html:93 service/forms.py:262
-#: service/reports.py:93 service/reports.py:178
+#: service/reports.py:93 service/reports.py:178 service/reports.py:699
 #: service/templates/service/_record_table.html:9
 #: service/templates/service/list.html:278
 msgid "Typ"
@@ -2300,6 +2301,7 @@ msgstr ""
 #: service/forms.py:269 service/models.py:71
 #: service/templates/service/_record_table.html:8
 #: service/templates/service/list.html:277
+#: service/templates/service/reports.html:181
 msgid "Maszyna"
 msgstr "Machine"
 
@@ -2488,22 +2490,22 @@ msgstr ""
 "(reservations,\n"
 "        service entries) must be moved or deleted separately."
 
-#: machines/templates/machines/delete_confirm.html:23
+#: machines/templates/machines/delete_confirm.html:23 service/reports.py:669
 msgid "UID:"
 msgstr "UID:"
 
-#: machines/templates/machines/delete_confirm.html:24
+#: machines/templates/machines/delete_confirm.html:24 service/reports.py:670
 msgid "Nazwa:"
 msgstr "Name:"
 
-#: machines/templates/machines/delete_confirm.html:25
+#: machines/templates/machines/delete_confirm.html:25 service/reports.py:671
 #: templates/core/maps.html:241
 msgid "Typ:"
 msgstr "Type:"
 
 #: machines/templates/machines/delete_confirm.html:26 reservations/pdf.py:118
 #: reservations/templates/reservations/_timeline_bar.html:59
-#: reservations/templates/reservations/detail.html:298
+#: reservations/templates/reservations/detail.html:298 service/reports.py:674
 #: templates/core/maps.html:242
 msgid "Status:"
 msgstr "Status:"
@@ -2542,7 +2544,7 @@ msgstr "Technical data"
 
 #: machines/templates/machines/detail.html:76
 #: machines/templates/machines/detail.html:140
-#: machines/templates/machines/detail.html:145
+#: machines/templates/machines/detail.html:145 service/reports.py:696
 msgid "Historia serwisu"
 msgstr "Service history"
 
@@ -4045,12 +4047,12 @@ msgid "Zamknij okno"
 msgstr "Close window"
 
 #: reservations/templates/reservations/_quick_reserve_modal.html:70
-#: service/templates/service/reports.html:220
+#: service/templates/service/reports.html:241
 msgid "Od dnia"
 msgstr "From"
 
 #: reservations/templates/reservations/_quick_reserve_modal.html:79
-#: service/templates/service/reports.html:225
+#: service/templates/service/reports.html:246
 msgid "Do dnia"
 msgstr "Until"
 
@@ -5392,7 +5394,7 @@ msgid "Data wykonania"
 msgstr "Performed date"
 
 #: service/forms.py:78 service/forms.py:170 service/models.py:88
-#: service/reports.py:94 service/reports.py:179
+#: service/reports.py:94 service/reports.py:179 service/reports.py:700
 #: service/templates/service/_record_table.html:10
 msgid "Wykonawca"
 msgstr "Performed by"
@@ -5525,10 +5527,11 @@ msgstr ""
 msgid "Szczegóły wykonanych prac, wymienione części, uwagi."
 msgstr "Details of the work performed, replaced parts, remarks."
 
-#: service/models.py:102 service/templates/service/_record_table.html:11
+#: service/models.py:102 service/reports.py:561 service/reports.py:701
+#: service/templates/service/_record_table.html:11
 #: service/templates/service/detail.html:103
 #: service/templates/service/list.html:280
-#: service/templates/service/reports.html:298
+#: service/templates/service/reports.html:319
 msgid "Koszt"
 msgstr "Cost"
 
@@ -5544,13 +5547,13 @@ msgstr "Calculated automatically for inspections; empty for repairs."
 msgid "Wpisy serwisowe"
 msgstr "Service entries"
 
-#: service/reports.py:92 service/reports.py:177
+#: service/reports.py:92 service/reports.py:177 service/reports.py:698
 #: service/templates/service/_record_table.html:7
 #: service/templates/service/list.html:276
 msgid "Data"
 msgstr "Date"
 
-#: service/reports.py:161 service/reports.py:238
+#: service/reports.py:161 service/reports.py:238 service/reports.py:717
 msgid "RAZEM:"
 msgstr "TOTAL:"
 
@@ -5594,7 +5597,7 @@ msgstr "Machine (UID):"
 msgid "Nazwa maszyny:"
 msgstr "Machine name:"
 
-#: service/reports.py:382
+#: service/reports.py:382 service/reports.py:672
 msgid "Producent:"
 msgstr "Manufacturer:"
 
@@ -5602,7 +5605,7 @@ msgstr "Manufacturer:"
 msgid "Rok produkcji:"
 msgstr "Build year:"
 
-#: service/reports.py:384
+#: service/reports.py:384 service/reports.py:673
 msgid "Numer seryjny:"
 msgstr "Serial number:"
 
@@ -5622,6 +5625,78 @@ msgstr "Work description:"
 msgid "Podpis wykonawcy"
 msgstr "Performer's signature"
 
+#: service/reports.py:526
+#, python-format
+msgid "RAPORT ROCZNY SERWISU %(year)s"
+msgstr "ANNUAL SERVICE REPORT %(year)s"
+
+#: service/reports.py:528 service/reports.py:662
+#, python-format
+msgid "Wygenerowano: %(date)s"
+msgstr "Generated: %(date)s"
+
+#: service/reports.py:534
+msgid "Wpisów serwisowych łącznie:"
+msgstr "Total service entries:"
+
+#: service/reports.py:535
+msgid "Przeglądów:"
+msgstr "Inspections:"
+
+#: service/reports.py:536
+msgid "Napraw:"
+msgstr "Repairs:"
+
+#: service/reports.py:537
+msgid "Koszt łączny:"
+msgstr "Total cost:"
+
+#: service/reports.py:538
+msgid "Maszyn objętych serwisem:"
+msgstr "Machines serviced:"
+
+#: service/reports.py:556 service/templates/service/reports.html:233
+msgid "Koszt serwisu per maszyna"
+msgstr "Service cost per machine"
+
+#: service/reports.py:560
+msgid "Wpisów"
+msgstr "Entries"
+
+#: service/reports.py:573
+msgid "Brak wpisów w tym roku"
+msgstr "No entries this year"
+
+#: service/reports.py:591
+msgid "Przeglądy zaległe (na dzień raportu)"
+msgstr "Overdue inspections (as of report date)"
+
+#: service/reports.py:593
+msgid "Termin przeglądu"
+msgstr "Inspection due date"
+
+#: service/reports.py:614
+msgid "Brak maszyn z zaległym przeglądem."
+msgstr "No machines with overdue inspections."
+
+#: service/reports.py:660
+#, python-format
+msgid "KARTA SERWISOWA MASZYNY %(uid)s"
+msgstr "SERVICE CARD FOR MACHINE %(uid)s"
+
+#: service/reports.py:676
+msgid "Najbliższy przegląd:"
+msgstr "Next inspection:"
+
+#: service/reports.py:702 service/templates/service/_record_table.html:12
+#: service/templates/service/list.html:281
+msgid "Następny"
+msgstr "Next"
+
+#: service/reports.py:715 service/templates/service/_empty_state.html:8
+msgid "Brak wpisów serwisowych"
+msgstr "No service entries"
+
 #: service/services.py:207
 #, python-format
 msgid ""
@@ -5630,10 +5705,6 @@ msgid ""
 msgstr ""
 "Cannot finish service — machine %(uid)s is not in the 'In service' state "
 "(current status: %(status)s)."
-
-#: service/templates/service/_empty_state.html:8
-msgid "Brak wpisów serwisowych"
-msgstr "No service entries"
 
 #: service/templates/service/_empty_state.html:10
 msgid "Wpisy pojawią się tu po dodaniu pierwszego przeglądu lub naprawy."
@@ -5646,11 +5717,6 @@ msgstr "+ Add the first entry"
 #: service/templates/service/_record_row.html:16
 msgid "Zobacz"
 msgstr "View"
-
-#: service/templates/service/_record_table.html:12
-#: service/templates/service/list.html:281
-msgid "Następny"
-msgstr "Next"
 
 #: service/templates/service/_record_table.html:28
 #, python-format
@@ -6019,50 +6085,44 @@ msgstr ""
 "a TOTAL sum."
 
 #: service/templates/service/reports.html:114
+#: service/templates/service/reports.html:141
+#: service/templates/service/reports.html:168
 msgid "Dostępne"
 msgstr "Available"
 
-#: service/templates/service/reports.html:126
-msgid "Raport roczny — dostępny wkrótce"
-msgstr "Annual report — coming soon"
-
-#: service/templates/service/reports.html:135
+#: service/templates/service/reports.html:136
 msgid "Roczny PDF"
 msgstr "Annual PDF"
 
-#: service/templates/service/reports.html:137
+#: service/templates/service/reports.html:138
 msgid "Zbiorczy raport roczny — koszty, statystyki, przeglądy zaległe."
 msgstr "Aggregate annual report — costs, statistics, overdue inspections."
 
-#: service/templates/service/reports.html:149
-msgid "Raport per maszyna — dostępny wkrótce"
-msgstr "Per-machine report — coming soon"
-
-#: service/templates/service/reports.html:158
+#: service/templates/service/reports.html:163
 msgid "Per maszyna PDF"
 msgstr "Per machine PDF"
 
-#: service/templates/service/reports.html:160
+#: service/templates/service/reports.html:165
 msgid "Karta serwisowa pojedynczej maszyny — kompletna historia w PDF."
 msgstr "Service card for a single machine — full history in PDF."
 
-#: service/templates/service/reports.html:176
-msgid "Pobierzesz raport za:"
-msgstr "You will download the report for:"
+#: service/templates/service/reports.html:185
+msgid "— wybierz maszynę —"
+msgstr "— select a machine —"
 
-#: service/templates/service/reports.html:179
+#: service/templates/service/reports.html:198
 msgid "Plik zostanie zapisany na dysku."
 msgstr "The file will be saved to disk."
 
-#: service/templates/service/reports.html:188
+#: service/templates/service/reports.html:209
 msgid "Pobierz raport"
 msgstr "Download report"
 
-#: service/templates/service/reports.html:200
+#: service/templates/service/reports.html:221
 msgid "Wskazówka:"
 msgstr "Tip:"
 
-#: service/templates/service/reports.html:200
+#: service/templates/service/reports.html:221
 msgid ""
 "raport kwartalny zawiera wszystkie wpisy serwisowe z podanego kwartału, "
 "posortowane po UID maszyny i dacie wykonania, z sumą RAZEM na dole."
@@ -6070,11 +6130,7 @@ msgstr ""
 "the quarterly report contains all service entries from the given quarter, "
 "sorted by machine UID and performed date, with a TOTAL sum at the bottom."
 
-#: service/templates/service/reports.html:212
-msgid "Koszt serwisu per maszyna"
-msgstr "Service cost per machine"
-
-#: service/templates/service/reports.html:215
+#: service/templates/service/reports.html:236
 msgid ""
 "Wybierz dowolny okres — wykres, tabela i eksport Excel pokazują dokładnie "
 "ten sam zbiór wpisów."
@@ -6082,60 +6138,76 @@ msgstr ""
 "Select any period — the chart, table and Excel export show exactly the same "
 "set of entries."
 
-#: service/templates/service/reports.html:232
+#: service/templates/service/reports.html:253
 msgid "Pokaż wykres"
 msgstr "Show chart"
 
-#: service/templates/service/reports.html:238
+#: service/templates/service/reports.html:259
 msgid "Wykres kosztów serwisu per maszyna"
 msgstr "Service cost chart per machine"
 
-#: service/templates/service/reports.html:240
+#: service/templates/service/reports.html:261
 msgid "Brak wpisów serwisowych dla wybranego okresu."
 msgstr "No service entries for the selected period."
 
-#: service/templates/service/reports.html:258
+#: service/templates/service/reports.html:279
 msgid "Pobierz Excel (ten sam okres)"
 msgstr "Download Excel (same period)"
 
-#: service/templates/service/reports.html:288
+#: service/templates/service/reports.html:309
 msgid "Wykres pokazuje"
 msgstr "The chart shows"
 
-#: service/templates/service/reports.html:288
+#: service/templates/service/reports.html:309
 msgid "najdroższych maszyn."
 msgstr "most expensive machines."
 
-#: service/templates/service/reports.html:289
+#: service/templates/service/reports.html:310
 msgid "Pełne zestawienie wszystkich maszyn pobierzesz w eksporcie Excel."
 msgstr "You can download the full list of all machines in the Excel export."
 
-#: service/views.py:157
+#: service/templates/service/reports.html:370
+msgid "Pobierzesz raport roczny za:"
+msgstr "You will download the annual report for:"
+
+#: service/templates/service/reports.html:374
+msgid "Karta serwisowa maszyny:"
+msgstr "Service card for machine:"
+
+#: service/templates/service/reports.html:375
+msgid "Wybierz maszynę powyżej, aby pobrać kartę serwisową."
+msgstr "Select a machine above to download its service card."
+
+#: service/templates/service/reports.html:377
+msgid "Pobierzesz raport za:"
+msgstr "You will download the report for:"
+
+#: service/views.py:159
 #, python-format
 msgid "Wpis serwisowy %(pk)s dla maszyny %(uid)s dodany."
 msgstr "Service entry %(pk)s for machine %(uid)s added."
 
-#: service/views.py:199
+#: service/views.py:201
 #, python-format
 msgid "Wpis serwisowy #%(pk)s dla maszyny %(uid)s zaktualizowany."
 msgstr "Service entry #%(pk)s for machine %(uid)s updated."
 
-#: service/views.py:224
+#: service/views.py:226
 #, python-format
 msgid "Wpis serwisowy #%(pk)s usunięty."
 msgstr "Service entry #%(pk)s deleted."
 
-#: service/views.py:291
+#: service/views.py:293
 #, python-format
 msgid "Utworzono %(count)s wpisów przeglądu (%(record_type)s)."
 msgstr "Created %(count)s inspection entries (%(record_type)s)."
 
-#: service/views.py:299
+#: service/views.py:301
 #, python-format
 msgid "...oraz %(count)s dalszych błędów."
 msgstr "...and %(count)s further errors."
 
-#: service/views.py:455
+#: service/views.py:486
 #, python-format
 msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
 msgstr "Service completed — machine %(uid)s returns to the warehouse."
@@ -6697,6 +6769,12 @@ msgstr "Add a new machine"
 #: templates/home.html:703
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#~ msgid "Raport roczny — dostępny wkrótce"
+#~ msgstr "Annual report — coming soon"
+
+#~ msgid "Raport per maszyna — dostępny wkrótce"
+#~ msgstr "Per-machine report — coming soon"
 
 #~ msgid "Koszt min"
 #~ msgstr "Min cost"

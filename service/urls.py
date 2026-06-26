@@ -20,6 +20,16 @@ urlpatterns = [
         name="report_xlsx",
     ),
     path(
+        "raporty/pdf/roczny/<int:year>/",
+        views.AnnualReportPdfView.as_view(),
+        name="report_annual_pdf",
+    ),
+    path(
+        "raporty/pdf/maszyna/<str:uid>/",
+        views.MachineServicePdfView.as_view(),
+        name="report_machine_pdf",
+    ),
+    path(
         "eksport/wszystkie.xlsx",
         views.AllServiceRecordsXlsxView.as_view(),
         name="export_all_xlsx",

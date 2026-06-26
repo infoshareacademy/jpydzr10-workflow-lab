@@ -437,3 +437,303 @@ def generate_inspection_pdf(*, service_record) -> bytes:
 
     doc.build(elements)
     return buffer.getvalue()
+
+
+# ----------------------------------------------------------------------------
+# Roczny raport zbiorczy (PDF) + karta serwisowa maszyny (PDF)
+# ----------------------------------------------------------------------------
+
+
+def _pdf_doc(buffer: BytesIO) -> SimpleDocTemplate:
+    """Wspólny SimpleDocTemplate A4 z marginesami 2 cm (DRY dla raportów PDF)."""
+    return SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+    )
+
+
+def _money(amount) -> str:
+    """Sformatuj kwotę EUR (po normalizacji 0004 wszystko w EUR)."""
+    value = getattr(amount, "amount", amount) or Decimal("0")
+    return f"{Decimal(value):.2f} EUR"
+
+
+def generate_annual_report_pdf(*, year: int) -> bytes:
+    """Zbiorczy raport roczny w PDF — koszty, statystyki, przeglądy zaległe.
+
+    Sekcje: nagłówek z rokiem, podsumowanie (liczba wpisów, przeglądów,
+    napraw, koszt łączny), tabela kosztów per maszyna za dany rok oraz lista
+    maszyn z zaległym przeglądem (``inspection_date`` w przeszłości).
+
+    Returns:
+        PDF file bytes.
+    """
+    from django.db.models import Count, Sum
+
+    from machines.models import Machine
+
+    from .models import ServiceRecord
+
+    register_pdf_fonts()
+
+    records = ServiceRecord.objects.filter(performed_date__year=year).select_related("machine")
+    total_entries = records.count()
+    inspections = records.exclude(record_type=ServiceRecord.RecordType.NAPRAWA).count()
+    repairs = total_entries - inspections
+    total_cost = records.aggregate(s=Sum("cost"))["s"]
+
+    per_machine = list(
+        records.values("machine__uid", "machine__name")
+        .annotate(n=Count("id"), total=Sum("cost"))
+        .order_by("-total", "machine__uid")
+    )
+
+    today = date.today()
+    overdue = list(
+        Machine.objects.filter(inspection_date__lt=today)
+        .exclude(status=Machine.Status.WYCOFANA)
+        .order_by("inspection_date")
+    )
+
+    buffer = BytesIO()
+    doc = _pdf_doc(buffer)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        name="AnnualTitle",
+        parent=styles["Title"],
+        fontName=font_name("bold"),
+        fontSize=18,
+        alignment=1,
+        spaceAfter=6,
+    )
+    sub_style = ParagraphStyle(
+        name="AnnualSub", parent=styles["Normal"], fontName=font_name(), fontSize=10, alignment=1
+    )
+    h2_style = ParagraphStyle(
+        name="AnnualH2",
+        parent=styles["Heading2"],
+        fontName=font_name("bold"),
+        fontSize=13,
+        spaceBefore=16,
+        spaceAfter=8,
+    )
+
+    elements = [
+        Paragraph(gettext("RAPORT ROCZNY SERWISU %(year)s") % {"year": year}, title_style),
+        Paragraph(
+            gettext("Wygenerowano: %(date)s") % {"date": today.strftime("%d.%m.%Y")}, sub_style
+        ),
+        Spacer(1, 0.6 * cm),
+    ]
+
+    summary_data = [
+        [gettext("Wpisów serwisowych łącznie:"), str(total_entries)],
+        [gettext("Przeglądów:"), str(inspections)],
+        [gettext("Napraw:"), str(repairs)],
+        [gettext("Koszt łączny:"), _money(total_cost)],
+        [gettext("Maszyn objętych serwisem:"), str(len(per_machine))],
+    ]
+    summary = Table(summary_data, colWidths=[8 * cm, 9 * cm])
+    summary.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, -1), font_name(), 11),
+                ("FONT", (0, 0), (0, -1), font_name("bold"), 11),
+                ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    elements.append(summary)
+
+    elements.append(Paragraph(gettext("Koszt serwisu per maszyna"), h2_style))
+    cost_header = [
+        gettext("UID"),
+        gettext("Nazwa"),
+        gettext("Wpisów"),
+        gettext("Koszt"),
+    ]
+    cost_rows = [cost_header] + [
+        [
+            row["machine__uid"],
+            row["machine__name"],
+            str(row["n"]),
+            _money(row["total"]),
+        ]
+        for row in per_machine
+    ]
+    if not per_machine:
+        cost_rows.append([gettext("Brak wpisów w tym roku"), "", "", ""])
+    cost_table = Table(cost_rows, colWidths=[3 * cm, 8 * cm, 2.5 * cm, 3.5 * cm], repeatRows=1)
+    cost_table.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, -1), font_name(), 9),
+                ("FONT", (0, 0), (-1, 0), font_name("bold"), 9),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e2e8f0")),
+                ("BOX", (0, 0), (-1, -1), 0.75, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                ("ALIGN", (2, 0), (3, -1), "RIGHT"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    elements.append(cost_table)
+
+    elements.append(Paragraph(gettext("Przeglądy zaległe (na dzień raportu)"), h2_style))
+    if overdue:
+        overdue_header = [gettext("UID"), gettext("Nazwa"), gettext("Termin przeglądu")]
+        overdue_rows = [overdue_header] + [
+            [m.uid, m.name, m.inspection_date.strftime("%d.%m.%Y")] for m in overdue
+        ]
+        overdue_table = Table(overdue_rows, colWidths=[3 * cm, 9 * cm, 5 * cm], repeatRows=1)
+        overdue_table.setStyle(
+            TableStyle(
+                [
+                    ("FONT", (0, 0), (-1, -1), font_name(), 9),
+                    ("FONT", (0, 0), (-1, 0), font_name("bold"), 9),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#fee2e2")),
+                    ("BOX", (0, 0), (-1, -1), 0.75, colors.black),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        elements.append(overdue_table)
+    else:
+        body = ParagraphStyle(name="b", parent=styles["Normal"], fontName=font_name(), fontSize=10)
+        elements.append(Paragraph(gettext("Brak maszyn z zaległym przeglądem."), body))
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+def generate_machine_service_pdf(*, machine) -> bytes:
+    """Karta serwisowa pojedynczej maszyny w PDF — kompletna historia.
+
+    Sekcje: nagłówek z danymi maszyny, tabela pełnej historii serwisu
+    (data, typ, wykonawca, koszt, następny przegląd) i koszt łączny.
+
+    Returns:
+        PDF file bytes.
+    """
+    from django.db.models import Sum
+
+    register_pdf_fonts()
+
+    records = machine.service_records.order_by("-performed_date", "-pk")
+    total_cost = records.aggregate(s=Sum("cost"))["s"]
+
+    buffer = BytesIO()
+    doc = _pdf_doc(buffer)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        name="CardTitle",
+        parent=styles["Title"],
+        fontName=font_name("bold"),
+        fontSize=18,
+        alignment=1,
+        spaceAfter=6,
+    )
+    sub_style = ParagraphStyle(
+        name="CardSub", parent=styles["Normal"], fontName=font_name(), fontSize=10, alignment=1
+    )
+    h2_style = ParagraphStyle(
+        name="CardH2",
+        parent=styles["Heading2"],
+        fontName=font_name("bold"),
+        fontSize=13,
+        spaceBefore=16,
+        spaceAfter=8,
+    )
+
+    elements = [
+        Paragraph(gettext("KARTA SERWISOWA MASZYNY %(uid)s") % {"uid": machine.uid}, title_style),
+        Paragraph(
+            gettext("Wygenerowano: %(date)s") % {"date": date.today().strftime("%d.%m.%Y")},
+            sub_style,
+        ),
+        Spacer(1, 0.6 * cm),
+    ]
+
+    head_data = [
+        [gettext("UID:"), machine.uid],
+        [gettext("Nazwa:"), machine.name],
+        [gettext("Typ:"), machine.get_machine_type_display()],
+        [gettext("Producent:"), machine.manufacturer or "-"],
+        [gettext("Numer seryjny:"), machine.serial_number or "-"],
+        [gettext("Status:"), machine.get_status_display()],
+        [
+            gettext("Najbliższy przegląd:"),
+            machine.inspection_date.strftime("%d.%m.%Y") if machine.inspection_date else "-",
+        ],
+    ]
+    head = Table(head_data, colWidths=[5 * cm, 12 * cm])
+    head.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, -1), font_name(), 11),
+                ("FONT", (0, 0), (0, -1), font_name("bold"), 11),
+                ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    elements.append(head)
+
+    elements.append(Paragraph(gettext("Historia serwisu"), h2_style))
+    hist_header = [
+        gettext("Data"),
+        gettext("Typ"),
+        gettext("Wykonawca"),
+        gettext("Koszt"),
+        gettext("Następny"),
+    ]
+    hist_rows = [hist_header] + [
+        [
+            r.performed_date.strftime("%d.%m.%Y"),
+            r.get_record_type_display(),
+            r.performed_by or "-",
+            _money(r.cost),
+            r.next_inspection.strftime("%d.%m.%Y") if r.next_inspection else "-",
+        ]
+        for r in records
+    ]
+    if not records:
+        hist_rows.append([gettext("Brak wpisów serwisowych"), "", "", "", ""])
+    else:
+        hist_rows.append(["", "", gettext("RAZEM:"), _money(total_cost), ""])
+    hist_table = Table(
+        hist_rows, colWidths=[2.6 * cm, 4.6 * cm, 4 * cm, 3 * cm, 2.8 * cm], repeatRows=1
+    )
+    hist_table.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, -1), font_name(), 9),
+                ("FONT", (0, 0), (-1, 0), font_name("bold"), 9),
+                ("FONT", (2, -1), (3, -1), font_name("bold"), 9),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e2e8f0")),
+                ("BOX", (0, 0), (-1, -1), 0.75, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                ("ALIGN", (3, 0), (3, -1), "RIGHT"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    elements.append(hist_table)
+
+    doc.build(elements)
+    return buffer.getvalue()

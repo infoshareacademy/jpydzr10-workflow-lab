@@ -61,8 +61,10 @@ from .forms import (
 )
 from .models import ServiceRecord
 from .reports import (
+    generate_annual_report_pdf,
     generate_filtered_service_records_xlsx,
     generate_inspection_pdf,
+    generate_machine_service_pdf,
     generate_machine_service_xlsx,
     generate_quarterly_report_xlsx,
 )
@@ -319,6 +321,10 @@ class ReportPageView(LoginRequiredMixin, TemplateView):
         # rok=0 zaraz po wejściu. Bez year/quarter → niezwiązany (initial = rok bieżący).
         has_quarterly = "year" in self.request.GET or "quarter" in self.request.GET
         ctx["form"] = ReportFilterForm(self.request.GET if has_quarterly else None)
+        # Lista maszyn do selektora raportu „per maszyna" (PDF karty serwisowej).
+        from machines.models import Machine
+
+        ctx["machines"] = Machine.objects.order_by("uid").values_list("uid", "name")
         return ctx
 
 
@@ -420,6 +426,31 @@ class InspectionPdfView(LoginRequiredMixin, View):
         record = get_object_or_404(ServiceRecord.objects.select_related("machine"), pk=pk)
         payload = generate_inspection_pdf(service_record=record)
         filename = slugify(f"protokol-srv-{record.pk:06d}-{date.today().isoformat()}") + ".pdf"
+        response = HttpResponse(payload, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AnnualReportPdfView(LoginRequiredMixin, View):
+    """Stream the annual aggregate report as a PDF attachment."""
+
+    def get(self, request: HttpRequest, year: int) -> HttpResponse:
+        payload = generate_annual_report_pdf(year=year)
+        filename = slugify(f"raport-roczny-{year}") + ".pdf"
+        response = HttpResponse(payload, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class MachineServicePdfView(LoginRequiredMixin, View):
+    """Stream a single machine's full service card as a PDF attachment."""
+
+    def get(self, request: HttpRequest, uid: str) -> HttpResponse:
+        from machines.models import Machine
+
+        machine = get_object_or_404(Machine, uid=uid)
+        payload = generate_machine_service_pdf(machine=machine)
+        filename = slugify(f"karta-serwisowa-{machine.uid}-{date.today().isoformat()}") + ".pdf"
         response = HttpResponse(payload, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
