@@ -68,52 +68,52 @@ class ServiceRecord(TimestampedModel):
         "machines.Machine",
         on_delete=models.PROTECT,
         related_name="service_records",
-        verbose_name="Maszyna",
+        verbose_name=_("Maszyna"),
     )
     record_type = models.CharField(
         max_length=30,
         choices=RecordType.choices,
         db_index=True,
-        verbose_name="Typ wpisu",
+        verbose_name=_("Typ wpisu"),
     )
     performed_date = models.DateField(
         db_index=True,
-        verbose_name="Data wykonania",
-        help_text="Data faktycznego wykonania przeglądu lub naprawy.",
+        verbose_name=_("Data wykonania"),
+        help_text=_("Data faktycznego wykonania przeglądu lub naprawy."),
     )
     performed_by = models.CharField(
         max_length=100,
         blank=True,
         default="",
-        verbose_name="Wykonawca",
-        help_text="Imię i nazwisko serwisanta lub nazwa firmy zewnętrznej.",
+        verbose_name=_("Wykonawca"),
+        help_text=_("Imię i nazwisko serwisanta lub nazwa firmy zewnętrznej."),
     )
     description = models.TextField(
         blank=True,
         default="",
-        verbose_name="Opis",
-        help_text="Szczegóły wykonanych prac, wymienione części, uwagi.",
+        verbose_name=_("Opis"),
+        help_text=_("Szczegóły wykonanych prac, wymienione części, uwagi."),
     )
     cost = MoneyField(
         max_digits=10,
         decimal_places=2,
         default_currency="EUR",
         default=Decimal("0.00"),
-        verbose_name="Koszt",
+        verbose_name=_("Koszt"),
     )
     inspection_document = models.FileField(
         upload_to="inspections/%Y/%m/",
         null=True,
         blank=True,
         validators=[validate_document_upload],
-        verbose_name="Protokół (PDF)",
-        help_text="Plik PDF (max 20 MB).",
+        verbose_name=_("Protokół (PDF)"),
+        help_text=_("Plik PDF (max 20 MB)."),
     )
     next_inspection = models.DateField(
         null=True,
         blank=True,
-        verbose_name="Następny przegląd",
-        help_text="Wyliczane automatycznie dla przeglądów; puste dla napraw.",
+        verbose_name=_("Następny przegląd"),
+        help_text=_("Wyliczane automatycznie dla przeglądów; puste dla napraw."),
     )
 
     history = HistoricalRecords()
@@ -121,8 +121,8 @@ class ServiceRecord(TimestampedModel):
     objects = ServiceRecordManager()
 
     class Meta:
-        verbose_name = "Wpis serwisowy"
-        verbose_name_plural = "Wpisy serwisowe"
+        verbose_name = _("Wpis serwisowy")
+        verbose_name_plural = _("Wpisy serwisowe")
         ordering = ["-performed_date"]
         indexes = [
             models.Index(fields=["machine", "-performed_date"]),

@@ -153,7 +153,9 @@ class ServiceRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             return self.form_invalid(form)
 
         messages.success(
-            self.request, f"Wpis serwisowy {record.pk} dla maszyny {record.machine.uid} dodany."
+            self.request,
+            _("Wpis serwisowy %(pk)s dla maszyny %(uid)s dodany.")
+            % {"pk": record.pk, "uid": record.machine.uid},
         )
         return redirect("service:detail", pk=record.pk)
 
@@ -194,7 +196,8 @@ class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Updat
 
         messages.success(
             self.request,
-            f"Wpis serwisowy #{record.pk} dla maszyny {record.machine.uid} zaktualizowany.",
+            _("Wpis serwisowy #%(pk)s dla maszyny %(uid)s zaktualizowany.")
+            % {"pk": record.pk, "uid": record.machine.uid},
         )
         return redirect("service:detail", pk=record.pk)
 
@@ -218,7 +221,7 @@ class ServiceRecordDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
     def form_valid(self, form):
         pk = self.object.pk
         response = super().form_valid(form)
-        messages.success(self.request, f"Wpis serwisowy #{pk} usunięty.")
+        messages.success(self.request, _("Wpis serwisowy #%(pk)s usunięty.") % {"pk": pk})
         return response
 
 
@@ -285,12 +288,16 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         if created:
             messages.success(
                 self.request,
-                f"Utworzono {len(created)} wpisów przeglądu ({record_type}).",
+                _("Utworzono %(count)s wpisów przeglądu (%(record_type)s).")
+                % {"count": len(created), "record_type": record_type},
             )
         for err in errors[:10]:
             messages.warning(self.request, err)
         if len(errors) > 10:
-            messages.warning(self.request, f"...oraz {len(errors) - 10} dalszych błędów.")
+            messages.warning(
+                self.request,
+                _("...oraz %(count)s dalszych błędów.") % {"count": len(errors) - 10},
+            )
         return super().form_valid(form)
 
 

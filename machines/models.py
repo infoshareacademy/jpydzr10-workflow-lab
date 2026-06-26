@@ -44,7 +44,7 @@ INSPECTION_WARNING_DAYS = 14
 # poziomie form validation i ``full_clean()`` w services.create_machine.
 UID_VALIDATOR = RegexValidator(
     regex=r"^[A-Z0-9_\-]+$",
-    message="UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik.",
+    message=_("UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik."),
 )
 
 
@@ -93,7 +93,7 @@ class Machine(TimestampedModel):
         db_index=True,
         validators=[UID_VALIDATOR],
         verbose_name=_("UID maszyny"),
-        help_text="Unikalny identyfikator firmowy (np. KOP-001).",
+        help_text=_("Unikalny identyfikator firmowy (np. KOP-001)."),
     )
     name = models.CharField(max_length=100, verbose_name=_("Nazwa"))
     machine_type = models.CharField(
@@ -107,14 +107,16 @@ class Machine(TimestampedModel):
     capacity = models.PositiveIntegerField(
         default=0,
         verbose_name=_("Udźwig / wydajność"),
-        help_text="Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu).",
+        help_text=_("Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu)."),
     )
     inspection_date = models.DateField(
         null=True,
         blank=True,
         db_index=True,
         verbose_name=_("Data ostatniego przeglądu"),
-        help_text="Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd').",
+        help_text=_(
+            "Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd')."
+        ),
     )
     location = models.CharField(
         max_length=200,
@@ -138,7 +140,7 @@ class Machine(TimestampedModel):
         default=0,
         validators=[MaxValueValidator(2100)],
         verbose_name=_("Rok produkcji"),
-        help_text="0 = nieznany.",
+        help_text=_("0 = nieznany."),
     )
     notes = models.TextField(blank=True, default="", verbose_name=_("Notatki"))
     image = models.ImageField(
@@ -152,7 +154,7 @@ class Machine(TimestampedModel):
         default=True,
         db_index=True,
         verbose_name=_("Dostępna do rezerwacji"),
-        help_text=(
+        help_text=_(
             "Maszyna magazynowa (np. wózek widłowy obsługujący magazyn) zostaje "
             "w bazie i jest widoczna na timeline (śledzimy przegląd), ale nie "
             "można jej rezerwować na budowę."
@@ -201,10 +203,10 @@ class Machine(TimestampedModel):
     def inspection_status_label(self) -> str:
         """Human-readable Polish label matching :attr:`inspection_status`."""
         return {
-            "ok": "Przegląd aktualny",
-            "warning": "Wkrótce przegląd",
-            "overdue": "Przegląd przeterminowany",
-            "unknown": "Brak daty przeglądu",
+            "ok": _("Przegląd aktualny"),
+            "warning": _("Wkrótce przegląd"),
+            "overdue": _("Przegląd przeterminowany"),
+            "unknown": _("Brak daty przeglądu"),
         }[self.inspection_status]
 
     @property

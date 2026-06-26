@@ -47,7 +47,7 @@ PROJECT_NUMBER_PATTERN = r"^(?:10\d{2}\d{7}|BUD-\d{4}-\d{3})$"
 
 PROJECT_NUMBER_VALIDATOR = RegexValidator(
     regex=PROJECT_NUMBER_PATTERN,
-    message=(
+    message=_(
         "Numer projektu musi byc w formacie 10YYNNNNN (np. 10260000001) "
         "lub starym BUD-RRRR-NNN (np. BUD-2026-001)."
     ),
@@ -78,7 +78,7 @@ class ConstructionSite(TimestampedModel):
 
         AKTYWNA = "aktywna", _("Aktywna")
         ZAKONCZONA = "zakończona", _("Zakończona")
-        ANULOWANA = "anulowana", "Anulowana"
+        ANULOWANA = "anulowana", _("Anulowana")
 
     project_number = models.CharField(
         max_length=12,
@@ -86,7 +86,9 @@ class ConstructionSite(TimestampedModel):
         db_index=True,
         validators=[PROJECT_NUMBER_VALIDATOR],
         verbose_name=_("Numer projektu"),
-        help_text="Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). Stare numery BUD-RRRR-NNN dalej akceptowane.",
+        help_text=_(
+            "Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). Stare numery BUD-RRRR-NNN dalej akceptowane."
+        ),
     )
     name = models.CharField(max_length=200, verbose_name=_("Nazwa budowy"))
     client_name = models.CharField(max_length=200, blank=True, default="", verbose_name=_("Klient"))
@@ -144,7 +146,7 @@ class ConstructionSite(TimestampedModel):
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError(
-                {"end_date": "Planowana data zakończenia musi być >= data rozpoczęcia."}
+                {"end_date": _("Planowana data zakończenia musi być >= data rozpoczęcia.")}
             )
 
 
@@ -406,4 +408,4 @@ class Reservation(TimestampedModel):
         """Cross-field validation — ``end_date`` must be ≥ ``start_date``."""
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
-            raise ValidationError({"end_date": "Data końca musi być >= data początku."})
+            raise ValidationError({"end_date": _("Data końca musi być >= data początku.")})

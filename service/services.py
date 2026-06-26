@@ -203,8 +203,11 @@ def close_service(machine, *, today: date | None = None):
 
     if machine.status != Machine.Status.W_SERWISIE:
         raise ValidationError(
-            f"Nie można zakończyć serwisu — maszyna {machine.uid} nie jest "
-            f"w stanie 'W serwisie' (obecny status: {machine.get_status_display()})."
+            _(
+                "Nie można zakończyć serwisu — maszyna %(uid)s nie jest "
+                "w stanie 'W serwisie' (obecny status: %(status)s)."
+            )
+            % {"uid": machine.uid, "status": machine.get_status_display()}
         )
     # Po guardzie, deleguj do return_machine_to_warehouse — zamyka rezerwacje
     # plus flip status. close_repair zwraca tylko Machine, NIE zamyka rezerwacji.

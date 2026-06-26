@@ -72,25 +72,25 @@ class EmployeeProfile(TimestampedModel):
     is_anonymized = models.BooleanField(
         default=False,
         verbose_name=_("Zanonimizowany"),
-        help_text="Czy profil został zanonimizowany (GDPR Art.17).",
+        help_text=_("Czy profil został zanonimizowany (GDPR Art.17)."),
     )
     anonymized_at = models.DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Data anonimizacji"),
-        help_text="Data anonimizacji (UTC).",
+        help_text=_("Data anonimizacji (UTC)."),
     )
     termination_date = models.DateField(
         null=True,
         blank=True,
         verbose_name=_("Data zakończenia zatrudnienia"),
-        help_text="Data rozwiązania umowy/zakończenia zatrudnienia.",
+        help_text=_("Data rozwiązania umowy/zakończenia zatrudnienia."),
     )
     termination_reason = models.CharField(
         max_length=200,
         blank=True,
         verbose_name=_("Powód zakończenia"),
-        help_text="Powód zakończenia (opcjonalnie).",
+        help_text=_("Powód zakończenia (opcjonalnie)."),
     )
     history = HistoricalRecords()
 

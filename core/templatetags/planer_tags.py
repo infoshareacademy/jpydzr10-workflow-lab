@@ -10,6 +10,7 @@ Użycie w template:
 from datetime import date as _date_cls
 
 from django import template
+from django.utils.translation import gettext_lazy as _
 
 register = template.Library()
 
@@ -111,7 +112,15 @@ def bar_class_for(status_value):
 
 
 # Krotkie nazwy dni tygodnia po polsku (Pn..Nd).
-DAY_NAMES_PL = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"]
+DAY_NAMES_PL = [
+    _("Pn"),
+    _("Wt"),
+    _("Śr"),
+    _("Cz"),
+    _("Pt"),
+    _("Sb"),
+    _("Nd"),
+]
 
 
 @register.filter

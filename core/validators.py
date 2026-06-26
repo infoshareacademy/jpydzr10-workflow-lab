@@ -18,6 +18,7 @@ from pathlib import Path
 
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.utils.translation import gettext_lazy as _
 from PIL import Image, UnidentifiedImageError
 
 # Numer telefonu w formacie E.164: znak "+" + cyfra 1-9 + 7-14 dalszych cyfr
@@ -33,7 +34,7 @@ E164_PATTERN = r"^\+[1-9]\d{7,14}$"
 E164_RE = re.compile(E164_PATTERN)
 phone_e164_validator = RegexValidator(
     regex=E164_PATTERN,
-    message="Numer telefonu musi być w formacie międzynarodowym, np. +48123456789.",
+    message=_("Numer telefonu musi być w formacie międzynarodowym, np. +48123456789."),
 )
 
 # Znaki separujące usuwane przy normalizacji numeru (spacje, myślniki, nawiasy, kropki) —
@@ -134,12 +135,15 @@ def validate_image_upload(value):
     """
     if value.size > MAX_IMAGE_SIZE:
         raise ValidationError(
-            f"Zdjęcie nie może być większe niż {MAX_IMAGE_SIZE // (1024 * 1024)} MB."
+            _("Zdjęcie nie może być większe niż %(limit)s MB.")
+            % {"limit": MAX_IMAGE_SIZE // (1024 * 1024)}
         )
     ext = Path(value.name).suffix.lower()
     if ext not in ALLOWED_IMAGE_EXTENSIONS:
         allowed = ", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))
-        raise ValidationError(f"Niedozwolone rozszerzenie. Dozwolone: {allowed}.")
+        raise ValidationError(
+            _("Niedozwolone rozszerzenie. Dozwolone: %(allowed)s.") % {"allowed": allowed}
+        )
     if not _can_seek(value):
         # Niektóre obiekty (np. ``_FakeFile`` w testach) nie wspierają seek —
         # zostawiamy je wtedy bez weryfikacji content (rozmiar+extension wystarcza).
@@ -152,7 +156,7 @@ def validate_image_upload(value):
         # przed atakiem typu "zip bomb dla obrazów" (60Mpx+ JPEG, który po
         # dekompresji żre kilka GB RAM). Bez tego catch — niezłapane
         # exception bąbluje do 500 zamiast ValidationError (audyt C2-9 P1).
-        raise ValidationError("Plik nie jest prawidłowym obrazem lub jest zbyt duży.") from exc
+        raise ValidationError(_("Plik nie jest prawidłowym obrazem lub jest zbyt duży.")) from exc
     finally:
         with suppress(AttributeError, OSError):
             value.seek(0)
@@ -167,14 +171,15 @@ def validate_document_upload(value):
     """
     if value.size > MAX_DOCUMENT_SIZE:
         raise ValidationError(
-            f"Dokument nie może być większy niż {MAX_DOCUMENT_SIZE // (1024 * 1024)} MB."
+            _("Dokument nie może być większy niż %(limit)s MB.")
+            % {"limit": MAX_DOCUMENT_SIZE // (1024 * 1024)}
         )
     ext = Path(value.name).suffix.lower()
     if ext not in ALLOWED_DOCUMENT_EXTENSIONS:
-        raise ValidationError("Dokument musi być w formacie PDF.")
+        raise ValidationError(_("Dokument musi być w formacie PDF."))
     header = _read_magic_bytes(value, len(_PDF_MAGIC))
     if header is None:
         # Patrz uwaga w ``validate_image_upload`` — fallback dla obiektów bez seek/read.
         return
     if header != _PDF_MAGIC:
-        raise ValidationError("Plik nie jest prawidłowym PDF.")
+        raise ValidationError(_("Plik nie jest prawidłowym PDF."))

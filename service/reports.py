@@ -20,6 +20,8 @@ from decimal import Decimal
 from io import BytesIO
 from xml.sax import saxutils
 
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -85,13 +87,13 @@ def _quarter_bounds(year: int, quarter: int) -> tuple[date, date]:
 
 
 _XLSX_HEADERS: tuple[str, ...] = (
-    "UID maszyny",
-    "Nazwa",
-    "Data",
-    "Typ",
-    "Wykonawca",
-    "Opis",
-    "Koszt (EUR)",
+    _("UID maszyny"),
+    _("Nazwa"),
+    _("Data"),
+    _("Typ"),
+    _("Wykonawca"),
+    _("Opis"),
+    _("Koszt (EUR)"),
 )
 
 
@@ -124,7 +126,9 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
     ws = wb.active
     ws.title = f"Q{quarter} {year}"
 
-    ws.append(list(_XLSX_HEADERS))
+    # str() forces the lazy header proxies to resolve in the active language —
+    # openpyxl cells expect a real str, not a lazy translation proxy.
+    ws.append([str(header) for header in _XLSX_HEADERS])
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill("solid", fgColor="2563EB")
     header_alignment = Alignment(horizontal="center", vertical="center")
@@ -154,7 +158,7 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
     # Pusty wiersz separujący + RAZEM.
     ws.append([])
     summary_row_idx = ws.max_row + 1
-    ws.append(["", "", "", "", "", "RAZEM:", float(total)])
+    ws.append(["", "", "", "", "", gettext("RAZEM:"), float(total)])
     ws.cell(row=summary_row_idx, column=6).font = Font(bold=True)
     ws.cell(row=summary_row_idx, column=7).font = Font(bold=True)
 
@@ -168,14 +172,14 @@ def generate_quarterly_report_xlsx(*, year: int, quarter: int) -> bytes:
 
 
 _XLSX_HEADERS_FULL: tuple[str, ...] = (
-    "UID maszyny",
-    "Nazwa",
-    "Data",
-    "Typ",
-    "Wykonawca",
-    "Opis",
-    "Koszt (EUR)",
-    "Następny przegląd",
+    _("UID maszyny"),
+    _("Nazwa"),
+    _("Data"),
+    _("Typ"),
+    _("Wykonawca"),
+    _("Opis"),
+    _("Koszt (EUR)"),
+    _("Następny przegląd"),
 )
 
 
@@ -196,7 +200,9 @@ def _write_records_sheet(ws, records, sheet_title: str, headers: tuple[str, ...]
         Suma kosztów (Decimal) — caller może użyć do dalszych obliczeń.
     """
     ws.title = sheet_title
-    ws.append(list(headers))
+    # str() forces the lazy header proxies to resolve in the active language —
+    # openpyxl cells expect a real str, not a lazy translation proxy.
+    ws.append([str(header) for header in headers])
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill("solid", fgColor="2563EB")
     header_alignment = Alignment(horizontal="center", vertical="center")
@@ -206,7 +212,9 @@ def _write_records_sheet(ws, records, sheet_title: str, headers: tuple[str, ...]
         cell.alignment = header_alignment
 
     total = Decimal("0")
-    has_next = "Następny przegląd" in headers
+    # Wykrycie wariantu pełnego po liczbie kolumn — nagłówki są teraz tłumaczalne
+    # (lazy proxy), więc porównanie po treści stringa nie jest niezawodne.
+    has_next = len(headers) == len(_XLSX_HEADERS_FULL)
     for record in records:
         row = [
             _sanitize(record.machine.uid),
@@ -227,7 +235,7 @@ def _write_records_sheet(ws, records, sheet_title: str, headers: tuple[str, ...]
     # Pusty wiersz separujący + RAZEM.
     ws.append([])
     summary_row_idx = ws.max_row + 1
-    summary_row = ["", "", "", "", "", "RAZEM:", float(total)]
+    summary_row = ["", "", "", "", "", gettext("RAZEM:"), float(total)]
     if has_next:
         summary_row.append("")
     ws.append(summary_row)
@@ -261,7 +269,9 @@ def generate_machine_service_xlsx(*, machine) -> bytes:
 
     wb = Workbook()
     ws = wb.active
-    sheet_title = f"{machine.uid} - Serwis"[:31]  # XLSX limit nazwy arkusza = 31 znaków
+    sheet_title = f"{machine.uid} - {gettext('Serwis')}"[
+        :31
+    ]  # XLSX limit nazwy arkusza = 31 znaków
     _write_records_sheet(ws, records, sheet_title, _XLSX_HEADERS_FULL)
 
     buffer = BytesIO()
@@ -288,7 +298,7 @@ def generate_all_service_records_xlsx() -> bytes:
 
     wb = Workbook()
     ws = wb.active
-    _write_records_sheet(ws, records, "Pełna historia serwisu", _XLSX_HEADERS_FULL)
+    _write_records_sheet(ws, records, gettext("Pełna historia serwisu"), _XLSX_HEADERS_FULL)
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -303,7 +313,7 @@ def generate_filtered_service_records_xlsx(*, records) -> bytes:
     """
     wb = Workbook()
     ws = wb.active
-    _write_records_sheet(ws, records, "Historia serwisu (filtr)", _XLSX_HEADERS_FULL)
+    _write_records_sheet(ws, records, gettext("Historia serwisu (filtr)"), _XLSX_HEADERS_FULL)
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -359,23 +369,23 @@ def generate_inspection_pdf(*, service_record) -> bytes:
 
     machine = service_record.machine
     elements = [
-        Paragraph("PROTOKÓŁ PRZEGLĄDU TECHNICZNEGO", title_style),
+        Paragraph(gettext("PROTOKÓŁ PRZEGLĄDU TECHNICZNEGO"), title_style),
         Spacer(1, 0.5 * cm),
     ]
 
     table_data = [
-        ["Numer protokołu:", f"SRV-{service_record.pk:06d}"],
-        ["Data wykonania:", service_record.performed_date.strftime("%d.%m.%Y")],
-        ["Typ przeglądu:", service_record.get_record_type_display()],
-        ["Maszyna (UID):", machine.uid],
-        ["Nazwa maszyny:", machine.name],
-        ["Producent:", machine.manufacturer or "-"],
-        ["Rok produkcji:", str(machine.build_year) if machine.build_year else "-"],
-        ["Numer seryjny:", machine.serial_number or "-"],
-        ["Wykonawca:", service_record.performed_by or "-"],
-        ["Koszt:", f"{service_record.cost.amount:.2f} {service_record.cost.currency}"],
+        [gettext("Numer protokołu:"), f"SRV-{service_record.pk:06d}"],
+        [gettext("Data wykonania:"), service_record.performed_date.strftime("%d.%m.%Y")],
+        [gettext("Typ przeglądu:"), service_record.get_record_type_display()],
+        [gettext("Maszyna (UID):"), machine.uid],
+        [gettext("Nazwa maszyny:"), machine.name],
+        [gettext("Producent:"), machine.manufacturer or "-"],
+        [gettext("Rok produkcji:"), str(machine.build_year) if machine.build_year else "-"],
+        [gettext("Numer seryjny:"), machine.serial_number or "-"],
+        [gettext("Wykonawca:"), service_record.performed_by or "-"],
+        [gettext("Koszt:"), f"{service_record.cost.amount:.2f} {service_record.cost.currency}"],
         [
-            "Następny przegląd:",
+            gettext("Następny przegląd:"),
             service_record.next_inspection.strftime("%d.%m.%Y")
             if service_record.next_inspection
             else "-",
@@ -402,7 +412,10 @@ def generate_inspection_pdf(*, service_record) -> bytes:
 
     if service_record.description:
         elements.append(
-            Paragraph(f'<font name="{font_name("bold")}">Opis prac:</font>', body_style)
+            Paragraph(
+                f'<font name="{font_name("bold")}">{gettext("Opis prac:")}</font>',
+                body_style,
+            )
         )
         elements.append(Spacer(1, 0.2 * cm))
         # H2 fix: escape user input — reportlab Paragraph parses pseudo-HTML
@@ -413,7 +426,7 @@ def generate_inspection_pdf(*, service_record) -> bytes:
     elements.append(Spacer(1, 2 * cm))
     elements.append(
         Paragraph(
-            "_________________________<br/>Podpis wykonawcy",
+            "_________________________<br/>" + gettext("Podpis wykonawcy"),
             ParagraphStyle(
                 name="Signature",
                 parent=body_style,

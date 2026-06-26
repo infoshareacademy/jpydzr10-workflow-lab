@@ -199,7 +199,7 @@
                 {{ form.description.label }}
             </label>
             {{ form.description }}
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Wymień zastosowane części, użyte materiały, czas pracy.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Wymień zastosowane części, użyte materiały, czas pracy." %}</p>
             {% if form.description.errors %}
             <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.description.errors|striptags }}</p>
             {% endif %}

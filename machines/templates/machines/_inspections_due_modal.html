@@ -57,7 +57,7 @@
                                   hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-sm
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                   transition-colors"
-                           aria-label="Maszyna {{ machine.uid }} {{ machine.name }} — przegląd przeterminowany {{ machine.inspection_date|date:'d.m.Y' }}">
+                           aria-label="{% blocktrans with uid=machine.uid name=machine.name insp_date=machine.inspection_date|date:'d.m.Y' %}Maszyna {{ uid }} {{ name }} — przegląd przeterminowany {{ insp_date }}{% endblocktrans %}">
                             <span class="font-mono font-semibold text-sm text-rose-700 dark:text-rose-300 flex-shrink-0">{{ machine.uid }}</span>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ machine.name }}</p>
@@ -118,7 +118,7 @@
                                   hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-sm
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                   transition-colors"
-                           aria-label="Maszyna {{ machine.uid }} {{ machine.name }} — przegląd {{ machine.inspection_date|date:'d.m.Y' }}">
+                           aria-label="{% blocktrans with uid=machine.uid name=machine.name insp_date=machine.inspection_date|date:'d.m.Y' %}Maszyna {{ uid }} {{ name }} — przegląd {{ insp_date }}{% endblocktrans %}">
                             <span class="font-mono font-semibold text-sm text-amber-700 dark:text-amber-300 flex-shrink-0">{{ machine.uid }}</span>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ machine.name }}</p>
