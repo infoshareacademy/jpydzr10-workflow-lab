@@ -1,0 +1,8 @@
+{% load i18n %}{% trans "Dzień dobry," %}
+
+{% blocktrans count counter=machines|length %}Poniższa maszyna ma zbliżający się przegląd — zaplanuj go z wyprzedzeniem:{% plural %}Poniższe maszyny mają zbliżający się przegląd — zaplanuj je z wyprzedzeniem:{% endblocktrans %}
+{% for m in machines %}
+- {{ m.uid }} — {{ m.name }} | {% trans "przegląd" %}: {{ m.inspection_date|date:'d.m.Y' }} | {{ m.location }}{% endfor %}
+
+{% trans "Pozdrawiamy," %}
+Planer Maszyn Budowlanych

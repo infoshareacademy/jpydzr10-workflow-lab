@@ -97,6 +97,25 @@ uv run python manage.py runserver 0.0.0.0:8002       # http://localhost:8002
 
 Nazwa kontenera Postgres w OrbStack UI zawiera port Django — łatwo zobaczyć na jaki localhost wejść.
 
+## Zadania cykliczne (cron)
+
+Powiadomienia e-mail i retencja danych działają jako komendy `manage.py`
+uruchamiane przez cron na produkcji:
+
+```
+# Codzienna synchronizacja statusów maszyn z rezerwacjami
+0 6 * * *  cd /app && uv run python manage.py run_daily_sync
+# Przypomnienia T-1 o rezerwacjach startujących jutro (idempotentne)
+0 7 * * *  cd /app && uv run python manage.py send_daily_reminders
+# Alerty o przeterminowanych i zbliżających się przeglądach maszyn
+0 8 * * *  cd /app && uv run python manage.py send_inspection_alerts
+# Retencja dziennika zdarzeń — usuwa wpisy starsze niż 90 dni (co niedzielę 3:00)
+0 3 * * 0  cd /app && uv run python manage.py prune_audit_log --older-than 90
+```
+
+Wszystkie maile są dwujęzyczne (PL + EN w jednej wiadomości) i wysyłane przez
+`transaction.on_commit`, więc nie wychodzą, jeśli transakcja DB się wycofa.
+
 ## Testy
 
 ```bash

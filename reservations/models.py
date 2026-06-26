@@ -345,6 +345,15 @@ class Reservation(TimestampedModel):
         verbose_name=_("E-mail potwierdzający — wysłany"),
         help_text=_("Znacznik czasu skutecznego wysłania powiadomienia."),
     )
+    reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Przypomnienie T-1 — wysłane"),
+        help_text=_(
+            "Znacznik wysłania przypomnienia o jutrzejszym starcie rezerwacji "
+            "(idempotency — cron wysyła tylko gdy puste)."
+        ),
+    )
 
     history = HistoricalRecords()
 

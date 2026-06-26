@@ -118,6 +118,15 @@ class Machine(TimestampedModel):
             "Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd')."
         ),
     )
+    inspection_warning_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Alert nadchodzącego przeglądu — wysłany"),
+        help_text=_(
+            "Znacznik wysłania alertu o zbliżającym się przeglądzie "
+            "(idempotency — resetowany po wykonaniu przeglądu)."
+        ),
+    )
     location = models.CharField(
         max_length=200,
         default="Magazyn",

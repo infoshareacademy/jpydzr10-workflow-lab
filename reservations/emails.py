@@ -138,6 +138,48 @@ def send_cancellation_email(reservation_pk: int, reason_display: str = "") -> No
         logger.info("Cancellation email wysłany dla rezerwacji pk=%s.", reservation_pk)
 
 
+def send_reservation_reminder_email(reservation_pk: int) -> int:
+    """Mail-przypomnienie T-1 (dwujęzyczny) do twórcy rezerwacji startującej jutro.
+
+    Zwraca liczbę wysłanych wiadomości (0 = brak adresata / nie wysłano) — komenda
+    ``send_daily_reminders`` ustawia ``reminder_sent_at`` dopiero po skutecznej
+    wysyłce, dzięki czemu nieudana próba zostanie ponowiona następnego dnia.
+    """
+    from core.mailing import build_bilingual_email, send_bilingual_mail
+
+    from .models import Reservation
+
+    reservation = (
+        Reservation.objects.select_related("machine", "site", "created_by")
+        .filter(pk=reservation_pk)
+        .first()
+    )
+    if reservation is None:
+        logger.warning("Reminder email: rezerwacja pk=%s nie istnieje.", reservation_pk)
+        return 0
+
+    creator = reservation.created_by
+    if not (creator and creator.email):
+        logger.info("Reminder email: rezerwacja pk=%s bez adresata — pomijam.", reservation_pk)
+        return 0
+
+    base = getattr(settings, "EMAIL_LINK_BASE_URL", "http://localhost:8002").rstrip("/")
+    context = {
+        "reservation": reservation,
+        "machine": reservation.machine,
+        "site": reservation.site,
+        "recipient_name": creator.get_full_name() or creator.get_username(),
+        "detail_url": f"{base}/rezerwacje/{reservation.pk}/",
+    }
+    html_body, text_body = build_bilingual_email("reservation_reminder", context)
+    uid = reservation.machine.uid
+    subject = f"Przypomnienie o rezerwacji {uid} / Reservation {uid} reminder"
+    sent = send_bilingual_mail(subject, html_body, text_body, [creator.email])
+    if sent:
+        logger.info("Reminder email wysłany dla rezerwacji pk=%s.", reservation_pk)
+    return sent
+
+
 def send_request_notification_email(reservation_pk: int) -> None:
     """Mail do zatwierdzających (magazynier/admin) o nowym wniosku o rezerwację.
 

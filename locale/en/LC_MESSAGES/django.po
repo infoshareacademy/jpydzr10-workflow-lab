@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 21:23+0200\n"
+"POT-Creation-Date: 2026-06-26 21:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -662,7 +662,7 @@ msgid "Ostatnie logowanie"
 msgstr "Last login"
 
 #: accounts/templates/accounts/profile.html:108 machines/admin.py:60
-#: machines/forms.py:48 machines/forms.py:104 machines/models.py:131
+#: machines/forms.py:48 machines/forms.py:104 machines/models.py:140
 #: machines/templates/machines/list.html:94 reservations/forms.py:188
 #: reservations/forms.py:271 reservations/models.py:102
 #: reservations/models.py:249
@@ -1480,7 +1480,7 @@ msgid ""
 msgstr "Invalid date format (ISO YYYY-MM-DD required): %(start)s, %(end)s."
 
 #: chatbot/tools.py:1225 chatbot/tools.py:1785 reservations/forms.py:140
-#: reservations/forms.py:515 reservations/models.py:411
+#: reservations/forms.py:515 reservations/models.py:420
 #: reservations/services.py:134 reservations/services.py:211
 #: reservations/services.py:371 reservations/services.py:1301
 msgid "Data końca musi być >= data początku."
@@ -2075,11 +2075,11 @@ msgstr "Specification"
 msgid "Przegląd"
 msgstr "Inspection"
 
-#: machines/admin.py:52 machines/forms.py:56 machines/models.py:151
+#: machines/admin.py:52 machines/forms.py:56 machines/models.py:160
 msgid "Zdjęcie"
 msgstr "Photo"
 
-#: machines/admin.py:53 machines/forms.py:55 machines/models.py:145
+#: machines/admin.py:53 machines/forms.py:55 machines/models.py:154
 #: machines/templates/machines/detail.html:135
 #: machines/templates/machines/form.html:403 reservations/forms.py:64
 #: reservations/forms.py:274 reservations/forms.py:496
@@ -2123,32 +2123,36 @@ msgstr "Model"
 msgid "Pojemność"
 msgstr "Capacity"
 
-#: machines/forms.py:49 machines/models.py:156
+#: machines/forms.py:49 machines/models.py:165
 msgid "Dostępna do rezerwacji"
 msgstr "Available for reservation"
 
-#: machines/forms.py:50 machines/models.py:124
+#: machines/forms.py:50 machines/models.py:133
 #: machines/templates/machines/detail.html:120
 #: machines/templates/machines/list.html:96 reservations/admin.py:60
 #: reservations/templates/reservations/site_list.html:138
 #: reservations/templates/reservations/site_list.html:214
+#: templates/emails/inspection_overdue_body.html:8
+#: templates/emails/inspection_upcoming_body.html:8
 msgid "Lokalizacja"
 msgstr "Location"
 
 #: machines/forms.py:51 service/forms.py:156
+#: templates/emails/inspection_overdue_body.html:7
+#: templates/emails/inspection_upcoming_body.html:7
 msgid "Data przeglądu"
 msgstr "Inspection date"
 
-#: machines/forms.py:52 machines/models.py:134
+#: machines/forms.py:52 machines/models.py:143
 #: machines/templates/machines/detail.html:100
 msgid "Producent"
 msgstr "Manufacturer"
 
-#: machines/forms.py:53 machines/models.py:137
+#: machines/forms.py:53 machines/models.py:146
 msgid "Numer seryjny"
 msgstr "Serial number"
 
-#: machines/forms.py:54 machines/models.py:142
+#: machines/forms.py:54 machines/models.py:151
 #: machines/templates/machines/detail.html:112
 msgid "Rok produkcji"
 msgstr "Build year"
@@ -2164,19 +2168,19 @@ msgstr "e.g. KOP-001"
 msgid "Wszystkie"
 msgstr "All"
 
-#: machines/forms.py:91 machines/models.py:206
+#: machines/forms.py:91 machines/models.py:215
 msgid "Przegląd aktualny"
 msgstr "Inspection current"
 
-#: machines/forms.py:92 machines/models.py:207
+#: machines/forms.py:92 machines/models.py:216
 msgid "Wkrótce przegląd"
 msgstr "Inspection upcoming"
 
-#: machines/forms.py:93 machines/models.py:208
+#: machines/forms.py:93 machines/models.py:217
 msgid "Przegląd przeterminowany"
 msgstr "Inspection overdue"
 
-#: machines/forms.py:94 machines/models.py:209
+#: machines/forms.py:94 machines/models.py:218
 msgid "Brak daty przeglądu"
 msgstr "No inspection date"
 
@@ -2329,11 +2333,21 @@ msgid ""
 msgstr ""
 "Empty value = no inspection data (see the status in the 'Inspection' column)."
 
-#: machines/models.py:143
+#: machines/models.py:124
+msgid "Alert nadchodzącego przeglądu — wysłany"
+msgstr "Upcoming inspection alert — sent"
+
+#: machines/models.py:126
+msgid ""
+"Znacznik wysłania alertu o zbliżającym się przeglądzie (idempotency — "
+"resetowany po wykonaniu przeglądu)."
+msgstr "Timestamp of the upcoming-inspection alert (idempotency — reset after the inspection is done)."
+
+#: machines/models.py:152
 msgid "0 = nieznany."
 msgstr "0 = unknown."
 
-#: machines/models.py:158
+#: machines/models.py:167
 msgid ""
 "Maszyna magazynowa (np. wózek widłowy obsługujący magazyn) zostaje w bazie i "
 "jest widoczna na timeline (śledzimy przegląd), ale nie można jej rezerwować "
@@ -2343,7 +2357,7 @@ msgstr ""
 "database and is visible on the timeline (we track its inspection), but it "
 "cannot be reserved for a construction site."
 
-#: machines/models.py:169 reservations/forms.py:57 reservations/forms.py:195
+#: machines/models.py:178 reservations/forms.py:57 reservations/forms.py:195
 #: reservations/models.py:206
 #: reservations/templates/reservations/_form_partial.html:58
 #: reservations/templates/reservations/_list_table.html:33
@@ -2360,16 +2374,20 @@ msgstr ""
 #: service/templates/service/_record_table.html:8
 #: service/templates/service/list.html:277
 #: service/templates/service/reports.html:181
+#: templates/emails/inspection_overdue_body.html:6
+#: templates/emails/inspection_upcoming_body.html:6
 #: templates/emails/reservation_cancelled_body.html:5
 #: templates/emails/reservation_cancelled_body.txt:5
 #: templates/emails/reservation_confirmed_body.html:5
 #: templates/emails/reservation_confirmed_body.txt:5
+#: templates/emails/reservation_reminder_body.html:5
+#: templates/emails/reservation_reminder_body.txt:5
 #: templates/emails/reservation_request_body.html:5
 #: templates/emails/reservation_request_body.txt:5
 msgid "Maszyna"
 msgstr "Machine"
 
-#: machines/models.py:170 machines/templates/machines/delete_confirm.html:8
+#: machines/models.py:179 machines/templates/machines/delete_confirm.html:8
 #: machines/templates/machines/detail.html:9
 #: machines/templates/machines/form.html:14
 #: machines/templates/machines/import.html:8
@@ -2613,7 +2631,7 @@ msgid "Historia serwisu"
 msgstr "Service history"
 
 #: machines/templates/machines/detail.html:82
-#: machines/templates/machines/detail.html:212 reservations/models.py:355
+#: machines/templates/machines/detail.html:212 reservations/models.py:364
 #: reservations/templates/reservations/batch_detail.html:35
 #: reservations/templates/reservations/batch_form.html:39
 #: reservations/templates/reservations/detail.html:33
@@ -3083,7 +3101,7 @@ msgstr "Schedule"
 msgid "Dodatkowe"
 msgstr "Additional"
 
-#: reservations/admin.py:128 reservations/models.py:354
+#: reservations/admin.py:128 reservations/models.py:363
 #: reservations/templates/reservations/detail.html:24
 #: reservations/templates/reservations/detail.html:139
 msgid "Rezerwacja"
@@ -3097,6 +3115,8 @@ msgstr "Reservation"
 #: templates/emails/reservation_cancelled_body.txt:6
 #: templates/emails/reservation_confirmed_body.html:6
 #: templates/emails/reservation_confirmed_body.txt:6
+#: templates/emails/reservation_reminder_body.html:6
+#: templates/emails/reservation_reminder_body.txt:6
 #: templates/emails/reservation_request_body.html:6
 #: templates/emails/reservation_request_body.txt:6
 msgid "Termin"
@@ -3197,6 +3217,8 @@ msgstr "Reservations and construction sites"
 #: reservations/templates/reservations/list.html:198
 #: templates/emails/reservation_confirmed_body.html:8
 #: templates/emails/reservation_confirmed_body.txt:8
+#: templates/emails/reservation_reminder_body.html:8
+#: templates/emails/reservation_reminder_body.txt:8
 #: templates/emails/reservation_request_body.html:8
 #: templates/emails/reservation_request_body.txt:8
 msgid "Budowa"
@@ -3219,6 +3241,8 @@ msgstr "End date"
 #: reservations/templates/reservations/detail.html:207
 #: templates/emails/reservation_confirmed_body.html:7
 #: templates/emails/reservation_confirmed_body.txt:7
+#: templates/emails/reservation_reminder_body.html:7
+#: templates/emails/reservation_reminder_body.txt:7
 #: templates/emails/reservation_request_body.html:7
 #: templates/emails/reservation_request_body.txt:7
 msgid "Osoba rezerwująca"
@@ -3627,6 +3651,16 @@ msgstr "Confirmation email — sent"
 #: reservations/models.py:346
 msgid "Znacznik czasu skutecznego wysłania powiadomienia."
 msgstr "Timestamp of the successful delivery of the notification."
+
+#: reservations/models.py:351
+msgid "Przypomnienie T-1 — wysłane"
+msgstr "T-1 reminder — sent"
+
+#: reservations/models.py:353
+msgid ""
+"Znacznik wysłania przypomnienia o jutrzejszym starcie rezerwacji "
+"(idempotency — cron wysyła tylko gdy puste)."
+msgstr "Timestamp of the reminder about the reservation starting tomorrow (idempotency — cron sends only when empty)."
 
 #: reservations/pdf.py:73
 #, python-format
@@ -4460,6 +4494,7 @@ msgid "rez."
 msgstr "res."
 
 #: reservations/templates/reservations/_timeline_mobile.html:50
+#: templates/emails/reservation_reminder_body.html:10
 msgid "Otwórz szczegóły rezerwacji"
 msgstr "Open reservation details"
 
@@ -6581,10 +6616,72 @@ msgstr ""
 msgid "Wpisz frazę powyżej, żeby zacząć przeszukiwać aplikację."
 msgstr "Enter a phrase above to start searching the application."
 
+#: templates/emails/inspection_overdue_body.html:2
+#: templates/emails/inspection_overdue_body.txt:1
+#: templates/emails/inspection_upcoming_body.html:2
+#: templates/emails/inspection_upcoming_body.txt:1
+#: templates/emails/reservation_request_body.html:2
+#: templates/emails/reservation_request_body.txt:1
+msgid "Dzień dobry,"
+msgstr "Hello,"
+
+#: templates/emails/inspection_overdue_body.html:3
+msgid ""
+"Poniższa maszyna ma <strong>przeterminowany przegląd</strong> i wymaga uwagi:"
+msgid_plural ""
+"Poniższe maszyny mają <strong>przeterminowany przegląd</strong> i wymagają "
+"uwagi:"
+msgstr[0] "The machine below has an <strong>overdue inspection</strong> and needs attention:"
+msgstr[1] "The machines below have an <strong>overdue inspection</strong> and need attention:"
+
+#: templates/emails/inspection_overdue_body.html:18
+#: templates/emails/inspection_overdue_body.txt:7
+#: templates/emails/inspection_upcoming_body.html:18
+#: templates/emails/inspection_upcoming_body.txt:7
+#: templates/emails/reservation_cancelled_body.html:9
+#: templates/emails/reservation_cancelled_body.txt:9
+#: templates/emails/reservation_confirmed_body.html:10
+#: templates/emails/reservation_confirmed_body.txt:10
+#: templates/emails/reservation_reminder_body.html:11
+#: templates/emails/reservation_reminder_body.txt:12
+msgid "Pozdrawiamy,"
+msgstr "Best regards,"
+
+#: templates/emails/inspection_overdue_body.txt:3
+msgid "Poniższa maszyna ma przeterminowany przegląd i wymaga uwagi:"
+msgid_plural "Poniższe maszyny mają przeterminowany przegląd i wymagają uwagi:"
+msgstr[0] "The machine below has an overdue inspection and needs attention:"
+msgstr[1] "The machines below have an overdue inspection and need attention:"
+
+#: templates/emails/inspection_overdue_body.txt:5
+#: templates/emails/inspection_upcoming_body.txt:5
+msgid "przegląd"
+msgstr "inspection"
+
+#: templates/emails/inspection_upcoming_body.html:3
+msgid ""
+"Poniższa maszyna ma <strong>zbliżający się przegląd</strong> — zaplanuj go z "
+"wyprzedzeniem:"
+msgid_plural ""
+"Poniższe maszyny mają <strong>zbliżający się przegląd</strong> — zaplanuj je "
+"z wyprzedzeniem:"
+msgstr[0] "The machine below has an <strong>upcoming inspection</strong> — plan it ahead:"
+msgstr[1] "The machines below have an <strong>upcoming inspection</strong> — plan them ahead:"
+
+#: templates/emails/inspection_upcoming_body.txt:3
+msgid ""
+"Poniższa maszyna ma zbliżający się przegląd — zaplanuj go z wyprzedzeniem:"
+msgid_plural ""
+"Poniższe maszyny mają zbliżający się przegląd — zaplanuj je z wyprzedzeniem:"
+msgstr[0] "The machine below has an upcoming inspection — plan it ahead:"
+msgstr[1] "The machines below have an upcoming inspection — plan them ahead:"
+
 #: templates/emails/reservation_cancelled_body.html:2
 #: templates/emails/reservation_cancelled_body.txt:1
 #: templates/emails/reservation_confirmed_body.html:2
 #: templates/emails/reservation_confirmed_body.txt:1
+#: templates/emails/reservation_reminder_body.html:2
+#: templates/emails/reservation_reminder_body.txt:1
 #, python-format
 msgid "Dzień dobry %(name)s,"
 msgstr "Hello %(name)s,"
@@ -6593,13 +6690,6 @@ msgstr "Hello %(name)s,"
 #, python-format
 msgid "rezerwacja maszyny <strong>%(uid)s</strong> została anulowana."
 msgstr "reservation for machine <strong>%(uid)s</strong> has been cancelled."
-
-#: templates/emails/reservation_cancelled_body.html:9
-#: templates/emails/reservation_cancelled_body.txt:9
-#: templates/emails/reservation_confirmed_body.html:10
-#: templates/emails/reservation_confirmed_body.txt:10
-msgid "Pozdrawiamy,"
-msgstr "Best regards,"
 
 #: templates/emails/reservation_cancelled_body.txt:3
 #, python-format
@@ -6616,10 +6706,19 @@ msgstr "reservation for machine <strong>%(uid)s</strong> has been confirmed."
 msgid "rezerwacja maszyny %(uid)s została potwierdzona."
 msgstr "reservation for machine %(uid)s has been confirmed."
 
-#: templates/emails/reservation_request_body.html:2
-#: templates/emails/reservation_request_body.txt:1
-msgid "Dzień dobry,"
-msgstr "Hello,"
+#: templates/emails/reservation_reminder_body.html:3
+msgid ""
+"przypominamy, że rezerwacja maszyny <strong>%(uid)s</strong> rozpoczyna się "
+"jutro."
+msgstr "the reservation for machine <strong>%(uid)s</strong> starts tomorrow."
+
+#: templates/emails/reservation_reminder_body.txt:3
+msgid "przypominamy, że rezerwacja maszyny %(uid)s rozpoczyna się jutro."
+msgstr "the reservation for machine %(uid)s starts tomorrow."
+
+#: templates/emails/reservation_reminder_body.txt:10
+msgid "Szczegóły rezerwacji"
+msgstr "Reservation details"
 
 #: templates/emails/reservation_request_body.html:3
 #, python-format
@@ -6884,9 +6983,6 @@ msgstr "Add construction site"
 #, python-format
 #~ msgid "Rezerwacja maszyny %(uid)s została potwierdzona."
 #~ msgstr "The reservation of machine %(uid)s has been confirmed."
-
-#~ msgid "Szczegóły rezerwacji:"
-#~ msgstr "Reservation details:"
 
 #, python-format
 #~ msgid "Potwierdzenie rezerwacji %(uid)s"
