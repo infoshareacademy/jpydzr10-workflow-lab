@@ -22,6 +22,7 @@ from django.shortcuts import render
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from django_ratelimit.decorators import ratelimit
 
 from core.search import global_search
@@ -405,7 +406,7 @@ def maps_view(request):
                 "inspection_date": (
                     machine.inspection_date.strftime("%d.%m.%Y")
                     if machine.inspection_date
-                    else "brak danych"
+                    else _("brak danych")
                 ),
                 "inspection_status": machine.inspection_status,
                 "location_address": location_address,

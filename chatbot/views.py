@@ -19,6 +19,7 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
@@ -132,8 +133,8 @@ def ask(request: HttpRequest) -> HttpResponse:
             {
                 "message": {
                     "role": Message.Role.ERROR,
-                    "role_label": "Błąd",
-                    "content": errors or "Niepoprawne pytanie.",
+                    "role_label": _("Błąd"),
+                    "content": errors or _("Niepoprawne pytanie."),
                     "tokens_used": 0,
                 }
             },
@@ -167,7 +168,7 @@ def ask(request: HttpRequest) -> HttpResponse:
             "messages": [
                 {
                     "role": Message.Role.USER,
-                    "role_label": "Ty",
+                    "role_label": _("Ty"),
                     "content": form.cleaned_data["question"],
                     "tokens_used": 0,
                 },
@@ -204,8 +205,8 @@ def ratelimited(request: HttpRequest, exception: Exception | None = None) -> Htt
             {
                 "message": {
                     "role": Message.Role.ERROR,
-                    "role_label": "Błąd",
-                    "content": (
+                    "role_label": _("Błąd"),
+                    "content": _(
                         "Osiągnąłeś dzienny limit 50 zapytań do asystenta. Spróbuj ponownie jutro."
                     ),
                     "tokens_used": 0,

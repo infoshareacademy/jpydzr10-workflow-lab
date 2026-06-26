@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 12:01+0200\n"
+"POT-Creation-Date: 2026-06-26 12:34+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -962,6 +962,7 @@ msgid "System"
 msgstr "System"
 
 #: chatbot/models.py:103 chatbot/templates/chatbot/_message.html:44
+#: chatbot/views.py:136 chatbot/views.py:208
 msgid "Błąd"
 msgstr "Error"
 
@@ -1269,7 +1270,7 @@ msgid "Wszystkie konwersacje"
 msgstr "All conversations"
 
 #: chatbot/templates/chatbot/_message.html:75
-#: chatbot/templates/chatbot/drawer.html:403
+#: chatbot/templates/chatbot/drawer.html:403 chatbot/views.py:171
 msgid "Ty"
 msgstr "You"
 
@@ -1892,6 +1893,15 @@ msgstr "You cannot anonymize your own profile."
 msgid "Maszyna %(uid)s jest juz wycofana z floty."
 msgstr "Machine %(uid)s has already been retired from the fleet."
 
+#: chatbot/views.py:137
+msgid "Niepoprawne pytanie."
+msgstr "Invalid question."
+
+#: chatbot/views.py:210
+msgid ""
+"Osiągnąłeś dzienny limit 50 zapytań do asystenta. Spróbuj ponownie jutro."
+msgstr "You have reached the daily limit of 50 assistant queries. Please try again tomorrow."
+
 #: core/templatetags/planer_tags.py:116
 msgid "Pn"
 msgstr "Mon"
@@ -1989,6 +1999,10 @@ msgstr "The document must be in PDF format."
 #: core/validators.py:185
 msgid "Plik nie jest prawidłowym PDF."
 msgstr "The file is not a valid PDF."
+
+#: core/views.py:409
+msgid "brak danych"
+msgstr "no data"
 
 #: machines/admin.py:35 reservations/admin.py:49
 msgid "Podstawowe"
@@ -4175,7 +4189,9 @@ msgstr "Replace machine"
 msgid ""
 "Wymiana = 3 akcje: (1) zamknij rezerwację dziś, (2) utwórz nową na "
 "zastępczej, (3) wyślij starą maszynę do serwisu."
-msgstr "Swap = 3 actions: (1) close today's reservation, (2) create a new one on the replacement, (3) send the old machine to service."
+msgstr ""
+"Swap = 3 actions: (1) close today's reservation, (2) create a new one on the "
+"replacement, (3) send the old machine to service."
 
 #: reservations/templates/reservations/_reservation_full_modal.html:272
 msgid "np. Awaria silnika, klient wymaga ciągłej pracy"
@@ -4698,7 +4714,7 @@ msgstr "Machine %(uid)s will return to the warehouse"
 #: reservations/templates/reservations/detail.html:607
 #: reservations/templates/reservations/detail.html:731
 #: reservations/templates/reservations/detail.html:864
-#: reservations/templates/reservations/detail.html:1031 templates/base.html:687
+#: reservations/templates/reservations/detail.html:1031 templates/base.html:690
 #: templates/core/maps.html:232 templates/home.html:270
 msgid "Zamknij"
 msgstr "Close"
