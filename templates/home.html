@@ -631,7 +631,10 @@
         <div class="space-y-3 animate-fade-in">
             <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">{% trans "Szybkie akcje" %}</h2>
 
-            {# Primary action — gradient brand card (one primary CTA per screen) #}
+            {# Primary action — gradient brand card (one primary CTA per screen).
+               Bramkowane uprawnieniem: montażysta (bez add_reservation) nie widzi
+               przycisku, który i tak dałby mu 403 po kliknięciu. #}
+            {% if perms.reservations.add_reservation %}
             <a href="{% url 'reservations:create' %}"
                class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                aria-label="{% trans 'Utwórz nową rezerwację' %}">
@@ -650,6 +653,7 @@
                     </svg>
                 </div>
             </a>
+            {% endif %}
 
             {# Secondary — timeline #}
             <a href="{% url 'reservations:timeline' %}"
@@ -668,7 +672,8 @@
                 </div>
             </a>
 
-            {# Secondary — add machine #}
+            {# Secondary — add machine (bramkowane: machines.add_machine) #}
+            {% if perms.machines.add_machine %}
             <a href="{% url 'machines:create' %}"
                class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                aria-label="{% trans 'Dodaj nową maszynę' %}">
@@ -681,8 +686,10 @@
                     <div class="font-medium text-sm text-slate-900 dark:text-slate-50">{% trans "Dodaj maszynę" %}</div>
                 </div>
             </a>
+            {% endif %}
 
-            {# Secondary — add construction site #}
+            {# Secondary — add construction site (bramkowane: add_constructionsite) #}
+            {% if perms.reservations.add_constructionsite %}
             <a href="{% url 'reservations:site_create' %}"
                class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                aria-label="{% trans 'Dodaj nową budowę' %}">
@@ -695,6 +702,7 @@
                     <div class="font-medium text-sm text-slate-900 dark:text-slate-50">{% trans "Dodaj budowę" %}</div>
                 </div>
             </a>
+            {% endif %}
         </div>
     </section>
 
