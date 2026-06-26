@@ -631,9 +631,7 @@
         <div class="space-y-3 animate-fade-in">
             <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">{% trans "Szybkie akcje" %}</h2>
 
-            {# Primary action — gradient brand card (one primary CTA per screen).
-               Bramkowane uprawnieniem: montażysta (bez add_reservation) nie widzi
-               przycisku, który i tak dałby mu 403 po kliknięciu. #}
+            {# Primary CTA — bramkowane add_reservation (montażysta bez prawa nie widzi). #}
             {% if perms.reservations.add_reservation %}
             <a href="{% url 'reservations:create' %}"
                class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
