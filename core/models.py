@@ -69,3 +69,27 @@ class AuditLogEntry(models.Model):
     def __str__(self) -> str:
         who = self.user.username if self.user else _("anonim")
         return f"{self.timestamp:%Y-%m-%d %H:%M} {who} {self.action}"
+
+
+class BounceLog(models.Model):
+    """Rejestr nieudanych wysyłek e-mail (odbicia / błędy SMTP).
+
+    Wysyłka maili transakcyjnych jest fail-soft: jeśli backend SMTP rzuci
+    wyjątek, nie chcemy wywrócić akcji biznesowej (potwierdzenie rezerwacji
+    już się stało). Zamiast tego zapisujemy zdarzenie tutaj — administrator
+    widzi w adminie, do kogo mail nie dotarł i dlaczego, i może zareagować
+    (poprawić adres, ponowić ręcznie).
+    """
+
+    recipient = models.EmailField(verbose_name=_("Adres odbiorcy"))
+    subject = models.CharField(max_length=255, blank=True, verbose_name=_("Temat"))
+    error = models.TextField(verbose_name=_("Błąd"))
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_("Czas"))
+
+    class Meta:
+        verbose_name = _("Nieudana wysyłka e-mail")
+        verbose_name_plural = _("Nieudane wysyłki e-mail")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.created_at:%Y-%m-%d %H:%M} {self.recipient}"

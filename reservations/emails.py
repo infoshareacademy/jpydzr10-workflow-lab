@@ -145,6 +145,7 @@ def send_reservation_reminder_email(reservation_pk: int) -> int:
     ``send_daily_reminders`` ustawia ``reminder_sent_at`` dopiero po skutecznej
     wysyłce, dzięki czemu nieudana próba zostanie ponowiona następnego dnia.
     """
+    from core.email_optout import EmailCategory, is_opted_out, unsubscribe_url_for
     from core.mailing import build_bilingual_email, send_bilingual_mail
 
     from .models import Reservation
@@ -163,6 +164,14 @@ def send_reservation_reminder_email(reservation_pk: int) -> int:
         logger.info("Reminder email: rezerwacja pk=%s bez adresata — pomijam.", reservation_pk)
         return 0
 
+    # Przypomnienie jest mailem nieobowiązkowym — respektuj rezygnację adresata.
+    if is_opted_out(creator, EmailCategory.REMINDERS):
+        logger.info(
+            "Reminder email: rezerwacja pk=%s — adresat wypisany z przypomnień, pomijam.",
+            reservation_pk,
+        )
+        return 0
+
     base = getattr(settings, "EMAIL_LINK_BASE_URL", "http://localhost:8002").rstrip("/")
     context = {
         "reservation": reservation,
@@ -171,7 +180,10 @@ def send_reservation_reminder_email(reservation_pk: int) -> int:
         "recipient_name": creator.get_full_name() or creator.get_username(),
         "detail_url": f"{base}/rezerwacje/{reservation.pk}/",
     }
-    html_body, text_body = build_bilingual_email("reservation_reminder", context)
+    unsub = unsubscribe_url_for(creator, EmailCategory.REMINDERS)
+    html_body, text_body = build_bilingual_email(
+        "reservation_reminder", context, unsubscribe_url=unsub
+    )
     uid = reservation.machine.uid
     subject = f"Przypomnienie o rezerwacji {uid} / Reservation {uid} reminder"
     sent = send_bilingual_mail(subject, html_body, text_body, [creator.email])

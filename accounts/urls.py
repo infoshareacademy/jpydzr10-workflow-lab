@@ -30,6 +30,9 @@ urlpatterns = [
     ),
     # Eksport własnych danych (RODO Art. 20) — JSON do pobrania.
     path("moje-dane/eksport/", views.data_export_view, name="data_export"),
+    # Preferencje e-mail / „wypisz się" — dostęp po podpisanym tokenie z maila
+    # (anonimowo) albo dla zalogowanego użytkownika (własne preferencje).
+    path("preferencje-email/", views.email_preferences_view, name="email_preferences"),
     # 2FA (TOTP) — setup urządzenia, weryfikacja sesji, pobranie kodów zapasowych.
     path("2fa/setup/", twofactor.two_factor_setup, name="2fa_setup"),
     path("2fa/verify/", twofactor.two_factor_verify, name="2fa_verify"),

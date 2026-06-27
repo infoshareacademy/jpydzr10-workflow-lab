@@ -15,21 +15,33 @@ from __future__ import annotations
 
 import logging
 
-from core.mailing import build_bilingual_email, fleet_admin_recipients, send_bilingual_mail
+from core.email_optout import EmailCategory, is_opted_out, preferences_url
+from core.mailing import build_bilingual_email, fleet_admin_users, send_bilingual_mail
 
 logger = logging.getLogger("machines")
 
 
 def _send_inspection_email(machines: list, *, basename: str, subject: str) -> int:
-    """Składa i wysyła jeden zbiorczy mail z listą maszyn do administratorów floty."""
+    """Składa i wysyła jeden zbiorczy mail z listą maszyn do administratorów floty.
+
+    Alerty przeglądowe są nieobowiązkowe — administratorzy wypisani z kategorii
+    ``inspections`` są pomijani. Link „wypisz się" prowadzi do strony preferencji
+    (bez tokenu, bo mail jest zbiorczy — adresat zarządza po zalogowaniu).
+    """
     if not machines:
         return 0
-    recipients = fleet_admin_recipients()
+    recipients = [
+        u.email
+        for u in fleet_admin_users()
+        if u.email and not is_opted_out(u, EmailCategory.INSPECTIONS)
+    ]
     if not recipients:
         logger.info("Inspection alert (%s): brak administratorów z e-mailem — pomijam.", basename)
         return 0
-    html_body, text_body = build_bilingual_email(basename, {"machines": machines})
-    sent = send_bilingual_mail(subject, html_body, text_body, recipients)
+    html_body, text_body = build_bilingual_email(
+        basename, {"machines": machines}, unsubscribe_url=preferences_url()
+    )
+    sent = send_bilingual_mail(subject, html_body, text_body, sorted(recipients))
     if sent:
         logger.info(
             "Inspection alert (%s) wysłany do %s administratorów (%s maszyn).",

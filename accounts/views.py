@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.views import (
@@ -168,6 +169,68 @@ def profile(request):
         request,
         "accounts/profile.html",
         {"form": form, "profile": employee_profile},
+    )
+
+
+def email_preferences_view(request):
+    """Zarządzanie zgodami na nieobowiązkowe maile + obsługa „wypisz się".
+
+    Tożsamość ustalana dwojako: (a) podpisany token z linku w mailu (działa bez
+    logowania, dotyczy konkretnego konta), albo (b) zalogowany użytkownik
+    zarządzający własnymi preferencjami. Bez żadnego z tych źródeł → przekierowanie
+    na logowanie. Token jest re-walidowany przy POST (nie ufamy ukrytemu polu).
+    """
+    from core.email_optout import CATEGORY_LABELS, parse_unsubscribe_token
+
+    user_model = get_user_model()
+    token = request.POST.get("token") or request.GET.get("token") or ""
+    focus_category = None
+    target_user = None
+
+    if token:
+        parsed = parse_unsubscribe_token(token)
+        if parsed is None:
+            return render(request, "accounts/email_preferences.html", {"invalid_token": True})
+        uid, focus_category = parsed
+        target_user = user_model.objects.filter(pk=uid).select_related("profile").first()
+
+    if target_user is None:
+        if request.user.is_authenticated:
+            target_user = request.user
+            token = ""  # zalogowany zarządza sobą — token zbędny
+        else:
+            return redirect(f"{reverse_lazy('accounts:login')}?next={request.path}")
+
+    profile = getattr(target_user, "profile", None)
+    if profile is None:
+        return render(request, "accounts/email_preferences.html", {"invalid_token": True})
+
+    categories = list(CATEGORY_LABELS.items())
+
+    if request.method == "POST":
+        # Subskrybowane = zaznaczony checkbox „cat_<klucz>"; brak = rezygnacja.
+        opted_out = [key for key, _label in categories if not request.POST.get(f"cat_{key}")]
+        profile.email_opt_outs = opted_out
+        profile.save(update_fields=["email_opt_outs"])
+        messages.success(request, _("Zapisano preferencje e-mail."))
+        # Po zapisie pokaż aktualny stan (zachowaj token w URL gdy anonimowo).
+        url = reverse_lazy("accounts:email_preferences")
+        return redirect(f"{url}?token={token}" if token else url)
+
+    opt_outs = set(profile.email_opt_outs or [])
+    rows = [
+        {"key": key, "label": label, "subscribed": key not in opt_outs} for key, label in categories
+    ]
+    return render(
+        request,
+        "accounts/email_preferences.html",
+        {
+            "rows": rows,
+            "token": token,
+            "focus_category": focus_category,
+            "focus_label": dict(CATEGORY_LABELS).get(focus_category),
+            "account_label": target_user.get_username(),
+        },
     )
 
 

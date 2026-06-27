@@ -75,6 +75,15 @@ class EmployeeProfile(TimestampedModel):
             "Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)."
         ),
     )
+    email_opt_outs = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_("Rezygnacje e-mail"),
+        help_text=_(
+            "Lista kategorii nieobowiązkowych maili, z których pracownik się wypisał "
+            "(np. przypomnienia, alerty przeglądowe). Maile transakcyjne wysyłane zawsze."
+        ),
+    )
     is_active_employee = models.BooleanField(
         default=True,
         verbose_name=_("Aktywny pracownik"),

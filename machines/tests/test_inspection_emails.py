@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.urls import reverse
 
 from accounts.models import EmployeeProfile
 from machines import emails
@@ -49,6 +50,26 @@ def test_inspection_email_skipped_without_admins(mailoutbox):
     m = _machine("OVD-2", inspection_date=date.today() - timedelta(days=1))
     assert emails.send_inspection_overdue_email([m]) == 0
     assert len(mailoutbox) == 0
+
+
+def test_inspection_email_skips_opted_out_admin(mailoutbox):
+    """Administrator wypisany z alertów przeglądowych nie dostaje maila."""
+    from core.email_optout import EmailCategory
+
+    admin = _admin()
+    admin.profile.email_opt_outs = [EmailCategory.INSPECTIONS]
+    admin.profile.save(update_fields=["email_opt_outs"])
+    m = _machine("OVD-3", inspection_date=date.today() - timedelta(days=1))
+    assert emails.send_inspection_overdue_email([m]) == 0
+    assert len(mailoutbox) == 0
+
+
+def test_inspection_email_has_unsubscribe_link(mailoutbox):
+    _admin()
+    m = _machine("OVD-4", inspection_date=date.today() - timedelta(days=1))
+    emails.send_inspection_overdue_email([m])
+    html = next(c for c, t in mailoutbox[0].alternatives if t == "text/html")
+    assert reverse("accounts:email_preferences") in html
 
 
 def test_command_sends_overdue_and_upcoming(mailoutbox):

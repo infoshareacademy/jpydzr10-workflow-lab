@@ -54,6 +54,22 @@ def test_reminder_email_is_bilingual_with_link(mailoutbox):
     assert "rozpoczyna się jutro" in html  # PL
     assert f"/rezerwacje/{res.pk}/" in html  # klikalny link do detalu
     assert "Jan Kowalski" in msg.body
+    # Mail nieobowiązkowy → działający link „wypisz się" (z tokenem) w stopce.
+    from django.urls import reverse
+
+    assert reverse("accounts:email_preferences") in html
+    assert "token=" in html
+
+
+def test_reminder_skipped_when_creator_opted_out(mailoutbox):
+    from core.email_optout import EmailCategory
+
+    creator = _creator()
+    creator.profile.email_opt_outs = [EmailCategory.REMINDERS]
+    creator.profile.save(update_fields=["email_opt_outs"])
+    res = _confirmed(_machine(), creator, start=date.today() + timedelta(days=1))
+    assert emails.send_reservation_reminder_email(res.pk) == 0
+    assert len(mailoutbox) == 0
 
 
 def test_reminder_skipped_when_creator_has_no_email(mailoutbox):

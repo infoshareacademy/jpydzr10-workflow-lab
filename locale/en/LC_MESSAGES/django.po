@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-27 11:28+0200\n"
+"POT-Creation-Date: 2026-06-27 11:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -192,47 +192,57 @@ msgid ""
 "Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)."
 msgstr "Default UI language after sign-in (emails are always bilingual PL+EN)."
 
-#: accounts/models.py:80
+#: accounts/models.py:81
+msgid "Rezygnacje e-mail"
+msgstr "Email opt-outs"
+
+#: accounts/models.py:83
+msgid ""
+"Lista kategorii nieobowiązkowych maili, z których pracownik się wypisał (np. "
+"przypomnienia, alerty przeglądowe). Maile transakcyjne wysyłane zawsze."
+msgstr "List of optional email categories the employee has unsubscribed from (e.g. reminders, inspection alerts). Transactional emails are always sent."
+
+#: accounts/models.py:89
 msgid "Aktywny pracownik"
 msgstr "Active employee"
 
-#: accounts/models.py:84
+#: accounts/models.py:93
 msgid "Zanonimizowany"
 msgstr "Anonymized"
 
-#: accounts/models.py:85
+#: accounts/models.py:94
 msgid "Czy profil został zanonimizowany (GDPR Art.17)."
 msgstr "Whether the profile has been anonymized (GDPR Art.17)."
 
-#: accounts/models.py:90
+#: accounts/models.py:99
 msgid "Data anonimizacji"
 msgstr "Anonymization date"
 
-#: accounts/models.py:91
+#: accounts/models.py:100
 msgid "Data anonimizacji (UTC)."
 msgstr "Anonymization date (UTC)."
 
-#: accounts/models.py:96
+#: accounts/models.py:105
 msgid "Data zakończenia zatrudnienia"
 msgstr "End of employment date"
 
-#: accounts/models.py:97
+#: accounts/models.py:106
 msgid "Data rozwiązania umowy/zakończenia zatrudnienia."
 msgstr "Date of contract termination / end of employment."
 
-#: accounts/models.py:102
+#: accounts/models.py:111
 msgid "Powód zakończenia"
 msgstr "Termination reason"
 
-#: accounts/models.py:103
+#: accounts/models.py:112
 msgid "Powód zakończenia (opcjonalnie)."
 msgstr "Termination reason (optional)."
 
-#: accounts/models.py:108 accounts/templates/accounts/profile.html:39
+#: accounts/models.py:117 accounts/templates/accounts/profile.html:39
 msgid "Profil pracownika"
 msgstr "Employee profile"
 
-#: accounts/models.py:109
+#: accounts/models.py:118
 msgid "Profile pracowników"
 msgstr "Employee profiles"
 
@@ -319,6 +329,39 @@ msgstr "Authentication or recovery code"
 #: accounts/templates/accounts/2fa_verify.html:36
 msgid "Zweryfikuj"
 msgstr "Verify"
+
+#: accounts/templates/accounts/email_preferences.html:4
+msgid "Preferencje e-mail — Planer Maszyn Budowlanych"
+msgstr "Email preferences — Construction Machine Planner"
+
+#: accounts/templates/accounts/email_preferences.html:19
+msgid "Link nieprawidłowy"
+msgstr "Invalid link"
+
+#: accounts/templates/accounts/email_preferences.html:22
+msgid ""
+"Ten link do zarządzania preferencjami e-mail jest nieprawidłowy lub "
+"uszkodzony. Zaloguj się, aby zmienić ustawienia w profilu."
+msgstr "This email preferences link is invalid or broken. Log in to change the settings in your profile."
+
+#: accounts/templates/accounts/email_preferences.html:27
+msgid "Preferencje e-mail"
+msgstr "Email preferences"
+
+#: accounts/templates/accounts/email_preferences.html:30
+msgid ""
+"Wybierz, które nieobowiązkowe powiadomienia chcesz otrzymywać. Maile "
+"transakcyjne (potwierdzenia, anulowania) wysyłamy zawsze."
+msgstr "Choose which optional notifications you want to receive. Transactional emails (confirmations, cancellations) are always sent."
+
+#: accounts/templates/accounts/email_preferences.html:37
+#, python-format
+msgid "Aby wypisać się z „%(cat)s\", odznacz tę pozycję poniżej i zapisz."
+msgstr "To unsubscribe from “%(cat)s”, untick that item below and save."
+
+#: accounts/templates/accounts/email_preferences.html:78
+msgid "Zapisz preferencje"
+msgstr "Save preferences"
 
 #: accounts/templates/accounts/employee_list.html:4
 msgid "Pracownicy — Planer Maszyn"
@@ -660,7 +703,9 @@ msgstr "Password reset"
 msgid ""
 "Podaj adres e-mail przypisany do konta. Wyślemy link do ustawienia nowego "
 "hasła."
-msgstr "Enter the email address linked to your account. We'll send a link to set a new password."
+msgstr ""
+"Enter the email address linked to your account. We'll send a link to set a "
+"new password."
 
 #: accounts/templates/accounts/password_reset.html:55
 msgid "Wyślij link resetujący"
@@ -720,7 +765,9 @@ msgstr "Invalid or expired link"
 msgid ""
 "Ten link do resetu hasła jest nieprawidłowy — mógł już zostać użyty lub "
 "wygasł. Poproś o nowy link."
-msgstr "This password reset link is invalid — it may have already been used or has expired. Request a new link."
+msgstr ""
+"This password reset link is invalid — it may have already been used or has "
+"expired. Request a new link."
 
 #: accounts/templates/accounts/password_reset_confirm.html:89
 msgid "Poproś o nowy link"
@@ -738,7 +785,9 @@ msgstr "Check your email"
 msgid ""
 "Jeśli konto o podanym adresie istnieje, wysłaliśmy wiadomość z linkiem do "
 "ustawienia nowego hasła. Sprawdź też folder spam."
-msgstr "If an account with that address exists, we've sent a message with a link to set a new password. Check your spam folder too."
+msgstr ""
+"If an account with that address exists, we've sent a message with a link to "
+"set a new password. Check your spam folder too."
 
 #: accounts/templates/accounts/profile.html:4
 msgid "Twój profil — Planer Maszyn Budowlanych"
@@ -944,25 +993,29 @@ msgstr "Invalid code. Please try again."
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:280
+#: accounts/views.py:215
+msgid "Zapisano preferencje e-mail."
+msgstr "Email preferences saved."
+
+#: accounts/views.py:343
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:378
+#: accounts/views.py:441
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:390
+#: accounts/views.py:453
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:409
+#: accounts/views.py:472
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:420
+#: accounts/views.py:483
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -1074,7 +1127,7 @@ msgid "System"
 msgstr "System"
 
 #: chatbot/models.py:103 chatbot/templates/chatbot/_message.html:44
-#: chatbot/views.py:136 chatbot/views.py:208
+#: chatbot/views.py:136 chatbot/views.py:208 core/models.py:86
 msgid "Błąd"
 msgstr "Error"
 
@@ -2020,7 +2073,15 @@ msgstr ""
 msgid "Eksportuj zaznaczone do CSV"
 msgstr "Export selected to CSV"
 
-#: core/models.py:47
+#: core/email_optout.py:28
+msgid "Przypomnienia o rezerwacjach"
+msgstr "Reservation reminders"
+
+#: core/email_optout.py:29
+msgid "Alerty o przeglądach maszyn"
+msgstr "Machine inspection alerts"
+
+#: core/models.py:47 core/models.py:87
 msgid "Czas"
 msgstr "Time"
 
@@ -2063,6 +2124,22 @@ msgstr "Audit log"
 #: core/models.py:70
 msgid "anonim"
 msgstr "anonymous"
+
+#: core/models.py:84
+msgid "Adres odbiorcy"
+msgstr "Recipient address"
+
+#: core/models.py:85
+msgid "Temat"
+msgstr "Subject"
+
+#: core/models.py:90
+msgid "Nieudana wysyłka e-mail"
+msgstr "Failed email delivery"
+
+#: core/models.py:91
+msgid "Nieudane wysyłki e-mail"
+msgstr "Failed email deliveries"
 
 #: core/templatetags/planer_tags.py:116
 msgid "Pn"
@@ -6946,7 +7023,9 @@ msgstr "Hello %(name)s,"
 msgid ""
 "otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w systemie Planer "
 "Maszyn Budowlanych. Aby ustawić nowe hasło, kliknij przycisk poniżej."
-msgstr "we received a request to reset the password for your account in the Construction Machine Planner. To set a new password, click the button below."
+msgstr ""
+"we received a request to reset the password for your account in the "
+"Construction Machine Planner. To set a new password, click the button below."
 
 #: templates/emails/password_reset_body.html:7
 #: templates/emails/password_reset_body.txt:7
@@ -6954,7 +7033,9 @@ msgstr "we received a request to reset the password for your account in the Cons
 msgid ""
 "Link jest ważny przez %(hours)s godzin. Jeśli to nie Ty prosiłeś o zmianę "
 "hasła, zignoruj tę wiadomość — Twoje hasło pozostanie bez zmian."
-msgstr "The link is valid for %(hours)s hours. If you didn't request a password change, ignore this message — your password will remain unchanged."
+msgstr ""
+"The link is valid for %(hours)s hours. If you didn't request a password "
+"change, ignore this message — your password will remain unchanged."
 
 #: templates/emails/password_reset_body.html:8
 msgid "Gdyby przycisk nie działał, skopiuj poniższy adres do przeglądarki:"
@@ -6964,7 +7045,9 @@ msgstr "If the button doesn't work, copy the address below into your browser:"
 msgid ""
 "otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w systemie Planer "
 "Maszyn Budowlanych. Aby ustawić nowe hasło, otwórz poniższy adres:"
-msgstr "we received a request to reset the password for your account in the Construction Machine Planner. To set a new password, open the address below:"
+msgstr ""
+"we received a request to reset the password for your account in the "
+"Construction Machine Planner. To set a new password, open the address below:"
 
 #: templates/emails/reservation_cancelled_body.html:3
 #, python-format

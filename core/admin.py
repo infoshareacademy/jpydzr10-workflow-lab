@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin
 
-from .models import AuditLogEntry
+from .models import AuditLogEntry, BounceLog
 
 
 class PlanerHistoryAdmin(ModelAdmin, SimpleHistoryAdmin):
@@ -101,3 +101,20 @@ class AuditLogEntryAdmin(ModelAdmin):
                 ]
             )
         return response
+
+
+@admin.register(BounceLog)
+class BounceLogAdmin(ModelAdmin):
+    """Read-only podgląd nieudanych wysyłek e-mail (odbicia / błędy SMTP)."""
+
+    list_display = ("created_at", "recipient", "subject")
+    list_filter = ("created_at",)
+    search_fields = ("recipient", "subject", "error")
+    date_hierarchy = "created_at"
+    ordering = ("-created_at",)
+
+    def has_add_permission(self, request) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return False
