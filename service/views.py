@@ -33,7 +33,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.text import slugify
@@ -69,7 +69,12 @@ from .reports import (
     generate_quarterly_report_xlsx,
 )
 from .selectors import filter_service_records
-from .services import close_service, create_service_record, update_service_record
+from .services import (
+    close_service,
+    create_service_record,
+    delete_service_record,
+    update_service_record,
+)
 
 logger = logging.getLogger("service")
 
@@ -243,10 +248,14 @@ class ServiceRecordDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
     raise_exception = True
 
     def form_valid(self, form):
-        pk = self.object.pk
-        response = super().form_valid(form)
+        # Usuwamy przez serwis (nie surowy DeleteView), żeby przeliczyć
+        # ``Machine.inspection_date`` z pozostałych przeglądów — inaczej maszyna
+        # trzymałaby datę przeglądu, którego już nie ma.
+        record = self.object
+        pk = record.pk
+        delete_service_record(record)
         messages.success(self.request, _("Wpis serwisowy #%(pk)s usunięty.") % {"pk": pk})
-        return response
+        return HttpResponseRedirect(self.get_success_url())
 
 
 # =============================================================================

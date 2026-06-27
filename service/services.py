@@ -32,6 +32,45 @@ from .models import INSPECTION_INTERVALS, ServiceRecord
 logger = logging.getLogger("service")
 
 
+def recompute_machine_inspection_date(machine) -> None:
+    """Przelicz ``Machine.inspection_date`` z POZOSTAŁYCH przeglądów maszyny.
+
+    Ustawia datę na największe ``next_inspection`` wśród rekordów ``przegląd_*``
+    danej maszyny, albo ``None`` jeśli żaden przegląd nie istnieje. Wołane po
+    usunięciu/edycji wpisu — inaczej maszyna trzymałaby ``inspection_date`` z
+    rekordu, którego już nie ma (fałszywe „przegląd aktualny"). ``create`` używa
+    monotonicznego bump'a, więc tam recompute nie jest potrzebny.
+    """
+    from django.db.models import Max
+
+    from machines.models import Machine
+
+    new_date = ServiceRecord.objects.filter(
+        machine=machine, record_type__in=INSPECTION_INTERVALS
+    ).aggregate(latest=Max("next_inspection"))["latest"]
+
+    locked = Machine.objects.select_for_update().get(pk=machine.pk)
+    if locked.inspection_date != new_date:
+        locked.inspection_date = new_date
+        locked.save(update_fields=["inspection_date", "updated_at"])
+
+
+def delete_service_record(record: ServiceRecord) -> None:
+    """Usuń wpis serwisowy i przelicz ``Machine.inspection_date``.
+
+    Twardy ``DeleteView`` usuwał wiersz bez przeliczenia — maszyna zostawała z
+    ``inspection_date`` wskazującą na nieistniejący już przegląd. Tu po usunięciu
+    rekomputujemy datę z pozostałych przeglądów (atomowo, pod lockiem maszyny).
+    """
+    machine_pk = record.machine_id
+    with transaction.atomic():
+        from machines.models import Machine
+
+        machine = Machine.objects.get(pk=machine_pk)
+        record.delete()
+        recompute_machine_inspection_date(machine)
+
+
 # =============================================================================
 # CREATE
 # =============================================================================
@@ -171,6 +210,10 @@ def update_service_record(record: ServiceRecord, **changes) -> ServiceRecord:
 
         locked.full_clean()
         locked.save()
+
+        # Edycja daty/typu mogła obniżyć next_inspection — przelicz datę maszyny
+        # z prawdziwego maksimum po wszystkich przeglądach (nie zostawiaj stałej).
+        recompute_machine_inspection_date(locked.machine)
 
         logger.info(
             "Wpis serwisowy %s zaktualizowany (maszyna=%s, typ=%s, koszt=%s)",
