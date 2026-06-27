@@ -19,7 +19,11 @@ from reservations.models import ConstructionSite, Reservation
 from service.factories import ServiceRecordFactory
 from service.models import ServiceRecord
 
-pytestmark = pytest.mark.django_db
+# ``transaction=True`` — te testy celowo wywołują IntegrityError (naruszenie
+# CHECK). Pod współbieżnym xdist savepoint-rollback w współdzielonej transakcji
+# potrafił zostawić „aborted transaction" przeciekający do kolejnego testu na
+# tym samym workerze. Realne transakcje (flush per test) izolują to pewnie.
+pytestmark = pytest.mark.django_db(transaction=True)
 
 
 def _rejects(model, pk, **bad):
