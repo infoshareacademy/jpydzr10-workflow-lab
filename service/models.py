@@ -128,6 +128,21 @@ class ServiceRecord(TimestampedModel):
             models.Index(fields=["machine", "-performed_date"]),
             models.Index(fields=["record_type", "performed_date"]),
         ]
+        constraints = [
+            # Obrona na poziomie bazy — typ wpisu musi być wartością ``RecordType``
+            # (zgodność z choices pilnuje test).
+            models.CheckConstraint(
+                condition=models.Q(
+                    record_type__in=[
+                        "przegląd_kwartalny",
+                        "przegląd_polroczny",
+                        "przegląd_roczny",
+                        "naprawa",
+                    ]
+                ),
+                name="servicerecord_type_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.machine.uid} {self.performed_date} {self.get_record_type_display()}"

@@ -96,7 +96,18 @@ class Command(BaseCommand):
                     if was_created:
                         sites_created += 1
 
+                # Walidacja statusu PRZED zapisem — import to surowe wejście (JSON),
+                # a ``create()`` omija ``full_clean``/choices. Bez tego nieprawidłowa
+                # wartość (np. „OCZEKUJACA", literówka) trafiłaby wprost do bazy.
                 status = row.get("status", "oczekująca")
+                if status not in Reservation.Status.values:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  pomijam {machine_uid}/{project_number}: nieprawidłowy status "
+                            f"{status!r} (dozwolone: {', '.join(Reservation.Status.values)})"
+                        )
+                    )
+                    continue
                 Reservation.objects.create(
                     machine=machine,
                     site=site,

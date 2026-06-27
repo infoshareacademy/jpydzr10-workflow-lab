@@ -178,6 +178,22 @@ class Machine(TimestampedModel):
         verbose_name = _("Maszyna")
         verbose_name_plural = _("Maszyny")
         ordering = ["uid"]
+        constraints = [
+            # Obrona na poziomie bazy — status musi być wartością ``Status``
+            # (zgodność z choices pilnuje test, bo Meta nie widzi nested Status).
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=[
+                        "W magazynie",
+                        "Na budowie",
+                        "Zarezerwowana",
+                        "W serwisie",
+                        "Wycofana",
+                    ]
+                ),
+                name="machine_status_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.uid} — {self.name}"

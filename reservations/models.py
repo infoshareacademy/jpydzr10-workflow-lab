@@ -111,6 +111,12 @@ class ConstructionSite(TimestampedModel):
         verbose_name = _("Budowa")
         verbose_name_plural = _("Budowy")
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=["aktywna", "zakończona", "anulowana"]),
+                name="constructionsite_status_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.project_number} — {self.name}"
@@ -369,6 +375,19 @@ class Reservation(TimestampedModel):
             models.Index(fields=["machine", "-start_date"]),
             # Hot path: dashboard widgets ("upcoming pending", "active today").
             models.Index(fields=["status", "start_date"]),
+        ]
+        constraints = [
+            # Obrona na poziomie bazy: status MUSI być jedną z wartości
+            # ``Status`` (Django ``choices`` waliduje tylko w ``full_clean``,
+            # które omijają zapisy ``update_fields`` i surowe importy). Wartości
+            # zahardcodowane bo Meta nie widzi zagnieżdżonej klasy Status —
+            # zgodność pilnuje test ``test_status_check_constraint``.
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["oczekująca", "potwierdzona", "zakończona", "anulowana"]
+                ),
+                name="reservation_status_valid",
+            ),
         ]
 
     def __str__(self) -> str:
