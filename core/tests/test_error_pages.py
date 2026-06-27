@@ -7,8 +7,10 @@ techniczny. Override DEBUG na potrzeby testu.
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import override_settings
+from django.template.loader import render_to_string
+from django.test import RequestFactory, override_settings
 from django.urls import reverse
+from django.views.defaults import server_error
 
 
 @pytest.mark.django_db
@@ -42,3 +44,21 @@ def test_403_uses_custom_template(client):
     assert response.status_code == 403
     body = response.content.decode("utf-8")
     assert "Brak uprawnień" in body
+
+
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["*"])
+def test_500_uses_custom_template():
+    """Handler 500 renderuje custom ``500.html`` z minimalnym kontekstem (bez wyjątku)."""
+    request = RequestFactory().get("/boom/")
+    response = server_error(request)
+    assert response.status_code == 500
+    body = response.content.decode("utf-8")
+    assert "Wystąpił błąd serwera" in body
+    assert "Planer Maszyn" in body
+
+
+def test_maintenance_template_renders_standalone():
+    """Strona przerwy technicznej (503) renderuje się samodzielnie (bez bazy/kontekstu)."""
+    html = render_to_string("maintenance.html")
+    assert "Przerwa techniczna" in html
+    assert "maintenance" in html.lower()

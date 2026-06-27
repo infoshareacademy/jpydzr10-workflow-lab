@@ -43,3 +43,12 @@ urlpatterns = [
 if settings.DEBUG:  # pragma: no cover — dev-only branch, test settings have DEBUG=False
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+
+# Custom error handlers — jawnie wskazane (mimo że to wartości domyślne Django),
+# żeby udokumentować, że projekt świadomie korzysta z własnych szablonów
+# ``templates/403.html`` / ``404.html`` / ``500.html`` (renderowanych przy
+# ``DEBUG=False``). ``templates/maintenance.html`` to osobna strona przerwy
+# technicznej (HTTP 503) serwowana przez warstwę wdrożeniową/proxy.
+handler403 = "django.views.defaults.permission_denied"
+handler404 = "django.views.defaults.page_not_found"
+handler500 = "django.views.defaults.server_error"
