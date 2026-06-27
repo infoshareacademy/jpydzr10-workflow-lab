@@ -4,7 +4,14 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -20,7 +27,12 @@ from django_ratelimit.decorators import ratelimit
 from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors
 
-from .forms import PlanerAuthenticationForm, ProfileForm, RegisterEmployeeForm
+from .forms import (
+    BilingualPasswordResetForm,
+    PlanerAuthenticationForm,
+    ProfileForm,
+    RegisterEmployeeForm,
+)
 from .models import EmployeeProfile
 from .services import anonymize_employee, register_employee, terminate_employee, update_profile
 
@@ -90,6 +102,47 @@ class PlanerLogoutView(LogoutView):
     """Widok wylogowania — przekierowuje na stronę główną."""
 
     next_page = reverse_lazy("home")
+
+
+# --- Reset hasła („zapomniałem hasła") — 4 kroki standardowego flow Django,
+#     z firmowymi szablonami i dwujęzycznym mailem (BilingualPasswordResetForm).
+#     Dostępne dla niezalogowanych (middleware 2FA nie dotyczy anonimowych).
+
+
+@method_decorator(
+    ratelimit(key="ip", rate="5/h", method="POST", block=True),
+    name="dispatch",
+)
+class PlanerPasswordResetView(PasswordResetView):
+    """Krok 1: formularz adresu e-mail → wysyłka linku resetującego.
+
+    Rate-limit 5 prób POST / godzinę per IP chroni przed nadużyciem wysyłki
+    maili (i przed próbą enumeracji kont). Sama klasa bazowa nie ujawnia, czy
+    adres istnieje — zawsze przekierowuje na stronę „wysłano".
+    """
+
+    template_name = "accounts/password_reset.html"
+    form_class = BilingualPasswordResetForm
+    success_url = reverse_lazy("accounts:password_reset_done")
+
+
+class PlanerPasswordResetDoneView(PasswordResetDoneView):
+    """Krok 2: potwierdzenie „jeśli konto istnieje, mail został wysłany"."""
+
+    template_name = "accounts/password_reset_done.html"
+
+
+class PlanerPasswordResetConfirmView(PasswordResetConfirmView):
+    """Krok 3: ustawienie nowego hasła (po kliknięciu linku z maila)."""
+
+    template_name = "accounts/password_reset_confirm.html"
+    success_url = reverse_lazy("accounts:password_reset_complete")
+
+
+class PlanerPasswordResetCompleteView(PasswordResetCompleteView):
+    """Krok 4: hasło zmienione — link do ponownego logowania."""
+
+    template_name = "accounts/password_reset_complete.html"
 
 
 @login_required

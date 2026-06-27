@@ -1,8 +1,10 @@
 """Formularze aplikacji accounts."""
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.forms import INPUT_CSS, SELECT_CSS
@@ -168,3 +170,57 @@ class PlanerAuthenticationForm(AuthenticationForm):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.fields["username"].widget.attrs.setdefault("placeholder", _("np. jan.kowalski"))
+
+
+class BilingualPasswordResetForm(PasswordResetForm):
+    """Formularz „zapomniałem hasła" wysyłający dwujęzyczny (PL+EN) mail.
+
+    ``PasswordResetForm`` Django renderuje pojedynczy, jednojęzyczny szablon
+    maila. Tutaj nadpisujemy :meth:`send_mail`, by skorzystać z firmowego,
+    brandowanego i dwujęzycznego mechanizmu (``core.mailing``) — spójnego z
+    pozostałymi mailami transakcyjnymi (potwierdzenie/anulowanie rezerwacji,
+    przypomnienia, alerty przeglądowe). Reszta logiki (token, ochrona przed
+    enumeracją kont — brak ujawnienia czy adres istnieje) pozostaje z bazowej
+    klasy.
+    """
+
+    email = forms.EmailField(
+        label=_("Adres e-mail"),
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "email",
+                "placeholder": "jan.kowalski@firma.pl",
+            }
+        ),
+    )
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        # Import lokalny — spójny ze wzorcem w ``reservations.emails`` (unika
+        # cyklicznych importów i kosztu na ścieżce, gdzie mail nie jest wysyłany).
+        from core.mailing import build_bilingual_email, send_bilingual_mail
+
+        base = getattr(settings, "EMAIL_LINK_BASE_URL", "http://localhost:8002").rstrip("/")
+        reset_path = reverse(
+            "accounts:password_reset_confirm",
+            kwargs={"uidb64": context["uid"], "token": context["token"]},
+        )
+        user = context["user"]
+        valid_hours = int(getattr(settings, "PASSWORD_RESET_TIMEOUT", 259200) // 3600)
+        mail_context = {
+            "recipient_name": user.get_full_name() or user.get_username(),
+            "reset_url": f"{base}{reset_path}",
+            "valid_hours": valid_hours,
+        }
+        html_body, text_body = build_bilingual_email("password_reset", mail_context)
+        subject = "Reset hasła / Password reset — Planer Maszyn Budowlanych"
+        send_bilingual_mail(subject, html_body, text_body, [to_email])

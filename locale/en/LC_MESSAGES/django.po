@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 22:22+0200\n"
+"POT-Creation-Date: 2026-06-27 11:28+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -60,65 +60,65 @@ msgstr "Anonymized %(count)s employees."
 msgid "Konta i profile pracowników"
 msgstr "Employee accounts and profiles"
 
-#: accounts/forms.py:37 accounts/forms.py:111 accounts/models.py:56
+#: accounts/forms.py:39 accounts/forms.py:113 accounts/models.py:56
 #: accounts/templates/accounts/profile.html:251
 msgid "Telefon"
 msgstr "Phone"
 
-#: accounts/forms.py:38 accounts/models.py:61
+#: accounts/forms.py:40 accounts/models.py:61
 #: accounts/templates/accounts/profile.html:268
 msgid "Identyfikator pracownika"
 msgstr "Employee ID"
 
-#: accounts/forms.py:39 accounts/models.py:67
+#: accounts/forms.py:41 accounts/models.py:67
 #: accounts/templates/accounts/profile.html:285
 #: accounts/templates/accounts/profile.html:439
 msgid "Motyw interfejsu"
 msgstr "Interface theme"
 
-#: accounts/forms.py:40 accounts/models.py:73
+#: accounts/forms.py:42 accounts/models.py:73
 #: accounts/templates/accounts/profile.html:302
 msgid "Preferowany język"
 msgstr "Preferred language"
 
-#: accounts/forms.py:71
+#: accounts/forms.py:73
 msgid "Login"
 msgstr "Login"
 
-#: accounts/forms.py:79
+#: accounts/forms.py:81
 msgid "Krótki identyfikator do logowania (bez spacji)."
 msgstr "Short identifier for logging in (no spaces)."
 
-#: accounts/forms.py:83
+#: accounts/forms.py:85
 msgid "Imię"
 msgstr "First name"
 
-#: accounts/forms.py:88
+#: accounts/forms.py:90
 msgid "Nazwisko"
 msgstr "Last name"
 
-#: accounts/forms.py:92 accounts/templates/accounts/profile.html:94
+#: accounts/forms.py:94 accounts/templates/accounts/profile.html:94
 msgid "Email"
 msgstr "Email"
 
-#: accounts/forms.py:104
+#: accounts/forms.py:106
 msgid "Funkcja w firmie"
 msgstr "Role in the company"
 
-#: accounts/forms.py:106
+#: accounts/forms.py:108
 msgid ""
 "Funkcja definiuje grupy RBAC i uprawnienia (Magazynierzy, Kierownicy itd.)."
 msgstr ""
 "The role defines RBAC groups and permissions (Warehouse keepers, Managers, "
 "etc.)."
 
-#: accounts/forms.py:122 accounts/templates/accounts/employee_register.html:232
+#: accounts/forms.py:124 accounts/templates/accounts/employee_register.html:232
 #: accounts/templates/accounts/login.html:113
 #: accounts/templates/accounts/profile.html:366
 msgid "Hasło"
 msgstr "Password"
 
-#: accounts/forms.py:130
+#: accounts/forms.py:132
 msgid ""
 "Min. 10 znaków. Hasło jest sprawdzane przez Have I Been Pwned — wycieki "
 "publicznych baz są odrzucane."
@@ -126,25 +126,29 @@ msgstr ""
 "Min. 10 characters. The password is checked against Have I Been Pwned — "
 "leaks from public databases are rejected."
 
-#: accounts/forms.py:136
+#: accounts/forms.py:138
 msgid "Potwierdź hasło"
 msgstr "Confirm password"
 
-#: accounts/forms.py:143
+#: accounts/forms.py:145
 msgid "Login jest wymagany."
 msgstr "Login is required."
 
-#: accounts/forms.py:145
+#: accounts/forms.py:147
 msgid "Użytkownik o takim loginie już istnieje."
 msgstr "A user with this login already exists."
 
-#: accounts/forms.py:156
+#: accounts/forms.py:158
 msgid "Hasła nie pasują do siebie."
 msgstr "The passwords do not match."
 
-#: accounts/forms.py:170
+#: accounts/forms.py:172
 msgid "np. jan.kowalski"
 msgstr "e.g. jan.kowalski"
+
+#: accounts/forms.py:188 accounts/templates/accounts/password_reset.html:38
+msgid "Adres e-mail"
+msgstr "Email address"
 
 #: accounts/models.py:26
 msgid "Magazynier"
@@ -518,7 +522,7 @@ msgstr "Show password"
 #: accounts/templates/accounts/profile.html:340
 #: chatbot/templates/chatbot/_confirmation_card.html:134
 #: machines/templates/machines/delete_confirm.html:33
-#: machines/templates/machines/detail.html:341
+#: machines/templates/machines/detail.html:340
 #: machines/templates/machines/form.html:430
 #: machines/templates/machines/import.html:50
 #: reservations/templates/reservations/_form_partial.html:253
@@ -633,8 +637,8 @@ msgid "Nazwa użytkownika"
 msgstr "Username"
 
 #: accounts/templates/accounts/login.html:118
-msgid "Skontaktuj się z administratorem żeby zresetować hasło"
-msgstr "Contact your administrator to reset your password"
+msgid "Zresetuj hasło przez e-mail"
+msgstr "Reset your password by email"
 
 #: accounts/templates/accounts/login.html:119
 msgid "Zapomniałeś hasła?"
@@ -643,6 +647,98 @@ msgstr "Forgot your password?"
 #: accounts/templates/accounts/login.html:185
 msgid "Brak konta? Skontaktuj się z administratorem systemu."
 msgstr "No account? Contact your system administrator."
+
+#: accounts/templates/accounts/password_reset.html:4
+msgid "Reset hasła — Planer Maszyn Budowlanych"
+msgstr "Password reset — Construction Machine Planner"
+
+#: accounts/templates/accounts/password_reset.html:18
+msgid "Reset hasła"
+msgstr "Password reset"
+
+#: accounts/templates/accounts/password_reset.html:21
+msgid ""
+"Podaj adres e-mail przypisany do konta. Wyślemy link do ustawienia nowego "
+"hasła."
+msgstr "Enter the email address linked to your account. We'll send a link to set a new password."
+
+#: accounts/templates/accounts/password_reset.html:55
+msgid "Wyślij link resetujący"
+msgstr "Send reset link"
+
+#: accounts/templates/accounts/password_reset.html:63
+#: accounts/templates/accounts/password_reset_done.html:37
+msgid "Wróć do logowania"
+msgstr "Back to login"
+
+#: accounts/templates/accounts/password_reset_complete.html:4
+msgid "Hasło zmienione — Planer Maszyn Budowlanych"
+msgstr "Password changed — Construction Machine Planner"
+
+#: accounts/templates/accounts/password_reset_complete.html:26
+msgid "Hasło zostało zmienione"
+msgstr "Your password has been changed"
+
+#: accounts/templates/accounts/password_reset_complete.html:29
+msgid "Możesz teraz zalogować się przy użyciu nowego hasła."
+msgstr "You can now log in using your new password."
+
+#: accounts/templates/accounts/password_reset_complete.html:38
+msgid "Przejdź do logowania"
+msgstr "Go to login"
+
+#: accounts/templates/accounts/password_reset_confirm.html:4
+msgid "Ustaw nowe hasło — Planer Maszyn Budowlanych"
+msgstr "Set a new password — Construction Machine Planner"
+
+#: accounts/templates/accounts/password_reset_confirm.html:19
+#: templates/emails/password_reset_body.html:5
+msgid "Ustaw nowe hasło"
+msgstr "Set a new password"
+
+#: accounts/templates/accounts/password_reset_confirm.html:22
+msgid "Wpisz nowe hasło dwukrotnie, aby potwierdzić poprawność."
+msgstr "Enter your new password twice to confirm it."
+
+#: accounts/templates/accounts/password_reset_confirm.html:39
+msgid "Nowe hasło"
+msgstr "New password"
+
+#: accounts/templates/accounts/password_reset_confirm.html:57
+msgid "Powtórz nowe hasło"
+msgstr "Repeat new password"
+
+#: accounts/templates/accounts/password_reset_confirm.html:74
+msgid "Zapisz nowe hasło"
+msgstr "Save new password"
+
+#: accounts/templates/accounts/password_reset_confirm.html:80
+msgid "Link nieprawidłowy lub wygasły"
+msgstr "Invalid or expired link"
+
+#: accounts/templates/accounts/password_reset_confirm.html:83
+msgid ""
+"Ten link do resetu hasła jest nieprawidłowy — mógł już zostać użyty lub "
+"wygasł. Poproś o nowy link."
+msgstr "This password reset link is invalid — it may have already been used or has expired. Request a new link."
+
+#: accounts/templates/accounts/password_reset_confirm.html:89
+msgid "Poproś o nowy link"
+msgstr "Request a new link"
+
+#: accounts/templates/accounts/password_reset_done.html:4
+msgid "Link wysłany — Planer Maszyn Budowlanych"
+msgstr "Link sent — Construction Machine Planner"
+
+#: accounts/templates/accounts/password_reset_done.html:27
+msgid "Sprawdź skrzynkę e-mail"
+msgstr "Check your email"
+
+#: accounts/templates/accounts/password_reset_done.html:30
+msgid ""
+"Jeśli konto o podanym adresie istnieje, wysłaliśmy wiadomość z linkiem do "
+"ustawienia nowego hasła. Sprawdź też folder spam."
+msgstr "If an account with that address exists, we've sent a message with a link to set a new password. Check your spam folder too."
 
 #: accounts/templates/accounts/profile.html:4
 msgid "Twój profil — Planer Maszyn Budowlanych"
@@ -848,25 +944,25 @@ msgstr "Invalid code. Please try again."
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:227
+#: accounts/views.py:280
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:325
+#: accounts/views.py:378
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:337
+#: accounts/views.py:390
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:356
+#: accounts/views.py:409
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:367
+#: accounts/views.py:420
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -2565,7 +2661,7 @@ msgid "Usuń maszynę %(uid)s"
 msgstr "Delete machine %(uid)s"
 
 #: machines/templates/machines/delete_confirm.html:12
-#: machines/templates/machines/detail.html:358
+#: machines/templates/machines/detail.html:357
 #: service/templates/service/form.html:282
 msgid "Usuń"
 msgstr "Delete"
@@ -2700,7 +2796,7 @@ msgid "Brak wpisów serwisowych dla tej maszyny."
 msgstr "No service entries for this machine."
 
 #: machines/templates/machines/detail.html:216
-#: machines/templates/machines/detail.html:365 templates/home.html:551
+#: machines/templates/machines/detail.html:364 templates/home.html:551
 msgid "Ostatnie rezerwacje"
 msgstr "Recent reservations"
 
@@ -2746,21 +2842,21 @@ msgstr "Send to service"
 msgid "Zakończ naprawę"
 msgstr "Finish repair"
 
-#: machines/templates/machines/detail.html:301
+#: machines/templates/machines/detail.html:300
 msgid "Zwrot do magazynu"
 msgstr "Return to warehouse"
 
-#: machines/templates/machines/detail.html:314
-#: machines/templates/machines/detail.html:345
+#: machines/templates/machines/detail.html:313
+#: machines/templates/machines/detail.html:344
 msgid "Wycofaj z floty"
 msgstr "Retire from fleet"
 
-#: machines/templates/machines/detail.html:325
+#: machines/templates/machines/detail.html:324
 #, python-format
 msgid "Wycofać maszynę %(uid)s z floty?"
 msgstr "Retire machine %(uid)s from the fleet?"
 
-#: machines/templates/machines/detail.html:328
+#: machines/templates/machines/detail.html:327
 msgid ""
 "Akcja nieodwracalna. Maszyna oznaczona jako wycofana (sprzedana / złomowana) "
 "nie będzie dostępna w nowych rezerwacjach."
@@ -2768,16 +2864,16 @@ msgstr ""
 "Irreversible action. A machine marked as retired (sold / scrapped) will not "
 "be available in new reservations."
 
-#: machines/templates/machines/detail.html:333
+#: machines/templates/machines/detail.html:332
 #: reservations/templates/reservations/_reservation_full_modal.html:271
 msgid "Powód (opcjonalnie)"
 msgstr "Reason (optional)"
 
-#: machines/templates/machines/detail.html:336
+#: machines/templates/machines/detail.html:335
 msgid "np. Sprzedana firmie XYZ, koszt naprawy > wartość rynkowa"
 msgstr "e.g. Sold to XYZ company, repair cost > market value"
 
-#: machines/templates/machines/detail.html:373 templates/home.html:627
+#: machines/templates/machines/detail.html:372 templates/home.html:627
 msgid "Brak rezerwacji."
 msgstr "No reservations."
 
@@ -3419,7 +3515,9 @@ msgstr "— select a replacement machine —"
 
 #: reservations/forms.py:378
 msgid "Maszyna, która przejmie rezerwację od dziś do końca okresu."
-msgstr "The machine that will take over the reservation from today to the end of the period."
+msgstr ""
+"The machine that will take over the reservation from today to the end of the "
+"period."
 
 #: reservations/forms.py:387
 msgid "np. Awaria silnika KOP-001, klient wymaga ciągłej pracy"
@@ -3858,10 +3956,13 @@ msgid "Opis awarii musi mieć co najmniej 5 znaków."
 msgstr "The failure description must be at least 5 characters long."
 
 #: reservations/services.py:876
+#, python-format
 msgid "Nie można zgłosić awarii dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr "Cannot report a breakdown for a closed reservation (status=%(status)s)."
+msgstr ""
+"Cannot report a breakdown for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:966
+#, python-format
 msgid "Nie można zmienić osoby dla zamkniętej rezerwacji (status=%(status)s)."
 msgstr "Cannot change the person for a closed reservation (status=%(status)s)."
 
@@ -3878,8 +3979,10 @@ msgstr ""
 "The machine cannot be replaced for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:1070
+#, python-format
 msgid "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
-msgstr "Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
+msgstr ""
+"Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
 
 #: reservations/services.py:1079
 #, python-format
@@ -3912,7 +4015,8 @@ msgstr ""
 
 #: reservations/services.py:1296
 msgid "Lista maszyn zawiera duplikaty — każda maszyna może być tylko raz."
-msgstr "The machine list contains duplicates — each machine may appear only once."
+msgstr ""
+"The machine list contains duplicates — each machine may appear only once."
 
 #: reservations/services.py:1317
 #, python-format
@@ -4819,7 +4923,7 @@ msgstr "Machine %(uid)s will return to the warehouse"
 #: reservations/templates/reservations/detail.html:609
 #: reservations/templates/reservations/detail.html:733
 #: reservations/templates/reservations/detail.html:866
-#: reservations/templates/reservations/detail.html:1035 templates/base.html:718
+#: reservations/templates/reservations/detail.html:1035 templates/base.html:741
 #: templates/core/maps.html:232 templates/home.html:270
 msgid "Zamknij"
 msgstr "Close"
@@ -6469,7 +6573,7 @@ msgstr ""
 msgid "Milestone 3"
 msgstr "Milestone 3"
 
-#: templates/base.html:580 templates/base.html:598
+#: templates/base.html:580 templates/base.html:600
 #: templates/core/privacy.html:4 templates/core/privacy.html:8
 msgid "Polityka prywatności"
 msgstr "Privacy policy"
@@ -6478,13 +6582,15 @@ msgstr "Privacy policy"
 msgid "Moje dane (eksport)"
 msgstr "My data (export)"
 
-#: templates/base.html:597
+#: templates/base.html:599
 msgid ""
 "Ta aplikacja używa wyłącznie niezbędnych ciasteczek (sesja, język, "
 "bezpieczeństwo) — bez śledzenia ani reklam."
-msgstr "This application uses only essential cookies (session, language, security) — no tracking or advertising."
+msgstr ""
+"This application uses only essential cookies (session, language, security) — "
+"no tracking or advertising."
 
-#: templates/base.html:603
+#: templates/base.html:605
 msgid "Rozumiem"
 msgstr "I understand"
 
@@ -6594,7 +6700,9 @@ msgstr "1. Data controller"
 msgid ""
 "Administratorem danych jest operator aplikacji Planer Maszyn Budowlanych. "
 "Kontakt w sprawach ochrony danych: info@werkstroomlab.be."
-msgstr "The data controller is the operator of the Construction Machine Planner application. Data protection contact: info@werkstroomlab.be."
+msgstr ""
+"The data controller is the operator of the Construction Machine Planner "
+"application. Data protection contact: info@werkstroomlab.be."
 
 #: templates/core/privacy.html:14
 msgid "2. Jakie dane przetwarzamy"
@@ -6606,7 +6714,11 @@ msgid ""
 "telefonu, funkcja), dane rezerwacji i serwisu maszyn oraz techniczne "
 "dzienniki zdarzeń (adres IP, czas i rodzaj akcji) niezbędne do "
 "bezpieczeństwa i rozliczalności."
-msgstr "We process employee account data (first name, last name, email address, phone number, role), machine reservation and service data, and technical event logs (IP address, time and type of action) necessary for security and accountability."
+msgstr ""
+"We process employee account data (first name, last name, email address, "
+"phone number, role), machine reservation and service data, and technical "
+"event logs (IP address, time and type of action) necessary for security and "
+"accountability."
 
 #: templates/core/privacy.html:17
 msgid "3. Cele i podstawy prawne"
@@ -6618,7 +6730,10 @@ msgid ""
 "(wykonanie umowy), zapewnienia bezpieczeństwa systemu (prawnie uzasadniony "
 "interes) oraz spełnienia obowiązków prawnych. Nie wykorzystujemy danych do "
 "profilowania ani reklamy."
-msgstr "We process data to provide the machine-planning service (performance of a contract), to ensure system security (legitimate interest) and to comply with legal obligations. We do not use data for profiling or advertising."
+msgstr ""
+"We process data to provide the machine-planning service (performance of a "
+"contract), to ensure system security (legitimate interest) and to comply "
+"with legal obligations. We do not use data for profiling or advertising."
 
 #: templates/core/privacy.html:20
 msgid "4. Ciasteczka"
@@ -6629,7 +6744,9 @@ msgid ""
 "Używamy wyłącznie niezbędnych ciasteczek: sesji (logowanie), preferencji "
 "języka oraz ochrony przed atakami (CSRF). Nie stosujemy ciasteczek "
 "śledzących ani analitycznych."
-msgstr "We use only essential cookies: session (sign-in), language preference and attack protection (CSRF). We do not use tracking or analytics cookies."
+msgstr ""
+"We use only essential cookies: session (sign-in), language preference and "
+"attack protection (CSRF). We do not use tracking or analytics cookies."
 
 #: templates/core/privacy.html:23
 msgid "5. Okres przechowywania"
@@ -6640,7 +6757,10 @@ msgid ""
 "Dane konta przechowujemy przez czas zatrudnienia i okres wymagany "
 "przepisami. Wpisy dziennika zdarzeń są usuwane po 90 dniach. Po zakończeniu "
 "zatrudnienia dane mogą zostać zanonimizowane."
-msgstr "We keep account data for the duration of employment and the period required by law. Event-log entries are deleted after 90 days. After employment ends, data may be anonymised."
+msgstr ""
+"We keep account data for the duration of employment and the period required "
+"by law. Event-log entries are deleted after 90 days. After employment ends, "
+"data may be anonymised."
 
 #: templates/core/privacy.html:26
 msgid "6. Twoje prawa"
@@ -6652,7 +6772,11 @@ msgid ""
 "zapomnianym), ograniczenia przetwarzania oraz przenoszenia danych. "
 "Zalogowany użytkownik może pobrać kopię swoich danych w formacie JSON ze "
 "stopki aplikacji („Moje dane (eksport)\")."
-msgstr "You have the right to access, rectify, erase (right to be forgotten), restrict processing of and port your data. A signed-in user can download a copy of their data in JSON format from the application footer (\"My data (export)\")."
+msgstr ""
+"You have the right to access, rectify, erase (right to be forgotten), "
+"restrict processing of and port your data. A signed-in user can download a "
+"copy of their data in JSON format from the application footer (\"My data "
+"(export)\")."
 
 #: templates/core/privacy.html:29
 msgid "7. Eksport i usunięcie danych"
@@ -6664,7 +6788,11 @@ msgid ""
 "(anonimizację) danych pracownika przeprowadza administrator na żądanie — "
 "operacja jest nieodwracalna i obejmuje także powiązane dzienniki zdarzeń i "
 "historię czatu."
-msgstr "Data export is available self-service after signing in. Erasure (anonymisation) of an employee’s data is performed by an administrator on request — the operation is irreversible and also covers related event logs and chat history."
+msgstr ""
+"Data export is available self-service after signing in. Erasure "
+"(anonymisation) of an employee’s data is performed by an administrator on "
+"request — the operation is irreversible and also covers related event logs "
+"and chat history."
 
 #: templates/core/privacy.html:32
 msgid "8. Kontakt"
@@ -6675,7 +6803,10 @@ msgid ""
 "W sprawach dotyczących ochrony danych skontaktuj się z administratorem: "
 "info@werkstroomlab.be. Masz również prawo wniesienia skargi do organu "
 "nadzorczego."
-msgstr "For data protection matters, contact the administrator: info@werkstroomlab.be. You also have the right to lodge a complaint with a supervisory authority."
+msgstr ""
+"For data protection matters, contact the administrator: "
+"info@werkstroomlab.be. You also have the right to lodge a complaint with a "
+"supervisory authority."
 
 #: templates/core/search.html:4
 #, python-format
@@ -6755,6 +6886,8 @@ msgstr[1] ""
 #: templates/emails/inspection_overdue_body.txt:7
 #: templates/emails/inspection_upcoming_body.html:18
 #: templates/emails/inspection_upcoming_body.txt:7
+#: templates/emails/password_reset_body.html:10
+#: templates/emails/password_reset_body.txt:9
 #: templates/emails/reservation_cancelled_body.html:9
 #: templates/emails/reservation_cancelled_body.txt:9
 #: templates/emails/reservation_confirmed_body.html:10
@@ -6797,6 +6930,8 @@ msgid_plural ""
 msgstr[0] "The machine below has an upcoming inspection — plan it ahead:"
 msgstr[1] "The machines below have an upcoming inspection — plan them ahead:"
 
+#: templates/emails/password_reset_body.html:2
+#: templates/emails/password_reset_body.txt:1
 #: templates/emails/reservation_cancelled_body.html:2
 #: templates/emails/reservation_cancelled_body.txt:1
 #: templates/emails/reservation_confirmed_body.html:2
@@ -6806,6 +6941,30 @@ msgstr[1] "The machines below have an upcoming inspection — plan them ahead:"
 #, python-format
 msgid "Dzień dobry %(name)s,"
 msgstr "Hello %(name)s,"
+
+#: templates/emails/password_reset_body.html:3
+msgid ""
+"otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w systemie Planer "
+"Maszyn Budowlanych. Aby ustawić nowe hasło, kliknij przycisk poniżej."
+msgstr "we received a request to reset the password for your account in the Construction Machine Planner. To set a new password, click the button below."
+
+#: templates/emails/password_reset_body.html:7
+#: templates/emails/password_reset_body.txt:7
+#, python-format
+msgid ""
+"Link jest ważny przez %(hours)s godzin. Jeśli to nie Ty prosiłeś o zmianę "
+"hasła, zignoruj tę wiadomość — Twoje hasło pozostanie bez zmian."
+msgstr "The link is valid for %(hours)s hours. If you didn't request a password change, ignore this message — your password will remain unchanged."
+
+#: templates/emails/password_reset_body.html:8
+msgid "Gdyby przycisk nie działał, skopiuj poniższy adres do przeglądarki:"
+msgstr "If the button doesn't work, copy the address below into your browser:"
+
+#: templates/emails/password_reset_body.txt:3
+msgid ""
+"otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w systemie Planer "
+"Maszyn Budowlanych. Aby ustawić nowe hasło, otwórz poniższy adres:"
+msgstr "we received a request to reset the password for your account in the Construction Machine Planner. To set a new password, open the address below:"
 
 #: templates/emails/reservation_cancelled_body.html:3
 #, python-format
@@ -7096,6 +7255,9 @@ msgstr "Add a new machine"
 #: templates/home.html:708
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#~ msgid "Skontaktuj się z administratorem żeby zresetować hasło"
+#~ msgstr "Contact your administrator to reset your password"
 
 #, python-format
 #~ msgid "Rezerwacja maszyny <strong>%(uid)s</strong> została potwierdzona."

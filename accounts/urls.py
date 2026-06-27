@@ -10,6 +10,24 @@ urlpatterns = [
     path("login/", views.PlanerLoginView.as_view(), name="login"),
     path("logout/", views.PlanerLogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    # Reset hasła („zapomniałem hasła") — 4 kroki standardowego flow Django,
+    # z firmowymi szablonami i dwujęzycznym mailem.
+    path("reset-hasla/", views.PlanerPasswordResetView.as_view(), name="password_reset"),
+    path(
+        "reset-hasla/wyslano/",
+        views.PlanerPasswordResetDoneView.as_view(),
+        name="password_reset_done",
+    ),
+    path(
+        "reset-hasla/<uidb64>/<token>/",
+        views.PlanerPasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "reset-hasla/zakonczono/",
+        views.PlanerPasswordResetCompleteView.as_view(),
+        name="password_reset_complete",
+    ),
     # Eksport własnych danych (RODO Art. 20) — JSON do pobrania.
     path("moje-dane/eksport/", views.data_export_view, name="data_export"),
     # 2FA (TOTP) — setup urządzenia, weryfikacja sesji, pobranie kodów zapasowych.
