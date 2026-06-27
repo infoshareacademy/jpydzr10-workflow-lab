@@ -284,8 +284,9 @@ class Reservation(TimestampedModel):
         db_index=True,
         verbose_name=_("Faktyczna data zwrotu"),
         help_text=_(
-            "Wcześniejszy zwrot — jeśli ustawione, używamy do konfliktów "
-            "zamiast planowanej daty końca."
+            "Data faktycznego (wcześniejszego) zwrotu maszyny — pole ewidencyjne. "
+            "Maszynę zwalnia samo zakończenie rezerwacji (status „Zakończona” jest "
+            "pomijany przy wykrywaniu konfliktów), nie ta data."
         ),
     )
 

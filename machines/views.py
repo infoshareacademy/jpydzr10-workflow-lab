@@ -25,7 +25,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -254,7 +254,21 @@ class MachineDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
 
     def form_valid(self, form):
         uid = self.object.uid
-        response = super().form_valid(form)
+        # FK rezerwacji/serwisu są na PROTECT (brak cichego kasowania danych
+        # biznesowych) — bez tego guarda DeleteView rzuciłby ProtectedError i
+        # zwrócił 500. Zamiast tego pokazujemy przyjazną odmowę.
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                _(
+                    "Nie można usunąć maszyny %(uid)s — ma powiązane rezerwacje "
+                    "lub wpisy serwisowe. Najpierw usuń lub przenieś te powiązania."
+                )
+                % {"uid": uid},
+            )
+            return redirect("machines:detail", uid=uid)
         messages.success(self.request, _("Maszyna %(uid)s została usunięta.") % {"uid": uid})
         return response
 

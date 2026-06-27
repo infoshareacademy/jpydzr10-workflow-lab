@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -799,11 +800,14 @@ def update_site(site: ConstructionSite, **fields) -> ConstructionSite:
 
 @transaction.atomic
 def delete_site(site: ConstructionSite) -> None:
-    """Delete ``site`` after refusing if it still has open reservations.
+    """Delete ``site`` after refusing if it still has reservations.
 
-    Closed (``anulowana``/``zakończona``) reservations are fine — they will
-    be orphaned via ``on_delete=PROTECT`` only if they are still ``aktywne``.
-    Sebastian explicitly does NOT want a cascade here.
+    ``Reservation.site`` jest na ``on_delete=PROTECT`` — Sebastian nie chce
+    kaskady. Najpierw jawnie odmawiamy gdy są AKTYWNE rezerwacje (czytelny
+    komunikat z liczbą). Ale budowa z wyłącznie ZAMKNIĘTYMI rezerwacjami też
+    nie da się usunąć (PROTECT blokuje, nie „orphanuje") — bez guarda
+    ``site.delete()`` rzuciłby ``ProtectedError`` → 500. Łapiemy go i zamieniamy
+    na ``ValidationError`` z przyjaznym komunikatem (widok już go obsługuje).
     """
     if site.has_active_reservations:
         raise ValidationError(
@@ -814,7 +818,16 @@ def delete_site(site: ConstructionSite) -> None:
             }
         )
     project_number = site.project_number
-    site.delete()
+    try:
+        site.delete()
+    except ProtectedError as exc:
+        raise ValidationError(
+            _(
+                "Nie można usunąć budowy %(project_number)s — ma powiązane "
+                "rezerwacje (także zakończone lub anulowane)."
+            )
+            % {"project_number": project_number}
+        ) from exc
     logger.info("Budowa %s usunięta", project_number)
 
 
