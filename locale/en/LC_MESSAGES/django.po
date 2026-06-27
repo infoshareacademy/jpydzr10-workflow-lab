@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-27 11:59+0200\n"
+"POT-Creation-Date: 2026-06-27 12:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,7 +72,7 @@ msgstr "Employee ID"
 
 #: accounts/forms.py:41 accounts/models.py:67
 #: accounts/templates/accounts/profile.html:285
-#: accounts/templates/accounts/profile.html:439
+#: accounts/templates/accounts/profile.html:493
 msgid "Motyw interfejsu"
 msgstr "Interface theme"
 
@@ -162,24 +162,24 @@ msgstr "Fitter"
 msgid "Kierownik"
 msgstr "Manager"
 
-#: accounts/models.py:29 templates/base.html:139
+#: accounts/models.py:29 templates/base.html:138
 msgid "Administrator"
 msgstr "Administrator"
 
-#: accounts/models.py:34 accounts/templates/accounts/profile.html:467
+#: accounts/models.py:34 accounts/templates/accounts/profile.html:521
 msgid "Automatyczny"
 msgstr "Automatic"
 
-#: accounts/models.py:35 accounts/templates/accounts/profile.html:498
+#: accounts/models.py:35 accounts/templates/accounts/profile.html:552
 msgid "Jasny"
 msgstr "Light"
 
-#: accounts/models.py:36 accounts/templates/accounts/profile.html:528
+#: accounts/models.py:36 accounts/templates/accounts/profile.html:582
 msgid "Ciemny"
 msgstr "Dark"
 
 #: accounts/models.py:42 chatbot/models.py:34 chatbot/models.py:100
-#: core/models.py:45 templates/base.html:139
+#: core/models.py:45 templates/base.html:138
 msgid "Użytkownik"
 msgstr "User"
 
@@ -200,7 +200,9 @@ msgstr "Email opt-outs"
 msgid ""
 "Lista kategorii nieobowiązkowych maili, z których pracownik się wypisał (np. "
 "przypomnienia, alerty przeglądowe). Maile transakcyjne wysyłane zawsze."
-msgstr "List of optional email categories the employee has unsubscribed from (e.g. reminders, inspection alerts). Transactional emails are always sent."
+msgstr ""
+"List of optional email categories the employee has unsubscribed from (e.g. "
+"reminders, inspection alerts). Transactional emails are always sent."
 
 #: accounts/models.py:89
 msgid "Aktywny pracownik"
@@ -342,7 +344,9 @@ msgstr "Invalid link"
 msgid ""
 "Ten link do zarządzania preferencjami e-mail jest nieprawidłowy lub "
 "uszkodzony. Zaloguj się, aby zmienić ustawienia w profilu."
-msgstr "This email preferences link is invalid or broken. Log in to change the settings in your profile."
+msgstr ""
+"This email preferences link is invalid or broken. Log in to change the "
+"settings in your profile."
 
 #: accounts/templates/accounts/email_preferences.html:27
 msgid "Preferencje e-mail"
@@ -352,7 +356,9 @@ msgstr "Email preferences"
 msgid ""
 "Wybierz, które nieobowiązkowe powiadomienia chcesz otrzymywać. Maile "
 "transakcyjne (potwierdzenia, anulowania) wysyłamy zawsze."
-msgstr "Choose which optional notifications you want to receive. Transactional emails (confirmations, cancellations) are always sent."
+msgstr ""
+"Choose which optional notifications you want to receive. Transactional "
+"emails (confirmations, cancellations) are always sent."
 
 #: accounts/templates/accounts/email_preferences.html:37
 #, python-format
@@ -367,7 +373,7 @@ msgstr "Save preferences"
 msgid "Pracownicy — Planer Maszyn"
 msgstr "Employees — Machine Planner"
 
-#: accounts/templates/accounts/employee_list.html:20 templates/base.html:281
+#: accounts/templates/accounts/employee_list.html:20 templates/base.html:280
 msgid "Pracownicy"
 msgstr "Employees"
 
@@ -667,7 +673,8 @@ msgid "Planer Maszyn"
 msgstr "Machine Planner"
 
 #: accounts/templates/accounts/login.html:56
-#: accounts/templates/accounts/login.html:178 templates/base.html:316
+#: accounts/templates/accounts/login.html:178 templates/403.html:48
+#: templates/base.html:315
 msgid "Zaloguj się"
 msgstr "Log in"
 
@@ -812,7 +819,7 @@ msgid "ID pracownika"
 msgstr "Employee ID"
 
 #: accounts/templates/accounts/profile.html:103
-#: accounts/templates/accounts/profile.html:564
+#: accounts/templates/accounts/profile.html:618
 msgid "Ostatnie logowanie"
 msgstr "Last login"
 
@@ -890,27 +897,43 @@ msgstr "Changing the password requires contacting the system administrator."
 msgid "Zmień hasło"
 msgstr "Change password"
 
-#: accounts/templates/accounts/profile.html:398
+#: accounts/templates/accounts/profile.html:408
 msgid "Uwierzytelnianie dwuskładnikowe (2FA)"
 msgstr "Two-factor authentication (2FA)"
 
-#: accounts/templates/accounts/profile.html:400
-msgid "Wkrótce"
-msgstr "Coming soon"
+#: accounts/templates/accounts/profile.html:412
+msgid "Aktywne"
+msgstr "Active"
 
-#: accounts/templates/accounts/profile.html:404
+#: accounts/templates/accounts/profile.html:416
+msgid "Nieaktywne"
+msgstr "Inactive"
+
+#: accounts/templates/accounts/profile.html:422
 msgid ""
-"Dodatkowa warstwa zabezpieczeń przez kod TOTP z aplikacji autentykacyjnej. "
-"Planowane w Milestone 3."
-msgstr ""
-"An extra layer of security through a TOTP code from an authenticator app. "
-"Planned for Milestone 3."
+"Twoje konto jest chronione kodem TOTP z aplikacji autentykacyjnej. Możesz "
+"wygenerować nowy zestaw 10 kodów zapasowych (poprzednie przestaną działać)."
+msgstr "Your account is protected by a TOTP code from an authenticator app. You can generate a new set of 10 recovery codes (the previous ones will stop working)."
 
-#: accounts/templates/accounts/profile.html:419
+#: accounts/templates/accounts/profile.html:439
+msgid "Wygeneruj nowe kody zapasowe"
+msgstr "Generate new recovery codes"
+
+#: accounts/templates/accounts/profile.html:444
+msgid ""
+"Dodatkowa warstwa zabezpieczeń przez kod TOTP z aplikacji autentykacyjnej "
+"(np. Google Authenticator). Zalecane dla wszystkich kont pracowniczych."
+msgstr "An extra layer of security through a TOTP code from an authenticator app (e.g. Google Authenticator). Recommended for all staff accounts."
+
+#: accounts/templates/accounts/profile.html:453
+msgid "Skonfiguruj 2FA"
+msgstr "Set up 2FA"
+
+#: accounts/templates/accounts/profile.html:473
 msgid "Aktualna sesja"
 msgstr "Current session"
 
-#: accounts/templates/accounts/profile.html:421
+#: accounts/templates/accounts/profile.html:475
 #, python-format
 msgid ""
 "Zalogowany jako <span class=\"font-medium text-slate-700 dark:text-"
@@ -921,7 +944,7 @@ msgstr ""
 "slate-300\">%(username)s</span>. Log out via the menu in the left sidebar "
 "when you finish working."
 
-#: accounts/templates/accounts/profile.html:442
+#: accounts/templates/accounts/profile.html:496
 msgid ""
 "Wybierz motyw kolorystyczny. „Automatyczny\" dostosowuje się do ustawień "
 "systemowych Twojego urządzenia. Aby zapisać preferencję, użyj „Zapisz "
@@ -930,23 +953,23 @@ msgstr ""
 "Choose a color theme. „Automatic\" adapts to your device's system settings. "
 "To save your preference, use „Save changes\" in the „Profile\" tab."
 
-#: accounts/templates/accounts/profile.html:447
+#: accounts/templates/accounts/profile.html:501
 msgid "Wybór motywu interfejsu"
 msgstr "Interface theme selection"
 
-#: accounts/templates/accounts/profile.html:468
+#: accounts/templates/accounts/profile.html:522
 msgid "Wg systemu"
 msgstr "By system"
 
-#: accounts/templates/accounts/profile.html:499
+#: accounts/templates/accounts/profile.html:553
 msgid "Białe tło"
 msgstr "White background"
 
-#: accounts/templates/accounts/profile.html:529
+#: accounts/templates/accounts/profile.html:583
 msgid "Niskie światło"
 msgstr "Low light"
 
-#: accounts/templates/accounts/profile.html:541
+#: accounts/templates/accounts/profile.html:595
 #, python-format
 msgid ""
 "Aktualne ustawienie: <span class=\"font-medium text-slate-700 dark:text-"
@@ -957,23 +980,23 @@ msgstr ""
 "slate-300\">%(theme)s</span>. To change it, use the selector on the "
 "„Profile\" tab and click „Save changes\"."
 
-#: accounts/templates/accounts/profile.html:555
+#: accounts/templates/accounts/profile.html:609
 msgid "Ostatnia aktywność konta"
 msgstr "Last account activity"
 
-#: accounts/templates/accounts/profile.html:569
+#: accounts/templates/accounts/profile.html:623
 msgid "Pierwsze logowanie — brak historii"
 msgstr "First login — no history"
 
-#: accounts/templates/accounts/profile.html:582
+#: accounts/templates/accounts/profile.html:636
 msgid "Konto utworzone"
 msgstr "Account created"
 
-#: accounts/templates/accounts/profile.html:596
+#: accounts/templates/accounts/profile.html:650
 msgid "Pełna historia logowań"
 msgstr "Full login history"
 
-#: accounts/templates/accounts/profile.html:598
+#: accounts/templates/accounts/profile.html:652
 msgid ""
 "Szczegółowa lista prób logowania (sukces/błąd, IP, user-agent) jest dostępna "
 "dla administratora w panelu admina (Django Axes)."
@@ -981,41 +1004,41 @@ msgstr ""
 "A detailed list of login attempts (success/failure, IP, user-agent) is "
 "available to the administrator in the admin panel (Django Axes)."
 
-#: accounts/twofactor.py:35
+#: accounts/twofactor.py:36
 msgid "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie."
 msgstr "Too many attempts. Wait a moment and try again."
 
-#: accounts/twofactor.py:87
+#: accounts/twofactor.py:88
 msgid "Nieprawidłowy kod. Spróbuj ponownie."
 msgstr "Invalid code. Please try again."
 
-#: accounts/twofactor.py:123
+#: accounts/twofactor.py:124
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:215
+#: accounts/views.py:221
 msgid "Zapisano preferencje e-mail."
 msgstr "Email preferences saved."
 
-#: accounts/views.py:343
+#: accounts/views.py:349
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:441
+#: accounts/views.py:447
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:453
+#: accounts/views.py:459
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:472
+#: accounts/views.py:478
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:483
+#: accounts/views.py:489
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -1605,8 +1628,8 @@ msgstr ""
 msgid "Ten limit pomaga utrzymać niski koszt operacyjny systemu."
 msgstr "This limit helps keep the system's operating cost low."
 
-#: chatbot/templates/chatbot/ratelimited.html:103 templates/403.html:43
-#: templates/404.html:76 templates/500.html:85
+#: chatbot/templates/chatbot/ratelimited.html:103 templates/403.html:56
+#: templates/404.html:120 templates/500.html:85
 msgid "Wróć do dashboardu"
 msgstr "Back to dashboard"
 
@@ -2169,7 +2192,7 @@ msgstr "Sat"
 msgid "Nd"
 msgstr "Sun"
 
-#: core/unfold_dashboard.py:70 templates/home.html:57
+#: core/unfold_dashboard.py:70 templates/home.html:56
 msgid "Dostępne maszyny"
 msgstr "Available machines"
 
@@ -2182,7 +2205,7 @@ msgstr "%(count)s on site"
 #: reservations/templates/reservations/site_detail.html:241
 #: reservations/templates/reservations/site_list.html:139
 #: reservations/templates/reservations/site_list.html:219
-#: templates/home.html:107
+#: templates/home.html:104
 msgid "Aktywne rezerwacje"
 msgstr "Active reservations"
 
@@ -2347,7 +2370,7 @@ msgstr "e.g. KOP-001"
 #: machines/forms.py:90 machines/forms.py:124
 #: reservations/templates/reservations/list.html:98
 #: reservations/templates/reservations/site_list.html:66
-#: templates/home.html:556
+#: templates/home.html:552
 msgid "Wszystkie"
 msgstr "All"
 
@@ -2368,7 +2391,7 @@ msgid "Brak daty przeglądu"
 msgstr "No inspection date"
 
 #: machines/forms.py:99 reservations/forms.py:181
-#: reservations/templates/reservations/site_list.html:110
+#: reservations/templates/reservations/site_list.html:110 templates/404.html:95
 #: templates/core/search.html:57
 msgid "Szukaj"
 msgstr "Search"
@@ -2579,7 +2602,7 @@ msgstr "Machine"
 #: machines/templates/machines/list.html:20 reservations/forms.py:428
 #: reservations/templates/reservations/batch_form.html:93
 #: reservations/templates/reservations/timeline.html:239 service/forms.py:147
-#: templates/base.html:200
+#: templates/base.html:199
 msgid "Maszyny"
 msgstr "Machines"
 
@@ -2821,7 +2844,7 @@ msgstr "Service history"
 #: reservations/templates/reservations/batch_form.html:39
 #: reservations/templates/reservations/detail.html:33
 #: reservations/templates/reservations/form.html:23
-#: reservations/templates/reservations/list.html:35 templates/base.html:210
+#: reservations/templates/reservations/list.html:35 templates/base.html:209
 msgid "Rezerwacje"
 msgstr "Reservations"
 
@@ -2873,7 +2896,7 @@ msgid "Brak wpisów serwisowych dla tej maszyny."
 msgstr "No service entries for this machine."
 
 #: machines/templates/machines/detail.html:216
-#: machines/templates/machines/detail.html:364 templates/home.html:551
+#: machines/templates/machines/detail.html:364 templates/home.html:547
 msgid "Ostatnie rezerwacje"
 msgstr "Recent reservations"
 
@@ -2950,7 +2973,7 @@ msgstr "Reason (optional)"
 msgid "np. Sprzedana firmie XYZ, koszt naprawy > wartość rynkowa"
 msgstr "e.g. Sold to XYZ company, repair cost > market value"
 
-#: machines/templates/machines/detail.html:372 templates/home.html:627
+#: machines/templates/machines/detail.html:372 templates/home.html:623
 msgid "Brak rezerwacji."
 msgstr "No reservations."
 
@@ -3117,7 +3140,7 @@ msgid "Kafelki"
 msgstr "Tiles"
 
 #: machines/templates/machines/list.html:55 machines/views.py:207
-#: machines/views.py:208 templates/home.html:692
+#: machines/views.py:208 templates/home.html:688
 msgid "Dodaj maszynę"
 msgstr "Add machine"
 
@@ -3718,7 +3741,7 @@ msgstr ""
 #: reservations/templates/reservations/site_detail.html:24
 #: reservations/templates/reservations/site_form.html:33
 #: reservations/templates/reservations/site_list.html:38
-#: templates/base.html:224
+#: templates/base.html:223
 msgid "Budowy"
 msgstr "Construction sites"
 
@@ -3726,6 +3749,7 @@ msgstr "Construction sites"
 #: reservations/templates/reservations/batch_detail.html:264
 #: reservations/templates/reservations/detail.html:353
 #: reservations/templates/reservations/list.html:107
+#: tests/test_i18n_plurals.py:41 tests/test_i18n_plurals.py:49
 msgid "Oczekująca"
 msgstr "Pending"
 
@@ -4179,7 +4203,7 @@ msgid "Kierownik / brygadzista odpowiedzialny za maszyne na budowie."
 msgstr "Manager / foreman responsible for the machine on site."
 
 #: reservations/templates/reservations/_form_partial.html:192
-#: templates/home.html:701
+#: templates/home.html:697
 msgid "Dodaj nową budowę"
 msgstr "Add a new construction site"
 
@@ -4192,8 +4216,8 @@ msgid "Opcjonalne: adres dostawy maszyny + uwagi."
 msgstr "Optional: machine delivery address + notes."
 
 #: reservations/templates/reservations/_form_partial.html:253
-#: service/templates/service/bulk_inspection.html:290 templates/403.html:51
-#: templates/404.html:98
+#: service/templates/service/bulk_inspection.html:290 templates/403.html:64
+#: templates/404.html:142
 msgid "Wstecz"
 msgstr "Back"
 
@@ -4325,7 +4349,7 @@ msgstr "Quick reservation"
 
 #: reservations/templates/reservations/_quick_reserve_modal.html:51
 #: reservations/templates/reservations/_site_inline_create.html:41
-#: templates/home.html:233
+#: templates/home.html:229
 msgid "Zamknij okno"
 msgstr "Close window"
 
@@ -4363,7 +4387,7 @@ msgstr "Reservation #%(pk)s"
 #: reservations/templates/reservations/form.html:54
 #: reservations/templates/reservations/list.html:62
 #: reservations/templates/reservations/site_detail.html:213
-#: templates/home.html:654
+#: templates/home.html:650
 msgid "Nowa rezerwacja"
 msgstr "New reservation"
 
@@ -4706,13 +4730,13 @@ msgid "Grupa rezerwacji"
 msgstr "Reservation group"
 
 #: reservations/templates/reservations/batch_detail.html:57
-#: templates/home.html:339 templates/home.html:393 templates/home.html:446
+#: templates/home.html:335 templates/home.html:389 templates/home.html:442
 msgid "rezerwacja"
 msgstr "reservation"
 
 #: reservations/templates/reservations/batch_detail.html:57
 #: reservations/templates/reservations/batch_form.html:308
-#: templates/home.html:339 templates/home.html:393 templates/home.html:446
+#: templates/home.html:335 templates/home.html:389 templates/home.html:442
 msgid "rezerwacji"
 msgstr "reservations"
 
@@ -5001,7 +5025,7 @@ msgstr "Machine %(uid)s will return to the warehouse"
 #: reservations/templates/reservations/detail.html:733
 #: reservations/templates/reservations/detail.html:866
 #: reservations/templates/reservations/detail.html:1035 templates/base.html:741
-#: templates/core/maps.html:232 templates/home.html:270
+#: templates/core/maps.html:232 templates/home.html:266
 msgid "Zamknij"
 msgstr "Close"
 
@@ -5227,6 +5251,7 @@ msgid "Rezerwacje — Planer Maszyn"
 msgstr "Reservations — Machine Planner"
 
 #: reservations/templates/reservations/list.html:33
+#: tests/test_i18n_plurals.py:40 tests/test_i18n_plurals.py:48
 msgid "Lista rezerwacji"
 msgstr "Reservation list"
 
@@ -5234,7 +5259,7 @@ msgstr "Reservation list"
 msgid "Wszystkie rezerwacje maszyn — filtruj po statusie, osobie lub okresie."
 msgstr "All machine reservations — filter by status, person or period."
 
-#: reservations/templates/reservations/list.html:47 templates/home.html:675
+#: reservations/templates/reservations/list.html:47 templates/home.html:671
 msgid "Timeline"
 msgstr "Timeline"
 
@@ -5823,7 +5848,7 @@ msgstr "TOTAL:"
 #: service/templates/service/detail.html:13
 #: service/templates/service/form.html:13
 #: service/templates/service/list.html:26
-#: service/templates/service/reports.html:12 templates/base.html:241
+#: service/templates/service/reports.html:12 templates/base.html:240
 msgid "Serwis"
 msgstr "Service"
 
@@ -6244,7 +6269,7 @@ msgid "Bulk"
 msgstr "Bulk"
 
 #: service/templates/service/list.html:64
-#: service/templates/service/reports.html:17 templates/base.html:258
+#: service/templates/service/reports.html:17 templates/base.html:257
 msgid "Raporty"
 msgstr "Reports"
 
@@ -6502,7 +6527,15 @@ msgstr ""
 "No page found at this address. Check the URL or go back to the dashboard — "
 "all machines and reservations are where they should be."
 
-#: templates/404.html:104
+#: templates/404.html:63
+msgid "Szukaj maszyn, rezerwacji, budów"
+msgstr "Search machines, reservations, sites"
+
+#: templates/404.html:78 templates/base.html:405
+msgid "Szukaj maszyn, rezerwacji, budów…"
+msgstr "Search machines, reservations, sites…"
+
+#: templates/404.html:148
 msgid "Jeśli ten link dał ci administrator, daj mu znać — coś jest do naprawy."
 msgstr ""
 "If an administrator gave you this link, let them know — something needs "
@@ -6566,53 +6599,45 @@ msgstr "Main navigation"
 msgid "Zamknij menu nawigacji"
 msgstr "Close navigation menu"
 
-#: templates/base.html:129
-msgid "Otwórz profil użytkownika"
-msgstr "Open user profile"
-
-#: templates/base.html:139
+#: templates/base.html:138
 msgid "Pracownik"
 msgstr "Employee"
 
-#: templates/base.html:167
+#: templates/base.html:166
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: templates/base.html:177
+#: templates/base.html:176
 msgid "Oś czasu"
 msgstr "Timeline"
 
-#: templates/base.html:189
+#: templates/base.html:188
 msgid "Mapy"
 msgstr "Maps"
 
-#: templates/base.html:265
+#: templates/base.html:264
 msgid "Administracja"
 msgstr "Administration"
 
-#: templates/base.html:290
+#: templates/base.html:289
 msgid "Panel admina"
 msgstr "Admin panel"
 
-#: templates/base.html:303
+#: templates/base.html:302
 msgid "Wyloguj się"
 msgstr "Log out"
 
-#: templates/base.html:307
+#: templates/base.html:306
 msgid "Wyloguj"
 msgstr "Log out"
 
-#: templates/base.html:354
+#: templates/base.html:353
 msgid "Otwórz menu nawigacji"
 msgstr "Open navigation menu"
 
-#: templates/base.html:393 templates/base.html:406
+#: templates/base.html:392 templates/base.html:406
 msgid "Szukaj w aplikacji"
 msgstr "Search in app"
-
-#: templates/base.html:405
-msgid "Szukaj maszyn, rezerwacji, budów…"
-msgstr "Search machines, reservations, sites…"
 
 #: templates/base.html:441 templates/core/_search_results.html:16
 msgid "Wyniki wyszukiwania"
@@ -7131,88 +7156,72 @@ msgstr ""
 msgid "Kluczowe wskaźniki"
 msgstr "Key metrics"
 
-#: templates/home.html:55
-msgid "Dostępne maszyny — przejdź do listy"
-msgstr "Available machines — go to the list"
-
-#: templates/home.html:69
+#: templates/home.html:68
 msgid "wolnych"
 msgstr "available"
 
-#: templates/home.html:71
+#: templates/home.html:70
 msgid "z przyszłą rezerwacją"
 msgstr "with an upcoming reservation"
 
-#: templates/home.html:74 templates/home.html:95
+#: templates/home.html:73 templates/home.html:93
 msgid "Zobacz listę"
 msgstr "View list"
 
 #: templates/home.html:84
-msgid "Maszyny na budowie — przejdź do listy"
-msgstr "Machines on site — go to the list"
-
-#: templates/home.html:86
 msgid "Aktualnie na budowie"
 msgstr "Currently on site"
 
-#: templates/home.html:105
-msgid "Aktywne rezerwacje — otwórz timeline"
-msgstr "Active reservations — open the timeline"
-
-#: templates/home.html:117
+#: templates/home.html:114
 #, python-format
 msgid "+ %(pending)s oczek."
 msgstr "+ %(pending)s pending"
 
-#: templates/home.html:121
+#: templates/home.html:118
 msgid "Otwórz timeline"
 msgstr "Open timeline"
 
-#: templates/home.html:144
-msgid "Przeglądy techniczne — otwórz listę maszyn z datami przeglądów"
-msgstr "Technical inspections — open the machine list with inspection dates"
-
-#: templates/home.html:147
+#: templates/home.html:143
 msgid "Przeglądy techniczne"
 msgstr "Technical inspections"
 
-#: templates/home.html:160
+#: templates/home.html:156
 msgid "przeterminowane"
 msgstr "overdue"
 
-#: templates/home.html:163
+#: templates/home.html:159
 msgid "w 14 dniach"
 msgstr "within 14 days"
 
-#: templates/home.html:167
+#: templates/home.html:163
 msgid "Pokaż listę maszyn"
 msgstr "Show machine list"
 
-#: templates/home.html:226
+#: templates/home.html:222
 msgid "Maszyny z przeglądem"
 msgstr "Machines with an inspection"
 
-#: templates/home.html:253
+#: templates/home.html:249
 msgid "Ładowanie listy maszyn…"
 msgstr "Loading machine list…"
 
-#: templates/home.html:262
+#: templates/home.html:258
 msgid "Otwórz pełną listę z filtrem"
 msgstr "Open the full list with filter"
 
-#: templates/home.html:297
+#: templates/home.html:293
 msgid "Dziś w magazynie"
 msgstr "Today in warehouse"
 
-#: templates/home.html:300
+#: templates/home.html:296
 msgid "Plan operacyjny na"
 msgstr "Operational plan for"
 
-#: templates/home.html:301
+#: templates/home.html:297
 msgid "— kto dziś wyjeżdża, kto wraca, co jest aktualnie w trasie."
 msgstr "— who departs today, who returns, what is currently in transit."
 
-#: templates/home.html:312
+#: templates/home.html:308
 msgid ""
 "Wymuś teraz daily-sync — zaktualizuje status maszyn na podstawie aktywnych "
 "rezerwacji (normalnie cron, raz dziennie)."
@@ -7220,62 +7229,62 @@ msgstr ""
 "Force daily-sync now — it will update machine statuses based on active "
 "reservations (normally a cron, once a day)."
 
-#: templates/home.html:314
+#: templates/home.html:310
 msgid "Synchronizuj statusy"
 msgstr "Synchronize statuses"
 
-#: templates/home.html:337
+#: templates/home.html:333
 msgid "Wyjeżdżają dziś"
 msgstr "Leaving today"
 
-#: templates/home.html:350
+#: templates/home.html:346
 #, python-format
 msgid "Rezerwacja %(uid)s dla %(person)s — wyjazd %(date)s"
 msgstr "Reservation %(uid)s for %(person)s — departure %(date)s"
 
-#: templates/home.html:371
+#: templates/home.html:367
 msgid "Brak rezerwacji wyjeżdżających dziś."
 msgstr "No reservations departing today."
 
-#: templates/home.html:391
+#: templates/home.html:387
 msgid "Wracają dziś"
 msgstr "Returning today"
 
-#: templates/home.html:404
+#: templates/home.html:400
 #, python-format
 msgid "Rezerwacja %(uid)s dla %(person)s — zwrot %(date)s"
 msgstr "Reservation %(uid)s for %(person)s — return %(date)s"
 
-#: templates/home.html:424
+#: templates/home.html:420
 msgid "Brak rezerwacji wracających dziś."
 msgstr "No reservations returning today."
 
-#: templates/home.html:444
+#: templates/home.html:440
 msgid "Dziś w trasie"
 msgstr "On the road today"
 
-#: templates/home.html:457
+#: templates/home.html:453
 #, python-format
 msgid "Rezerwacja %(uid)s dla %(person)s — koniec %(date)s"
 msgstr "Reservation %(uid)s for %(person)s — end %(date)s"
 
-#: templates/home.html:462
+#: templates/home.html:458
 msgid "do"
 msgstr "to"
 
-#: templates/home.html:478
+#: templates/home.html:474
 msgid "Brak rezerwacji w trasie."
 msgstr "No reservations in transit."
 
-#: templates/home.html:495
+#: templates/home.html:491
 msgid "Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę"
 msgstr "Overdue machine returns — click to see the list"
 
-#: templates/home.html:500
+#: templates/home.html:496
 msgid "Maszyny do zwrotu"
 msgstr "Machines to return"
 
-#: templates/home.html:504
+#: templates/home.html:500
 msgid ""
 "Spóźnione zwroty — rezerwacje potwierdzone, których planowy koniec już "
 "minął. Kliknij żeby zobaczyć listę i podjąć kontakt z osobą wynajmującą."
@@ -7283,12 +7292,12 @@ msgstr ""
 "Overdue returns — confirmed reservations whose planned end has already "
 "passed. Click to see the list and contact the renter."
 
-#: templates/home.html:529
+#: templates/home.html:525
 #, python-format
 msgid "%(count)s maszyn z przeterminowanym przeglądem technicznym"
 msgstr "%(count)s machines with an overdue technical inspection"
 
-#: templates/home.html:532
+#: templates/home.html:528
 msgid ""
 "Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym "
 "przeglądem nie mogą legalnie pracować na budowie."
@@ -7296,48 +7305,66 @@ msgstr ""
 "Contact service to schedule an inspection. Machines with an overdue "
 "inspection cannot legally work on site."
 
-#: templates/home.html:555
+#: templates/home.html:551
 msgid "Zobacz wszystkie rezerwacje"
 msgstr "View all reservations"
 
-#: templates/home.html:584
+#: templates/home.html:580
 #, python-format
 msgid ""
 "Rezerwacja %(uid)s dla %(person)s, %(start)s – %(end)s, status %(status)s"
 msgstr ""
 "Reservation %(uid)s for %(person)s, %(start)s – %(end)s, status %(status)s"
 
-#: templates/home.html:632
+#: templates/home.html:628
 msgid "Dodaj pierwszą"
 msgstr "Add the first"
 
-#: templates/home.html:640
+#: templates/home.html:636
 msgid "Szybkie akcje"
 msgstr "Quick actions"
 
-#: templates/home.html:646
+#: templates/home.html:642
 msgid "Utwórz nową rezerwację"
 msgstr "Create a new reservation"
 
-#: templates/home.html:655
+#: templates/home.html:651
 msgid "Zarezerwuj maszynę na konkretny termin"
 msgstr "Reserve a machine for a specific period"
 
-#: templates/home.html:667
+#: templates/home.html:663
 msgid "Otwórz timeline rezerwacji"
 msgstr "Open the reservation timeline"
 
-#: templates/home.html:676
+#: templates/home.html:672
 msgid "Wizualny harmonogram wszystkich maszyn"
 msgstr "Visual schedule of all machines"
 
-#: templates/home.html:685
+#: templates/home.html:681
 msgid "Dodaj nową maszynę"
 msgstr "Add a new machine"
 
-#: templates/home.html:708
+#: templates/home.html:704
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#~ msgid "Wkrótce"
+#~ msgstr "Coming soon"
+
+#~ msgid "Otwórz profil użytkownika"
+#~ msgstr "Open user profile"
+
+#~ msgid "Dostępne maszyny — przejdź do listy"
+#~ msgstr "Available machines — go to the list"
+
+#~ msgid "Maszyny na budowie — przejdź do listy"
+#~ msgstr "Machines on site — go to the list"
+
+#~ msgid "Aktywne rezerwacje — otwórz timeline"
+#~ msgstr "Active reservations — open the timeline"
+
+#~ msgid "Przeglądy techniczne — otwórz listę maszyn z datami przeglądów"
+#~ msgstr "Technical inspections — open the machine list with inspection dates"
 
 #~ msgid "Skontaktuj się z administratorem żeby zresetować hasło"
 #~ msgstr "Contact your administrator to reset your password"

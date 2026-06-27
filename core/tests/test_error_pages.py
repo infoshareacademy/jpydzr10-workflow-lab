@@ -7,10 +7,11 @@ techniczny. Override DEBUG na potrzeby testu.
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.template.loader import render_to_string
 from django.test import RequestFactory, override_settings
 from django.urls import reverse
-from django.views.defaults import server_error
+from django.views.defaults import permission_denied, server_error
 
 
 @pytest.mark.django_db
@@ -44,6 +45,44 @@ def test_403_uses_custom_template(client):
     assert response.status_code == 403
     body = response.content.decode("utf-8")
     assert "Brak uprawnień" in body
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["*"])
+def test_404_contains_search_form(client):
+    """Custom 404 musi oferować wyszukiwarkę (form GET do globalnego search)."""
+    response = client.get("/nie/ma/takiej/strony/")
+    assert response.status_code == 404
+    body = response.content.decode("utf-8")
+    assert 'role="search"' in body
+    assert reverse("core:search") in body
+    assert 'name="q"' in body
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["*"])
+def test_403_anonymous_shows_login_link():
+    """403 dla anonima eksponuje link do logowania (CTA „Zaloguj się")."""
+    request = RequestFactory().get("/zabronione/")
+    request.user = AnonymousUser()
+    response = permission_denied(request, exception=Exception("denied"))
+    assert response.status_code == 403
+    body = response.content.decode("utf-8")
+    assert reverse("accounts:login") in body
+    assert "Zaloguj się" in body
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["*"])
+def test_403_authenticated_omits_login_link(client):
+    """403 dla zalogowanego (bez uprawnień) NIE pokazuje linku do logowania."""
+    user = get_user_model().objects.create_user("noperm403link", password="secret-pw-987!")
+    client.force_login(user)
+    response = client.get(reverse("reservations:create"))
+    assert response.status_code == 403
+    body = response.content.decode("utf-8")
+    # Brak CTA „Zaloguj się"; link do logowania nie jest renderowany.
+    assert reverse("accounts:login") not in body
 
 
 @override_settings(DEBUG=False, ALLOWED_HOSTS=["*"])

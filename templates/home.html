@@ -50,8 +50,7 @@
         {# Subtitle pokazuje rozbicie: X wolnych (bez przyszlej rezerwacji) + Y       #}
         {# zarezerwowanych (sa w magazynie ale z przyszla potwierdzona rezerwacja).   #}
         <a href="{% url 'machines:list' %}?status=W+magazynie"
-           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="{% trans 'Dostępne maszyny — przejdź do listy' %}">
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Dostępne maszyny" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
@@ -79,8 +78,7 @@
 
         {# KPI #2 — Aktualnie na budowie (brand blue) #}
         <a href="{% url 'machines:list' %}?status=Na+budowie"
-           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="{% trans 'Maszyny na budowie — przejdź do listy' %}">
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Aktualnie na budowie" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
@@ -100,8 +98,7 @@
 
         {# KPI #3 — Aktywne rezerwacje (amber/yellow — uwaga, w toku) #}
         <a href="{% url 'reservations:timeline' %}"
-           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-           aria-label="{% trans 'Aktywne rezerwacje — otwórz timeline' %}">
+           class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Aktywne rezerwacje" %}</span>
                 <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
@@ -139,7 +136,6 @@
                 hx-swap="innerHTML"
                 hx-on::after-request="window.dispatchEvent(new CustomEvent('open-inspections-modal'))"
                 class="kpi-card group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border text-left w-full {% if kpi.inspections_overdue %}border-rose-300 dark:border-rose-800{% else %}border-slate-200 dark:border-slate-700{% endif %} p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
-                aria-label="{% trans 'Przeglądy techniczne — otwórz listę maszyn z datami przeglądów' %}"
                 aria-haspopup="dialog">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{% trans "Przeglądy techniczne" %}</span>

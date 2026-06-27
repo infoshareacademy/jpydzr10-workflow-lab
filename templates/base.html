@@ -123,8 +123,7 @@
             {% if user.is_authenticated %}
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700">
                 <a href="{% url 'accounts:profile' %}"
-                   class="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg p-1 -m-1"
-                   aria-label="{% trans 'Otwórz profil użytkownika' %}">
+                   class="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg p-1 -m-1">
                     {# Avatar — initials in colored circle #}
                     <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold text-sm">
                         {{ user.get_full_name|default:user.username|slice:":1"|upper }}
@@ -392,6 +391,7 @@
                             </span>
                             <input id="topbar-search"
                                    type="search"
+                                   role="combobox"
                                    name="q"
                                    minlength="2"
                                    autocomplete="off"
