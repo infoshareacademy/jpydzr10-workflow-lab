@@ -1,33 +1,76 @@
 {% load i18n %}<!DOCTYPE html>
 <html lang="pl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+
+    /* Apple Mail / iOS Mail / nowoczesne klienty honorujące prefers-color-scheme.
+       Reguły UZUPEŁNIAJĄ inline style (które dają jasny wygląd domyślnie) —
+       progresywne ulepszenie: klient ignorujący CSS zostaje przy jasnym designie. */
+    @media (prefers-color-scheme: dark) {
+      .em-bg        { background:#0f172a !important; }
+      .em-card      { background:#1e293b !important; border-color:#334155 !important; }
+      .em-body      { color:#e2e8f0 !important; }
+      .em-header    { background:#1d4ed8 !important; color:#ffffff !important; }
+      .em-header-sub{ color:#bfdbfe !important; }
+      .em-footer    { background:#162032 !important; border-color:#334155 !important; color:#cbd5e1 !important; }
+      .em-footer-muted { color:#94a3b8 !important; }
+      .em-divider   { border-color:#334155 !important; }
+      .em-divider-label { color:#94a3b8 !important; }
+      .em-muted     { color:#94a3b8 !important; }
+      .em-link      { color:#93c5fd !important; }
+    }
+
+    /* Outlook.com / Outlook mobile w trybie ciemnym — własny mechanizm
+       inwersji kolorów oznaczany atrybutami [data-ogsc] (foreground)
+       i [data-ogsb] (background). Wymuszamy czytelny kontrast, żeby
+       uniknąć sytuacji ciemny tekst na ciemnym tle. */
+    [data-ogsc] .em-bg        { background:#0f172a !important; }
+    [data-ogsb] .em-bg        { background:#0f172a !important; }
+    [data-ogsc] .em-card      { background:#1e293b !important; }
+    [data-ogsb] .em-card      { background:#1e293b !important; }
+    [data-ogsc] .em-body      { color:#e2e8f0 !important; }
+    [data-ogsc] .em-header    { color:#ffffff !important; }
+    [data-ogsc] .em-header-sub{ color:#bfdbfe !important; }
+    [data-ogsc] .em-footer    { color:#cbd5e1 !important; }
+    [data-ogsb] .em-footer    { background:#162032 !important; }
+    [data-ogsc] .em-footer-muted { color:#94a3b8 !important; }
+    [data-ogsc] .em-divider-label { color:#94a3b8 !important; }
+    [data-ogsc] .em-muted     { color:#94a3b8 !important; }
+    [data-ogsc] .em-link      { color:#93c5fd !important; }
+  </style>
+</head>
+<body class="em-bg em-body" style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="em-bg" style="background:#f1f5f9;padding:24px 0;">
     <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" class="em-card"
              style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;">
-        <tr><td style="background:#2563eb;padding:22px 30px;color:#ffffff;font-size:18px;font-weight:bold;">
+        <tr><td class="em-header" style="background:#2563eb;padding:22px 30px;color:#ffffff;font-size:18px;font-weight:bold;">
           Planer Maszyn Budowlanych
-          <span style="font-weight:normal;color:#bfdbfe;font-size:14px;">· Construction Machine Planner</span>
+          <span class="em-header-sub" style="font-weight:normal;color:#bfdbfe;font-size:14px;">· Construction Machine Planner</span>
         </td></tr>
-        <tr><td style="padding:30px;">
+        <tr><td class="em-body" style="padding:30px;">
           {# Sekcja polska #}
           {{ body_pl|safe }}
           {# Separator dwujęzyczny #}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:26px 0;">
             <tr>
-              <td style="border-top:1px solid #e2e8f0;"></td>
-              <td style="width:60px;text-align:center;color:#94a3b8;font-size:11px;letter-spacing:1px;white-space:nowrap;padding:0 8px;">ENGLISH</td>
-              <td style="border-top:1px solid #e2e8f0;"></td>
+              <td class="em-divider" style="border-top:1px solid #e2e8f0;"></td>
+              <td class="em-divider-label" style="width:60px;text-align:center;color:#94a3b8;font-size:11px;letter-spacing:1px;white-space:nowrap;padding:0 8px;">ENGLISH</td>
+              <td class="em-divider" style="border-top:1px solid #e2e8f0;"></td>
             </tr>
           </table>
           {# Sekcja angielska #}
           {{ body_en|safe }}
         </td></tr>
-        <tr><td style="background:#f8fafc;padding:16px 30px;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;">
+        <tr><td class="em-footer" style="background:#f8fafc;padding:16px 30px;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;">
           Planer Maszyn Budowlanych · Construction Machine Planner<br>
-          <span style="color:#cbd5e1;">Powiadomienie systemowe, nie odpowiadaj na tę wiadomość. · System notification, do not reply.</span><br>
-          <a href="{{ unsubscribe_url|default:'#' }}" style="color:#94a3b8;text-decoration:underline;">Wypisz się / Unsubscribe</a>
+          <span class="em-footer-muted" style="color:#cbd5e1;">Powiadomienie systemowe, nie odpowiadaj na tę wiadomość. · System notification, do not reply.</span><br>
+          <a href="{{ unsubscribe_url|default:'#' }}" class="em-link" style="color:#94a3b8;text-decoration:underline;">Wypisz się / Unsubscribe</a>
         </td></tr>
       </table>
     </td></tr>

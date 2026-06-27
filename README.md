@@ -115,6 +115,22 @@ uruchamiane przez cron na produkcji:
 
 Wszystkie maile są dwujęzyczne (PL + EN w jednej wiadomości) i wysyłane przez
 `transaction.on_commit`, więc nie wychodzą, jeśli transakcja DB się wycofa.
+Nieudane wysyłki (błąd SMTP) są zapisywane w dzienniku odbić (`core.BounceLog`,
+podgląd w panelu admina) i nie przerywają akcji biznesowej.
+
+### Podgląd maili lokalnie (Mailpit)
+
+Do testowania maili bez realnego SMTP służy **Mailpit** (łapacz maili z web UI),
+uruchamiany opcjonalnym profilem `mail`:
+
+```bash
+docker compose --profile mail up -d      # Postgres + Mailpit
+```
+
+W `.env` ustaw `EMAIL_HOST=localhost`, `EMAIL_PORT=1025`, `EMAIL_USE_TLS=False`.
+Przechwycone maile podejrzysz na <http://localhost:8025>. Podgląd HTML każdego
+szablonu maila (PL/EN) bez wysyłki: `/admin/preview-email/` (tylko `DEBUG` + staff).
+Z nieobowiązkowych powiadomień można się wypisać linkiem ze stopki maila.
 
 ## Testy
 

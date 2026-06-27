@@ -13,10 +13,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.email_preview import email_preview
 from core.views import home, maps_view
 
 urlpatterns = [
     path("", home, name="home"),
+    # Deweloperski podglad maili — PRZED include admina, zeby nie zostal
+    # polkniety przez admin.site.urls. Aktywny tylko w DEBUG + dla staff.
+    path("admin/preview-email/", email_preview, name="email_preview"),
     path("admin/", admin.site.urls),
     # /mapy/ - Google Maps widget (BETA) - pin per maszyna. Sebastian #60.
     # Widok wymaga GOOGLE_MAPS_API_KEY w .env zeby aktywowac mape; bez
