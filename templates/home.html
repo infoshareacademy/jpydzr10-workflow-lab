@@ -337,8 +337,7 @@
                         {% for res in starting_today %}
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
-                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 focus:outline-none focus-visible:bg-emerald-50/60 dark:focus-visible:bg-emerald-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 transition-colors"
-                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.start_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — wyjazd {{ date }}{% endblocktrans %}">
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 focus:outline-none focus-visible:bg-emerald-50/60 dark:focus-visible:bg-emerald-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 transition-colors">
                                     <span class="font-mono font-semibold text-xs text-emerald-700 dark:text-emerald-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
@@ -390,8 +389,7 @@
                         {% for res in ending_today %}
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
-                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-amber-50/40 dark:hover:bg-amber-900/10 focus:outline-none focus-visible:bg-amber-50/60 dark:focus-visible:bg-amber-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 transition-colors"
-                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.end_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — zwrot {{ date }}{% endblocktrans %}">
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-amber-50/40 dark:hover:bg-amber-900/10 focus:outline-none focus-visible:bg-amber-50/60 dark:focus-visible:bg-amber-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 transition-colors">
                                     <span class="font-mono font-semibold text-xs text-amber-700 dark:text-amber-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
@@ -442,8 +440,7 @@
                         {% for res in active_today %}
                             <li>
                                 <a href="{% url 'reservations:detail' res.pk %}"
-                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-brand-50/40 dark:hover:bg-brand-900/10 focus:outline-none focus-visible:bg-brand-50/60 dark:focus-visible:bg-brand-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 transition-colors"
-                                   aria-label="{% blocktrans with uid=res.machine.uid person=res.person date=res.end_date|date:'d.m.Y' %}Rezerwacja {{ uid }} dla {{ person }} — koniec {{ date }}{% endblocktrans %}">
+                                   class="group flex items-center gap-3 px-4 py-3 min-h-[44px] hover:bg-brand-50/40 dark:hover:bg-brand-900/10 focus:outline-none focus-visible:bg-brand-50/60 dark:focus-visible:bg-brand-900/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 transition-colors">
                                     <span class="font-mono font-semibold text-xs text-brand-700 dark:text-brand-300 flex-shrink-0">{{ res.machine.uid }}</span>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{{ res.person|default:"—" }}</p>
@@ -480,8 +477,7 @@
     {# ==================================================================== #}
     {% if kpi.reservations_overdue %}
     <a href="{% url 'reservations:list' %}?status=potwierdzona&amp;end_before={{ today|date:'Y-m-d' }}"
-       class="group block rounded-2xl p-5 bg-rose-50/70 dark:bg-rose-900/20 border-l-4 border-rose-500 dark:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 animate-fade-in"
-       aria-label="{% trans 'Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę' %}">
+       class="group block rounded-2xl p-5 bg-rose-50/70 dark:bg-rose-900/20 border-l-4 border-rose-500 dark:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 animate-fade-in">
         <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
@@ -568,8 +564,7 @@
                     {% for res in recent_reservations %}
                         <li>
                             <a href="{% url 'reservations:detail' res.pk %}"
-                               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-                               aria-label="{% blocktrans with uid=res.machine.uid person=res.person start=res.start_date|date:'d.m.Y' end=res.end_date|date:'d.m.Y' status=res.get_status_display %}Rezerwacja {{ uid }} dla {{ person }}, {{ start }} – {{ end }}, status {{ status }}{% endblocktrans %}">
+                               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
 
                                 {# Avatar -- inicjal osoby rezerwujacej. #}
                                 <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold text-sm" aria-hidden="true">
@@ -630,8 +625,7 @@
             {# Primary CTA — bramkowane add_reservation (montażysta bez prawa nie widzi). #}
             {% if perms.reservations.add_reservation %}
             <a href="{% url 'reservations:create' %}"
-               class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="{% trans 'Utwórz nową rezerwację' %}">
+               class="group block rounded-2xl p-4 bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                 <div class="flex items-start gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -651,8 +645,7 @@
 
             {# Secondary — timeline #}
             <a href="{% url 'reservations:timeline' %}"
-               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="{% trans 'Otwórz timeline rezerwacji' %}">
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                 <div class="flex items-start gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -669,8 +662,7 @@
             {# Secondary — add machine (bramkowane: machines.add_machine) #}
             {% if perms.machines.add_machine %}
             <a href="{% url 'machines:create' %}"
-               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="{% trans 'Dodaj nową maszynę' %}">
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                 <div class="flex items-center gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -685,8 +677,7 @@
             {# Secondary — add construction site (bramkowane: add_constructionsite) #}
             {% if perms.reservations.add_constructionsite %}
             <a href="{% url 'reservations:site_create' %}"
-               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-               aria-label="{% trans 'Dodaj nową budowę' %}">
+               class="group block rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 shadow-sm hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                 <div class="flex items-center gap-3">
                     <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">

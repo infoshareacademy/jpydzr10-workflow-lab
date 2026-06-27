@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-27 15:00+0200\n"
+"POT-Creation-Date: 2026-06-27 15:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2379,7 +2379,7 @@ msgstr "e.g. KOP-001"
 #: machines/forms.py:90 machines/forms.py:124
 #: reservations/templates/reservations/list.html:98
 #: reservations/templates/reservations/site_list.html:66
-#: templates/home.html:552
+#: templates/home.html:548
 msgid "Wszystkie"
 msgstr "All"
 
@@ -2905,7 +2905,7 @@ msgid "Brak wpisów serwisowych dla tej maszyny."
 msgstr "No service entries for this machine."
 
 #: machines/templates/machines/detail.html:216
-#: machines/templates/machines/detail.html:364 templates/home.html:547
+#: machines/templates/machines/detail.html:364 templates/home.html:543
 msgid "Ostatnie rezerwacje"
 msgstr "Recent reservations"
 
@@ -2982,7 +2982,7 @@ msgstr "Reason (optional)"
 msgid "np. Sprzedana firmie XYZ, koszt naprawy > wartość rynkowa"
 msgstr "e.g. Sold to XYZ company, repair cost > market value"
 
-#: machines/templates/machines/detail.html:372 templates/home.html:623
+#: machines/templates/machines/detail.html:372 templates/home.html:618
 msgid "Brak rezerwacji."
 msgstr "No reservations."
 
@@ -3149,7 +3149,7 @@ msgid "Kafelki"
 msgstr "Tiles"
 
 #: machines/templates/machines/list.html:55 machines/views.py:207
-#: machines/views.py:208 templates/home.html:688
+#: machines/views.py:208 templates/home.html:680
 msgid "Dodaj maszynę"
 msgstr "Add machine"
 
@@ -4232,7 +4232,6 @@ msgid "Kierownik / brygadzista odpowiedzialny za maszyne na budowie."
 msgstr "Manager / foreman responsible for the machine on site."
 
 #: reservations/templates/reservations/_form_partial.html:192
-#: templates/home.html:697
 msgid "Dodaj nową budowę"
 msgstr "Add a new construction site"
 
@@ -4416,7 +4415,7 @@ msgstr "Reservation #%(pk)s"
 #: reservations/templates/reservations/form.html:54
 #: reservations/templates/reservations/list.html:62
 #: reservations/templates/reservations/site_detail.html:213
-#: templates/home.html:650
+#: templates/home.html:644
 msgid "Nowa rezerwacja"
 msgstr "New reservation"
 
@@ -4759,13 +4758,13 @@ msgid "Grupa rezerwacji"
 msgstr "Reservation group"
 
 #: reservations/templates/reservations/batch_detail.html:57
-#: templates/home.html:335 templates/home.html:389 templates/home.html:442
+#: templates/home.html:335 templates/home.html:388 templates/home.html:440
 msgid "rezerwacja"
 msgstr "reservation"
 
 #: reservations/templates/reservations/batch_detail.html:57
 #: reservations/templates/reservations/batch_form.html:308
-#: templates/home.html:335 templates/home.html:389 templates/home.html:442
+#: templates/home.html:335 templates/home.html:388 templates/home.html:440
 msgid "rezerwacji"
 msgstr "reservations"
 
@@ -5288,7 +5287,7 @@ msgstr "Reservation list"
 msgid "Wszystkie rezerwacje maszyn — filtruj po statusie, osobie lub okresie."
 msgstr "All machine reservations — filter by status, person or period."
 
-#: reservations/templates/reservations/list.html:47 templates/home.html:671
+#: reservations/templates/reservations/list.html:47 templates/home.html:664
 msgid "Timeline"
 msgstr "Timeline"
 
@@ -5681,7 +5680,10 @@ msgid ""
 "Synchronizacja statusów wykonana: %(updated)d 'Na budowie', %(extended)d "
 "przedłużono (Hard Return), %(reserved)d 'Zarezerwowana', %(released)d "
 "zwolniono do magazynu."
-msgstr "Status synchronization completed: %(updated)d 'On site', %(extended)d extended (Hard Return), %(reserved)d 'Reserved', %(released)d released to warehouse."
+msgstr ""
+"Status synchronization completed: %(updated)d 'On site', %(extended)d "
+"extended (Hard Return), %(reserved)d 'Reserved', %(released)d released to "
+"warehouse."
 
 #: service/admin.py:45 service/models.py:124
 #: service/templates/service/detail.html:4
@@ -7265,54 +7267,35 @@ msgstr "Synchronize statuses"
 msgid "Wyjeżdżają dziś"
 msgstr "Leaving today"
 
-#: templates/home.html:346
-#, python-format
-msgid "Rezerwacja %(uid)s dla %(person)s — wyjazd %(date)s"
-msgstr "Reservation %(uid)s for %(person)s — departure %(date)s"
-
-#: templates/home.html:367
+#: templates/home.html:366
 msgid "Brak rezerwacji wyjeżdżających dziś."
 msgstr "No reservations departing today."
 
-#: templates/home.html:387
+#: templates/home.html:386
 msgid "Wracają dziś"
 msgstr "Returning today"
 
-#: templates/home.html:400
-#, python-format
-msgid "Rezerwacja %(uid)s dla %(person)s — zwrot %(date)s"
-msgstr "Reservation %(uid)s for %(person)s — return %(date)s"
-
-#: templates/home.html:420
+#: templates/home.html:418
 msgid "Brak rezerwacji wracających dziś."
 msgstr "No reservations returning today."
 
-#: templates/home.html:440
+#: templates/home.html:438
 msgid "Dziś w trasie"
 msgstr "On the road today"
 
-#: templates/home.html:453
-#, python-format
-msgid "Rezerwacja %(uid)s dla %(person)s — koniec %(date)s"
-msgstr "Reservation %(uid)s for %(person)s — end %(date)s"
-
-#: templates/home.html:458
+#: templates/home.html:455
 msgid "do"
 msgstr "to"
 
-#: templates/home.html:474
+#: templates/home.html:471
 msgid "Brak rezerwacji w trasie."
 msgstr "No reservations in transit."
 
-#: templates/home.html:491
-msgid "Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę"
-msgstr "Overdue machine returns — click to see the list"
-
-#: templates/home.html:496
+#: templates/home.html:492
 msgid "Maszyny do zwrotu"
 msgstr "Machines to return"
 
-#: templates/home.html:500
+#: templates/home.html:496
 msgid ""
 "Spóźnione zwroty — rezerwacje potwierdzone, których planowy koniec już "
 "minął. Kliknij żeby zobaczyć listę i podjąć kontakt z osobą wynajmującą."
@@ -7320,12 +7303,12 @@ msgstr ""
 "Overdue returns — confirmed reservations whose planned end has already "
 "passed. Click to see the list and contact the renter."
 
-#: templates/home.html:525
+#: templates/home.html:521
 #, python-format
 msgid "%(count)s maszyn z przeterminowanym przeglądem technicznym"
 msgstr "%(count)s machines with an overdue technical inspection"
 
-#: templates/home.html:528
+#: templates/home.html:524
 msgid ""
 "Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym "
 "przeglądem nie mogą legalnie pracować na budowie."
@@ -7333,48 +7316,59 @@ msgstr ""
 "Contact service to schedule an inspection. Machines with an overdue "
 "inspection cannot legally work on site."
 
-#: templates/home.html:551
+#: templates/home.html:547
 msgid "Zobacz wszystkie rezerwacje"
 msgstr "View all reservations"
 
-#: templates/home.html:580
-#, python-format
-msgid ""
-"Rezerwacja %(uid)s dla %(person)s, %(start)s – %(end)s, status %(status)s"
-msgstr ""
-"Reservation %(uid)s for %(person)s, %(start)s – %(end)s, status %(status)s"
-
-#: templates/home.html:628
+#: templates/home.html:623
 msgid "Dodaj pierwszą"
 msgstr "Add the first"
 
-#: templates/home.html:636
+#: templates/home.html:631
 msgid "Szybkie akcje"
 msgstr "Quick actions"
 
-#: templates/home.html:642
-msgid "Utwórz nową rezerwację"
-msgstr "Create a new reservation"
-
-#: templates/home.html:651
+#: templates/home.html:645
 msgid "Zarezerwuj maszynę na konkretny termin"
 msgstr "Reserve a machine for a specific period"
 
-#: templates/home.html:663
-msgid "Otwórz timeline rezerwacji"
-msgstr "Open the reservation timeline"
-
-#: templates/home.html:672
+#: templates/home.html:665
 msgid "Wizualny harmonogram wszystkich maszyn"
 msgstr "Visual schedule of all machines"
 
-#: templates/home.html:681
-msgid "Dodaj nową maszynę"
-msgstr "Add a new machine"
-
-#: templates/home.html:704
+#: templates/home.html:695
 msgid "Dodaj budowę"
 msgstr "Add construction site"
+
+#, python-format
+#~ msgid "Rezerwacja %(uid)s dla %(person)s — wyjazd %(date)s"
+#~ msgstr "Reservation %(uid)s for %(person)s — departure %(date)s"
+
+#, python-format
+#~ msgid "Rezerwacja %(uid)s dla %(person)s — zwrot %(date)s"
+#~ msgstr "Reservation %(uid)s for %(person)s — return %(date)s"
+
+#, python-format
+#~ msgid "Rezerwacja %(uid)s dla %(person)s — koniec %(date)s"
+#~ msgstr "Reservation %(uid)s for %(person)s — end %(date)s"
+
+#~ msgid "Spóźnione zwroty maszyn — kliknij żeby zobaczyć listę"
+#~ msgstr "Overdue machine returns — click to see the list"
+
+#, python-format
+#~ msgid ""
+#~ "Rezerwacja %(uid)s dla %(person)s, %(start)s – %(end)s, status %(status)s"
+#~ msgstr ""
+#~ "Reservation %(uid)s for %(person)s, %(start)s – %(end)s, status %(status)s"
+
+#~ msgid "Utwórz nową rezerwację"
+#~ msgstr "Create a new reservation"
+
+#~ msgid "Otwórz timeline rezerwacji"
+#~ msgstr "Open the reservation timeline"
+
+#~ msgid "Dodaj nową maszynę"
+#~ msgstr "Add a new machine"
 
 #~ msgid ""
 #~ "Wcześniejszy zwrot — jeśli ustawione, używamy do konfliktów zamiast "

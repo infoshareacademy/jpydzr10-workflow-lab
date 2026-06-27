@@ -28,12 +28,17 @@ aplikacji (`make run`, zalogowany użytkownik). Wartości w skali 0–100.
 - Usunięto nadmiarowe `aria-label` z kart KPI dashboardu i linku profilu — nazwa
   dostępna wynika teraz z widocznego tekstu (naprawa `label-content-name-mismatch`).
 
-## Pozostałe drobne uwagi (→ dalsza praca a11y)
+- Usunięto rozbieżne `aria-label` z kart skrótów (rezerwacja/maszyna/budowa/
+  timeline) i linków „Dziś w trasie" — nazwa dostępna = widoczny tekst karty
+  (naprawa `label-content-name-mismatch`, audit teraz czysty).
+- Stopka (copyright) podbita `text-slate-400`→`text-slate-500` dla kontrastu AA.
 
-- `color-contrast`: pojedyncze drugorzędne teksty `text-slate-400` oraz przycisk
-  django-debug-toolbar (narzędzie deweloperskie, nieobecne w trybie produkcyjnym).
-- `label-content-name-mismatch`: link skrótu rezerwacji i przełącznik widoku
-  tabela/kafelki — kosmetyczne, do dopracowania.
+## Pozostałe drobne uwagi (nie zmieniają wyniku w prod)
+
+- `color-contrast` (jedyny pozostały fail w dev): przycisk **django-debug-toolbar**
+  (narzędzie deweloperskie, NIEOBECNE przy `DEBUG=False`/prod) oraz pojedynczy
+  drugorzędny tekst w ukrytym modalu. W trybie produkcyjnym (bez toolbara) wynik
+  byłby wyższy. Markup poza tym czysty (`label-*`, ARIA, focus, 44px).
 
 Markup spełnia WCAG 2.1 AA na poziomie struktury: skip-link, `prefers-reduced-motion`,
 pierścienie focus-visible, etykiety pól formularzy, role ARIA, cele dotykowe 44 px,
