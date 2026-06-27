@@ -31,10 +31,11 @@ def test_build_agent_returns_none_when_api_key_blank(monkeypatch):
 # third-party libce, nie w naszym kodzie — ignorujemy tylko w tym jednym teście.
 @pytest.mark.filterwarnings("ignore:.*_UnionGenericAlias.*:DeprecationWarning")
 def test_build_agent_returns_agent_instance(monkeypatch):
-    """Sprawdza że factory tworzy ``Agent`` z 4 zarejestrowanymi narzędziami.
+    """Smoke: factory ``build_agent`` zwraca skonfigurowany obiekt ``Agent``.
 
-    Używamy fake klucza — pydantic-ai weryfikuje go dopiero przy ``run_sync``,
-    a my tylko sprawdzamy że obiekt został utworzony.
+    Rejestrację narzędzi i typ zależności weryfikują kolejne testy w tej klasie
+    (``deps_type``, narzędzia write); tu sprawdzamy tylko, że obiekt powstaje
+    (fake klucz — pydantic-ai waliduje go dopiero przy ``run_sync``).
     """
     monkeypatch.setenv("GEMINI_API_KEY", "fake-key-for-tests-only")
     agent = agent_module.build_agent()

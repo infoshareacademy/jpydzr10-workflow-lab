@@ -40,7 +40,7 @@ from django.views.generic import DetailView, ListView, UpdateView, View
 from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors, join_validation_error
 from core.utils import parse_iso_date
-from machines.models import Machine
+from machines.models import INSPECTION_WARNING_DAYS, Machine
 
 from .forms import (
     BatchCancelForm,
@@ -1025,7 +1025,7 @@ class TimelineView(LoginRequiredMixin, View):
         inspection = request.GET.get("inspection")
         if inspection in ("ok", "warning", "overdue", "unknown"):
             today = date.today()
-            warning_until = today + timedelta(days=14)
+            warning_until = today + timedelta(days=INSPECTION_WARNING_DAYS)
             if inspection == "overdue":
                 machines_qs = machines_qs.filter(inspection_date__lt=today)
             elif inspection == "warning":

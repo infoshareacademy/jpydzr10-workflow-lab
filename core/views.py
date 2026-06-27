@@ -99,11 +99,11 @@ def home(request):
     (active_today via manager). Każdy queryset jest limited[:5] z select_related
     żeby nie wybuchnąć N+1 (każda rezerwacja JOINuje machine + site).
     """
-    from machines.models import Machine
+    from machines.models import INSPECTION_WARNING_DAYS, Machine
     from reservations.models import ConstructionSite, Reservation
 
     today = date.today()
-    horizon = today + timedelta(days=14)
+    horizon = today + timedelta(days=INSPECTION_WARNING_DAYS)
 
     # Query 1 — wszystkie metryki maszyn w jednym round-tripie.
     # "Dostepne" = fizycznie w magazynie: W_MAGAZYNIE (wolne) + ZAREZERWOWANA

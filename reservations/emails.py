@@ -21,45 +21,11 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.utils import timezone, translation
+from django.utils import timezone
+
+from core.mailing import build_bilingual_email, send_bilingual_mail
 
 logger = logging.getLogger("reservations")
-
-_LANGS = ("pl", "en")
-_SEP = "—" * 22 + " ENGLISH " + "—" * 22
-
-
-def _build_bilingual(body_basename: str, context: dict) -> tuple[str, str]:
-    """Renderuje fragment treści w PL i EN, składa HTML (base_email) + tekst."""
-    html_frag: dict[str, str] = {}
-    text_frag: dict[str, str] = {}
-    for lang in _LANGS:
-        with translation.override(lang):
-            html_frag[lang] = render_to_string(f"emails/{body_basename}_body.html", context)
-            text_frag[lang] = render_to_string(f"emails/{body_basename}_body.txt", context)
-    html_body = render_to_string(
-        "emails/base_email.html",
-        {"body_pl": html_frag["pl"], "body_en": html_frag["en"]},
-    )
-    text_body = f"{text_frag['pl'].strip()}\n\n{_SEP}\n\n{text_frag['en'].strip()}\n"
-    return html_body, text_body
-
-
-def _send(subject: str, html_body: str, text_body: str, recipients: list[str]) -> int:
-    """Wyślij EmailMultiAlternatives. Zwraca liczbę wysłanych (0 = brak/odmowa)."""
-    recipients = [r for r in recipients if r]
-    if not recipients:
-        return 0
-    message = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=recipients,
-    )
-    message.attach_alternative(html_body, "text/html")
-    return message.send()
 
 
 def send_confirmation_email(reservation_pk: int) -> None:
@@ -89,10 +55,10 @@ def send_confirmation_email(reservation_pk: int) -> None:
         "site": reservation.site,
         "recipient_name": creator.get_full_name() or creator.get_username(),
     }
-    html_body, text_body = _build_bilingual("reservation_confirmed", context)
+    html_body, text_body = build_bilingual_email("reservation_confirmed", context)
     uid = reservation.machine.uid
     subject = f"Potwierdzenie rezerwacji {uid} / Reservation {uid} confirmed"
-    sent = _send(subject, html_body, text_body, [creator.email])
+    sent = send_bilingual_mail(subject, html_body, text_body, [creator.email])
 
     if sent:
         Reservation.objects.filter(pk=reservation_pk).update(
@@ -131,10 +97,10 @@ def send_cancellation_email(reservation_pk: int, reason_display: str = "") -> No
         "recipient_name": creator.get_full_name() or creator.get_username(),
         "reason_display": reason_display or reservation.get_cancellation_reason_display(),
     }
-    html_body, text_body = _build_bilingual("reservation_cancelled", context)
+    html_body, text_body = build_bilingual_email("reservation_cancelled", context)
     uid = reservation.machine.uid
     subject = f"Anulowanie rezerwacji {uid} / Reservation {uid} cancelled"
-    if _send(subject, html_body, text_body, [creator.email]):
+    if send_bilingual_mail(subject, html_body, text_body, [creator.email]):
         logger.info("Cancellation email wysłany dla rezerwacji pk=%s.", reservation_pk)
 
 
@@ -146,7 +112,6 @@ def send_reservation_reminder_email(reservation_pk: int) -> int:
     wysyłce, dzięki czemu nieudana próba zostanie ponowiona następnego dnia.
     """
     from core.email_optout import EmailCategory, is_opted_out, unsubscribe_url_for
-    from core.mailing import build_bilingual_email, send_bilingual_mail
 
     from .models import Reservation
 
@@ -228,10 +193,10 @@ def send_request_notification_email(reservation_pk: int) -> None:
         "site": reservation.site,
         "detail_url": f"{base}{detail_path}",
     }
-    html_body, text_body = _build_bilingual("reservation_request", context)
+    html_body, text_body = build_bilingual_email("reservation_request", context)
     uid = reservation.machine.uid
     subject = f"Nowy wniosek o rezerwację {uid} / New reservation request {uid}"
-    if _send(subject, html_body, text_body, recipients):
+    if send_bilingual_mail(subject, html_body, text_body, recipients):
         logger.info(
             "Request notification wysłany (%s odbiorców) dla rezerwacji pk=%s.",
             len(recipients),

@@ -129,7 +129,8 @@ def test_email_send_failure_leaves_sent_at_null_and_logs_error(
     res = _pending(machine, creator)
     with (
         caplog.at_level(logging.ERROR, logger="reservations"),
-        mock.patch.object(emails.EmailMultiAlternatives, "send", return_value=0),
+        # Wysyłka idzie teraz przez core.mailing.send_bilingual_mail (fail-soft).
+        mock.patch("core.mailing.EmailMultiAlternatives.send", return_value=0),
         django_capture_on_commit_callbacks(execute=True),
     ):
         confirm_reservation(res)
@@ -142,6 +143,32 @@ def test_email_send_failure_leaves_sent_at_null_and_logs_error(
         record.levelno == logging.ERROR and str(res.pk) in record.getMessage()
         for record in caplog.records
     )
+
+
+def test_confirmation_smtp_exception_is_failsoft_and_logs_bounce(
+    django_capture_on_commit_callbacks, machine
+):
+    """Wyjątek SMTP przy potwierdzeniu NIE wywraca akcji i tworzy ``BounceLog``.
+
+    Po przejściu maili transakcyjnych na ``core.mailing`` (fail-soft) błąd
+    backendu jest łapany: rezerwacja zostaje potwierdzona, ``sent_at`` jest NULL,
+    a odbicie trafia do dziennika ``BounceLog`` (admin widzi nieudaną wysyłkę).
+    """
+    from core.models import BounceLog
+    from reservations.models import Reservation
+
+    creator = _creator()
+    res = _pending(machine, creator)
+    with (
+        mock.patch("core.mailing.EmailMultiAlternatives.send", side_effect=OSError("SMTP down")),
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        confirm_reservation(res)  # nie rzuca — fail-soft
+
+    res.refresh_from_db()
+    assert res.status == Reservation.Status.POTWIERDZONA  # akcja biznesowa OK
+    assert res.confirmation_email_sent_at is None  # dostarczenie się nie udało
+    assert BounceLog.objects.filter(recipient=creator.email).exists()  # odbicie zalogowane
 
 
 def test_no_email_when_reservation_deleted(

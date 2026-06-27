@@ -78,8 +78,6 @@ from .services import (
 
 logger = logging.getLogger("service")
 
-PAGE_SIZE = 20
-
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 

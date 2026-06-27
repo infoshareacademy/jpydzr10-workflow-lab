@@ -178,9 +178,9 @@ class TestBulkInspectionErrorPaths:
                 "description": "All-fail test",
             },
         )
-        # Status — 200 (form_invalid), 500 (template render bug w widget_tweaks),
-        # albo 302 (no-error happy path). Niezależnie — DB nie ma wpisów.
-        assert resp.status_code in (200, 302, 500)
+        # Status — 200 (form_invalid: re-render z błędami) albo 302 (happy path).
+        # NIE 500 — zweryfikowano, że re-render formularza z błędami działa.
+        assert resp.status_code in (200, 302)
         assert ServiceRecord.objects.count() == 0
 
     @freeze_time("2026-05-16")

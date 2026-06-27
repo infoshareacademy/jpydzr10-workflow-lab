@@ -45,7 +45,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 from core.pagination import PerPageMixin
 
 from .forms import MachineFilterForm, MachineForm, MachineImportXlsxForm
-from .models import Machine
+from .models import INSPECTION_WARNING_DAYS, Machine
 from .services import (
     close_repair,
     create_machine,
@@ -115,7 +115,7 @@ class MachineListView(PerPageMixin, LoginRequiredMixin, ListView):
 def _apply_inspection_filter(queryset, bucket: str):
     """Translate the four ``inspection_status`` buckets into ORM filters."""
     today = date.today()
-    warning_until = today + timedelta(days=14)
+    warning_until = today + timedelta(days=INSPECTION_WARNING_DAYS)
     if bucket == "ok":
         return queryset.filter(inspection_date__gt=warning_until)
     if bucket == "warning":
@@ -576,9 +576,9 @@ def inspections_due_modal_view(request):
     """
     today = date.today()
     overdue_qs = Machine.objects.overdue_inspection(today=today).order_by("inspection_date")
-    upcoming_qs = Machine.objects.upcoming_inspection(days=14, today=today).order_by(
-        "inspection_date"
-    )[:20]
+    upcoming_qs = Machine.objects.upcoming_inspection(
+        days=INSPECTION_WARNING_DAYS, today=today
+    ).order_by("inspection_date")[:20]
     return render(
         request,
         "machines/_inspections_due_modal.html",

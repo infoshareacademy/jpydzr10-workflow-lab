@@ -233,11 +233,13 @@ def update_service_record(record: ServiceRecord, **changes) -> ServiceRecord:
 def close_service(machine, *, today: date | None = None):
     """Return a machine from ``W serwisie`` to the warehouse.
 
-    Wave 11 M-1 fix: używa ``close_repair`` (z guard na ``status == W_SERWISIE``)
-    żeby zapobiec state corruption. Wcześniejszy ``return_machine_to_warehouse``
-    bezwarunkowo overwritował status — pozwalało to nadpisać NA_BUDOWIE
-    przez "Zakończ serwis" na orphan ServiceRecord, zostawiając active
-    rezerwację z maszyną fizycznie w magazynie.
+    Najpierw guard: maszyna MUSI być w stanie ``W serwisie`` (inaczej
+    ``ValidationError``) — zapobiega nadpisaniu ``NA_BUDOWIE`` przez „Zakończ
+    serwis" na osieroconym wpisie serwisowym (zostawiałoby aktywną rezerwację
+    z maszyną fizycznie w magazynie). Po guardzie deleguje do
+    ``return_machine_to_warehouse`` (zamyka powiązane rezerwacje + ustawia status
+    na ``W magazynie``); ``close_repair`` zwracało tylko Machine, bez zamykania
+    rezerwacji.
     """
     from django.core.exceptions import ValidationError
 

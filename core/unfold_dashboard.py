@@ -23,11 +23,11 @@ def callback(request, context: dict[str, Any]) -> dict[str, Any]:
     4. Budowy aktywne
     """
     # Lazy import — modele ladowane po app registry.
-    from machines.models import Machine
+    from machines.models import INSPECTION_WARNING_DAYS, Machine
     from reservations.models import ConstructionSite, Reservation
 
     today = date.today()
-    horizon = today + timedelta(days=14)
+    horizon = today + timedelta(days=INSPECTION_WARNING_DAYS)
 
     try:
         machines_available = Machine.objects.filter(status="W magazynie").count()
