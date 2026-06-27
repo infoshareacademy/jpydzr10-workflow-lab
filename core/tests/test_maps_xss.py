@@ -11,6 +11,7 @@ dosłownie do HTML.
 from __future__ import annotations
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 from accounts.factories import UserFactory
@@ -21,6 +22,9 @@ pytestmark = pytest.mark.django_db
 _PAYLOAD = "</script><img src=x onerror=alert(1)>"
 
 
+# Blok ``pins-data`` renderuje się tylko gdy skonfigurowano klucz Google Maps
+# (ścieżka podatna na XSS w produkcji). Ustawiamy go, by przetestować właściwy kod.
+@override_settings(GOOGLE_MAPS_API_KEY="AIzaTestDummyKeyForXssRegression")
 def test_machine_name_xss_is_escaped_on_map(client):
     MachineFactory(name=_PAYLOAD)
     user = UserFactory()
