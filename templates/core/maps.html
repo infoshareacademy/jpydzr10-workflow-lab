@@ -82,7 +82,8 @@
        json_script byloby idealne ale potrzebujemy raw JSON do JSON.parse() -
        textContent jest bezpieczny (zadnego HTML interpretation).
     {% endcomment %}
-    <script id="pins-data" type="application/json" nonce="{{ CSP_NONCE }}">{{ pins_json|safe }}</script>
+    {# json_script escapuje < > & (ochrona stored-XSS); blok danych (nie wykonywany) #}
+    {{ pins|json_script:"pins-data" }}
 
     {# Init mapy: czeka az Google API zaladowane przez async loader. #}
     <script nonce="{{ CSP_NONCE }}">

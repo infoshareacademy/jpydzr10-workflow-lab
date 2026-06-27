@@ -10,7 +10,6 @@ disabled-od-M1 input w topbar, robi typeahead przez HTMX (``request.htmx``
 gdy operator naciśnie Enter zamiast klikać w wynik dropdownu.
 """
 
-import json
 from datetime import date, timedelta
 
 from django.conf import settings
@@ -428,7 +427,10 @@ def maps_view(request):
         )
 
     context = {
-        "pins_json": json.dumps(pins, ensure_ascii=False),
+        # Przekazujemy listę — szablon renderuje ją przez ``json_script``, które
+        # escapuje ``< > &`` (ochrona przed stored-XSS, gdy pole tekstowe maszyny/
+        # budowy/adresu zawiera np. ``</script>``). NIE używać ``|safe`` na danych.
+        "pins": pins,
         "pins_count": len(pins),
         "gmap_api_key": settings.GOOGLE_MAPS_API_KEY,
     }
