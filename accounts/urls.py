@@ -37,6 +37,11 @@ urlpatterns = [
     path("2fa/setup/", twofactor.two_factor_setup, name="2fa_setup"),
     path("2fa/verify/", twofactor.two_factor_verify, name="2fa_verify"),
     path("2fa/recovery/download/", twofactor.recovery_codes_download, name="2fa_recovery_download"),
+    path(
+        "2fa/recovery/regenerate/",
+        twofactor.recovery_codes_regenerate,
+        name="2fa_recovery_regenerate",
+    ),
     # Strona docelowa dla ``AXES_LOCKOUT_URL`` — pokazywana po przekroczeniu
     # limitu nieudanych prób logowania (5 prób per username+ip → 1h lockout).
     path("zablokowane/", views.AxesLockedView.as_view(), name="locked"),

@@ -21,6 +21,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from django.views.decorators.http import require_POST
 from django_otp import login as otp_login
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -123,6 +124,24 @@ def two_factor_verify(request):
             messages.error(request, _("Nieprawidłowy kod uwierzytelniający lub zapasowy."))
 
     return render(request, "accounts/2fa_verify.html", {})
+
+
+@login_required
+@require_POST
+def recovery_codes_regenerate(request):
+    """Wygenerowanie świeżego zestawu kodów zapasowych (unieważnia poprzednie).
+
+    Sensowne tylko, gdy użytkownik ma potwierdzone urządzenie TOTP — w innym
+    wypadku kody zapasowe nie miałyby czego chronić, więc kierujemy na setup 2FA.
+    Po wygenerowaniu kody trafiają do sesji i są pobierane jako TXT tą samą
+    ścieżką co przy pierwszej konfiguracji (:func:`recovery_codes_download`).
+    """
+    user = request.user
+    if not TOTPDevice.objects.filter(user=user, confirmed=True).exists():
+        return redirect("accounts:2fa_setup")
+    codes = _generate_recovery_codes(user)
+    request.session[_SESSION_RECOVERY_KEY] = codes
+    return redirect("accounts:2fa_recovery_download")
 
 
 @login_required

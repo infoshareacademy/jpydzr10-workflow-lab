@@ -383,25 +383,79 @@
                         </a>
                     </div>
 
-                    {# 2FA — placeholder M3 (Coming soon) #}
-                    <div class="flex items-start gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 opacity-75">
-                        <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                    {# 2FA — realny status + zarządzanie kodami zapasowymi #}
+                    <div class="flex items-start gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                        {% if has_2fa %}
+                        <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                  viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
                         </span>
+                        {% else %}
+                        <span class="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M12 9v2m0 4h.01M5.07 19H18.93a2 2 0 001.74-2.99l-6.93-12a2 2 0 00-3.48 0l-6.93 12A2 2 0 005.07 19z"/>
+                            </svg>
+                        </span>
+                        {% endif %}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-semibold text-sm text-slate-900 dark:text-slate-50 inline-flex items-center gap-2">
+                            <h3 class="font-semibold text-sm text-slate-900 dark:text-slate-50 inline-flex items-center gap-2 flex-wrap">
                                 {% trans "Uwierzytelnianie dwuskładnikowe (2FA)" %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                                    {% trans "Wkrótce" %}
+                                {% if has_2fa %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                                    {% trans "Aktywne" %}
                                 </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                                    {% trans "Nieaktywne" %}
+                                </span>
+                                {% endif %}
                             </h3>
+                            {% if has_2fa %}
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {% trans "Dodatkowa warstwa zabezpieczeń przez kod TOTP z aplikacji autentykacyjnej. Planowane w Milestone 3." %}
+                                {% trans "Twoje konto jest chronione kodem TOTP z aplikacji autentykacyjnej. Możesz wygenerować nowy zestaw 10 kodów zapasowych (poprzednie przestaną działać)." %}
                             </p>
+                            <form method="post" action="{% url 'accounts:2fa_recovery_regenerate' %}" class="mt-3">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-medium
+                                               bg-white dark:bg-slate-800
+                                               text-slate-700 dark:text-slate-200
+                                               border border-slate-300 dark:border-slate-600
+                                               hover:bg-slate-100 dark:hover:bg-slate-700
+                                               focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
+                                               transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    {% trans "Wygeneruj nowe kody zapasowe" %}
+                                </button>
+                            </form>
+                            {% else %}
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {% trans "Dodatkowa warstwa zabezpieczeń przez kod TOTP z aplikacji autentykacyjnej (np. Google Authenticator). Zalecane dla wszystkich kont pracowniczych." %}
+                            </p>
+                            <a href="{% url 'accounts:2fa_setup' %}"
+                               class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-medium
+                                      bg-brand-600 hover:bg-brand-700 active:bg-brand-800
+                                      text-white shadow-sm
+                                      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                                      dark:focus-visible:ring-offset-slate-900
+                                      transition-colors">
+                                {% trans "Skonfiguruj 2FA" %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
 

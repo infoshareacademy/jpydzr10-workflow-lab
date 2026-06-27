@@ -23,6 +23,8 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, TemplateView
+from django_otp import devices_for_user
+from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_ratelimit.decorators import ratelimit
 
 from core.pagination import PerPageMixin
@@ -165,10 +167,14 @@ def profile(request):
     else:
         form = ProfileForm(instance=employee_profile)
 
+    has_2fa = any(
+        isinstance(device, TOTPDevice) for device in devices_for_user(request.user, confirmed=True)
+    )
+
     return render(
         request,
         "accounts/profile.html",
-        {"form": form, "profile": employee_profile},
+        {"form": form, "profile": employee_profile, "has_2fa": has_2fa},
     )
 
 
