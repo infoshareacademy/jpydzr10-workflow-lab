@@ -3419,10 +3419,7 @@ msgstr "— select a replacement machine —"
 
 #: reservations/forms.py:378
 msgid "Maszyna, która przejmie rezerwację od dziś do końca okresu."
-msgstr ""
-"The machine that will take over the reservation from today to the end of the "
-"period.The machine that will take over the reservation from today until the "
-"end of the period."
+msgstr "The machine that will take over the reservation from today to the end of the period."
 
 #: reservations/forms.py:387
 msgid "np. Awaria silnika KOP-001, klient wymaga ciągłej pracy"
@@ -3861,18 +3858,12 @@ msgid "Opis awarii musi mieć co najmniej 5 znaków."
 msgstr "The failure description must be at least 5 characters long."
 
 #: reservations/services.py:876
-#, python-format
 msgid "Nie można zgłosić awarii dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr ""
-"Cannot report a breakdown for a closed reservation (status=%(status)s).A "
-"failure cannot be reported for a closed reservation (status=%(status)s)."
+msgstr "Cannot report a breakdown for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:966
-#, python-format
 msgid "Nie można zmienić osoby dla zamkniętej rezerwacji (status=%(status)s)."
-msgstr ""
-"Cannot change the person for a closed reservation (status=%(status)s).The "
-"person cannot be changed for a closed reservation (status=%(status)s)."
+msgstr "Cannot change the person for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:976 reservations/services.py:1555
 #, python-format
@@ -3887,12 +3878,8 @@ msgstr ""
 "The machine cannot be replaced for a closed reservation (status=%(status)s)."
 
 #: reservations/services.py:1070
-#, python-format
 msgid "Maszyna %(uid)s została wycofana z floty — nie może być zastępcą."
-msgstr ""
-"Machine %(uid)s has been retired from the fleet — it cannot be a "
-"replacement.Machine %(uid)s has been retired from the fleet — it cannot be a "
-"replacement."
+msgstr "Machine %(uid)s has been retired from the fleet — it cannot be a replacement."
 
 #: reservations/services.py:1079
 #, python-format
@@ -3925,9 +3912,7 @@ msgstr ""
 
 #: reservations/services.py:1296
 msgid "Lista maszyn zawiera duplikaty — każda maszyna może być tylko raz."
-msgstr ""
-"The machine list contains duplicates — each machine may appear only once.The "
-"machine list contains duplicates — each machine can appear only once."
+msgstr "The machine list contains duplicates — each machine may appear only once."
 
 #: reservations/services.py:1317
 #, python-format
