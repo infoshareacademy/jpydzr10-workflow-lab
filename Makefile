@@ -1,4 +1,4 @@
-.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run voice shell superuser clean css css-watch messages compilemessages
+.PHONY: help install dev db-up db-down db-logs test test-cov test-fast e2e lint format check migrate seed run voice shell superuser clean css css-watch messages compilemessages
 
 help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
@@ -24,6 +24,7 @@ help:
 	@echo "  make test         — pytest -n auto"
 	@echo "  make test-cov     — pytest --cov"
 	@echo "  make test-fast    — pytest -q --no-cov (najszybsze)"
+	@echo "  make e2e          — pytest tests/e2e (Playwright, wymaga `make run`)"
 	@echo "  make lint         — ruff check"
 	@echo "  make format       — ruff format"
 	@echo "  make check        — django check --deploy"
@@ -57,6 +58,13 @@ test-cov:
 
 test-fast:
 	uv run pytest -q --no-cov --tb=line
+
+# Testy E2E (Playwright) — wymagają działającego serwera dev na :8002
+# (`make run` w drugim terminalu). Bez serwera scenariusze skipują się
+# (guard ERR_CONNECTION_REFUSED → pytest.skip). Dodaj `--headed`, aby
+# zobaczyć przeglądarkę: uv run pytest tests/e2e/ -m e2e --headed
+e2e:
+	uv run pytest tests/e2e/ -m e2e -v
 
 lint:
 	uv run ruff check .
