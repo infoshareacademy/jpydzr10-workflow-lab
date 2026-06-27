@@ -222,7 +222,7 @@ def reservation_quick_modal_view(request: HttpRequest) -> HttpResponse:
         try:
             start_date = date.fromisoformat(day_raw)
             initial["start_date"] = start_date
-            # Default 15 dni (Sebastian walkthrough -- typowy okres wynajmu).
+            # +14 dni od startu = 15-dniowy okres włącznie (typowy najem).
             initial["end_date"] = start_date + timedelta(days=14)
         except ValueError:
             pass
@@ -1560,12 +1560,14 @@ def daily_sync_now_view(request: HttpRequest) -> HttpResponse:
         request,
         _(
             "Synchronizacja statusów wykonana: %(updated)d 'Na budowie', "
-            "%(extended)d przedłużono (Hard Return), %(reserved)d 'Zarezerwowana'."
+            "%(extended)d przedłużono (Hard Return), %(reserved)d 'Zarezerwowana', "
+            "%(released)d zwolniono do magazynu."
         )
         % {
             "updated": result["updated"],
             "extended": result["extended"],
             "reserved": result["reserved"],
+            "released": result["released"],
         },
     )
     return redirect("home")

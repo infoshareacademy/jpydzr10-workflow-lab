@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-27 14:21+0200\n"
+"POT-Creation-Date: 2026-06-27 15:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1021,29 +1021,33 @@ msgstr "Invalid code. Please try again."
 msgid "Nieprawidłowy kod uwierzytelniający lub zapasowy."
 msgstr "Invalid authentication or recovery code."
 
-#: accounts/views.py:221
+#: accounts/views.py:162
+msgid "Brak profilu pracownika dla tego konta."
+msgstr "No employee profile for this account."
+
+#: accounts/views.py:226
 msgid "Zapisano preferencje e-mail."
 msgstr "Email preferences saved."
 
-#: accounts/views.py:349
+#: accounts/views.py:356
 #, python-format
 msgid "Pracownik zarejestrowany: %(name)s"
 msgstr "Employee registered: %(name)s"
 
-#: accounts/views.py:447
+#: accounts/views.py:454
 msgid "Nie możesz zakończyć własnego zatrudnienia."
 msgstr "You cannot end your own employment."
 
-#: accounts/views.py:459
+#: accounts/views.py:466
 #, python-format
 msgid "Pracownik %(name)s zwolniony — sesje skasowane, grupy wyczyszczone."
 msgstr "Employee %(name)s dismissed — sessions cleared, groups removed."
 
-#: accounts/views.py:478
+#: accounts/views.py:485
 msgid "Nie możesz zanonimizować własnego profilu."
 msgstr "You cannot anonymize your own profile."
 
-#: accounts/views.py:489
+#: accounts/views.py:496
 msgid ""
 "Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."
 msgstr ""
@@ -2197,16 +2201,16 @@ msgstr "Sat"
 msgid "Nd"
 msgstr "Sun"
 
-#: core/unfold_dashboard.py:70 templates/home.html:56
+#: core/unfold_dashboard.py:72 templates/home.html:56
 msgid "Dostępne maszyny"
 msgstr "Available machines"
 
-#: core/unfold_dashboard.py:72
+#: core/unfold_dashboard.py:74
 #, python-format
 msgid "%(count)s na budowie"
 msgstr "%(count)s on site"
 
-#: core/unfold_dashboard.py:76 reservations/admin.py:80
+#: core/unfold_dashboard.py:78 reservations/admin.py:80
 #: reservations/templates/reservations/site_detail.html:241
 #: reservations/templates/reservations/site_list.html:139
 #: reservations/templates/reservations/site_list.html:219
@@ -2214,25 +2218,25 @@ msgstr "%(count)s on site"
 msgid "Aktywne rezerwacje"
 msgstr "Active reservations"
 
-#: core/unfold_dashboard.py:78
+#: core/unfold_dashboard.py:80
 #, python-format
 msgid "%(count)s oczekujących"
 msgstr "%(count)s pending"
 
-#: core/unfold_dashboard.py:82
+#: core/unfold_dashboard.py:84
 msgid "Przeglądy przeterminowane"
 msgstr "Overdue inspections"
 
-#: core/unfold_dashboard.py:84
+#: core/unfold_dashboard.py:86
 #, python-format
 msgid "%(count)s w 14 dniach"
 msgstr "%(count)s within 14 days"
 
-#: core/unfold_dashboard.py:88
+#: core/unfold_dashboard.py:90
 msgid "Aktywne budowy"
 msgstr "Active construction sites"
 
-#: core/unfold_dashboard.py:90
+#: core/unfold_dashboard.py:92
 msgid "Otwarte projekty"
 msgstr "Open projects"
 
@@ -3252,7 +3256,9 @@ msgstr "Edit machine %(uid)s"
 msgid ""
 "Nie można usunąć maszyny %(uid)s — ma powiązane rezerwacje lub wpisy "
 "serwisowe. Najpierw usuń lub przenieś te powiązania."
-msgstr "Cannot delete machine %(uid)s — it has linked reservations or service records. Remove or move those links first."
+msgstr ""
+"Cannot delete machine %(uid)s — it has linked reservations or service "
+"records. Remove or move those links first."
 
 #: machines/views.py:272
 #, python-format
@@ -3815,7 +3821,10 @@ msgid ""
 "Data faktycznego (wcześniejszego) zwrotu maszyny — pole ewidencyjne. Maszynę "
 "zwalnia samo zakończenie rezerwacji (status „Zakończona” jest pomijany przy "
 "wykrywaniu konfliktów), nie ta data."
-msgstr "Date of the actual (early) machine return — a record-keeping field. The machine is freed by completing the reservation (the “Completed” status is skipped in conflict detection), not by this date."
+msgstr ""
+"Date of the actual (early) machine return — a record-keeping field. The "
+"machine is freed by completing the reservation (the “Completed” status is "
+"skipped in conflict detection), not by this date."
 
 #: reservations/models.py:305
 msgid "Zastąpiona przez"
@@ -4068,7 +4077,9 @@ msgstr ""
 msgid ""
 "Nie można usunąć budowy %(project_number)s — ma powiązane rezerwacje (także "
 "zakończone lub anulowane)."
-msgstr "Cannot delete site %(project_number)s — it has linked reservations (including completed or cancelled ones)."
+msgstr ""
+"Cannot delete site %(project_number)s — it has linked reservations "
+"(including completed or cancelled ones)."
 
 #: reservations/services.py:882
 msgid "Opis awarii musi mieć co najmniej 5 znaków."
@@ -5668,10 +5679,9 @@ msgstr "Only administrative staff can synchronize statuses."
 #, python-format
 msgid ""
 "Synchronizacja statusów wykonana: %(updated)d 'Na budowie', %(extended)d "
-"przedłużono (Hard Return), %(reserved)d 'Zarezerwowana'."
-msgstr ""
-"Status synchronization completed: %(updated)d 'On site', %(extended)d "
-"extended (Hard Return), %(reserved)d 'Reserved'."
+"przedłużono (Hard Return), %(reserved)d 'Zarezerwowana', %(released)d "
+"zwolniono do magazynu."
+msgstr "Status synchronization completed: %(updated)d 'On site', %(extended)d extended (Hard Return), %(reserved)d 'Reserved', %(released)d released to warehouse."
 
 #: service/admin.py:45 service/models.py:124
 #: service/templates/service/detail.html:4
@@ -6002,7 +6012,7 @@ msgstr "Next"
 msgid "Brak wpisów serwisowych"
 msgstr "No service entries"
 
-#: service/services.py:250
+#: service/services.py:252
 #, python-format
 msgid ""
 "Nie można zakończyć serwisu — maszyna %(uid)s nie jest w stanie 'W serwisie' "
@@ -6483,32 +6493,32 @@ msgstr "Select a machine above to download its service card."
 msgid "Pobierzesz raport za:"
 msgstr "You will download the report for:"
 
-#: service/views.py:186
+#: service/views.py:184
 #, python-format
 msgid "Wpis serwisowy %(pk)s dla maszyny %(uid)s dodany."
 msgstr "Service entry %(pk)s for machine %(uid)s added."
 
-#: service/views.py:228
+#: service/views.py:226
 #, python-format
 msgid "Wpis serwisowy #%(pk)s dla maszyny %(uid)s zaktualizowany."
 msgstr "Service entry #%(pk)s for machine %(uid)s updated."
 
-#: service/views.py:257
+#: service/views.py:255
 #, python-format
 msgid "Wpis serwisowy #%(pk)s usunięty."
 msgstr "Service entry #%(pk)s deleted."
 
-#: service/views.py:324
+#: service/views.py:322
 #, python-format
 msgid "Utworzono %(count)s wpisów przeglądu (%(record_type)s)."
 msgstr "Created %(count)s inspection entries (%(record_type)s)."
 
-#: service/views.py:332
+#: service/views.py:330
 #, python-format
 msgid "...oraz %(count)s dalszych błędów."
 msgstr "...and %(count)s further errors."
 
-#: service/views.py:517
+#: service/views.py:515
 #, python-format
 msgid "Serwis zakończony — maszyna %(uid)s wraca do magazynu."
 msgstr "Service completed — machine %(uid)s returns to the warehouse."

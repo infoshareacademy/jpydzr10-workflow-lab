@@ -155,7 +155,12 @@ def profile(request):
     Aktualizacja delegowana do ``update_profile`` (service layer) — daje spójne
     walidowanie i jeden punkt do podpięcia audytu / history.
     """
-    employee_profile = request.user.profile
+    # Sygnał ``post_save`` tworzy profil dla każdego usera — ale defensywnie
+    # (spójnie z resztą widoków) obsługujemy konto bez profilu zamiast 500.
+    employee_profile = getattr(request.user, "profile", None)
+    if employee_profile is None:
+        messages.error(request, _("Brak profilu pracownika dla tego konta."))
+        return redirect("home")
 
     if request.method == "POST":
         form = ProfileForm(request.POST, instance=employee_profile)
@@ -241,6 +246,7 @@ def email_preferences_view(request):
 
 
 @login_required
+@ratelimit(key="user", rate="6/h", method="GET", block=True)
 def data_export_view(request):
     """Eksport danych zalogowanego użytkownika (RODO Art. 20 — przenoszalność).
 
@@ -252,7 +258,8 @@ def data_export_view(request):
     from reservations.models import Reservation
 
     user = request.user
-    profile = user.profile
+    # Defensywnie (spójnie z resztą widoków) — konto bez profilu nie wywraca eksportu.
+    profile = getattr(user, "profile", None)
     reservations = Reservation.objects.filter(created_by=user).select_related("machine", "site")
     audit = AuditLogEntry.objects.filter(user=user)
 
@@ -267,11 +274,11 @@ def data_export_view(request):
             "last_login": user.last_login.isoformat() if user.last_login else None,
         },
         "profile": {
-            "function": profile.function,
-            "phone": profile.phone,
-            "employee_id": profile.employee_id,
-            "preferred_language": profile.preferred_language,
-            "theme_preference": profile.theme_preference,
+            "function": profile.function if profile else None,
+            "phone": profile.phone if profile else None,
+            "employee_id": profile.employee_id if profile else None,
+            "preferred_language": profile.preferred_language if profile else None,
+            "theme_preference": profile.theme_preference if profile else None,
         },
         "reservations": [
             {

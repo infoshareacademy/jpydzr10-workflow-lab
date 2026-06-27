@@ -30,14 +30,16 @@ def callback(request, context: dict[str, Any]) -> dict[str, Any]:
     horizon = today + timedelta(days=INSPECTION_WARNING_DAYS)
 
     try:
-        machines_available = Machine.objects.filter(status="W magazynie").count()
+        machines_available = Machine.objects.filter(status=Machine.Status.W_MAGAZYNIE).count()
         machines_total = Machine.objects.count()
-        machines_on_site = Machine.objects.filter(status="Na budowie").count()
+        machines_on_site = Machine.objects.filter(status=Machine.Status.NA_BUDOWIE).count()
 
         reservations_active = Reservation.objects.filter(
-            status__in=("oczekująca", "potwierdzona")
+            status__in=(Reservation.Status.OCZEKUJACA, Reservation.Status.POTWIERDZONA)
         ).count()
-        reservations_pending = Reservation.objects.filter(status="oczekująca").count()
+        reservations_pending = Reservation.objects.filter(
+            status=Reservation.Status.OCZEKUJACA
+        ).count()
 
         inspections_overdue = (
             Machine.objects.filter(inspection_date__lt=today)
