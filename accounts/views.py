@@ -1,26 +1,66 @@
 """Widoki aplikacji accounts (login, logout, profile, employee management)."""
 
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, TemplateView
+from django_otp import devices_for_user
+from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_ratelimit.decorators import ratelimit
 
 from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors
 
-from .forms import ProfileForm, RegisterEmployeeForm
+from .forms import (
+    BilingualPasswordResetForm,
+    PlanerAuthenticationForm,
+    ProfileForm,
+    RegisterEmployeeForm,
+)
 from .models import EmployeeProfile
 from .services import anonymize_employee, register_employee, terminate_employee, update_profile
+
+
+def _apply_language_cookie(response: HttpResponse, lang_code: str) -> HttpResponse:
+    """Ustawia ciasteczko języka (mechanizm Django LocaleMiddleware) na odpowiedzi.
+
+    Pozwala utrwalić wybór języka profilu (``preferred_language``) jako domyślny
+    język UI — odczytywany przez ``LocaleMiddleware`` przy kolejnych żądaniach.
+    Mirror logiki ``django.views.i18n.set_language``. Świadomie NIE wołamy
+    ``translation.activate`` — odpowiedź to redirect (brak renderowanej treści),
+    a aktywacja per-wątek wyciekałaby do kolejnych żądań/testów.
+    """
+    if lang_code:
+        response.set_cookie(
+            settings.LANGUAGE_COOKIE_NAME,
+            lang_code,
+            max_age=settings.LANGUAGE_COOKIE_AGE,
+            path=settings.LANGUAGE_COOKIE_PATH,
+            domain=settings.LANGUAGE_COOKIE_DOMAIN,
+            secure=settings.LANGUAGE_COOKIE_SECURE,
+            httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+            samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+        )
+    return response
 
 
 @method_decorator(
@@ -39,7 +79,16 @@ class PlanerLoginView(LoginView):
     """
 
     template_name = "accounts/login.html"
+    authentication_form = PlanerAuthenticationForm
     redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        """Po zalogowaniu ustaw język UI na preferencję profilu użytkownika."""
+        response = super().form_valid(form)
+        profile = getattr(self.request.user, "profile", None)
+        if profile is not None:
+            _apply_language_cookie(response, profile.preferred_language)
+        return response
 
 
 class AxesLockedView(TemplateView):
@@ -58,6 +107,47 @@ class PlanerLogoutView(LogoutView):
     next_page = reverse_lazy("home")
 
 
+# --- Reset hasła („zapomniałem hasła") — 4 kroki standardowego flow Django,
+#     z firmowymi szablonami i dwujęzycznym mailem (BilingualPasswordResetForm).
+#     Dostępne dla niezalogowanych (middleware 2FA nie dotyczy anonimowych).
+
+
+@method_decorator(
+    ratelimit(key="ip", rate="5/h", method="POST", block=True),
+    name="dispatch",
+)
+class PlanerPasswordResetView(PasswordResetView):
+    """Krok 1: formularz adresu e-mail → wysyłka linku resetującego.
+
+    Rate-limit 5 prób POST / godzinę per IP chroni przed nadużyciem wysyłki
+    maili (i przed próbą enumeracji kont). Sama klasa bazowa nie ujawnia, czy
+    adres istnieje — zawsze przekierowuje na stronę „wysłano".
+    """
+
+    template_name = "accounts/password_reset.html"
+    form_class = BilingualPasswordResetForm
+    success_url = reverse_lazy("accounts:password_reset_done")
+
+
+class PlanerPasswordResetDoneView(PasswordResetDoneView):
+    """Krok 2: potwierdzenie „jeśli konto istnieje, mail został wysłany"."""
+
+    template_name = "accounts/password_reset_done.html"
+
+
+class PlanerPasswordResetConfirmView(PasswordResetConfirmView):
+    """Krok 3: ustawienie nowego hasła (po kliknięciu linku z maila)."""
+
+    template_name = "accounts/password_reset_confirm.html"
+    success_url = reverse_lazy("accounts:password_reset_complete")
+
+
+class PlanerPasswordResetCompleteView(PasswordResetCompleteView):
+    """Krok 4: hasło zmienione — link do ponownego logowania."""
+
+    template_name = "accounts/password_reset_complete.html"
+
+
 @login_required
 def profile(request):
     """Widok profilu zalogowanego użytkownika (podgląd + edycja podstawowych danych).
@@ -65,21 +155,157 @@ def profile(request):
     Aktualizacja delegowana do ``update_profile`` (service layer) — daje spójne
     walidowanie i jeden punkt do podpięcia audytu / history.
     """
-    employee_profile = request.user.profile
+    # Sygnał ``post_save`` tworzy profil dla każdego usera — ale defensywnie
+    # (spójnie z resztą widoków) obsługujemy konto bez profilu zamiast 500.
+    employee_profile = getattr(request.user, "profile", None)
+    if employee_profile is None:
+        messages.error(request, _("Brak profilu pracownika dla tego konta."))
+        return redirect("home")
 
     if request.method == "POST":
         form = ProfileForm(request.POST, instance=employee_profile)
         if form.is_valid():
             update_profile(employee_profile, **form.cleaned_data)
-            return redirect("accounts:profile")
+            # Zmiana języka w profilu od razu przełącza UI (utrwalenie w cookie).
+            response = redirect("accounts:profile")
+            return _apply_language_cookie(response, employee_profile.preferred_language)
     else:
         form = ProfileForm(instance=employee_profile)
+
+    has_2fa = any(
+        isinstance(device, TOTPDevice) for device in devices_for_user(request.user, confirmed=True)
+    )
 
     return render(
         request,
         "accounts/profile.html",
-        {"form": form, "profile": employee_profile},
+        {"form": form, "profile": employee_profile, "has_2fa": has_2fa},
     )
+
+
+def email_preferences_view(request):
+    """Zarządzanie zgodami na nieobowiązkowe maile + obsługa „wypisz się".
+
+    Tożsamość ustalana dwojako: (a) podpisany token z linku w mailu (działa bez
+    logowania, dotyczy konkretnego konta), albo (b) zalogowany użytkownik
+    zarządzający własnymi preferencjami. Bez żadnego z tych źródeł → przekierowanie
+    na logowanie. Token jest re-walidowany przy POST (nie ufamy ukrytemu polu).
+    """
+    from core.email_optout import CATEGORY_LABELS, parse_unsubscribe_token
+
+    user_model = get_user_model()
+    token = request.POST.get("token") or request.GET.get("token") or ""
+    focus_category = None
+    target_user = None
+
+    if token:
+        parsed = parse_unsubscribe_token(token)
+        if parsed is None:
+            return render(request, "accounts/email_preferences.html", {"invalid_token": True})
+        uid, focus_category = parsed
+        target_user = user_model.objects.filter(pk=uid).select_related("profile").first()
+
+    if target_user is None:
+        if request.user.is_authenticated:
+            target_user = request.user
+            token = ""  # zalogowany zarządza sobą — token zbędny
+        else:
+            return redirect(f"{reverse_lazy('accounts:login')}?next={request.path}")
+
+    profile = getattr(target_user, "profile", None)
+    if profile is None:
+        return render(request, "accounts/email_preferences.html", {"invalid_token": True})
+
+    categories = list(CATEGORY_LABELS.items())
+
+    if request.method == "POST":
+        # Subskrybowane = zaznaczony checkbox „cat_<klucz>"; brak = rezygnacja.
+        opted_out = [key for key, _label in categories if not request.POST.get(f"cat_{key}")]
+        profile.email_opt_outs = opted_out
+        profile.save(update_fields=["email_opt_outs"])
+        messages.success(request, _("Zapisano preferencje e-mail."))
+        # Po zapisie pokaż aktualny stan (zachowaj token w URL gdy anonimowo).
+        url = reverse_lazy("accounts:email_preferences")
+        return redirect(f"{url}?token={token}" if token else url)
+
+    opt_outs = set(profile.email_opt_outs or [])
+    rows = [
+        {"key": key, "label": label, "subscribed": key not in opt_outs} for key, label in categories
+    ]
+    return render(
+        request,
+        "accounts/email_preferences.html",
+        {
+            "rows": rows,
+            "token": token,
+            "focus_category": focus_category,
+            "focus_label": dict(CATEGORY_LABELS).get(focus_category),
+            "account_label": target_user.get_username(),
+        },
+    )
+
+
+@login_required
+@ratelimit(key="user", rate="6/h", method="GET", block=True)
+def data_export_view(request):
+    """Eksport danych zalogowanego użytkownika (RODO Art. 20 — przenoszalność).
+
+    Zwraca komplet danych usera w formacie JSON (do pobrania): konto, profil,
+    rezerwacje utworzone przez niego oraz wpisy dziennika zdarzeń go dotyczące.
+    Samoobsługowo — każdy widzi WYŁĄCZNIE własne dane.
+    """
+    from core.models import AuditLogEntry
+    from reservations.models import Reservation
+
+    user = request.user
+    # Defensywnie (spójnie z resztą widoków) — konto bez profilu nie wywraca eksportu.
+    profile = getattr(user, "profile", None)
+    reservations = Reservation.objects.filter(created_by=user).select_related("machine", "site")
+    audit = AuditLogEntry.objects.filter(user=user)
+
+    payload = {
+        "exported_at": timezone.now().isoformat(),
+        "account": {
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "date_joined": user.date_joined.isoformat(),
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+        },
+        "profile": {
+            "function": profile.function if profile else None,
+            "phone": profile.phone if profile else None,
+            "employee_id": profile.employee_id if profile else None,
+            "preferred_language": profile.preferred_language if profile else None,
+            "theme_preference": profile.theme_preference if profile else None,
+        },
+        "reservations": [
+            {
+                "id": r.pk,
+                "machine": r.machine.uid if r.machine_id else None,
+                "site": r.site.project_number if r.site_id else None,
+                "start_date": r.start_date.isoformat() if r.start_date else None,
+                "end_date": r.end_date.isoformat() if r.end_date else None,
+                "status": r.status,
+                "person": r.person,
+            }
+            for r in reservations
+        ],
+        "audit_log": [
+            {
+                "timestamp": a.timestamp.isoformat(),
+                "action": a.action,
+                "object_type": a.object_type,
+                "object_id": a.object_id,
+            }
+            for a in audit
+        ],
+    }
+    response = JsonResponse(payload, json_dumps_params={"ensure_ascii": False, "indent": 2})
+    filename = f"moje-dane-{user.username}-{timezone.now():%Y-%m-%d}.json"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

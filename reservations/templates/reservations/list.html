@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load planer_tags widget_tweaks %}
+{% load planer_tags widget_tweaks i18n %}
 
 {% comment %}
     Reservations list — sticky filter bar (status chips + search + date range),
@@ -18,7 +18,7 @@
     debounced live search, responsive row hover, Alpine dropdown akcji per row.
 {% endcomment %}
 
-{% block title %}Rezerwacje — Planer Maszyn{% endblock %}
+{% block title %}{% trans "Rezerwacje — Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 <div class="space-y-5">
@@ -30,11 +30,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span>Lista rezerwacji</span>
+                <span>{% trans "Lista rezerwacji" %}</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Rezerwacje</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{% trans "Rezerwacje" %}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                Wszystkie rezerwacje maszyn — filtruj po statusie, osobie lub okresie.
+                {% trans "Wszystkie rezerwacje maszyn — filtruj po statusie, osobie lub okresie." %}
             </p>
         </div>
 
@@ -44,7 +44,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/>
                 </svg>
-                <span>Timeline</span>
+                <span>{% trans "Timeline" %}</span>
             </a>
             {# B-7: Nowa grupa rezerwacji (multi-machine) — secondary CTA #}
             <a href="{% url 'reservations:batch_create' %}"
@@ -52,14 +52,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
-                <span>Nowa grupa</span>
+                <span>{% trans "Nowa grupa" %}</span>
             </a>
             <a href="{% url 'reservations:create' %}"
                class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                <span>Nowa rezerwacja</span>
+                <span>{% trans "Nowa rezerwacja" %}</span>
             </a>
         </div>
     </header>
@@ -79,13 +79,14 @@
               hx-target="#reservations-table"
               hx-swap="innerHTML"
               hx-push-url="true"
+              hx-indicator="#res-loading"
               hx-trigger="change from:select, submit, change from:input[type='date'], keyup changed delay:300ms from:input[name='person'], keyup changed delay:300ms from:input[name='q']"
               class="space-y-3">
 
             <div class="flex flex-wrap items-center gap-2">
 
                 {# ---------- Status chips (clickable filter) ---------- #}
-                <div role="group" aria-label="Filtruj po statusie" class="inline-flex flex-wrap items-center gap-1.5">
+                <div role="group" aria-label="{% trans 'Filtruj po statusie' %}" class="inline-flex flex-wrap items-center gap-1.5">
                     {# „Wszystkie" — default (no status param) #}
                     <button type="submit"
                             name="status"
@@ -93,16 +94,16 @@
                             aria-pressed="{% if not filter_form.status.value %}true{% else %}false{% endif %}"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                    {% if not filter_form.status.value %}bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100{% else %}bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700{% endif %}">
-                        <span>Wszystkie</span>
+                        <span>{% trans "Wszystkie" %}</span>
                     </button>
 
                     {# Oczekująca (amber/warning) #}
                     <button type="submit" name="status" value="oczekująca"
                             aria-pressed="{% if filter_form.status.value == 'oczekująca' %}true{% else %}false{% endif %}"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
-                                   {% if filter_form.status.value == 'oczekująca' %}bg-amber-500 text-white border-amber-500 dark:bg-amber-500 dark:border-amber-500{% else %}bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40{% endif %}">
+                                   {% if filter_form.status.value == 'oczekująca' %}bg-amber-600 text-white border-amber-600 dark:bg-amber-600 dark:border-amber-600{% else %}bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                        <span>Oczekująca</span>
+                        <span>{% trans "Oczekująca" %}</span>
                     </button>
 
                     {# Potwierdzona (success/emerald) — spojne z status_badge tag, ktory daje #}
@@ -112,7 +113,7 @@
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                    {% if filter_form.status.value == 'potwierdzona' %}bg-emerald-600 text-white border-emerald-600{% else %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                        <span>Potwierdzona</span>
+                        <span>{% trans "Potwierdzona" %}</span>
                     </button>
 
                     {# Zakończona (neutral/slate) #}
@@ -121,7 +122,7 @@
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                    {% if filter_form.status.value == 'zakończona' %}bg-slate-600 text-white border-slate-600 dark:bg-slate-500 dark:border-slate-500{% else %}bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                        <span>Zakończona</span>
+                        <span>{% trans "Zakończona" %}</span>
                     </button>
 
                     {# Anulowana (danger/rose) #}
@@ -130,7 +131,7 @@
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                                    {% if filter_form.status.value == 'anulowana' %}bg-rose-600 text-white border-rose-600{% else %}bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40{% endif %}">
                         <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                        <span>Anulowana</span>
+                        <span>{% trans "Anulowana" %}</span>
                     </button>
                 </div>
 
@@ -158,7 +159,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
-                    <span class="hidden sm:inline">Więcej filtrów</span>
+                    <span class="hidden sm:inline">{% trans "Więcej filtrów" %}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform" :class="advancedOpen && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                     </svg>
@@ -168,11 +169,11 @@
                 {% if filter_form.machine.value or filter_form.site.value or filter_form.start_after.value or filter_form.end_before.value or filter_form.person.value or filter_form.q.value %}
                     <a href="{% url 'reservations:list' %}"
                        class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-                       aria-label="Wyczyść wszystkie filtry">
+                       aria-label="{% trans 'Wyczyść wszystkie filtry' %}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        <span>Wyczyść</span>
+                        <span>{% trans "Wyczyść" %}</span>
                     </a>
                 {% endif %}
             </div>
@@ -188,22 +189,22 @@
 
                 <div>
                     <label for="{{ filter_form.machine.id_for_label }}"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Maszyna</label>
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{% trans "Maszyna" %}</label>
                     {{ filter_form.machine|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" }}
                 </div>
                 <div>
                     <label for="{{ filter_form.site.id_for_label }}"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Budowa</label>
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{% trans "Budowa" %}</label>
                     {{ filter_form.site|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" }}
                 </div>
                 <div>
                     <label for="{{ filter_form.start_after.id_for_label }}"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Początek po</label>
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{% trans "Początek po" %}</label>
                     {{ filter_form.start_after|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" }}
                 </div>
                 <div>
                     <label for="{{ filter_form.end_before.id_for_label }}"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Koniec przed</label>
+                           class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{% trans "Koniec przed" %}</label>
                     {{ filter_form.end_before|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" }}
                 </div>
             </div>
@@ -211,6 +212,11 @@
     </div>
 
     {# ============================== RESULTS (HTMX target) ============================== #}
+    {# Loading indicator — widoczny tylko podczas requestu HTMX (klasa .htmx-indicator). #}
+    <span id="res-loading" class="htmx-indicator inline-flex items-center text-xs text-brand-600 dark:text-brand-300 mb-2" aria-hidden="true">
+        <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+        {% trans "Ładuję…" %}
+    </span>
     <div id="reservations-table">
         {% include "reservations/_list_table.html" %}
     </div>

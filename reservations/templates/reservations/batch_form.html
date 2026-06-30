@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
 {% comment %}
     B-7 — Batch reservation form (multi-machine).
@@ -27,21 +27,21 @@
         - Error placement near field (form.add_error per field)
 {% endcomment %}
 
-{% block title %}Nowa grupa rezerwacji — Planer Maszyn{% endblock %}
+{% block title %}{% trans "Nowa grupa rezerwacji — Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 <div class="space-y-5" x-data="batchForm()">
 
     {# ============================== BREADCRUMB ============================== #}
-    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="Ścieżka">
+    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="{% trans 'Ścieżka' %}">
         <a href="{% url 'reservations:list' %}"
            class="hover:text-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 -mx-1">
-            Rezerwacje
+            {% trans "Rezerwacje" %}
         </a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
         </svg>
-        <span class="text-slate-700 dark:text-slate-200">Nowa grupa</span>
+        <span class="text-slate-700 dark:text-slate-200">{% trans "Nowa grupa" %}</span>
     </nav>
 
     {# ============================== HERO HEADER ============================== #}
@@ -50,13 +50,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
-            <span>Grupa rezerwacji</span>
+            <span>{% trans "Grupa rezerwacji" %}</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Rezerwacja grupowa — wiele maszyn naraz
+            {% trans "Rezerwacja grupowa — wiele maszyn naraz" %}
         </h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-            Zaznacz maszyny i wypełnij wspólne pola raz. System utworzy osobną rezerwację dla każdej maszyny, wszystkie powiązane jednym ID grupy (przydatne do bulk-potwierdzania / anulowania).
+            {% trans "Zaznacz maszyny i wypełnij wspólne pola raz. System utworzy osobną rezerwację dla każdej maszyny, wszystkie powiązane jednym ID grupy (przydatne do bulk-potwierdzania / anulowania)." %}
         </p>
     </header>
 
@@ -76,7 +76,7 @@
                     </svg>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <h2 class="font-semibold text-rose-900 dark:text-rose-100">Nie można utworzyć grupy rezerwacji</h2>
+                    <h2 class="font-semibold text-rose-900 dark:text-rose-100">{% trans "Nie można utworzyć grupy rezerwacji" %}</h2>
                     <ul class="mt-1 space-y-0.5 text-sm text-rose-700 dark:text-rose-300 list-disc list-inside">
                         {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
                     </ul>
@@ -90,15 +90,15 @@
                 <div>
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">1</span>
-                        <span>Maszyny</span>
+                        <span>{% trans "Maszyny" %}</span>
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Zaznacz wszystkie maszyny dla tej grupy (każda dostanie osobny wpis).</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Zaznacz wszystkie maszyny dla tej grupy (każda dostanie osobny wpis)." %}</p>
                 </div>
                 <div class="flex items-center gap-2">
                     {# Live counter — aria-live="polite" ogłasza zmianę screen readerom #}
                     <span aria-live="polite"
                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-brand-200 dark:border-brand-800/50 bg-brand-50 dark:bg-brand-900/20 text-brand-800 dark:text-brand-200">
-                        <span aria-hidden="true">Wybrano:</span>
+                        <span aria-hidden="true">{% trans "Wybrano:" %}</span>
                         <span class="font-mono tabular-nums" x-text="selectedCount"></span>
                     </span>
                 </div>
@@ -109,7 +109,7 @@
                 {# Search input — client-side filter checkbox listy. #}
                 <label class="block">
                     <span class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        Filtruj maszyny
+                        {% trans "Filtruj maszyny" %}
                     </span>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500 pointer-events-none" aria-hidden="true">
@@ -119,8 +119,8 @@
                         </span>
                         <input type="search"
                                x-model="query"
-                               placeholder="UID lub nazwa maszyny..."
-                               aria-label="Filtruj maszyny po UID lub nazwie"
+                               placeholder="{% trans 'UID lub nazwa maszyny...' %}"
+                               aria-label="{% trans 'Filtruj maszyny po UID lub nazwie' %}"
                                class="block w-full pl-10 pr-3 py-2.5 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors">
                     </div>
                 </label>
@@ -131,19 +131,19 @@
                             @click="selectAll($event)"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[36px]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Zaznacz widoczne
+                        {% trans "Zaznacz widoczne" %}
                     </button>
                     <button type="button"
                             @click="clearAll()"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[36px]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Odznacz wszystkie
+                        {% trans "Odznacz wszystkie" %}
                     </button>
                 </div>
 
                 {# Machine checkbox grid — responsive 1/2/3 columns by viewport #}
                 <fieldset role="group" aria-labelledby="machines-legend">
-                    <legend id="machines-legend" class="sr-only">Lista maszyn</legend>
+                    <legend id="machines-legend" class="sr-only">{% trans "Lista maszyn" %}</legend>
                     {% if form.machines.errors %}
                         <div class="mb-3 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5" role="alert">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -175,7 +175,7 @@
                             </label>
                         {% empty %}
                             <p class="col-span-full text-sm text-slate-500 dark:text-slate-400 italic">
-                                Brak maszyn dostępnych do rezerwacji.
+                                {% trans "Brak maszyn dostępnych do rezerwacji." %}
                             </p>
                         {% endfor %}
                     </div>
@@ -188,15 +188,15 @@
             <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">2</span>
-                    <span>Termin (wspólny dla wszystkich maszyn)</span>
+                    <span>{% trans "Termin (wspólny dla wszystkich maszyn)" %}</span>
                 </h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Każda rezerwacja w grupie ma te same daty.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Każda rezerwacja w grupie ma te same daty." %}</p>
             </header>
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="{{ form.start_date.id_for_label }}"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        {{ form.start_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                        {{ form.start_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>
                     </label>
                     {{ form.start_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                     {% for err in form.start_date.errors %}
@@ -206,7 +206,7 @@
                 <div>
                     <label for="{{ form.end_date.id_for_label }}"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        {{ form.end_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                        {{ form.end_date.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>
                     </label>
                     {{ form.end_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                     {% for err in form.end_date.errors %}
@@ -221,9 +221,9 @@
             <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold" aria-hidden="true">3</span>
-                    <span>Wspólne dane</span>
+                    <span>{% trans "Wspólne dane" %}</span>
                 </h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Te pola zostaną skopiowane do każdej rezerwacji w grupie.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Te pola zostaną skopiowane do każdej rezerwacji w grupie." %}</p>
             </header>
             <div class="p-5 space-y-4">
 
@@ -231,7 +231,7 @@
                 <div>
                     <label for="{{ form.person.id_for_label }}"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        {{ form.person.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>
+                        {{ form.person.label }} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>
                     </label>
                     {{ form.person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                     {% if form.person.help_text %}
@@ -294,7 +294,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
-                    Anuluj
+                    {% trans "Anuluj" %}
                 </a>
                 <button type="submit"
                         x-bind:disabled="selectedCount === 0"
@@ -304,8 +304,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                     <span>
-                        Utwórz <span class="font-mono tabular-nums" x-text="selectedCount"></span>
-                        <span x-text="selectedCount === 1 ? 'rezerwację' : 'rezerwacji'"></span>
+                        {% trans "Utwórz" %} <span class="font-mono tabular-nums" x-text="selectedCount"></span>
+                        <span x-text="selectedCount === 1 ? '{% trans "rezerwację" %}' : '{% trans "rezerwacji" %}'"></span>
                     </span>
                 </button>
             </div>

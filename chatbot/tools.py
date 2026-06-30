@@ -41,6 +41,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
 
+from django.utils.translation import gettext as _
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger("chatbot")
@@ -334,12 +335,12 @@ def get_service_costs(machine_type: str | None = None, days: int = 90) -> Servic
         qs = qs.filter(machine__machine_type=machine_type)
 
     records = list(qs.select_related("machine"))
-    total = sum((r.cost for r in records), Decimal("0"))
+    total = sum((r.cost.amount for r in records), Decimal("0"))
 
     by_type: dict[str, float] = {}
     for r in records:
         key = r.get_record_type_display()
-        by_type[key] = round(by_type.get(key, 0.0) + float(r.cost), 2)
+        by_type[key] = round(by_type.get(key, 0.0) + float(r.cost.amount), 2)
 
     return ServiceCostResult(
         period_start=start.isoformat(),
@@ -1180,16 +1181,19 @@ def _check_user_can(user, action: str) -> str | None:
         ``None`` jeśli OK, inaczej JSON error string do zwrócenia z narzędzia.
     """
     if not user or not getattr(user, "is_authenticated", False):
-        return _error_json("Niezalogowany użytkownik nie może modyfikować danych.")
+        return _error_json(_("Niezalogowany użytkownik nie może modyfikować danych."))
     if not getattr(user, "is_active", False):
-        return _error_json("Konto użytkownika jest nieaktywne.")
+        return _error_json(_("Konto użytkownika jest nieaktywne."))
     perms = WRITE_ACTION_PERMS.get(action)
     if not perms:
-        return _error_json(f"Nieznana akcja: {action}.")
+        return _error_json(_("Nieznana akcja: %(action)s.") % {"action": action})
     missing = [p for p in perms if not user.has_perm(p)]
     if missing:
         missing_str = ", ".join(missing)
-        return _error_json(f"Brak uprawnień ({missing_str}) do akcji '{action}'.")
+        return _error_json(
+            _("Brak uprawnień (%(perms)s) do akcji '%(action)s'.")
+            % {"perms": missing_str, "action": action}
+        )
     return None
 
 
@@ -1214,20 +1218,20 @@ def propose_create_reservation(params: CreateReservationParams, user) -> str:
         end = date.fromisoformat(params.end_date)
     except ValueError:
         return _error_json(
-            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): "
-            f"{params.start_date}, {params.end_date}."
+            _("Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): %(start)s, %(end)s.")
+            % {"start": params.start_date, "end": params.end_date}
         )
     if end < start:
-        return _error_json("Data końca musi być >= data początku.")
+        return _error_json(_("Data końca musi być >= data początku."))
     if end < date.today():
-        return _error_json("Nie można proponować rezerwacji w przeszłości.")
+        return _error_json(_("Nie można proponować rezerwacji w przeszłości."))
     if not params.person or not params.person.strip():
-        return _error_json("Pole 'osoba rezerwująca' nie może być puste.")
+        return _error_json(_("Pole 'osoba rezerwująca' nie może być puste."))
 
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     site_id: int | None = None
     site_label = ""
@@ -1237,7 +1241,9 @@ def propose_create_reservation(params: CreateReservationParams, user) -> str:
             site_id = site.pk
             site_label = f", budowa {site.project_number} ({site.name})"
         except ConstructionSite.DoesNotExist:
-            return _error_json(f"Budowa o numerze '{params.site_project_number}' nie istnieje.")
+            return _error_json(
+                _("Budowa o numerze '%(pn)s' nie istnieje.") % {"pn": params.site_project_number}
+            )
 
     payload = {
         "machine_id": machine.pk,
@@ -1278,22 +1284,22 @@ def propose_cancel_reservation(params: CancelReservationParams, user) -> str:
     valid_reasons = {choice for choice, _label in Reservation.CancellationReason.choices}
     if params.reason not in valid_reasons:
         return _error_json(
-            f"Nieznany powód anulowania '{params.reason}'. "
-            f"Dozwolone: {', '.join(sorted(valid_reasons))}."
+            _("Nieznany powód anulowania '%(reason)s'. Dozwolone: %(allowed)s.")
+            % {"reason": params.reason, "allowed": ", ".join(sorted(valid_reasons))}
         )
 
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.status in {
         Reservation.Status.ANULOWANA,
         Reservation.Status.ZAKONCZONA,
     }:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} ma status '{reservation.get_status_display()}' "
-            f"— nie można jej anulować."
+            _("Rezerwacja #%(rid)s ma status '%(status)s' — nie można jej anulować.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     payload = {
@@ -1325,22 +1331,22 @@ def propose_change_operator(params: ChangeOperatorParams, user) -> str:
 
     new_person = (params.new_person or "").strip()
     if not new_person:
-        return _error_json("Nowa osoba jest wymagana.")
+        return _error_json(_("Nowa osoba jest wymagana."))
     if len(new_person) < 3:
-        return _error_json("Imię i nazwisko musi mieć co najmniej 3 znaki.")
+        return _error_json(_("Imię i nazwisko musi mieć co najmniej 3 znaki."))
 
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.is_closed:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} jest zamknięta "
-            f"({reservation.get_status_display()}) — nie można zmienić operatora."
+            _("Rezerwacja #%(rid)s jest zamknięta (%(status)s) — nie można zmienić operatora.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
     if new_person.casefold() == reservation.person.strip().casefold():
-        return _error_json("Nowa osoba musi się różnić od obecnej.")
+        return _error_json(_("Nowa osoba musi się różnić od obecnej."))
 
     payload = {
         "reservation_id": reservation.pk,
@@ -1372,24 +1378,27 @@ def propose_swap_machine(params: SwapMachineParams, user) -> str:
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.is_closed:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} jest zamknięta "
-            f"({reservation.get_status_display()}) — nie można wymienić maszyny."
+            _("Rezerwacja #%(rid)s jest zamknięta (%(status)s) — nie można wymienić maszyny.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     try:
         new_machine = Machine.objects.get(uid=params.new_machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna zastępcza o UID '{params.new_machine_uid}' nie istnieje.")
+        return _error_json(
+            _("Maszyna zastępcza o UID '%(uid)s' nie istnieje.") % {"uid": params.new_machine_uid}
+        )
 
     if new_machine.pk == reservation.machine_id:
-        return _error_json("Maszyna zastępcza musi się różnić od obecnej.")
+        return _error_json(_("Maszyna zastępcza musi się różnić od obecnej."))
     if new_machine.status == Machine.Status.WYCOFANA:
         return _error_json(
-            f"Maszyna {new_machine.uid} jest wycofana z floty — nie może być zastępcą."
+            _("Maszyna %(uid)s jest wycofana z floty — nie może być zastępcą.")
+            % {"uid": new_machine.uid}
         )
 
     payload = {
@@ -1425,14 +1434,17 @@ def propose_set_machine_to_service(params: SetMachineToServiceParams, user) -> s
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     if machine.status == Machine.Status.W_SERWISIE:
-        return _error_json(f"Maszyna {machine.uid} jest już w serwisie.")
+        return _error_json(_("Maszyna %(uid)s jest już w serwisie.") % {"uid": machine.uid})
     if machine.status == Machine.Status.NA_BUDOWIE:
-        return _error_json(f"Maszyna {machine.uid} jest na budowie — najpierw zarejestruj zwrot.")
+        return _error_json(
+            _("Maszyna %(uid)s jest na budowie — najpierw zarejestruj zwrot.")
+            % {"uid": machine.uid}
+        )
     if machine.status == Machine.Status.WYCOFANA:
-        return _error_json(f"Maszyna {machine.uid} jest wycofana z floty.")
+        return _error_json(_("Maszyna %(uid)s jest wycofana z floty.") % {"uid": machine.uid})
 
     payload = {
         "machine_id": machine.pk,
@@ -1473,15 +1485,16 @@ def propose_create_service_record(params: CreateServiceRecordParams, user) -> st
         performed = date.fromisoformat(params.performed_date)
     except ValueError:
         return _error_json(
-            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): {params.performed_date}."
+            _("Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): %(date)s.")
+            % {"date": params.performed_date}
         )
     if performed > date.today():
-        return _error_json("Data wykonania nie może być w przyszłości.")
+        return _error_json(_("Data wykonania nie może być w przyszłości."))
 
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     type_label = dict(
         [
@@ -1544,20 +1557,23 @@ def propose_update_service_record(params: UpdateServiceRecordParams, user) -> st
     try:
         record = ServiceRecord.objects.select_related("machine").get(pk=params.record_id)
     except ServiceRecord.DoesNotExist:
-        return _error_json(f"Wpis serwisowy #{params.record_id} nie istnieje.")
+        return _error_json(_("Wpis serwisowy #%(rid)s nie istnieje.") % {"rid": params.record_id})
 
     changes: list[str] = []
     if params.description is not None and params.description != record.description:
         changes.append(f"opis: '{record.description[:60]}' → '{params.description[:60]}'")
-    if params.cost is not None and float(params.cost) != float(record.cost):
-        changes.append(f"koszt: {record.cost} EUR → {params.cost:.2f} EUR")
+    if params.cost is not None and float(params.cost) != float(record.cost.amount):
+        changes.append(f"koszt: {record.cost.amount} EUR → {params.cost:.2f} EUR")
     if params.performed_by is not None and params.performed_by != record.performed_by:
         changes.append(f"technik: '{record.performed_by}' → '{params.performed_by}'")
 
     if not changes:
         return _error_json(
-            f"Brak zmian do wykonania na wpisie #{params.record_id} (przekazane wartości "
-            f"są identyczne z aktualnymi)."
+            _(
+                "Brak zmian do wykonania na wpisie #%(rid)s (przekazane wartości "
+                "są identyczne z aktualnymi)."
+            )
+            % {"rid": params.record_id}
         )
 
     payload = {
@@ -1599,13 +1615,14 @@ def propose_update_machine_inspection_date(params: UpdateMachineInspectionDatePa
         new_date = date.fromisoformat(params.next_inspection_date)
     except ValueError:
         return _error_json(
-            f"Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): {params.next_inspection_date}."
+            _("Nieprawidłowy format daty (wymagany ISO YYYY-MM-DD): %(date)s.")
+            % {"date": params.next_inspection_date}
         )
 
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     old_date_str = machine.inspection_date.isoformat() if machine.inspection_date else "brak"
 
@@ -1648,12 +1665,12 @@ def propose_confirm_reservation(params: ConfirmReservationParams, user) -> str:
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.status != Reservation.Status.OCZEKUJACA:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} ma status "
-            f"'{reservation.get_status_display()}' — można potwierdzić tylko OCZEKUJACA."
+            _("Rezerwacja #%(rid)s ma status '%(status)s' — można potwierdzić tylko OCZEKUJACA.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     payload = {"reservation_id": reservation.pk}
@@ -1682,12 +1699,12 @@ def propose_complete_reservation(params: CompleteReservationParams, user) -> str
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.status != Reservation.Status.POTWIERDZONA:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} ma status "
-            f"'{reservation.get_status_display()}' — można zakończyć tylko POTWIERDZONA."
+            _("Rezerwacja #%(rid)s ma status '%(status)s' — można zakończyć tylko POTWIERDZONA.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     actual_str = ""
@@ -1695,11 +1712,13 @@ def propose_complete_reservation(params: CompleteReservationParams, user) -> str
         try:
             actual = date.fromisoformat(params.actual_return_date)
         except ValueError:
-            return _error_json(f"Nieprawidłowy format daty: {params.actual_return_date}.")
+            return _error_json(
+                _("Nieprawidłowy format daty: %(date)s.") % {"date": params.actual_return_date}
+            )
         if actual < reservation.start_date:
-            return _error_json("Faktyczna data zwrotu nie może być wcześniejsza niż start.")
+            return _error_json(_("Faktyczna data zwrotu nie może być wcześniejsza niż start."))
         if actual > date.today():
-            return _error_json("Faktyczna data zwrotu nie może być w przyszłości.")
+            return _error_json(_("Faktyczna data zwrotu nie może być w przyszłości."))
         actual_str = f", faktyczny zwrot: {params.actual_return_date}"
 
     payload = {
@@ -1731,15 +1750,15 @@ def propose_update_reservation(params: UpdateReservationParams, user) -> str:
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.status in {
         Reservation.Status.ZAKONCZONA,
         Reservation.Status.ANULOWANA,
     }:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} jest terminalna "
-            f"({reservation.get_status_display()}) — nie można edytować."
+            _("Rezerwacja #%(rid)s jest terminalna (%(status)s) — nie można edytować.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     changes: list[str] = []
@@ -1753,7 +1772,9 @@ def propose_update_reservation(params: UpdateReservationParams, user) -> str:
         changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
 
     if not changes:
-        return _error_json(f"Brak zmian do wykonania na rezerwacji #{reservation.pk}.")
+        return _error_json(
+            _("Brak zmian do wykonania na rezerwacji #%(rid)s.") % {"rid": reservation.pk}
+        )
 
     # Walidacja dat — start/end musi być sensowne nawet PRZED execute.
     new_start = (
@@ -1761,7 +1782,7 @@ def propose_update_reservation(params: UpdateReservationParams, user) -> str:
     )
     new_end = date.fromisoformat(params.end_date) if params.end_date else reservation.end_date
     if new_end < new_start:
-        return _error_json("Data końca musi być >= data początku.")
+        return _error_json(_("Data końca musi być >= data początku."))
 
     payload = {
         "reservation_id": reservation.pk,
@@ -1794,12 +1815,12 @@ def propose_report_breakdown(params: ReportBreakdownParams, user) -> str:
     try:
         reservation = Reservation.objects.select_related("machine").get(pk=params.reservation_id)
     except Reservation.DoesNotExist:
-        return _error_json(f"Rezerwacja #{params.reservation_id} nie istnieje.")
+        return _error_json(_("Rezerwacja #%(rid)s nie istnieje.") % {"rid": params.reservation_id})
 
     if reservation.is_closed:
         return _error_json(
-            f"Rezerwacja #{reservation.pk} jest już zamknięta "
-            f"({reservation.get_status_display()}) — nie można zgłosić awarii."
+            _("Rezerwacja #%(rid)s jest już zamknięta (%(status)s) — nie można zgłosić awarii.")
+            % {"rid": reservation.pk, "status": reservation.get_status_display()}
         )
 
     payload = {
@@ -1823,6 +1844,46 @@ def propose_report_breakdown(params: ReportBreakdownParams, user) -> str:
 
 
 # =============================================================================
+# READ DISPATCHER — akcje odczytu (bez efektów ubocznych, dostępne gościom)
+# =============================================================================
+
+# Rejestr akcji TYLKO-DO-ODCZYTU. Rozłączny z ``WRITE_ACTION_PERMS`` —
+# dyspozytor głosowy kieruje tu wyłącznie nazwy z tego zbioru, więc gość
+# (``user is None``) nie może tędy wywołać niczego zapisującego.
+READ_ACTIONS: dict[str, Any] = {
+    "get_machine_status": get_machine_status,
+    "check_availability": check_availability,
+    "get_inspections_due": get_inspections_due,
+    "get_service_costs": get_service_costs,
+}
+
+
+def execute_read_action(action: str, params: dict) -> str:
+    """Wykonuje akcję odczytu i zwraca deterministyczny JSON (string).
+
+    Akcje odczytu nie mają efektów ubocznych i NIE wymagają zalogowania —
+    dostępne także gościom (``user is None``). Celowo nie przyjmuje ``user``:
+    brak ścieżki, którą dałoby się tędy wykonać akcję zapisującą. Każde
+    narzędzie odczytu zwraca model Pydantic, więc serializujemy go do JSON
+    spójnie z resztą warstwy narzędzi.
+    """
+    tool = READ_ACTIONS.get(action)
+    if tool is None:
+        return _("Nieznana akcja odczytu: %(action)s.") % {"action": action}
+    try:
+        result = tool(**params)
+    except TypeError as exc:
+        # Złe / brakujące argumenty z LLM-a — nie wywracaj rozmowy wyjątkiem.
+        _audit_logger.warning(
+            "CHATBOT READ %s bad_params msg=%s",
+            action,
+            exc,
+        )
+        return _("Nieprawidłowe argumenty akcji odczytu '%(action)s'.") % {"action": action}
+    return result.model_dump_json()
+
+
+# =============================================================================
 # EXECUTOR — finalne wykonanie po potwierdzeniu usera
 # =============================================================================
 
@@ -1842,18 +1903,21 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
     from django.core.exceptions import ValidationError
 
     if not user or not getattr(user, "is_authenticated", False):
-        return "Sesja wygasła — zaloguj się ponownie."
+        return _("Sesja wygasła — zaloguj się ponownie.")
     if not getattr(user, "is_active", False):
-        return "Konto użytkownika jest nieaktywne."
+        return _("Konto użytkownika jest nieaktywne.")
     perms = WRITE_ACTION_PERMS.get(action)
     if not perms:
-        return f"Nieznana akcja: {action}."
+        return _("Nieznana akcja: %(action)s.") % {"action": action}
     # Wave 14-H Bundle H-4: ALL permissions must hold (defense-in-depth +
     # privilege gap fix dla swap_machine).
     missing = [p for p in perms if not user.has_perm(p)]
     if missing:
         missing_str = ", ".join(missing)
-        return f"Brak uprawnień ({missing_str}) do wykonania akcji '{action}'."
+        return _("Brak uprawnień (%(perms)s) do wykonania akcji '%(action)s'.") % {
+            "perms": missing_str,
+            "action": action,
+        }
 
     _audit_logger.info(
         "CHATBOT EXECUTE %s user=%s params=%s",
@@ -1864,7 +1928,7 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
 
     try:
         if action == "create_reservation":
-            return _execute_create_reservation(params)
+            return _execute_create_reservation(params, user)
         if action == "cancel_reservation":
             return _execute_cancel_reservation(params)
         if action == "change_operator":
@@ -1916,22 +1980,26 @@ def execute_confirmed_action(action: str, params: dict, user) -> str:
             getattr(user, "pk", None),
             messages,
         )
-        return f"Nie udało się wykonać akcji: {messages}"
+        return _("Nie udało się wykonać akcji: %(messages)s") % {"messages": messages}
     except Exception:
         logger.exception(
             "Chatbot execute_confirmed_action exception user=%s action=%s",
             getattr(user, "pk", None),
             action,
         )
-        return "Wystąpił nieoczekiwany błąd podczas wykonywania akcji."
+        return _("Wystąpił nieoczekiwany błąd podczas wykonywania akcji.")
 
-    return f"Akcja '{action}' nie jest obsługiwana."
+    return _("Akcja '%(action)s' nie jest obsługiwana.") % {"action": action}
 
 
-def _execute_create_reservation(params: dict) -> str:
+def _execute_create_reservation(params: dict, user) -> str:
     """Wykonuje create_reservation z params zarówno z text-parsed JSON
     (legacy, z ``machine_id`` PK) jak i z ToolCallPart args (Wave 14-H C-1,
-    z ``machine_uid`` string)."""
+    z ``machine_uid`` string).
+
+    ``user`` (zalogowany użytkownik / dzwoniący zidentyfikowany po caller-ID)
+    jest zapisywany jako ``created_by`` rezerwacji — decyduje o adresacie
+    e-maila potwierdzającego po jej potwierdzeniu."""
     from machines.models import Machine
     from reservations.models import ConstructionSite
     from reservations.services import create_reservation
@@ -1953,7 +2021,7 @@ def _execute_create_reservation(params: dict) -> str:
             site = ConstructionSite.objects.get(project_number=site_project_number)
             site_id = site.pk
         except ConstructionSite.DoesNotExist:
-            return f"Budowa o numerze '{site_project_number}' nie istnieje."
+            return _("Budowa o numerze '%(pn)s' nie istnieje.") % {"pn": site_project_number}
 
     reservation = create_reservation(
         machine_id=machine_id,
@@ -1967,12 +2035,15 @@ def _execute_create_reservation(params: dict) -> str:
         # Wave 14-H Bundle M-1: chatbot — wymagamy address + responsible_person
         # bo flow chatbota nie ma "quick reserve" semantics jak QuickReserveView.
         require_full_fields=True,
+        created_by=user if getattr(user, "is_authenticated", False) else None,
     )
-    return (
-        f"Rezerwacja #{reservation.pk} utworzona: "
-        f"{machine_uid} {params['start_date']} - {params['end_date']} "
-        f"dla '{params['person']}'."
-    )
+    return _("Rezerwacja #%(rid)s utworzona: %(uid)s %(start)s - %(end)s dla '%(person)s'.") % {
+        "rid": reservation.pk,
+        "uid": machine_uid,
+        "start": params["start_date"],
+        "end": params["end_date"],
+        "person": params["person"],
+    }
 
 
 def _execute_cancel_reservation(params: dict) -> str:
@@ -1985,7 +2056,10 @@ def _execute_cancel_reservation(params: dict) -> str:
         reason=params["reason"],
         note=params.get("note", ""),
     )
-    return f"Rezerwacja #{reservation.pk} anulowana (powód: {params['reason']})."
+    return _("Rezerwacja #%(rid)s anulowana (powód: %(reason)s).") % {
+        "rid": reservation.pk,
+        "reason": params["reason"],
+    }
 
 
 def _execute_change_operator(params: dict, user) -> str:
@@ -1994,7 +2068,10 @@ def _execute_change_operator(params: dict, user) -> str:
 
     reservation = Reservation.objects.get(pk=params["reservation_id"])
     change_operator(reservation, new_person=params["new_person"], actor=user)
-    return f"Operator rezerwacji #{reservation.pk} zmieniony na '{params['new_person']}'."
+    return _("Operator rezerwacji #%(rid)s zmieniony na '%(person)s'.") % {
+        "rid": reservation.pk,
+        "person": params["new_person"],
+    }
 
 
 def _execute_swap_machine(params: dict, user) -> str:
@@ -2016,10 +2093,14 @@ def _execute_swap_machine(params: dict, user) -> str:
         reason=params.get("reason", ""),
         actor=user,
     )
-    return (
-        f"Maszyna wymieniona: rezerwacja #{result['original_id']} zamknięta, "
-        f"nowa rezerwacja #{result['new_id']} na maszynę {new_machine.uid}."
-    )
+    return _(
+        "Maszyna wymieniona: rezerwacja #%(orig)s zamknięta, "
+        "nowa rezerwacja #%(new)s na maszynę %(uid)s."
+    ) % {
+        "orig": result["original_id"],
+        "new": result["new_id"],
+        "uid": new_machine.uid,
+    }
 
 
 def _execute_set_machine_to_service(params: dict) -> str:
@@ -2034,7 +2115,7 @@ def _execute_set_machine_to_service(params: dict) -> str:
     else:
         machine = Machine.objects.get(uid=machine_uid)
     set_machine_to_service(machine)
-    return f"Maszyna {machine.uid} wysłana do serwisu."
+    return _("Maszyna %(uid)s wysłana do serwisu.") % {"uid": machine.uid}
 
 
 def _execute_create_service_record(params: dict) -> str:
@@ -2060,15 +2141,18 @@ def _execute_create_service_record(params: dict) -> str:
         description=params.get("description", ""),
         cost=Decimal(str(params.get("cost", 0))),
     )
-    cost_str = f"{record.cost} EUR" if record.cost else "bez kosztu"
+    cost_str = f"{record.cost.amount} EUR" if record.cost else _("bez kosztu")
     if record.next_inspection:
-        next_str = f", nast. przegląd: {record.next_inspection.isoformat()}"
+        next_str = _(", nast. przegląd: %(date)s") % {"date": record.next_inspection.isoformat()}
     else:
         next_str = ""
-    return (
-        f"Wpis serwisowy #{record.pk} utworzony dla {machine.uid}: "
-        f"{record.get_record_type_display()} ({cost_str}){next_str}."
-    )
+    return _("Wpis serwisowy #%(rid)s utworzony dla %(uid)s: %(type)s (%(cost)s)%(next)s.") % {
+        "rid": record.pk,
+        "uid": machine.uid,
+        "type": record.get_record_type_display(),
+        "cost": cost_str,
+        "next": next_str,
+    }
 
 
 def _execute_update_service_record(params: dict) -> str:
@@ -2088,7 +2172,11 @@ def _execute_update_service_record(params: dict) -> str:
         changes["performed_by"] = params["performed_by"]
 
     update_service_record(record, **changes)
-    return f"Wpis #{record.pk} ({record.machine.uid}) zaktualizowany ({', '.join(changes.keys())})."
+    return _("Wpis #%(rid)s (%(uid)s) zaktualizowany (%(fields)s).") % {
+        "rid": record.pk,
+        "uid": record.machine.uid,
+        "fields": ", ".join(changes.keys()),
+    }
 
 
 def _execute_update_machine_inspection_date(params: dict) -> str:
@@ -2105,9 +2193,10 @@ def _execute_update_machine_inspection_date(params: dict) -> str:
     new_date = date.fromisoformat(params["next_inspection_date"])
     machine.inspection_date = new_date
     machine.save(update_fields=["inspection_date", "updated_at"])
-    return (
-        f"Data przeglądu maszyny {machine.uid} zaktualizowana na {params['next_inspection_date']}."
-    )
+    return _("Data przeglądu maszyny %(uid)s zaktualizowana na %(date)s.") % {
+        "uid": machine.uid,
+        "date": params["next_inspection_date"],
+    }
 
 
 def _execute_confirm_reservation(params: dict) -> str:
@@ -2116,7 +2205,7 @@ def _execute_confirm_reservation(params: dict) -> str:
 
     reservation = Reservation.objects.get(pk=params["reservation_id"])
     confirm_reservation(reservation)
-    return f"Rezerwacja #{reservation.pk} potwierdzona."
+    return _("Rezerwacja #%(rid)s potwierdzona.") % {"rid": reservation.pk}
 
 
 def _execute_complete_reservation(params: dict) -> str:
@@ -2130,8 +2219,11 @@ def _execute_complete_reservation(params: dict) -> str:
         else None
     )
     complete_reservation(reservation, actual_return_date=actual)
-    actual_str = f" (zwrot: {actual.isoformat()})" if actual else ""
-    return f"Rezerwacja #{reservation.pk} zakończona, maszyna wraca do magazynu{actual_str}."
+    actual_str = _(" (zwrot: %(date)s)") % {"date": actual.isoformat()} if actual else ""
+    return _("Rezerwacja #%(rid)s zakończona, maszyna wraca do magazynu%(actual)s.") % {
+        "rid": reservation.pk,
+        "actual": actual_str,
+    }
 
 
 def _execute_update_reservation(params: dict) -> str:
@@ -2150,7 +2242,10 @@ def _execute_update_reservation(params: dict) -> str:
         fields["notes"] = params["notes"]
 
     update_reservation(reservation, **fields)
-    return f"Rezerwacja #{reservation.pk} zaktualizowana ({', '.join(fields.keys())})."
+    return _("Rezerwacja #%(rid)s zaktualizowana (%(fields)s).") % {
+        "rid": reservation.pk,
+        "fields": ", ".join(fields.keys()),
+    }
 
 
 def _execute_create_machine(params: dict) -> str:
@@ -2165,7 +2260,10 @@ def _execute_create_machine(params: dict) -> str:
         manufacturer=params.get("manufacturer", ""),
         serial_number=params.get("serial_number", ""),
     )
-    return f"Maszyna {machine.uid} ({machine.name}) utworzona w flocie."
+    return _("Maszyna %(uid)s (%(name)s) utworzona w flocie.") % {
+        "uid": machine.uid,
+        "name": machine.name,
+    }
 
 
 def _execute_update_machine(params: dict) -> str:
@@ -2184,7 +2282,10 @@ def _execute_update_machine(params: dict) -> str:
         if params.get(field) is not None:
             changes[field] = params[field]
     update_machine(machine, **changes)
-    return f"Maszyna {machine.uid} zaktualizowana ({', '.join(changes.keys())})."
+    return _("Maszyna %(uid)s zaktualizowana (%(fields)s).") % {
+        "uid": machine.uid,
+        "fields": ", ".join(changes.keys()),
+    }
 
 
 def _execute_return_machine(params: dict) -> str:
@@ -2199,8 +2300,13 @@ def _execute_return_machine(params: dict) -> str:
         machine = Machine.objects.get(uid=machine_uid)
     result = return_machine_to_warehouse(machine)
     closed = result.get("closed", 0)
-    closed_str = f" + zamknięto {closed} aktywnych rezerwacji" if closed else ""
-    return f"Maszyna {machine.uid} wróciła do magazynu{closed_str}."
+    closed_str = (
+        _(" + zamknięto %(count)s aktywnych rezerwacji") % {"count": closed} if closed else ""
+    )
+    return _("Maszyna %(uid)s wróciła do magazynu%(closed)s.") % {
+        "uid": machine.uid,
+        "closed": closed_str,
+    }
 
 
 def _execute_close_repair_machine(params: dict) -> str:
@@ -2214,7 +2320,7 @@ def _execute_close_repair_machine(params: dict) -> str:
     else:
         machine = Machine.objects.get(uid=machine_uid)
     close_repair(machine)
-    return f"Naprawa maszyny {machine.uid} zakończona, status: W magazynie."
+    return _("Naprawa maszyny %(uid)s zakończona, status: W magazynie.") % {"uid": machine.uid}
 
 
 def _execute_create_site(params: dict) -> str:
@@ -2227,7 +2333,10 @@ def _execute_create_site(params: dict) -> str:
         client_name=params.get("client_name", ""),
         city=params.get("city", ""),
     )
-    return f"Budowa {site.project_number} ({site.name}) utworzona."
+    return _("Budowa %(pn)s (%(name)s) utworzona.") % {
+        "pn": site.project_number,
+        "name": site.name,
+    }
 
 
 def _execute_update_site(params: dict) -> str:
@@ -2246,7 +2355,10 @@ def _execute_update_site(params: dict) -> str:
         if params.get(field) is not None:
             changes[field] = params[field]
     update_site(site, **changes)
-    return f"Budowa {site.project_number} zaktualizowana ({', '.join(changes.keys())})."
+    return _("Budowa %(pn)s zaktualizowana (%(fields)s).") % {
+        "pn": site.project_number,
+        "fields": ", ".join(changes.keys()),
+    }
 
 
 def _execute_delete_site(params: dict) -> str:
@@ -2261,7 +2373,7 @@ def _execute_delete_site(params: dict) -> str:
         site = ConstructionSite.objects.get(project_number=project_number)
     project = site.project_number
     delete_site(site)
-    return f"Budowa {project} usunięta."
+    return _("Budowa %(pn)s usunięta.") % {"pn": project}
 
 
 def _execute_terminate_employee(params: dict, user) -> str:
@@ -2270,7 +2382,9 @@ def _execute_terminate_employee(params: dict, user) -> str:
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
     terminate_employee(profile, reason=params.get("reason", ""), actor=user)
-    return f"Zatrudnienie pracownika '{params['username']}' zakończone."
+    return _("Zatrudnienie pracownika '%(username)s' zakończone.") % {
+        "username": params["username"]
+    }
 
 
 def _execute_anonymize_employee(params: dict, user) -> str:
@@ -2279,7 +2393,9 @@ def _execute_anonymize_employee(params: dict, user) -> str:
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
     anonymize_employee(profile, actor=user)
-    return f"Pracownik '{params['username']}' zanonimizowany (GDPR Art.17)."
+    return _("Pracownik '%(username)s' zanonimizowany (GDPR Art.17).") % {
+        "username": params["username"]
+    }
 
 
 def _execute_retire_machine(params: dict) -> str:
@@ -2293,7 +2409,7 @@ def _execute_retire_machine(params: dict) -> str:
     else:
         machine = Machine.objects.get(uid=machine_uid)
     retire_machine(machine, reason=params.get("reason", ""))
-    return f"Maszyna {machine.uid} wycofana z floty."
+    return _("Maszyna %(uid)s wycofana z floty.") % {"uid": machine.uid}
 
 
 def _execute_report_breakdown(params: dict, user) -> str:
@@ -2302,11 +2418,15 @@ def _execute_report_breakdown(params: dict, user) -> str:
 
     reservation = Reservation.objects.get(pk=params["reservation_id"])
     result = report_breakdown(reservation, description=params["description"], actor=user)
-    return (
-        f"Awaria zgłoszona: rezerwacja #{result['reservation_id']} zamknięta, "
-        f"maszyna {result['machine_uid']} → W serwisie, "
-        f"wpis serwisowy #{result['service_record_id']} utworzony."
-    )
+    return _(
+        "Awaria zgłoszona: rezerwacja #%(rid)s zamknięta, "
+        "maszyna %(uid)s → W serwisie, "
+        "wpis serwisowy #%(srid)s utworzony."
+    ) % {
+        "rid": result["reservation_id"],
+        "uid": result["machine_uid"],
+        "srid": result["service_record_id"],
+    }
 
 
 # ------------------------------------------------------------ faza C propose
@@ -2322,7 +2442,9 @@ def propose_create_machine(params: CreateMachineParams, user) -> str:
         return auth_err
 
     if Machine.objects.filter(uid=params.uid).exists():
-        return _error_json(f"Maszyna o UID '{params.uid}' juz istnieje w flocie.")
+        return _error_json(
+            _("Maszyna o UID '%(uid)s' juz istnieje w flocie.") % {"uid": params.uid}
+        )
 
     payload = {
         "uid": params.uid,
@@ -2369,7 +2491,7 @@ def propose_update_machine(params: UpdateMachineParams, user) -> str:
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     changes: list[str] = []
     if params.name is not None and params.name != machine.name:
@@ -2384,7 +2506,7 @@ def propose_update_machine(params: UpdateMachineParams, user) -> str:
         changes.append(f"nr seryjny: '{machine.serial_number}' → '{params.serial_number}'")
 
     if not changes:
-        return _error_json(f"Brak zmian do wykonania na maszynie {machine.uid}.")
+        return _error_json(_("Brak zmian do wykonania na maszynie %(uid)s.") % {"uid": machine.uid})
 
     payload = {
         "machine_id": machine.pk,
@@ -2416,12 +2538,12 @@ def propose_return_machine(params: ReturnMachineParams, user) -> str:
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     if machine.status == Machine.Status.W_MAGAZYNIE:
-        return _error_json(f"Maszyna {machine.uid} juz jest w magazynie.")
+        return _error_json(_("Maszyna %(uid)s juz jest w magazynie.") % {"uid": machine.uid})
     if machine.status == Machine.Status.WYCOFANA:
-        return _error_json(f"Maszyna {machine.uid} jest wycofana z floty.")
+        return _error_json(_("Maszyna %(uid)s jest wycofana z floty.") % {"uid": machine.uid})
 
     payload = {"machine_id": machine.pk, "machine_uid": machine.uid}
     preview = (
@@ -2449,12 +2571,14 @@ def propose_close_repair_machine(params: CloseRepairMachineParams, user) -> str:
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     if machine.status != Machine.Status.W_SERWISIE:
         return _error_json(
-            f"Maszyna {machine.uid} ma status '{machine.get_status_display()}' "
-            f"— można zakończyć naprawę tylko dla 'W serwisie'."
+            _(
+                "Maszyna %(uid)s ma status '%(status)s' — można zakończyć naprawę tylko dla 'W serwisie'."
+            )
+            % {"uid": machine.uid, "status": machine.get_status_display()}
         )
 
     payload = {"machine_id": machine.pk, "machine_uid": machine.uid}
@@ -2479,7 +2603,9 @@ def propose_create_site(params: CreateSiteParams, user) -> str:
         return auth_err
 
     if ConstructionSite.objects.filter(project_number=params.project_number).exists():
-        return _error_json(f"Budowa o numerze '{params.project_number}' juz istnieje.")
+        return _error_json(
+            _("Budowa o numerze '%(pn)s' juz istnieje.") % {"pn": params.project_number}
+        )
 
     payload = {
         "project_number": params.project_number,
@@ -2520,7 +2646,9 @@ def propose_update_site(params: UpdateSiteParams, user) -> str:
     try:
         site = ConstructionSite.objects.get(project_number=params.project_number)
     except ConstructionSite.DoesNotExist:
-        return _error_json(f"Budowa o numerze '{params.project_number}' nie istnieje.")
+        return _error_json(
+            _("Budowa o numerze '%(pn)s' nie istnieje.") % {"pn": params.project_number}
+        )
 
     changes: list[str] = []
     if params.name is not None and params.name != site.name:
@@ -2535,7 +2663,9 @@ def propose_update_site(params: UpdateSiteParams, user) -> str:
         changes.append(f"notatki: zmiana (długość {len(params.notes)} znaków)")
 
     if not changes:
-        return _error_json(f"Brak zmian do wykonania na budowie {site.project_number}.")
+        return _error_json(
+            _("Brak zmian do wykonania na budowie %(pn)s.") % {"pn": site.project_number}
+        )
 
     payload = {
         "site_id": site.pk,
@@ -2567,12 +2697,14 @@ def propose_delete_site(params: DeleteSiteParams, user) -> str:
     try:
         site = ConstructionSite.objects.get(project_number=params.project_number)
     except ConstructionSite.DoesNotExist:
-        return _error_json(f"Budowa o numerze '{params.project_number}' nie istnieje.")
+        return _error_json(
+            _("Budowa o numerze '%(pn)s' nie istnieje.") % {"pn": params.project_number}
+        )
 
     if site.has_active_reservations:
         return _error_json(
-            f"Nie można usunąć budowy {site.project_number}: ma "
-            f"{site.active_reservation_count} aktywnych rezerwacji."
+            _("Nie można usunąć budowy %(pn)s: ma %(count)s aktywnych rezerwacji.")
+            % {"pn": site.project_number, "count": site.active_reservation_count}
         )
 
     payload = {"site_id": site.pk, "project_number": site.project_number}
@@ -2610,21 +2742,27 @@ def propose_terminate_employee(params: TerminateEmployeeParams, user) -> str:
 
     profile = _resolve_employee_profile(params.username)
     if profile is None:
-        return _error_json(f"Pracownik o username '{params.username}' nie istnieje.")
+        return _error_json(
+            _("Pracownik o username '%(username)s' nie istnieje.") % {"username": params.username}
+        )
 
     if profile.is_anonymized:
         return _error_json(
-            f"Pracownik '{params.username}' jest już zanonimizowany — nie można zwalniać."
+            _("Pracownik '%(username)s' jest już zanonimizowany — nie można zwalniać.")
+            % {"username": params.username}
         )
     if not profile.is_active_employee:
         return _error_json(
-            f"Pracownik '{params.username}' już jest zwolniony "
-            f"(data zakończenia: {profile.termination_date or 'nieznana'})."
+            _("Pracownik '%(username)s' już jest zwolniony (data zakończenia: %(date)s).")
+            % {
+                "username": params.username,
+                "date": profile.termination_date or _("nieznana"),
+            }
         )
 
     # Self-termination protection — admin nie może zwolnić siebie.
     if profile.user.pk == getattr(user, "pk", None):
-        return _error_json("Nie można zakończyć zatrudnienia samego siebie.")
+        return _error_json(_("Nie można zakończyć zatrudnienia samego siebie."))
 
     payload = {
         "user_id": profile.user.pk,
@@ -2656,17 +2794,19 @@ def propose_anonymize_employee(params: AnonymizeEmployeeParams, user) -> str:
 
     profile = _resolve_employee_profile(params.username)
     if profile is None:
-        return _error_json(f"Pracownik o username '{params.username}' nie istnieje.")
+        return _error_json(
+            _("Pracownik o username '%(username)s' nie istnieje.") % {"username": params.username}
+        )
 
     if profile.is_anonymized:
         return _error_json(
-            f"Pracownik '{params.username}' jest już zanonimizowany "
-            f"(data: {profile.anonymized_at})."
+            _("Pracownik '%(username)s' jest już zanonimizowany (data: %(date)s).")
+            % {"username": params.username, "date": profile.anonymized_at}
         )
 
     # Self-anonymization protection.
     if profile.user.pk == getattr(user, "pk", None):
-        return _error_json("Nie można zanonimizować samego siebie.")
+        return _error_json(_("Nie można zanonimizować samego siebie."))
 
     payload = {
         "user_id": profile.user.pk,
@@ -2701,10 +2841,10 @@ def propose_retire_machine(params: RetireMachineParams, user) -> str:
     try:
         machine = Machine.objects.get(uid=params.machine_uid)
     except Machine.DoesNotExist:
-        return _error_json(f"Maszyna o UID '{params.machine_uid}' nie istnieje.")
+        return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     if machine.status == Machine.Status.WYCOFANA:
-        return _error_json(f"Maszyna {machine.uid} jest juz wycofana z floty.")
+        return _error_json(_("Maszyna %(uid)s jest juz wycofana z floty.") % {"uid": machine.uid})
 
     payload = {
         "machine_id": machine.pk,

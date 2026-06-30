@@ -86,10 +86,36 @@ def test_inspection_intervals_constants():
 
 
 @pytest.mark.django_db
-def test_cost_decimal_field(machine):
+def test_cost_money_field(machine):
     record = ServiceRecordFactory(machine=machine, cost=Decimal("123.45"))
     record.refresh_from_db()
-    assert record.cost == Decimal("123.45")
+    # Koszt jest MoneyField — kwota + waluta (domyślnie EUR).
+    assert record.cost.amount == Decimal("123.45")
+    assert str(record.cost.currency) == "EUR"
+
+
+@pytest.mark.django_db
+def test_cost_default_currency_is_eur(machine):
+    """Wpis bez jawnej waluty dostaje EUR (model ``default_currency='EUR'``)."""
+    record = ServiceRecord.objects.create(
+        machine=machine,
+        record_type=ServiceRecord.RecordType.NAPRAWA,
+        performed_date=date(2026, 5, 1),
+        cost=Decimal("10.00"),
+    )
+    record.refresh_from_db()
+    assert str(record.cost.currency) == "EUR"
+
+
+@pytest.mark.django_db
+def test_cost_decimal_round_trip_two_places(machine):
+    """MoneyField (decimal_places=2) zachowuje dokładnie 2 miejsca po przecinku."""
+    record = ServiceRecordFactory(machine=machine, cost=Decimal("100.50"))
+    record.refresh_from_db()
+    amount = record.cost.amount
+    # Bez utraty/dodania cyfr — '100.50', nie '100.5' ani '100.500'.
+    assert amount == Decimal("100.50")
+    assert amount.quantize(Decimal("0.01")) == amount
 
 
 @pytest.mark.django_db

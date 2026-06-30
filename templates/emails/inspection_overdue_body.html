@@ -1,0 +1,18 @@
+{% load i18n %}
+<p style="margin:0 0 16px;font-size:15px;">{% trans "Dzień dobry," %}</p>
+<p style="margin:0 0 20px;font-size:15px;">{% blocktrans count counter=machines|length %}Poniższa maszyna ma <strong>przeterminowany przegląd</strong> i wymaga uwagi:{% plural %}Poniższe maszyny mają <strong>przeterminowany przegląd</strong> i wymagają uwagi:{% endblocktrans %}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+  <tr style="color:#64748b;text-align:left;">
+    <th style="padding:7px 0;font-weight:600;">{% trans "Maszyna" %}</th>
+    <th style="padding:7px 0;font-weight:600;">{% trans "Data przeglądu" %}</th>
+    <th style="padding:7px 0;font-weight:600;">{% trans "Lokalizacja" %}</th>
+  </tr>
+  {% for m in machines %}
+  <tr style="border-top:1px solid #e2e8f0;">
+    <td style="padding:7px 0;">{{ m.uid }} — {{ m.name }}</td>
+    <td style="padding:7px 0;color:#b91c1c;">{{ m.inspection_date|date:'d.m.Y' }}</td>
+    <td style="padding:7px 0;">{{ m.location }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p style="margin:22px 0 0;font-size:14px;color:#64748b;">{% trans "Pozdrawiamy," %}<br>Planer Maszyn Budowlanych</p>

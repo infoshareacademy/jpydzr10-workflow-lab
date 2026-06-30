@@ -7,13 +7,16 @@ from decimal import Decimal
 from io import BytesIO
 
 import pytest
+from django.urls import reverse
 from openpyxl import load_workbook
 
 from service.factories import InspectionFactory, RepairFactory, ServiceRecordFactory
 from service.reports import (
     _quarter_bounds,
     _sanitize,
+    generate_annual_report_pdf,
     generate_inspection_pdf,
+    generate_machine_service_pdf,
     generate_quarterly_report_xlsx,
 )
 
@@ -88,7 +91,8 @@ def test_generate_quarterly_report_includes_headers(machine):
     ws = wb.active
     first_row = next(ws.iter_rows(values_only=True))
     assert "UID maszyny" in first_row
-    assert "Koszt (PLN)" in first_row
+    # Nagłówek kosztu deklaruje EUR — jedyną walutę po normalizacji (migracja 0004).
+    assert "Koszt (EUR)" in first_row
 
 
 @pytest.mark.django_db
@@ -287,3 +291,63 @@ def test_generate_inspection_pdf_uses_planer_sans_font_for_polish_chars(machine)
     assert "PlanerSans" in registered_fonts, (
         f"PlanerSans nie zarejestrowany, dostępne fonty: {registered_fonts}"
     )
+
+
+# ----------------------------------------------------------------------------
+# Roczny raport PDF + karta serwisowa maszyny PDF (M3 — udostępnione raporty)
+# ----------------------------------------------------------------------------
+
+
+def test_generate_annual_report_pdf_returns_pdf(machine):
+    """Roczny raport z wpisami → poprawny, niepusty PDF."""
+    InspectionFactory(machine=machine, performed_date=date(2026, 3, 15), cost=Decimal("500.00"))
+    RepairFactory(machine=machine, performed_date=date(2026, 7, 1), cost=Decimal("300.00"))
+    payload = generate_annual_report_pdf(year=2026)
+    assert payload.startswith(b"%PDF-"), "Wynik nie wygląda na PDF"
+    assert len(payload) > 1000
+
+
+def test_generate_annual_report_pdf_empty_year_still_valid(machine):
+    """Rok bez wpisów nadal zwraca poprawny PDF (sekcja 'brak wpisów')."""
+    payload = generate_annual_report_pdf(year=1999)
+    assert payload.startswith(b"%PDF-")
+
+
+def test_generate_machine_service_pdf_returns_pdf(machine):
+    """Karta serwisowa maszyny z historią → poprawny, niepusty PDF."""
+    InspectionFactory(machine=machine, performed_date=date(2026, 5, 1), cost=Decimal("120.00"))
+    RepairFactory(machine=machine, performed_date=date(2026, 6, 2), cost=Decimal("80.00"))
+    payload = generate_machine_service_pdf(machine=machine)
+    assert payload.startswith(b"%PDF-")
+    assert len(payload) > 1000
+
+
+def test_generate_machine_service_pdf_no_history_valid(machine):
+    """Maszyna bez wpisów serwisowych nadal zwraca poprawny PDF."""
+    payload = generate_machine_service_pdf(machine=machine)
+    assert payload.startswith(b"%PDF-")
+
+
+def test_annual_report_pdf_view_downloads(auth_client, machine):
+    InspectionFactory(machine=machine, performed_date=date(2026, 3, 1), cost=Decimal("100.00"))
+    resp = auth_client.get(reverse("service:report_annual_pdf", kwargs={"year": 2026}))
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert "attachment" in resp["Content-Disposition"]
+
+
+def test_machine_service_pdf_view_downloads(auth_client, machine):
+    resp = auth_client.get(reverse("service:report_machine_pdf", kwargs={"uid": machine.uid}))
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert "attachment" in resp["Content-Disposition"]
+
+
+def test_machine_service_pdf_view_404_for_unknown_uid(auth_client):
+    resp = auth_client.get(reverse("service:report_machine_pdf", kwargs={"uid": "NOPE-999"}))
+    assert resp.status_code == 404
+
+
+def test_report_pdf_views_require_login(client):
+    resp = client.get(reverse("service:report_annual_pdf", kwargs={"year": 2026}))
+    assert resp.status_code == 302

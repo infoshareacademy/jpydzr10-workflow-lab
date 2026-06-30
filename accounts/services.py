@@ -29,34 +29,38 @@ logger = logging.getLogger("accounts")
 # Mapowanie funkcji pracownika → grupy Django Auth używane przez RBAC.
 # Sygnał ``sync_groups_on_employee_save`` używa tej tabeli do synchronizacji
 # członkostwa w Group przy każdej zmianie ``EmployeeProfile.function``.
-# Klucze muszą odpowiadać wartościom przechowywanym w ``EmployeeProfile.function``
-# (lowercase enum values z :class:`EmployeeProfile.Function`).
+# Klucze odpowiadają wartościom przechowywanym w ``EmployeeProfile.function``
+# (wartości enum z :class:`EmployeeProfile.Function`), a grupy docelowe to
+# dokładnie te tworzone przez migrację ``accounts.0003_create_rbac_groups``.
 #
-# Wave 4 P0 fix: wcześniej klucze były nazwami human-readable ("Magazynier",
-# "Dyrektor"), a w bazie zapisywane były wartości enum (lowercase, polish).
-# ZERO overlap → każdy nowy pracownik dostawał pustą listę grup → wszystkie
-# ``permission_required`` view'y zwracały 403. RBAC był całkowicie niewykonalny.
-#
-# Backward-compat: trzymamy też CapitalCase aliasy ("Magazynier", "Dyrektor",
-# "Administrator"...) wykorzystywane historycznie przez admin/seed scripts,
-# tak żeby zarówno enum value jak i raw label działały. Jednolity insight:
-# zawsze sprawdzamy najpierw exact match → potem case-insensitive fallback.
+# ``montażysta`` celowo nie ma grupy — to domyślna funkcja nowych operatorów,
+# którym RBAC nie nadaje podwyższonych uprawnień (read-only przez login_required
+# wystarcza, principle of least privilege).
 FUNCTION_GROUP_MAP: dict[str, list[str]] = {
-    # Enum values (primary — to one zapisywane przez EmployeeProfile.function).
-    # ``montażysta`` celowo nie ma grupy — default function dla nowych operatorów,
-    # którym RBAC nie nadaje żadnych podwyższonych uprawnień (read-only przez
-    # login_required wystarczy, principle of least privilege).
     "magazynier": ["Magazynierzy"],
     "kierownik": ["Kierownicy"],
     "admin": ["Administratorzy"],
-    # Backward-compat CapitalCase aliasy (admin/seed mogą używać raw label).
-    "Magazynier": ["Magazynierzy"],
-    "Kierownik magazynu": ["Magazynierzy", "Kierownicy"],
-    "Kierownik budowy": ["Kierownicy budowy"],
-    "Dyrektor": ["Dyrekcja", "Kierownicy"],
-    "Administrator": ["Administratorzy"],
-    "Pracownik biurowy": ["Biuro"],
 }
+
+
+def user_for_phone(e164: str | None) -> User | None:
+    """Zwraca aktywnego użytkownika przypisanego do numeru w formacie E.164.
+
+    Wykorzystywane do identyfikacji dzwoniącego (caller-ID) w module głosowym:
+    numer ``From`` połączenia → konto pracownika → uprawnienia. Zwraca ``None``
+    (gość, dostęp tylko do odczytu) gdy numer jest pusty, nieznany, należy do
+    profilu nieaktywnego/zanonimizowanego albo do dezaktywowanego użytkownika.
+    """
+    if not e164:
+        return None
+    profile = (
+        EmployeeProfile.objects.select_related("user")
+        .filter(phone=e164, is_active_employee=True, is_anonymized=False)
+        .first()
+    )
+    if profile is None:
+        return None
+    return profile.user if profile.user.is_active else None
 
 
 @transaction.atomic
@@ -68,7 +72,7 @@ def update_profile(profile: EmployeeProfile, **data) -> EmployeeProfile:
     walidację niezależnie od miejsca wywołania (view, admin, API).
 
     Akceptowane pola (whitelist): ``phone``, ``function``, ``theme_preference``,
-    ``employee_id``. Pola nieznane (np. ``is_anonymized``) są ignorowane —
+    ``employee_id``, ``preferred_language``. Pola nieznane (np. ``is_anonymized``) są ignorowane —
     to defensive default chroniący przed przypadkowymi nadpisaniami.
 
     @transaction.atomic (Wave 4 E2 P1 #12): full_clean() i save() są nieatomowe
@@ -76,7 +80,7 @@ def update_profile(profile: EmployeeProfile, **data) -> EmployeeProfile:
     profil zostaje w DB ale grupy nie zsynchronizowane (split-brain). @atomic
     rollbackuje całość jako jednostkę.
     """
-    allowed = {"phone", "function", "theme_preference", "employee_id"}
+    allowed = {"phone", "function", "theme_preference", "employee_id", "preferred_language"}
     for key, value in data.items():
         if key in allowed:
             setattr(profile, key, value)
@@ -235,7 +239,7 @@ def anonymize_employee(
         user.is_active = False
         user.save()
 
-        profile.phone = ""
+        profile.phone = None
         profile.is_anonymized = True
         profile.anonymized_at = timezone.now()
         profile.save()
@@ -272,10 +276,30 @@ def anonymize_employee(
             user.pk,
         )
 
+        # RODO Art.17 — dziennik zdarzeń trzyma dane osobowe zanonimizowanego
+        # użytkownika (adres IP, identyfikator klienta/User-Agent). Sam fakt akcji
+        # zostaje (rozliczalność), ale identyfikatory osobowe wymazujemy. FK
+        # ``user`` celowo zostaje — wskazuje na już zanonimizowane konto.
+        from core.models import AuditLogEntry
+
+        audit_scrubbed = AuditLogEntry.objects.filter(user=user).update(
+            ip_address=None, user_agent=""
+        )
+        logger.info(
+            "GDPR anonymize cascade: scrubbed PII in %d audit log entr(ies) for user pk=%s",
+            audit_scrubbed,
+            user.pk,
+        )
+
     # Wave 11 H-2 RODO fix: HistoricalEmployeeProfile retencja phone PII.
     # django-simple-history snapshotuje wszystkie pola, w tym phone — anonymize
     # zmienia obecny rekord, ale historyczne wpisy zachowują oryginalny numer.
     # Bulk update na wszystkich historical entries dla tego profile.
-    profile.history.update(phone="")
+    #
+    # ``None`` (NIE ``""``) — bieżący profil po ``save()`` ma ``phone=None``
+    # (``normalize_phone_e164("")`` → ``None``); historyczne wpisy muszą trzymać
+    # tę samą reprezentację „braku numeru", inaczej powstaje rozjazd ''/NULL
+    # między rekordem bieżącym a historią (audyt RODO oczekuje spójności).
+    profile.history.update(phone=None)
 
     return profile

@@ -30,8 +30,15 @@ from typing import TYPE_CHECKING
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import ProtectedError
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from .emails import (
+    send_cancellation_email,
+    send_confirmation_email,
+    send_request_notification_email,
+)
 from .models import ConstructionSite, Reservation
 
 if TYPE_CHECKING:
@@ -169,6 +176,7 @@ def create_reservation(
     responsible_person: str = "",
     today: date | None = None,
     require_full_fields: bool = False,
+    created_by=None,
 ) -> Reservation:
     """Create a new :class:`Reservation` after running all validations.
 
@@ -286,6 +294,7 @@ def create_reservation(
         notes=notes,
         responsible_person=(responsible_person or "").strip(),
         status=Reservation.Status.OCZEKUJACA,
+        created_by=created_by,
     )
     logger.info(
         "Rezerwacja %s utworzona (%s %s - %s)",
@@ -294,6 +303,9 @@ def create_reservation(
         start_date,
         end_date,
     )
+    # Powiadom zatwierdzających (magazynier/admin) o nowym wniosku — to oni
+    # zatwierdzają (kierownik tylko składa). on_commit: mail dopiero po commit.
+    transaction.on_commit(lambda: send_request_notification_email(reservation.pk))
     return reservation
 
 
@@ -440,8 +452,19 @@ def confirm_reservation(reservation: Reservation, *, today: date | None = None) 
         )
 
     locked.status = Reservation.Status.POTWIERDZONA
-    locked.save(update_fields=["status", "updated_at"])
+    # Kolejkujemy powiadomienie tylko przy PIERWSZYM potwierdzeniu (guard na
+    # ``queued_at is None``) — chroni przed podwójną wysyłką przy ewentualnym
+    # ponownym potwierdzeniu. Pole MUSI być w ``update_fields``, inaczej zapis
+    # cicho je gubi i mail wyśle się ponownie.
+    should_send = locked.confirmation_email_queued_at is None
+    if should_send:
+        locked.confirmation_email_queued_at = timezone.now()
+    locked.save(update_fields=["status", "updated_at", "confirmation_email_queued_at"])
     logger.info("Rezerwacja %s → potwierdzona", locked.pk)
+    if should_send:
+        # Wysyłka PO commit transakcji — rollback = zero maili. ``confirm_reservation``
+        # ma własny @transaction.atomic, więc to najbardziej zewnętrzny commit.
+        transaction.on_commit(lambda: send_confirmation_email(locked.pk))
     return locked
 
 
@@ -496,6 +519,7 @@ def cancel_reservation(
         ]
     )
     logger.info("Rezerwacja %s → anulowana (powód=%s)", locked.pk, reason)
+    transaction.on_commit(lambda: send_cancellation_email(locked.pk))
     return locked
 
 
@@ -679,9 +703,7 @@ def run_daily_sync(*, today: date | None = None) -> dict[str, int | date]:
             start_date__gt=today,
         ).exists()
 
-        target = (
-            Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
-        )
+        target = Machine.Status.ZAREZERWOWANA if has_future else Machine.Status.W_MAGAZYNIE
         if machine.status != target:
             machine.status = target
             machine.save(update_fields=["status", "updated_at"])
@@ -778,11 +800,14 @@ def update_site(site: ConstructionSite, **fields) -> ConstructionSite:
 
 @transaction.atomic
 def delete_site(site: ConstructionSite) -> None:
-    """Delete ``site`` after refusing if it still has open reservations.
+    """Delete ``site`` after refusing if it still has reservations.
 
-    Closed (``anulowana``/``zakończona``) reservations are fine — they will
-    be orphaned via ``on_delete=PROTECT`` only if they are still ``aktywne``.
-    Sebastian explicitly does NOT want a cascade here.
+    ``Reservation.site`` jest na ``on_delete=PROTECT`` — Sebastian nie chce
+    kaskady. Najpierw jawnie odmawiamy gdy są AKTYWNE rezerwacje (czytelny
+    komunikat z liczbą). Ale budowa z wyłącznie ZAMKNIĘTYMI rezerwacjami też
+    nie da się usunąć (PROTECT blokuje, nie „orphanuje") — bez guarda
+    ``site.delete()`` rzuciłby ``ProtectedError`` → 500. Łapiemy go i zamieniamy
+    na ``ValidationError`` z przyjaznym komunikatem (widok już go obsługuje).
     """
     if site.has_active_reservations:
         raise ValidationError(
@@ -793,7 +818,16 @@ def delete_site(site: ConstructionSite) -> None:
             }
         )
     project_number = site.project_number
-    site.delete()
+    try:
+        site.delete()
+    except ProtectedError as exc:
+        raise ValidationError(
+            _(
+                "Nie można usunąć budowy %(project_number)s — ma powiązane "
+                "rezerwacje (także zakończone lub anulowane)."
+            )
+            % {"project_number": project_number}
+        ) from exc
     logger.info("Budowa %s usunięta", project_number)
 
 
@@ -1223,6 +1257,7 @@ def create_batch_reservation(
     address: str = "",
     notes: str = "",
     today: date | None = None,
+    created_by=None,
 ) -> dict:
     """B-7 — utwórz N rezerwacji jako jedną grupę (batch).
 
@@ -1346,6 +1381,7 @@ def create_batch_reservation(
             notes=notes,
             status=Reservation.Status.OCZEKUJACA,
             batch_id=batch_id,
+            created_by=created_by,
         )
         created.append(reservation)
 

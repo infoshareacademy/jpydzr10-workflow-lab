@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags %}
+{% load planer_tags i18n %}
 
-{% block title %}Wpis serwisowy #{{ record.pk }} — {{ record.machine.uid }} — Planer Maszyn{% endblock %}
+{% block title %}{% trans "Wpis serwisowy" %} #{{ record.pk }} — {{ record.machine.uid }} — {% trans "Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -10,12 +10,12 @@
 {# ------------------------------------------------------------------ #}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
     <a href="{% url 'service:list' %}"
-       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Serwis" %}</a>
     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24"
          stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-slate-900 dark:text-slate-200">Wpis #{{ record.pk }}</span>
+    <span class="text-slate-900 dark:text-slate-200">{% trans "Wpis" %} #{{ record.pk }}</span>
 </nav>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -30,10 +30,10 @@
                              stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
-                        <span>Wpis serwisowy</span>
+                        <span>{% trans "Wpis serwisowy" %}</span>
                     </div>
                     <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        Wpis #{{ record.pk }}
+                        {% trans "Wpis" %} #{{ record.pk }}
                     </h1>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 tabular-nums flex items-center gap-1.5">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -74,21 +74,21 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"/>
                 </svg>
-                Wykonane prace
+                {% trans "Wykonane prace" %}
             </h2>
 
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                 {# Opis — pełna szerokość w preformatted format. #}
                 <div class="sm:col-span-2">
-                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider mb-1">Opis</dt>
+                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider mb-1">{% trans "Opis" %}</dt>
                     <dd class="text-slate-900 dark:text-slate-100 whitespace-pre-line leading-relaxed">
-                        {% if record.description %}{{ record.description }}{% else %}<span class="text-slate-400 dark:text-slate-500 italic">— brak opisu —</span>{% endif %}
+                        {% if record.description %}{{ record.description }}{% else %}<span class="text-slate-400 dark:text-slate-500 italic">{% trans "— brak opisu —" %}</span>{% endif %}
                     </dd>
                 </div>
 
                 {# Wykonawca. #}
                 <div>
-                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Wykonał</dt>
+                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">{% trans "Wykonał" %}</dt>
                     <dd class="mt-0.5 text-slate-900 dark:text-slate-100 font-medium flex items-center gap-1.5">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -100,10 +100,10 @@
 
                 {# Koszt — z waluta jako "secondary" obok liczby. #}
                 <div>
-                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Koszt</dt>
+                    <dt class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">{% trans "Koszt" %}</dt>
                     <dd class="mt-0.5">
-                        <span class="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ record.cost }}</span>
-                        <span class="text-xs text-slate-500 dark:text-slate-400 ml-1">PLN</span>
+                        <span class="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ record.cost.amount }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 ml-1">{{ record.cost.currency }}</span>
                     </dd>
                 </div>
             </dl>
@@ -118,7 +118,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Następny przegląd
+                {% trans "Następny przegląd" %}
             </h2>
 
             {% if record.next_inspection %}
@@ -130,8 +130,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                         <div class="flex-1">
-                            <p class="text-sm font-semibold">Przegląd zaległy</p>
-                            <p class="text-sm mt-0.5">Termin: <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
+                            <p class="text-sm font-semibold">{% trans "Przegląd zaległy" %}</p>
+                            <p class="text-sm mt-0.5">{% trans "Termin:" %} <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
                         </div>
                     </div>
                 {% else %}
@@ -141,13 +141,13 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <div class="flex-1">
-                            <p class="text-sm font-semibold">Termin: <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
-                            <p class="text-xs mt-0.5 opacity-90">Maszyna jest pod aktualnym przeglądem.</p>
+                            <p class="text-sm font-semibold">{% trans "Termin:" %} <span class="font-mono tabular-nums">{{ record.next_inspection|date_pl }}</span></p>
+                            <p class="text-xs mt-0.5 opacity-90">{% trans "Maszyna jest pod aktualnym przeglądem." %}</p>
                         </div>
                     </div>
                 {% endif %}
             {% else %}
-                <p class="text-sm text-slate-500 dark:text-slate-400 italic">Brak daty następnego przeglądu.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 italic">{% trans "Brak daty następnego przeglądu." %}</p>
             {% endif %}
         </section>
         {% endif %}
@@ -160,7 +160,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                 </svg>
-                Załącznik
+                {% trans "Załącznik" %}
             </h2>
 
             <a href="{{ record.inspection_document.url }}"
@@ -173,7 +173,7 @@
                 </span>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
-                        Protokół (PDF)
+                        {% trans "Protokół (PDF)" %}
                     </div>
                     <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {{ record.inspection_document.name|cut:"inspections/" }}
@@ -195,7 +195,7 @@
     <aside class="space-y-4">
         {# Akcje. #}
         <div class="surface-card p-4">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Akcje</h2>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">{% trans "Akcje" %}</h2>
             <div class="space-y-2">
                 {% if record.is_inspection %}
                 <a href="{% url 'service:pdf' pk=record.pk %}"
@@ -203,7 +203,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                     </svg>
-                    Drukuj protokół PDF
+                    {% trans "Drukuj protokół PDF" %}
                 </a>
                 {% endif %}
 
@@ -212,17 +212,17 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Zobacz maszynę
+                    {% trans "Zobacz maszynę" %}
                 </a>
 
                 {% if perms.service.change_servicerecord %}
                 <a href="{% url 'service:update' pk=record.pk %}"
                    class="flex items-center justify-center gap-1.5 w-full px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
-                   title="Popraw bledny wpis (data, koszt, opis, typ przegladu)">
+                   title="{% trans 'Popraw bledny wpis (data, koszt, opis, typ przegladu)' %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
-                    Edytuj wpis
+                    {% trans "Edytuj wpis" %}
                 </a>
                 {% endif %}
 
@@ -240,7 +240,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Potwierdź zakończenie
+                        {% trans "Potwierdź zakończenie" %}
                     </button>
                     <button type="button"
                             @click="confirming = true"
@@ -249,7 +249,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        Zakończ serwis
+                        {% trans "Zakończ serwis" %}
                     </button>
                 </form>
                 {% endif %}
@@ -265,7 +265,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Potwierdź usunięcie
+                        {% trans "Potwierdź usunięcie" %}
                     </button>
                     <button type="button"
                             @click="confirming = true"
@@ -274,7 +274,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 3h6a1 1 0 011 1v3H8V4a1 1 0 011-1z"/>
                         </svg>
-                        Usuń wpis
+                        {% trans "Usuń wpis" %}
                     </button>
                 </form>
                 {% endif %}
@@ -285,7 +285,7 @@
         {% if record.history.exists %}
         <div class="surface-card p-4">
             <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-                Historia zmian
+                {% trans "Historia zmian" %}
             </h2>
             <ol class="relative border-l-2 border-slate-200 dark:border-slate-700 ml-2 space-y-4">
                 {% for entry in record.history.all|slice:":5" %}
@@ -294,7 +294,7 @@
                     <time class="block text-xs text-slate-500 dark:text-slate-400 tabular-nums">{{ entry.history_date|date_pl }}</time>
                     <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5">
                         <strong class="text-slate-900 dark:text-slate-100">{{ entry.get_history_type_display }}</strong>
-                        <span class="text-slate-500 dark:text-slate-400">przez</span>
+                        <span class="text-slate-500 dark:text-slate-400">{% trans "przez" %}</span>
                         <span class="font-mono text-[11px]">{{ entry.history_user|default:"system" }}</span>
                     </p>
                 </li>

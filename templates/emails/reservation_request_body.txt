@@ -1,0 +1,10 @@
+{% load i18n %}{% trans "Dzień dobry," %}
+
+{% blocktrans with uid=machine.uid %}wpłynął nowy wniosek o rezerwację maszyny {{ uid }} — wymaga zatwierdzenia.{% endblocktrans %}
+
+{% trans "Maszyna" %}: {{ machine.uid }} — {{ machine.name }}
+{% trans "Termin" %}: {{ reservation.start_date|date:'d.m.Y' }} – {{ reservation.end_date|date:'d.m.Y' }}
+{% trans "Osoba rezerwująca" %}: {{ reservation.person }}{% if site %}
+{% trans "Budowa" %}: {{ site.project_number }} — {{ site.name }}{% endif %}
+
+{% trans "Otwórz rezerwację" %}: {{ detail_url }}

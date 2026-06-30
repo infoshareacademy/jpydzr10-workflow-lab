@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from . import views
+from . import twofactor, views
 
 app_name = "accounts"
 
@@ -10,6 +10,38 @@ urlpatterns = [
     path("login/", views.PlanerLoginView.as_view(), name="login"),
     path("logout/", views.PlanerLogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    # Reset hasła („zapomniałem hasła") — 4 kroki standardowego flow Django,
+    # z firmowymi szablonami i dwujęzycznym mailem.
+    path("reset-hasla/", views.PlanerPasswordResetView.as_view(), name="password_reset"),
+    path(
+        "reset-hasla/wyslano/",
+        views.PlanerPasswordResetDoneView.as_view(),
+        name="password_reset_done",
+    ),
+    path(
+        "reset-hasla/<uidb64>/<token>/",
+        views.PlanerPasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "reset-hasla/zakonczono/",
+        views.PlanerPasswordResetCompleteView.as_view(),
+        name="password_reset_complete",
+    ),
+    # Eksport własnych danych (RODO Art. 20) — JSON do pobrania.
+    path("moje-dane/eksport/", views.data_export_view, name="data_export"),
+    # Preferencje e-mail / „wypisz się" — dostęp po podpisanym tokenie z maila
+    # (anonimowo) albo dla zalogowanego użytkownika (własne preferencje).
+    path("preferencje-email/", views.email_preferences_view, name="email_preferences"),
+    # 2FA (TOTP) — setup urządzenia, weryfikacja sesji, pobranie kodów zapasowych.
+    path("2fa/setup/", twofactor.two_factor_setup, name="2fa_setup"),
+    path("2fa/verify/", twofactor.two_factor_verify, name="2fa_verify"),
+    path("2fa/recovery/download/", twofactor.recovery_codes_download, name="2fa_recovery_download"),
+    path(
+        "2fa/recovery/regenerate/",
+        twofactor.recovery_codes_regenerate,
+        name="2fa_recovery_regenerate",
+    ),
     # Strona docelowa dla ``AXES_LOCKOUT_URL`` — pokazywana po przekroczeniu
     # limitu nieudanych prób logowania (5 prób per username+ip → 1h lockout).
     path("zablokowane/", views.AxesLockedView.as_view(), name="locked"),

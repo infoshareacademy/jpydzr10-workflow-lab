@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags widget_tweaks %}
+{% load planer_tags widget_tweaks i18n %}
 
-{% block title %}Bulk inspekcja — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Bulk inspekcja" %} — {% trans "Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -9,12 +9,12 @@
 {# ------------------------------------------------------------------ #}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
     <a href="{% url 'service:list' %}"
-       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Serwis" %}</a>
     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24"
          stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-slate-900 dark:text-slate-200 font-medium">Bulk inspekcja</span>
+    <span class="text-slate-900 dark:text-slate-200 font-medium">{% trans "Bulk inspekcja" %}</span>
 </nav>
 
 {# ------------------------------------------------------------------ #}
@@ -26,11 +26,11 @@
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
         </svg>
-        <span>Masowy przegląd</span>
+        <span>{% trans "Masowy przegląd" %}</span>
     </div>
-    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Bulk inspekcja</h1>
+    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{% trans "Bulk inspekcja" %}</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-        Wystaw jeden przegląd dla wielu maszyn — wspólny protokół PDF dołączany do każdego utworzonego wpisu.
+        {% trans "Wystaw jeden przegląd dla wielu maszyn — wspólny protokół PDF dołączany do każdego utworzonego wpisu." %}
     </p>
 </header>
 
@@ -60,7 +60,7 @@
     {% endif %}
 
     {# ============================== STEP INDICATOR ============================== #}
-    <ol class="flex items-center gap-3 text-xs" aria-label="Postęp wystawienia inspekcji">
+    <ol class="flex items-center gap-3 text-xs" aria-label="{% trans 'Postęp wystawienia inspekcji' %}">
         <li class="flex items-center gap-2"
             :class="step === 1 ? 'text-brand-700 dark:text-brand-300 font-semibold' : 'text-emerald-700 dark:text-emerald-300'">
             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
@@ -72,7 +72,7 @@
                 </span>
                 <span x-show="step === 1">1</span>
             </span>
-            <span>Wybierz maszyny</span>
+            <span>{% trans "Wybierz maszyny" %}</span>
         </li>
         <span class="flex-1 h-px bg-slate-200 dark:bg-slate-700" aria-hidden="true"></span>
         <li class="flex items-center gap-2"
@@ -81,7 +81,7 @@
                   :class="step === 2 ? 'bg-brand-100 dark:bg-brand-900/40 ring-2 ring-brand-500' : 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600'">
                 2
             </span>
-            <span>Dane przeglądu</span>
+            <span>{% trans "Dane przeglądu" %}</span>
         </li>
     </ol>
 
@@ -94,10 +94,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
             </span>
-            Wybór maszyn
+            {% trans "Wybór maszyn" %}
             <span class="ml-auto inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-100 dark:bg-brand-900/40 text-brand-800 dark:text-brand-200 tabular-nums">
                 <span x-text="selectedCount"></span>
-                <span class="ml-1 hidden sm:inline">wybranych</span>
+                <span class="ml-1 hidden sm:inline">{% trans "wybranych" %}</span>
             </span>
         </legend>
 
@@ -111,8 +111,8 @@
             </span>
             <input type="search"
                    x-model="query"
-                   placeholder="Szukaj po UID lub nazwie maszyny…"
-                   aria-label="Szukaj maszyny"
+                   placeholder="{% trans 'Szukaj po UID lub nazwie maszyny…' %}"
+                   aria-label="{% trans 'Szukaj maszyny' %}"
                    class="block w-full pl-9 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
         </div>
 
@@ -141,7 +141,7 @@
             {# Brak wyników search — pokazuje się gdy query nie pasuje. #}
             <p x-show="visibleCount === 0 && query.length > 0" x-cloak
                class="text-center text-sm text-slate-500 dark:text-slate-400 py-6">
-                Brak maszyn pasujących do "<span x-text="query"></span>".
+                {% trans 'Brak maszyn pasujących do' %} "<span x-text="query"></span>".
             </p>
         </div>
 
@@ -153,13 +153,13 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
             <a href="{% url 'service:list' %}"
                class="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
-                Anuluj
+                {% trans "Anuluj" %}
             </a>
             <button type="button"
                     @click="goToStep2()"
                     :disabled="selectedCount === 0"
                     class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
-                Dalej
+                {% trans "Dalej" %}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -177,7 +177,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
             </span>
-            Wspólne dane przeglądu
+            {% trans "Wspólne dane przeglądu" %}
         </legend>
 
         {# Recap z liczbą wybranych maszyn (z opcją powrotu do step 1). #}
@@ -187,11 +187,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <div class="flex-1 text-sm">
-                <p>Wybrano <strong class="tabular-nums" x-text="selectedCount"></strong> <span x-text="pluralMachine(selectedCount)"></span> do przeglądu.</p>
+                <p>{% trans "Wybrano" %} <strong class="tabular-nums" x-text="selectedCount"></strong> <span x-text="pluralMachine(selectedCount)"></span> {% trans "do przeglądu." %}</p>
             </div>
             <button type="button" @click="step = 1"
                     class="text-xs text-emerald-700 dark:text-emerald-300 hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded font-medium">
-                Zmień wybór
+                {% trans "Zmień wybór" %}
             </button>
         </div>
 
@@ -241,10 +241,10 @@
                 <div class="relative">
                     {{ form.cost }}
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-slate-400 dark:text-slate-500 font-medium">
-                        PLN
+                        EUR
                     </span>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Łączny koszt na każdą zaznaczoną maszynę.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Łączny koszt na każdą zaznaczoną maszynę." %}</p>
                 {% if form.cost.errors %}
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.cost.errors|striptags }}</p>
                 {% endif %}
@@ -257,7 +257,7 @@
                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {{ form.description.label }}
             </label>
-            {{ form.description|attr:"placeholder:Wspólny opis przeglądu — np. zakres prac, użyte materiały." }}
+            {{ form.description }}
             {% if form.description.help_text %}
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ form.description.help_text }}</p>
             {% endif %}
@@ -287,7 +287,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Wstecz
+                {% trans "Wstecz" %}
             </button>
             <button type="submit"
                     class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
@@ -295,7 +295,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                 </svg>
-                Zatwierdź przeglądy
+                {% trans "Zatwierdź przeglądy" %}
             </button>
         </div>
     </fieldset>
@@ -358,12 +358,12 @@
                 }
             },
             pluralMachine(n) {
-                if (n === 1) return "maszynę";
+                if (n === 1) return "{% trans 'maszynę' %}";
                 var lastTwo = n % 100;
-                if (lastTwo >= 12 && lastTwo <= 14) return "maszyn";
+                if (lastTwo >= 12 && lastTwo <= 14) return "{% trans 'maszyn' %}";
                 var last = n % 10;
-                if (last >= 2 && last <= 4) return "maszyny";
-                return "maszyn";
+                if (last >= 2 && last <= 4) return "{% trans 'maszyny' %}";
+                return "{% trans 'maszyn' %}";
             },
         };
     }

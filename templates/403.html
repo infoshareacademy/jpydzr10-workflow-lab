@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Brak uprawnień" %} — 403 — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+<section class="flex items-center justify-center min-h-[60vh] py-8 sm:py-12" aria-labelledby="error-403-title">
+    <div class="w-full max-w-lg mx-auto text-center">
+
+        {# Dekoracyjna liczba "403" — czysto wizualna #}
+        <div class="relative inline-flex items-center justify-center mb-6" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="absolute inset-0 w-full h-full text-amber-100 dark:text-amber-950/60"
+                 viewBox="0 0 200 120" fill="none" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <pattern id="grid-403" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="200" height="120" fill="url(#grid-403)"/>
+            </svg>
+            <span class="relative text-8xl sm:text-9xl font-bold text-amber-200 dark:text-amber-900 tabular-nums leading-none select-none tracking-tight">
+                403
+            </span>
+        </div>
+
+        <h1 id="error-403-title" class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3">
+            {% trans "Brak uprawnień" %}
+        </h1>
+        <p class="text-base text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-2">
+            {% trans "Nie masz uprawnień do tej operacji." %}
+        </p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
+            {% trans "Ta akcja wymaga wyższej roli (np. magazynier lub kierownik). Jeśli uważasz, że to pomyłka, skontaktuj się z administratorem." %}
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
+            {% comment %} Anonim trafiający na 403 najprawdopodobniej powinien się
+               najpierw zalogować — pokazujemy bezpośredni link do logowania
+               (tylko dla niezalogowanych), wystylizowany jak primary CTA. {% endcomment %}
+            {% if not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}"
+               class="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                <span>{% trans "Zaloguj się" %}</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'home' %}"
+               class="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium {% if user.is_authenticated %}bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white{% else %}bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700{% endif %} shadow-sm transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>{% trans "Wróć do dashboardu" %}</span>
+            </a>
+            <button type="button"
+                    data-history-back
+                    class="inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>{% trans "Wstecz" %}</span>
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}

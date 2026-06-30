@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 
 from core.admin import PlanerHistoryAdmin
 
@@ -44,7 +46,7 @@ class ConstructionSiteAdmin(PlanerHistoryAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (
-            "Podstawowe",
+            _("Podstawowe"),
             {
                 "fields": (
                     "project_number",
@@ -55,19 +57,19 @@ class ConstructionSiteAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Lokalizacja",
+            _("Lokalizacja"),
             {
                 "fields": ("address", "city"),
             },
         ),
         (
-            "Harmonogram",
+            _("Harmonogram"),
             {
                 "fields": ("start_date", "end_date"),
             },
         ),
         (
-            "Dodatkowe",
+            _("Dodatkowe"),
             {
                 "fields": ("notes", "created_at", "updated_at"),
                 "classes": ("collapse",),
@@ -75,7 +77,7 @@ class ConstructionSiteAdmin(PlanerHistoryAdmin):
         ),
     )
 
-    @admin.display(description="Aktywne rezerwacje", ordering="reservations")
+    @admin.display(description=_("Aktywne rezerwacje"), ordering="reservations")
     def active_reservation_count(self, obj: ConstructionSite) -> int:
         return obj.active_reservation_count
 
@@ -123,7 +125,7 @@ class ReservationAdmin(PlanerHistoryAdmin):
     actions = ("action_confirm", "action_cancel", "action_complete")
     fieldsets = (
         (
-            "Rezerwacja",
+            _("Rezerwacja"),
             {
                 "fields": (
                     "machine",
@@ -133,10 +135,10 @@ class ReservationAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Termin",
+            _("Termin"),
             {
                 "fields": ("start_date", "end_date", "actual_return_date"),
-                "description": (
+                "description": _(
                     "<code>actual_return_date</code> — faktyczny zwrot maszyny "
                     "(B-3). Jeśli ustawiony i &lt; end_date, rezerwacja zwolniła "
                     "maszynę wcześniej."
@@ -144,10 +146,10 @@ class ReservationAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Personel",
+            _("Personel"),
             {
                 "fields": ("person", "responsible_person", "address"),
-                "description": (
+                "description": _(
                     "<code>person</code> = osoba w biurze, która utworzyła rezerwację. "
                     "<code>responsible_person</code> (B-4) = kierownik/brygadzista "
                     "fizycznie odpowiedzialny za maszynę na budowie."
@@ -155,22 +157,22 @@ class ReservationAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Anulowanie (B-2)",
+            _("Anulowanie (B-2)"),
             {
                 "fields": ("cancellation_reason", "cancellation_note"),
                 "classes": ("collapse",),
-                "description": (
+                "description": _(
                     "Wypełniane automatycznie przez <code>cancel_reservation</code> "
                     "service gdy status zmienia się na <em>anulowana</em>."
                 ),
             },
         ),
         (
-            "Wymiana maszyny i batch (B-6 / B-7)",
+            _("Wymiana maszyny i batch (B-6 / B-7)"),
             {
                 "fields": ("replaced_by", "batch_id"),
                 "classes": ("collapse",),
-                "description": (
+                "description": _(
                     "<code>replaced_by</code> — FK do rezerwacji-następczyni po "
                     "<em>swap_machine</em>. <code>batch_id</code> (UUID) grupuje "
                     "rezerwacje utworzone jednym kliknięciem 'Grupa rezerwacji'."
@@ -178,7 +180,7 @@ class ReservationAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Dodatkowe",
+            _("Dodatkowe"),
             {
                 "fields": ("notes", "created_at", "updated_at"),
                 "classes": ("collapse",),
@@ -197,22 +199,29 @@ class ReservationAdmin(PlanerHistoryAdmin):
                 fn(res)
             except ValidationError as exc:
                 failures.append(
-                    f"Rezerwacja #{res.pk}: {' '.join(getattr(exc, 'messages', [str(exc)]))}"
+                    gettext("Rezerwacja #%(pk)s: %(messages)s")
+                    % {
+                        "pk": res.pk,
+                        "messages": " ".join(getattr(exc, "messages", [str(exc)])),
+                    }
                 )
             else:
                 success += 1
         if success:
             self.message_user(
-                request, f"{success_label}: {success} rezerwacji.", level=messages.SUCCESS
+                request,
+                gettext("%(label)s: %(count)s rezerwacji.")
+                % {"label": success_label, "count": success},
+                level=messages.SUCCESS,
             )
         if failures:
             self.message_user(request, " | ".join(failures), level=messages.WARNING)
 
-    @admin.action(description="Potwierdź zaznaczone rezerwacje")
+    @admin.action(description=_("Potwierdź zaznaczone rezerwacje"))
     def action_confirm(self, request, queryset):
-        self._bulk_apply(request, queryset, confirm_reservation, "Potwierdzono")
+        self._bulk_apply(request, queryset, confirm_reservation, gettext("Potwierdzono"))
 
-    @admin.action(description="Anuluj zaznaczone rezerwacje (powód: inne)")
+    @admin.action(description=_("Anuluj zaznaczone rezerwacje (powód: inne)"))
     def action_cancel(self, request, queryset):
         """B-2: bulk action ustawia reason="inne" (operator może doprecyzować
         ręcznie). Inne wybory ograniczyłyby UX bulk-operations w admin —
@@ -222,8 +231,8 @@ class ReservationAdmin(PlanerHistoryAdmin):
         from functools import partial
 
         cancel_with_reason = partial(cancel_reservation, reason="inne")
-        self._bulk_apply(request, queryset, cancel_with_reason, "Anulowano")
+        self._bulk_apply(request, queryset, cancel_with_reason, gettext("Anulowano"))
 
-    @admin.action(description="Zakończ zaznaczone rezerwacje")
+    @admin.action(description=_("Zakończ zaznaczone rezerwacje"))
     def action_complete(self, request, queryset):
-        self._bulk_apply(request, queryset, complete_reservation, "Zakończono")
+        self._bulk_apply(request, queryset, complete_reservation, gettext("Zakończono"))

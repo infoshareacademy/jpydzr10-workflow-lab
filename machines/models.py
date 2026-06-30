@@ -44,7 +44,7 @@ INSPECTION_WARNING_DAYS = 14
 # poziomie form validation i ``full_clean()`` w services.create_machine.
 UID_VALIDATOR = RegexValidator(
     regex=r"^[A-Z0-9_\-]+$",
-    message="UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik.",
+    message=_("UID może zawierać tylko duże litery A-Z, cyfry 0-9, podkreślenie i myślnik."),
 )
 
 
@@ -60,32 +60,32 @@ class Machine(TimestampedModel):
     The model tracks an optional ``inspection_date`` (next mandatory periodic
     inspection). :attr:`inspection_status` collapses the date into one of four
     UI buckets (``ok``/``warning``/``overdue``/``unknown``) — the template tag
-    :func:`machines.templatetags.machines_tags.inspection_icon` turns those
-    into emoji.
+    :func:`machines.templatetags.machines_tags.inspection_dot` turns those
+    into a coloured status dot.
     """
 
     class Status(models.TextChoices):
         """Operational status of a machine. Values are Polish on purpose."""
 
-        W_MAGAZYNIE = "W magazynie", "W magazynie"
-        NA_BUDOWIE = "Na budowie", "Na budowie"
-        ZAREZERWOWANA = "Zarezerwowana", "Zarezerwowana"
-        W_SERWISIE = "W serwisie", "W serwisie"
-        WYCOFANA = "Wycofana", "Wycofana z floty"
+        W_MAGAZYNIE = "W magazynie", _("W magazynie")
+        NA_BUDOWIE = "Na budowie", _("Na budowie")
+        ZAREZERWOWANA = "Zarezerwowana", _("Zarezerwowana")
+        W_SERWISIE = "W serwisie", _("W serwisie")
+        WYCOFANA = "Wycofana", _("Wycofana z floty")
 
     class Type(models.TextChoices):
         """Category of machine — drives filters and grouping in the UI."""
 
-        KOPARKA = "koparka", "Koparka"
-        MINIKOPARKA = "minikoparka", "Minikoparka"
-        PODNOSNIK_NOZYCOWY = "podnośnik nożycowy", "Podnośnik nożycowy"
-        PODNOSNIK_TELESKOPOWY = "podnośnik teleskopowy", "Podnośnik teleskopowy"
-        AGREGAT = "agregat prądotwórczy", "Agregat prądotwórczy"
-        WOZEK_WIDLOWY = "wózek widłowy", "Wózek widłowy"
-        WALEC = "walec", "Walec"
-        ZAGESZCZARKA = "zagęszczarka", "Zagęszczarka"
-        SPAWARKA = "spawarka", "Spawarka"
-        INNE = "inne", "Inne"
+        KOPARKA = "koparka", _("Koparka")
+        MINIKOPARKA = "minikoparka", _("Minikoparka")
+        PODNOSNIK_NOZYCOWY = "podnośnik nożycowy", _("Podnośnik nożycowy")
+        PODNOSNIK_TELESKOPOWY = "podnośnik teleskopowy", _("Podnośnik teleskopowy")
+        AGREGAT = "agregat prądotwórczy", _("Agregat prądotwórczy")
+        WOZEK_WIDLOWY = "wózek widłowy", _("Wózek widłowy")
+        WALEC = "walec", _("Walec")
+        ZAGESZCZARKA = "zagęszczarka", _("Zagęszczarka")
+        SPAWARKA = "spawarka", _("Spawarka")
+        INNE = "inne", _("Inne")
 
     uid = models.CharField(
         max_length=20,
@@ -93,7 +93,7 @@ class Machine(TimestampedModel):
         db_index=True,
         validators=[UID_VALIDATOR],
         verbose_name=_("UID maszyny"),
-        help_text="Unikalny identyfikator firmowy (np. KOP-001).",
+        help_text=_("Unikalny identyfikator firmowy (np. KOP-001)."),
     )
     name = models.CharField(max_length=100, verbose_name=_("Nazwa"))
     machine_type = models.CharField(
@@ -107,14 +107,25 @@ class Machine(TimestampedModel):
     capacity = models.PositiveIntegerField(
         default=0,
         verbose_name=_("Udźwig / wydajność"),
-        help_text="Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu).",
+        help_text=_("Wartość liczbowa zależna od typu (np. kg dla koparki, l/min dla agregatu)."),
     )
     inspection_date = models.DateField(
         null=True,
         blank=True,
         db_index=True,
         verbose_name=_("Data ostatniego przeglądu"),
-        help_text="Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd').",
+        help_text=_(
+            "Pusta wartość = brak danych o przeglądzie (zobacz status w kolumnie 'Przegląd')."
+        ),
+    )
+    inspection_warning_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Alert nadchodzącego przeglądu — wysłany"),
+        help_text=_(
+            "Znacznik wysłania alertu o zbliżającym się przeglądzie "
+            "(idempotency — resetowany po wykonaniu przeglądu)."
+        ),
     )
     location = models.CharField(
         max_length=200,
@@ -138,7 +149,7 @@ class Machine(TimestampedModel):
         default=0,
         validators=[MaxValueValidator(2100)],
         verbose_name=_("Rok produkcji"),
-        help_text="0 = nieznany.",
+        help_text=_("0 = nieznany."),
     )
     notes = models.TextField(blank=True, default="", verbose_name=_("Notatki"))
     image = models.ImageField(
@@ -152,7 +163,7 @@ class Machine(TimestampedModel):
         default=True,
         db_index=True,
         verbose_name=_("Dostępna do rezerwacji"),
-        help_text=(
+        help_text=_(
             "Maszyna magazynowa (np. wózek widłowy obsługujący magazyn) zostaje "
             "w bazie i jest widoczna na timeline (śledzimy przegląd), ale nie "
             "można jej rezerwować na budowę."
@@ -167,6 +178,22 @@ class Machine(TimestampedModel):
         verbose_name = _("Maszyna")
         verbose_name_plural = _("Maszyny")
         ordering = ["uid"]
+        constraints = [
+            # Obrona na poziomie bazy — status musi być wartością ``Status``
+            # (zgodność z choices pilnuje test, bo Meta nie widzi nested Status).
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=[
+                        "W magazynie",
+                        "Na budowie",
+                        "Zarezerwowana",
+                        "W serwisie",
+                        "Wycofana",
+                    ]
+                ),
+                name="machine_status_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.uid} — {self.name}"
@@ -201,10 +228,10 @@ class Machine(TimestampedModel):
     def inspection_status_label(self) -> str:
         """Human-readable Polish label matching :attr:`inspection_status`."""
         return {
-            "ok": "Przegląd aktualny",
-            "warning": "Wkrótce przegląd",
-            "overdue": "Przegląd przeterminowany",
-            "unknown": "Brak daty przeglądu",
+            "ok": _("Przegląd aktualny"),
+            "warning": _("Wkrótce przegląd"),
+            "overdue": _("Przegląd przeterminowany"),
+            "unknown": _("Brak daty przeglądu"),
         }[self.inspection_status]
 
     @property

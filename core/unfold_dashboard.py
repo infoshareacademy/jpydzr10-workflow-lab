@@ -11,6 +11,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 
 def callback(request, context: dict[str, Any]) -> dict[str, Any]:
@@ -22,21 +23,23 @@ def callback(request, context: dict[str, Any]) -> dict[str, Any]:
     4. Budowy aktywne
     """
     # Lazy import — modele ladowane po app registry.
-    from machines.models import Machine
+    from machines.models import INSPECTION_WARNING_DAYS, Machine
     from reservations.models import ConstructionSite, Reservation
 
     today = date.today()
-    horizon = today + timedelta(days=14)
+    horizon = today + timedelta(days=INSPECTION_WARNING_DAYS)
 
     try:
-        machines_available = Machine.objects.filter(status="W magazynie").count()
+        machines_available = Machine.objects.filter(status=Machine.Status.W_MAGAZYNIE).count()
         machines_total = Machine.objects.count()
-        machines_on_site = Machine.objects.filter(status="Na budowie").count()
+        machines_on_site = Machine.objects.filter(status=Machine.Status.NA_BUDOWIE).count()
 
         reservations_active = Reservation.objects.filter(
-            status__in=("oczekująca", "potwierdzona")
+            status__in=(Reservation.Status.OCZEKUJACA, Reservation.Status.POTWIERDZONA)
         ).count()
-        reservations_pending = Reservation.objects.filter(status="oczekująca").count()
+        reservations_pending = Reservation.objects.filter(
+            status=Reservation.Status.OCZEKUJACA
+        ).count()
 
         inspections_overdue = (
             Machine.objects.filter(inspection_date__lt=today)
@@ -66,27 +69,27 @@ def callback(request, context: dict[str, Any]) -> dict[str, Any]:
         {
             "kpi": [
                 {
-                    "title": "Dostępne maszyny",
+                    "title": _("Dostępne maszyny"),
                     "metric": f"{machines_available} / {machines_total}",
-                    "footer": f"{machines_on_site} na budowie",
+                    "footer": _("%(count)s na budowie") % {"count": machines_on_site},
                     "url": f"{machines_url}?status__exact=W+magazynie",
                 },
                 {
-                    "title": "Aktywne rezerwacje",
+                    "title": _("Aktywne rezerwacje"),
                     "metric": str(reservations_active),
-                    "footer": f"{reservations_pending} oczekujących",
+                    "footer": _("%(count)s oczekujących") % {"count": reservations_pending},
                     "url": reservations_url,
                 },
                 {
-                    "title": "Przeglądy przeterminowane",
+                    "title": _("Przeglądy przeterminowane"),
                     "metric": str(inspections_overdue),
-                    "footer": f"{inspections_upcoming} w 14 dniach",
+                    "footer": _("%(count)s w 14 dniach") % {"count": inspections_upcoming},
                     "url": machines_url,
                 },
                 {
-                    "title": "Aktywne budowy",
+                    "title": _("Aktywne budowy"),
                     "metric": str(sites_active),
-                    "footer": "Otwarte projekty",
+                    "footer": _("Otwarte projekty"),
                     "url": sites_url,
                 },
             ],

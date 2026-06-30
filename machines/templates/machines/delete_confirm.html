@@ -1,39 +1,40 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Usuń maszynę {{ machine.uid }}{% endblock %}
+{% block title %}{% blocktrans with uid=machine.uid %}Usuń maszynę {{ uid }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-    <a href="{% url 'machines:list' %}" class="hover:underline">Maszyny</a>
+    <a href="{% url 'machines:list' %}" class="hover:underline">{% trans "Maszyny" %}</a>
     <span class="mx-1">/</span>
     <a href="{% url 'machines:detail' uid=machine.uid %}" class="hover:underline">{{ machine.uid }}</a>
     <span class="mx-1">/</span>
-    <span class="text-slate-900 dark:text-slate-200">Usuń</span>
+    <span class="text-slate-900 dark:text-slate-200">{% trans "Usuń" %}</span>
 </nav>
 
 <div class="max-w-xl bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 rounded-lg p-6">
-    <h1 class="text-xl font-bold text-red-700 dark:text-red-300">Czy na pewno chcesz usunąć tę maszynę?</h1>
+    <h1 class="text-xl font-bold text-red-700 dark:text-red-300">{% trans "Czy na pewno chcesz usunąć tę maszynę?" %}</h1>
     <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        Operacja jest <strong>nieodwracalna</strong>. Wszystkie powiązane rekordy (rezerwacje,
-        wpisy serwisowe) muszą zostać przeniesione lub usunięte osobno.
+        {% blocktrans %}Operacja jest <strong>nieodwracalna</strong>. Wszystkie powiązane rekordy (rezerwacje,
+        wpisy serwisowe) muszą zostać przeniesione lub usunięte osobno.{% endblocktrans %}
     </p>
 
     <div class="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-md text-sm">
-        <p><strong>UID:</strong> <span class="font-mono">{{ machine.uid }}</span></p>
-        <p><strong>Nazwa:</strong> {{ machine.name }}</p>
-        <p><strong>Typ:</strong> {{ machine.get_machine_type_display }}</p>
-        <p><strong>Status:</strong> {{ machine.status }}</p>
+        <p><strong>{% trans "UID:" %}</strong> <span class="font-mono">{{ machine.uid }}</span></p>
+        <p><strong>{% trans "Nazwa:" %}</strong> {{ machine.name }}</p>
+        <p><strong>{% trans "Typ:" %}</strong> {{ machine.get_machine_type_display }}</p>
+        <p><strong>{% trans "Status:" %}</strong> {{ machine.get_status_display }}</p>
     </div>
 
     <form method="post" class="mt-6 flex items-center justify-end gap-3">
         {% csrf_token %}
         <a href="{% url 'machines:detail' uid=machine.uid %}"
            class="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700">
-            Anuluj
+            {% trans "Anuluj" %}
         </a>
         <button type="submit"
                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium">
-            Tak, usuń
+            {% trans "Tak, usuń" %}
         </button>
     </form>
 </div>

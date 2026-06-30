@@ -53,6 +53,7 @@ from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from .models import Conversation, Message
 from .sanitize import sanitize_user_input, wrap_user_input
@@ -146,7 +147,7 @@ def _is_negative(text: str) -> bool:
     return bool(_NEGATIVE_PATTERN.match(text or ""))
 
 
-def _extract_proposal_from_tool_calls(result) -> dict | None:
+def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
     """Wyciąga proposal **tylko** z faktycznych ``ToolCallPart`` w historii agenta.
 
     **Wave 14-H Bundle C-1 — KRYTYCZNY FIX**: poprzednia implementacja
@@ -216,6 +217,20 @@ def _extract_proposal_from_tool_calls(result) -> dict | None:
                 args_dict = args_dict["params"]
 
             action = part.tool_name.removeprefix("propose_")
+            # Permission gate na etapie PROPOZYCJI: jeśli user nie ma prawa do
+            # akcji, NIE budujemy pending_action — odmawiamy od razu zamiast
+            # proponować akcję, której i tak nie wykona (execute też ją blokuje,
+            # ale to defense-in-depth; tu chodzi o spójny UX bez "propose→403").
+            if user is not None:
+                from chatbot.tools import _check_user_can
+
+                auth_err = _check_user_can(user, action)
+                if auth_err:
+                    try:
+                        msg = json.loads(auth_err).get("error", auth_err)
+                    except json.JSONDecodeError, ValueError:
+                        msg = auth_err
+                    return {"action": action, "params": {}, "preview": msg, "blocked": True}
             preview = _build_preview_from_tool_call(action, args_dict, result)
             return {
                 "action": action,
@@ -242,25 +257,34 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
         start = params.get("start_date", "?")
         end = params.get("end_date", "?")
         person = params.get("person") or params.get("responsible_person") or "?"
-        return (
-            f"Proponowana akcja: utworzenie rezerwacji maszyny {uid} "
-            f"od {start} do {end} dla osoby '{person}'."
-        )
+        return _(
+            "Proponowana akcja: utworzenie rezerwacji maszyny %(uid)s "
+            "od %(start)s do %(end)s dla osoby '%(person)s'."
+        ) % {"uid": uid, "start": start, "end": end, "person": person}
     if action == "cancel_reservation":
         rid = params.get("reservation_id", "?")
         reason = params.get("reason", "?")
-        return f"Proponowana akcja: anulowanie rezerwacji #{rid} (powód: {reason})."
+        return _("Proponowana akcja: anulowanie rezerwacji #%(rid)s (powód: %(reason)s).") % {
+            "rid": rid,
+            "reason": reason,
+        }
     if action == "change_operator":
         rid = params.get("reservation_id", "?")
         new_person = params.get("new_person", "?")
-        return f"Proponowana akcja: zmiana osoby rezerwacji #{rid} na '{new_person}'."
+        return _("Proponowana akcja: zmiana osoby rezerwacji #%(rid)s na '%(person)s'.") % {
+            "rid": rid,
+            "person": new_person,
+        }
     if action == "swap_machine":
         rid = params.get("reservation_id", "?")
         new_uid = params.get("new_machine_uid") or params.get("new_machine_id") or "?"
-        return f"Proponowana akcja: wymiana maszyny w rezerwacji #{rid} na maszynę {new_uid}."
+        return _("Proponowana akcja: wymiana maszyny w rezerwacji #%(rid)s na maszynę %(uid)s.") % {
+            "rid": rid,
+            "uid": new_uid,
+        }
     if action == "set_machine_to_service":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
-        return f"Proponowana akcja: wysłanie maszyny {uid} do serwisu."
+        return _("Proponowana akcja: wysłanie maszyny %(uid)s do serwisu.") % {"uid": uid}
     if action == "create_service_record":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         rtype = params.get("record_type", "?")
@@ -268,79 +292,106 @@ def _build_preview_from_tool_call(action: str, params: dict, result) -> str:
         cost = params.get("cost", 0)
         desc = params.get("description", "")
         type_pl = {
-            "przegląd_kwartalny": "przegląd kwartalny",
-            "przegląd_polroczny": "przegląd półroczny",
-            "przegląd_roczny": "przegląd roczny",
-            "naprawa": "naprawa",
+            "przegląd_kwartalny": _("przegląd kwartalny"),
+            "przegląd_polroczny": _("przegląd półroczny"),
+            "przegląd_roczny": _("przegląd roczny"),
+            "naprawa": _("naprawa"),
         }.get(rtype, rtype)
-        cost_str = f"{float(cost):.2f} EUR" if cost else "bez kosztu"
+        cost_str = f"{float(cost):.2f} EUR" if cost else _("bez kosztu")
         desc_str = f" — „{desc}”" if desc else ""
-        return (
-            f"Proponowana akcja: wpis serwisowy dla maszyny {uid} "
-            f"({type_pl}, {performed}{desc_str}, {cost_str})."
-        )
+        return _(
+            "Proponowana akcja: wpis serwisowy dla maszyny %(uid)s "
+            "(%(type)s, %(performed)s%(desc)s, %(cost)s)."
+        ) % {
+            "uid": uid,
+            "type": type_pl,
+            "performed": performed,
+            "desc": desc_str,
+            "cost": cost_str,
+        }
     if action == "update_service_record":
         rid = params.get("record_id", "?")
-        return f"Proponowana akcja: aktualizacja wpisu serwisowego #{rid}."
+        return _("Proponowana akcja: aktualizacja wpisu serwisowego #%(rid)s.") % {"rid": rid}
     if action == "update_machine_inspection_date":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         new_date = params.get("next_inspection_date", "?")
-        return f"Proponowana akcja: przesunięcie daty przeglądu maszyny {uid} na {new_date}."
+        return _("Proponowana akcja: przesunięcie daty przeglądu maszyny %(uid)s na %(date)s.") % {
+            "uid": uid,
+            "date": new_date,
+        }
     if action == "confirm_reservation":
         rid = params.get("reservation_id", "?")
-        return f"Proponowana akcja: potwierdzenie rezerwacji #{rid}."
+        return _("Proponowana akcja: potwierdzenie rezerwacji #%(rid)s.") % {"rid": rid}
     if action == "complete_reservation":
         rid = params.get("reservation_id", "?")
         actual = params.get("actual_return_date")
-        actual_str = f" (zwrot: {actual})" if actual else ""
-        return f"Proponowana akcja: zakończenie rezerwacji #{rid}{actual_str}."
+        actual_str = _(" (zwrot: %(date)s)") % {"date": actual} if actual else ""
+        return _("Proponowana akcja: zakończenie rezerwacji #%(rid)s%(actual)s.") % {
+            "rid": rid,
+            "actual": actual_str,
+        }
     if action == "update_reservation":
         rid = params.get("reservation_id", "?")
-        return f"Proponowana akcja: edycja rezerwacji #{rid}."
+        return _("Proponowana akcja: edycja rezerwacji #%(rid)s.") % {"rid": rid}
     if action == "report_breakdown":
         rid = params.get("reservation_id", "?")
         desc = (params.get("description") or "")[:80]
-        return (
-            f"Proponowana akcja: zgłoszenie awarii rezerwacji #{rid} "
-            f"(opis: „{desc}{'…' if len(params.get('description', '')) > 80 else ''}”)."
-        )
+        ellipsis = "…" if len(params.get("description", "")) > 80 else ""
+        return _(
+            "Proponowana akcja: zgłoszenie awarii rezerwacji #%(rid)s "
+            "(opis: „%(desc)s%(ellipsis)s”)."
+        ) % {"rid": rid, "desc": desc, "ellipsis": ellipsis}
     if action == "create_machine":
         uid = params.get("uid", "?")
         name = params.get("name", "?")
         mtype = params.get("machine_type", "?")
-        return f"Proponowana akcja: utworzenie maszyny {uid} ({name}, typ: {mtype})."
+        return _("Proponowana akcja: utworzenie maszyny %(uid)s (%(name)s, typ: %(type)s).") % {
+            "uid": uid,
+            "name": name,
+            "type": mtype,
+        }
     if action == "update_machine":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
-        return f"Proponowana akcja: edycja maszyny {uid}."
+        return _("Proponowana akcja: edycja maszyny %(uid)s.") % {"uid": uid}
     if action == "return_machine":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
-        return f"Proponowana akcja: zwrot maszyny {uid} do magazynu."
+        return _("Proponowana akcja: zwrot maszyny %(uid)s do magazynu.") % {"uid": uid}
     if action == "close_repair_machine":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
-        return f"Proponowana akcja: zakończenie naprawy maszyny {uid}."
+        return _("Proponowana akcja: zakończenie naprawy maszyny %(uid)s.") % {"uid": uid}
     if action == "retire_machine":
         uid = params.get("machine_uid") or params.get("machine_id") or "?"
         reason = params.get("reason", "")
-        reason_str = f" (powód: {reason[:60]})" if reason else ""
-        return f"Proponowana akcja: wycofanie maszyny {uid} z floty{reason_str}."
+        reason_str = _(" (powód: %(reason)s)") % {"reason": reason[:60]} if reason else ""
+        return _("Proponowana akcja: wycofanie maszyny %(uid)s z floty%(reason)s.") % {
+            "uid": uid,
+            "reason": reason_str,
+        }
     if action == "create_site":
         pn = params.get("project_number", "?")
         name = params.get("name", "?")
-        return f"Proponowana akcja: utworzenie budowy {pn} ({name})."
+        return _("Proponowana akcja: utworzenie budowy %(pn)s (%(name)s).") % {
+            "pn": pn,
+            "name": name,
+        }
     if action == "update_site":
         pn = params.get("project_number", "?")
-        return f"Proponowana akcja: edycja budowy {pn}."
+        return _("Proponowana akcja: edycja budowy %(pn)s.") % {"pn": pn}
     if action == "delete_site":
         pn = params.get("project_number", "?")
-        return f"Proponowana akcja: usunięcie budowy {pn}."
+        return _("Proponowana akcja: usunięcie budowy %(pn)s.") % {"pn": pn}
     if action == "terminate_employee":
         username = params.get("username", "?")
         reason = params.get("reason", "")[:80]
-        return f"Proponowana akcja: zakończenie zatrudnienia '{username}' (powód: {reason})."
+        return _(
+            "Proponowana akcja: zakończenie zatrudnienia '%(username)s' (powód: %(reason)s)."
+        ) % {"username": username, "reason": reason}
     if action == "anonymize_employee":
         username = params.get("username", "?")
-        return f"Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR pracownika '{username}'."
-    return f"Proponowana akcja: {action}."
+        return _(
+            "Proponowana akcja: ⚠ NIEODWRACALNA anonimizacja GDPR pracownika '%(username)s'."
+        ) % {"username": username}
+    return _("Proponowana akcja: %(action)s.") % {"action": action}
 
 
 def _parse_proposal(response: str | None) -> dict | None:
@@ -382,12 +433,12 @@ def _render_proposal_message(proposal: dict) -> str:
     renderuje tylko surowy ``message.content`` (history endpoint, drawer,
     test rendering).
     """
-    preview = proposal.get("preview") or "(brak podglądu)"
-    return (
-        f"{preview}\n\n"
-        f"Aby wykonać tę akcję, odpisz **TAK** lub **potwierdzam** w następnej "
-        f"wiadomości. Aby anulować — odpisz **NIE** lub **anuluj**."
-    )
+    preview = proposal.get("preview") or _("(brak podglądu)")
+    return _(
+        "%(preview)s\n\n"
+        "Aby wykonać tę akcję, odpisz **TAK** lub **potwierdzam** w następnej "
+        "wiadomości. Aby anulować — odpisz **NIE** lub **anuluj**."
+    ) % {"preview": preview}
 
 
 def ask_chatbot(
@@ -414,12 +465,12 @@ def ask_chatbot(
         # Defensywnie — formularz powinien już to złapać, ale serwis nie ufa.
         with transaction.atomic():
             conversation = conversation or Conversation.objects.create(
-                user=user, title="(puste pytanie)"
+                user=user, title=_("(puste pytanie)")
             )
             return Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ERROR,
-                content="Pytanie jest zbyt krótkie (wymagane min. 3 znaki).",
+                content=_("Pytanie jest zbyt krótkie (wymagane min. 3 znaki)."),
             )
     if len(question_clean) > QUESTION_MAX_LENGTH:
         with transaction.atomic():
@@ -429,7 +480,8 @@ def ask_chatbot(
             return Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ERROR,
-                content=f"Pytanie jest zbyt długie (max {QUESTION_MAX_LENGTH} znaków).",
+                content=_("Pytanie jest zbyt długie (max %(max)s znaków).")
+                % {"max": QUESTION_MAX_LENGTH},
             )
 
     # =========================================================================
@@ -483,7 +535,7 @@ def ask_chatbot(
             return Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ERROR,
-                content=(
+                content=_(
                     "Asystent jest tymczasowo niedostępny. "
                     "Administrator musi skonfigurować klucz GEMINI_API_KEY."
                 ),
@@ -550,9 +602,13 @@ def ask_chatbot(
     # ``ToolCallPart`` w historii pydantic-ai (nie z tekstu odpowiedzi).
     # Echo JSON w prozie agenta nie tworzy pending_action — blokuje to
     # echo-attack vector gdzie user prosi agenta o "powtórz tę treść JSON".
-    proposal = _extract_proposal_from_tool_calls(result)
+    proposal = _extract_proposal_from_tool_calls(result, user)
     with transaction.atomic():
-        if proposal is not None:
+        if proposal is not None and proposal.get("blocked"):
+            # User nie ma uprawnień do proponowanej akcji — pokazujemy odmowę,
+            # NIE zapisujemy pending_action (nie ma czego potwierdzać).
+            display_content = proposal["preview"]
+        elif proposal is not None:
             conversation.pending_action = proposal
             conversation.pending_action_created_at = timezone.now()
             conversation.save(
@@ -590,7 +646,7 @@ WRITE_RATE_LIMIT_PERIOD_SEC = 86_400  # 24h
 def _check_write_rate_limit(user_id: int) -> bool:
     """Sprawdza dzienny limit confirm operations użytkownika (10/d).
 
-    Implementacja podobna do WMS ``chatbot.api._check_rate_limit``: klucz
+    Standardowy wzorzec rate-limit per-user: klucz
     cache per-user, fail-CLOSED jeśli cache nie działa (lepiej odmówić
     niż pozwolić na batch attack podczas outage cache backend).
 
@@ -663,7 +719,7 @@ def _handle_pending_confirm(user, conversation: Conversation, question_clean: st
             return Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ERROR,
-                content=("Propozycja wygasła (limit 10 minut). Wpisz ponownie swoje zapytanie."),
+                content=_("Propozycja wygasła (limit 10 minut). Wpisz ponownie swoje zapytanie."),
             )
 
     audit_logger.info(
@@ -700,11 +756,12 @@ def _handle_pending_confirm(user, conversation: Conversation, question_clean: st
             return Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ERROR,
-                content=(
-                    f"Przekroczono dzienny limit {WRITE_RATE_LIMIT_PER_DAY} "
-                    f"operacji modyfikujących dla asystenta. "
-                    f"Spróbuj ponownie jutro lub użyj formularzy w aplikacji."
-                ),
+                content=_(
+                    "Przekroczono dzienny limit %(limit)s "
+                    "operacji modyfikujących dla asystenta. "
+                    "Spróbuj ponownie jutro lub użyj formularzy w aplikacji."
+                )
+                % {"limit": WRITE_RATE_LIMIT_PER_DAY},
             )
 
     with transaction.atomic():
@@ -740,7 +797,7 @@ def _handle_pending_confirm(user, conversation: Conversation, question_clean: st
             conversation.pk,
             action,
         )
-        result_text = "Wystąpił nieoczekiwany błąd podczas wykonywania akcji."
+        result_text = _("Wystąpił nieoczekiwany błąd podczas wykonywania akcji.")
 
     with transaction.atomic():
         return Message.objects.create(
@@ -777,7 +834,7 @@ def _handle_pending_cancel(conversation: Conversation, question_clean: str) -> M
         return Message.objects.create(
             conversation=conversation,
             role=Message.Role.ASSISTANT,
-            content="Akcja anulowana — nic nie zostało zmienione.",
+            content=_("Akcja anulowana — nic nie zostało zmienione."),
         )
 
 
@@ -802,12 +859,11 @@ def _classify_agent_error(exc: Exception) -> str:
     msg = str(exc).lower()
 
     if "timeout" in name or "timeout" in msg:
-        return (
-            f"Asystent nie odpowiedział w wyznaczonym czasie "
-            f"({GEMINI_TIMEOUT_SECONDS}s). Spróbuj ponownie."
-        )
+        return _(
+            "Asystent nie odpowiedział w wyznaczonym czasie (%(seconds)ss). Spróbuj ponownie."
+        ) % {"seconds": GEMINI_TIMEOUT_SECONDS}
     if "ratelimit" in name or "quota" in msg or "429" in msg or "rate limit" in msg:
-        return "Przekroczono limit zapytań do asystenta. Spróbuj ponownie za chwilę."
+        return _("Przekroczono limit zapytań do asystenta. Spróbuj ponownie za chwilę.")
     if (
         "connection" in name
         or "connection" in msg
@@ -815,10 +871,10 @@ def _classify_agent_error(exc: Exception) -> str:
         or "unreachable" in msg
         or "dns" in msg
     ):
-        return "Brak połączenia z asystentem. Sprawdź połączenie internetowe."
+        return _("Brak połączenia z asystentem. Sprawdź połączenie internetowe.")
     if "auth" in name or "apikey" in name or "api_key" in msg or "unauthorized" in msg:
-        return "Asystent jest tymczasowo niedostępny (problem konfiguracji)."
-    return "Wystąpił nieoczekiwany błąd podczas komunikacji z asystentem. Spróbuj ponownie."
+        return _("Asystent jest tymczasowo niedostępny (problem konfiguracji).")
+    return _("Wystąpił nieoczekiwany błąd podczas komunikacji z asystentem. Spróbuj ponownie.")
 
 
 # =============================================================================

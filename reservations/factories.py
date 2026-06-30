@@ -125,7 +125,9 @@ class ConfirmedReservationFactory(ReservationFactory):
 
     status = Reservation.Status.POTWIERDZONA
     start_date = factory.LazyFunction(lambda: date.today() - timedelta(days=2))
-    end_date = factory.LazyAttribute(lambda o: o.start_date + timedelta(days=_random_duration_days()))
+    end_date = factory.LazyAttribute(
+        lambda o: o.start_date + timedelta(days=_random_duration_days())
+    )
 
 
 class CancelledReservationFactory(ReservationFactory):
@@ -138,4 +140,6 @@ class CompletedReservationFactory(ReservationFactory):
 
     status = Reservation.Status.ZAKONCZONA
     start_date = factory.LazyFunction(lambda: date.today() - timedelta(days=10))
-    end_date = factory.LazyAttribute(lambda o: o.start_date + timedelta(days=_random_duration_days()))
+    end_date = factory.LazyAttribute(
+        lambda o: o.start_date + timedelta(days=_random_duration_days())
+    )

@@ -23,7 +23,11 @@ from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
@@ -36,7 +40,7 @@ from django.views.generic import DetailView, ListView, UpdateView, View
 from core.pagination import PerPageMixin
 from core.service_errors import add_form_errors, join_validation_error
 from core.utils import parse_iso_date
-from machines.models import Machine
+from machines.models import INSPECTION_WARNING_DAYS, Machine
 
 from .forms import (
     BatchCancelForm,
@@ -218,7 +222,7 @@ def reservation_quick_modal_view(request: HttpRequest) -> HttpResponse:
         try:
             start_date = date.fromisoformat(day_raw)
             initial["start_date"] = start_date
-            # Default 15 dni (Sebastian walkthrough -- typowy okres wynajmu).
+            # +14 dni od startu = 15-dniowy okres włącznie (typowy najem).
             initial["end_date"] = start_date + timedelta(days=14)
         except ValueError:
             pass
@@ -312,6 +316,7 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
                     # address + responsible_person (form sam też enforce'uje,
                     # ale defense-in-depth — formularz może być z bypass).
                     require_full_fields=True,
+                    created_by=request.user,
                 )
             except ValidationError as exc:
                 add_form_errors(form, exc)
@@ -360,73 +365,32 @@ def reservation_create(request: HttpRequest) -> HttpResponse:
     return render(request, template, {"form": form, "mode": "create"})
 
 
-def _normalize_person_name(name: str) -> str:
-    """B-5: case-insensitive + accent-insensitive normalizacja imion.
+class ReservationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Edit an existing reservation — WYŁĄCZNIE admin/superuser.
 
-    Przyklad: ``"Sven Olsén"`` → ``"sven olsen"``, więc ``"Sven Olsen"`` i
-    ``"sven olsén"`` w bazie matchują do siebie. Implementuje NFKD decomposition
-    (rozbija "é" na "e" + combining acute) i odrzuca non-ASCII bytes —
-    standardowy unicode-folding pattern.
-
-    Plan długofalowy (M3): pole ``Reservation.created_by = FK(User)`` zastąpi
-    ten free-text fuzzy match — wtedy ta funkcja zniknie. Aktualnie magazynierka
-    Sven Olsén z polskim akcentem nie mogła edytować rezerwacji wpisanej jako
-    "Sven Olsen" w innym systemie (regression podczas migracji M1→M2).
-    """
-    import unicodedata
-
-    decomposed = unicodedata.normalize("NFKD", name)
-    ascii_only = decomposed.encode("ASCII", "ignore").decode()
-    return ascii_only.casefold().strip()
-
-
-class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    """Edit an existing reservation.
-
-    Wymaga uprawnienia ``reservations.change_reservation``. Non-superuserowie
-    widzą tylko swoje rezerwacje (queryset filtered by ``person``); superuser
-    widzi wszystkie. ``raise_exception=True`` daje 403 zamiast cichego redirectu.
-
-    B-5: ownership match jest case-insensitive + accent-insensitive — dzięki
-    temu "Sven Olsén" (z akcentem) matchuje rezerwację wpisaną jako "Sven Olsen"
-    (bez akcentu) i odwrotnie. Patrz :func:`_normalize_person_name`.
+    Decyzja Sebastiana: edytować rezerwację może tylko administrator; pozostałe
+    role mogą ją wyłącznie przeglądać (kierownik dodatkowo SKŁADA wniosek =
+    tworzy nową, a magazynier/admin zatwierdza). ``raise_exception=True`` daje
+    403 zamiast cichego redirectu.
     """
 
     model = Reservation
     form_class = ReservationForm
     template_name = "reservations/form.html"
     context_object_name = "reservation"
-    permission_required = "reservations.change_reservation"
     raise_exception = True
 
+    def test_func(self):
+        return self.request.user.is_superuser
+
     def get_queryset(self):
-        # Terminal status filter — zakonczone i anulowane rezerwacje są
-        # immutable (`update_reservation` rzuca ValidationError). Front-door
-        # blokujemy tutaj — 404 zamiast cichej mutacji po POST.
-        qs = (
+        # Tylko admin tu dociera (test_func). Terminalne statusy (zakończona /
+        # anulowana) pozostają immutable — front-door 404 zamiast cichej mutacji.
+        return (
             super()
             .get_queryset()
             .exclude(status__in=[Reservation.Status.ZAKONCZONA, Reservation.Status.ANULOWANA])
         )
-        if self.request.user.is_superuser:
-            return qs
-        # Ownership check — non-superuser może edytować tylko swoje rezerwacje.
-        # ``person`` jest free-text (M2 limitation) — porównujemy do
-        # get_full_name() albo username (fallback gdy profil pusty).
-        #
-        # B-5: case+accent-insensitive matching. Robimy w Pythonie (nie w SQL)
-        # bo SQLite nie ma natywnego unaccent extension, a Postgres pg_trgm
-        # różnie się zachowuje per-instalacja. Filtr per-row jest O(N) ale
-        # N==(user's reservations) jest małe (~10-100), więc OK na M2.
-        # Plan M3: FK ``created_by`` → zniknie cały ten kod.
-        full_name = self.request.user.get_full_name() or self.request.user.get_username()
-        target = _normalize_person_name(full_name)
-        if not target:
-            return qs.none()
-        matching_pks = [
-            r.pk for r in qs.only("pk", "person") if _normalize_person_name(r.person) == target
-        ]
-        return qs.filter(pk__in=matching_pks)
 
     def form_valid(self, form):
         try:
@@ -473,13 +437,15 @@ class ReservationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
             if not error_msg:
                 error_msg = "Nie udalo sie zapisac zmian — sprawdz formularz."
             response = HttpResponse(status=422)
-            response["HX-Trigger"] = json.dumps({
-                "showToast": {
-                    "kind": "error",
-                    "message": error_msg,
-                    "duration": 6000,
-                },
-            })
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "showToast": {
+                        "kind": "error",
+                        "message": error_msg,
+                        "duration": 6000,
+                    },
+                }
+            )
             return response
         return super().form_invalid(form)
 
@@ -1059,7 +1025,7 @@ class TimelineView(LoginRequiredMixin, View):
         inspection = request.GET.get("inspection")
         if inspection in ("ok", "warning", "overdue", "unknown"):
             today = date.today()
-            warning_until = today + timedelta(days=14)
+            warning_until = today + timedelta(days=INSPECTION_WARNING_DAYS)
             if inspection == "overdue":
                 machines_qs = machines_qs.filter(inspection_date__lt=today)
             elif inspection == "warning":
@@ -1177,7 +1143,15 @@ class TimelineView(LoginRequiredMixin, View):
 
         filters_active = any(
             request.GET.get(k)
-            for k in ("machine_type", "status", "site", "person", "responsible", "search", "inspection")
+            for k in (
+                "machine_type",
+                "status",
+                "site",
+                "person",
+                "responsible",
+                "search",
+                "inspection",
+            )
         )
 
         # Mini-step nav: precomputujemy ISO daty dla +/-7d i +/-30d (zamiast
@@ -1339,6 +1313,7 @@ class QuickReserveView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 start_date=start_date,
                 end_date=end_date,
                 person=person,
+                created_by=request.user,
             )
         except ValidationError as exc:
             return render(
@@ -1397,6 +1372,7 @@ def batch_create_view(request: HttpRequest) -> HttpResponse:
                     person=form.cleaned_data["person"],
                     address=form.cleaned_data.get("address", ""),
                     notes=form.cleaned_data.get("notes", ""),
+                    created_by=request.user,
                 )
             except ValidationError as exc:
                 add_form_errors(form, exc)
@@ -1584,12 +1560,14 @@ def daily_sync_now_view(request: HttpRequest) -> HttpResponse:
         request,
         _(
             "Synchronizacja statusów wykonana: %(updated)d 'Na budowie', "
-            "%(extended)d przedłużono (Hard Return), %(reserved)d 'Zarezerwowana'."
+            "%(extended)d przedłużono (Hard Return), %(reserved)d 'Zarezerwowana', "
+            "%(released)d zwolniono do magazynu."
         )
         % {
             "updated": result["updated"],
             "extended": result["extended"],
             "reserved": result["reserved"],
+            "released": result["released"],
         },
     )
     return redirect("home")

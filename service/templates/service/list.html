@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags %}
+{% load planer_tags i18n %}
 
-{% block title %}Serwis i przeglądy — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Serwis i przeglądy" %} — {% trans "Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -23,12 +23,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                <span>Serwis</span>
+                <span>{% trans "Serwis" %}</span>
             </div>
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Serwis i przeglądy</h1>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{% trans "Serwis i przeglądy" %}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                W bazie: <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ total_count }}</span>
-                {% if records %}<span class="text-slate-400 dark:text-slate-500"> · widocznych: <span class="tabular-nums">{{ records|length }}</span></span>{% endif %}
+                {% trans "W bazie:" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ total_count }}</span>
+                {% if records %}<span class="text-slate-400 dark:text-slate-500"> · {% trans "widocznych:" %} <span class="tabular-nums">{{ records|length }}</span></span>{% endif %}
             </p>
         </div>
 
@@ -43,7 +43,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>Tylko przeglądy</span>
+                <span>{% trans "Tylko przeglądy" %}</span>
             </a>
 
             <a href="{% url 'service:bulk_inspection' %}"
@@ -52,8 +52,8 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
-                <span class="hidden sm:inline">Bulk inspekcja</span>
-                <span class="sm:hidden">Bulk</span>
+                <span class="hidden sm:inline">{% trans "Bulk inspekcja" %}</span>
+                <span class="sm:hidden">{% trans "Bulk" %}</span>
             </a>
             <a href="{% url 'service:reports' %}"
                class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
@@ -61,17 +61,17 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span>Raporty</span>
+                <span>{% trans "Raporty" %}</span>
             </a>
-            <a href="{% url 'service:export_all_xlsx' %}"
+            <a href="{% url 'service:export_all_xlsx' %}?{{ request.GET.urlencode }}"
                class="inline-flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-               title="Pobierz wszystkie wpisy serwisowe w formacie Excel">
+               title="{% trans 'Pobierz wszystkie wpisy serwisowe w formacie Excel' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span class="hidden sm:inline">Pobierz Excel</span>
-                <span class="sm:hidden">Excel</span>
+                <span class="hidden sm:inline">{% trans "Pobierz Excel" %}</span>
+                <span class="sm:hidden">{% trans "Excel" %}</span>
             </a>
             {% if perms.service.add_servicerecord %}
             <a href="{% url 'service:create' %}"
@@ -80,8 +80,8 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                <span class="hidden sm:inline">Dodaj wpis</span>
-                <span class="sm:hidden">Dodaj</span>
+                <span class="hidden sm:inline">{% trans "Dodaj wpis" %}</span>
+                <span class="sm:hidden">{% trans "Dodaj" %}</span>
             </a>
             {% endif %}
         </div>
@@ -98,17 +98,17 @@
          x-transition:leave-end="opacity-0 -translate-y-2"
          class="sticky top-16 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-lg bg-brand-50 dark:bg-brand-900/40 border border-brand-200 dark:border-brand-800 shadow-sm"
          role="region"
-         aria-label="Akcje masowe">
+         aria-label="{% trans 'Akcje masowe' %}">
         <div class="flex items-center gap-2 text-sm">
             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-600 text-white text-xs font-bold tabular-nums"
                   x-text="selectedCount"></span>
             <span class="font-medium text-brand-900 dark:text-brand-100">
-                Zaznaczono <span x-text="selectedCount"></span>
+                {% trans "Zaznaczono" %} <span x-text="selectedCount"></span>
                 <span x-text="pluralRecord(selectedCount)"></span>
             </span>
             <button type="button" @click="clearSelection()"
                     class="ml-2 text-xs text-brand-700 dark:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
-                Wyczyść
+                {% trans "Wyczyść" %}
             </button>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -120,7 +120,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
-                Eksportuj XLSX
+                {% trans "Eksportuj XLSX" %}
             </a>
             <a href="{% url 'service:reports' %}"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-xs font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -128,7 +128,7 @@
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                Generuj raport PDF
+                {% trans "Generuj raport PDF" %}
             </a>
         </div>
     </div>
@@ -147,13 +147,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                             </svg>
                         </span>
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Filtry</h2>
+                        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">{% trans "Filtry" %}</h2>
                     </div>
                     <button type="button" @click="open = !open"
                             :aria-expanded="open"
                             aria-controls="service-filters-body"
                             class="lg:hidden text-xs text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
-                        <span x-text="open ? 'Zwiń' : 'Rozwiń'">Zwiń</span>
+                        <span x-text="open ? '{% trans "Zwiń" %}' : '{% trans "Rozwiń" %}'">{% trans "Zwiń" %}</span>
                     </button>
                 </div>
 
@@ -243,11 +243,11 @@
                                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Filtruj
+                            {% trans "Filtruj" %}
                         </button>
                         <a href="{% url 'service:list' %}"
                            class="px-3 py-2 text-sm text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
-                            Wyczyść
+                            {% trans "Wyczyść" %}
                         </a>
                     </div>
                 </div>
@@ -270,16 +270,16 @@
                                                    :checked="allSelected"
                                                    :indeterminate="someSelected && !allSelected"
                                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
-                                                   aria-label="Zaznacz wszystkie wpisy">
+                                                   aria-label="{% trans 'Zaznacz wszystkie wpisy' %}">
                                         </label>
                                     </th>
-                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Data</th>
-                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Maszyna</th>
-                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Typ</th>
-                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Wykonał</th>
-                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Koszt</th>
-                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Następny</th>
-                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Akcje</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Data" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Maszyna" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Typ" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Wykonał" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Koszt" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Następny" %}</th>
+                                    <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Akcje" %}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -293,7 +293,8 @@
                                                    @change="toggle({{ record.pk }})"
                                                    :checked="selected.has({{ record.pk }})"
                                                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
-                                                   aria-label="Zaznacz wpis #{{ record.pk }}">
+                                                   data-record-select
+                                                   aria-label="{% trans 'Zaznacz wpis' %} #{{ record.pk }}">
                                         </label>
                                     </td>
                                     <td class="px-3 py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-200 tabular-nums">
@@ -325,7 +326,7 @@
                                     </td>
                                     <td class="px-3 py-2.5 text-slate-600 dark:text-slate-300 text-xs">{{ record.performed_by|default:"—" }}</td>
                                     <td class="px-3 py-2.5 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-200">
-                                        {{ record.cost }} <span class="text-slate-400 dark:text-slate-500">PLN</span>
+                                        {{ record.cost.amount }} <span class="text-slate-400 dark:text-slate-500">{{ record.cost.currency }}</span>
                                     </td>
                                     <td class="px-3 py-2.5 text-xs">
                                         {% if record.next_inspection %}
@@ -333,7 +334,7 @@
                                                 {{ record.next_inspection|date_pl }}
                                             </span>
                                             {% if record.is_overdue_followup %}
-                                            <span class="ml-1 text-rose-500" title="Przegląd zaległy" aria-label="Przegląd zaległy">!</span>
+                                            <span class="ml-1 inline-flex text-rose-500" title="{% trans 'Przegląd zaległy' %}" aria-label="{% trans 'Przegląd zaległy' %}"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg></span>
                                             {% endif %}
                                         {% else %}
                                             <span class="text-slate-400 dark:text-slate-500">—</span>
@@ -341,7 +342,7 @@
                                     </td>
                                     <td class="px-3 py-2.5 text-right whitespace-nowrap">
                                         <a href="{% url 'service:detail' pk=record.pk %}"
-                                           class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                           class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Szczegóły" %}</a>
                                         {% if record.is_inspection %}
                                             <span class="text-slate-300 dark:text-slate-600 mx-1" aria-hidden="true">·</span>
                                             <a href="{% url 'service:pdf' pk=record.pk %}"
@@ -367,7 +368,8 @@
                                        @change="toggle({{ record.pk }})"
                                        :checked="selected.has({{ record.pk }})"
                                        class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
-                                       aria-label="Zaznacz wpis #{{ record.pk }}">
+                                       data-record-select
+                                       aria-label="{% trans 'Zaznacz wpis' %} #{{ record.pk }}">
                             </label>
                             <a href="{% url 'service:detail' pk=record.pk %}"
                                class="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">
@@ -382,9 +384,9 @@
                                     {% else %}
                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ record.get_record_type_display }}</span>
                                     {% endif %}
-                                    <span class="font-mono">{{ record.cost }} PLN</span>
+                                    <span class="font-mono">{{ record.cost.amount }} {{ record.cost.currency }}</span>
                                     {% if record.is_overdue_followup %}
-                                        <span class="text-rose-600 dark:text-rose-300 font-semibold">Zaległy!</span>
+                                        <span class="text-rose-600 dark:text-rose-300 font-semibold">{% trans "Zaległy!" %}</span>
                                     {% endif %}
                                 </div>
                             </a>
@@ -398,23 +400,23 @@
                     {% include "_per_page_selector.html" %}
                 </div>
                 {% if is_paginated %}
-                <nav class="flex items-center justify-between mt-4 text-sm" aria-label="Stronicowanie">
+                <nav class="flex items-center justify-between mt-4 text-sm" aria-label="{% trans 'Stronicowanie' %}">
                     <span class="text-slate-500 dark:text-slate-400">
-                        Strona <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.number }}</span>
-                        z <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.paginator.num_pages }}</span>
+                        {% trans "Strona" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.number }}</span>
+                        {% trans "z" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.paginator.num_pages }}</span>
                     </span>
                     <ul class="flex gap-1">
                         {% if page_obj.has_previous %}
                             <li><a href="?{% qs_replace request page=page_obj.previous_page_number %}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                                Poprzednia
+                                {% trans "Poprzednia" %}
                             </a></li>
                         {% endif %}
                         {% if page_obj.has_next %}
                             <li><a href="?{% qs_replace request page=page_obj.next_page_number %}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                Następna
+                                {% trans "Następna" %}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                             </a></li>
                         {% endif %}
@@ -448,7 +450,7 @@
             allSelected: false,
             someSelected: false,
             init() {
-                var inputs = this.$root.querySelectorAll('input[type="checkbox"][aria-label^="Zaznacz wpis"]');
+                var inputs = this.$root.querySelectorAll('input[type="checkbox"][data-record-select]');
                 this.allPks = Array.from(inputs).map(function (i) { return parseInt(i.value, 10); });
                 this.refreshFlags();
             },
@@ -479,12 +481,12 @@
                 this.refreshFlags();
             },
             pluralRecord(n) {
-                if (n === 1) return "wpis";
+                if (n === 1) return "{% trans 'wpis' %}";
                 var lastTwo = n % 100;
-                if (lastTwo >= 12 && lastTwo <= 14) return "wpisów";
+                if (lastTwo >= 12 && lastTwo <= 14) return "{% trans 'wpisów' %}";
                 var last = n % 10;
-                if (last >= 2 && last <= 4) return "wpisy";
-                return "wpisów";
+                if (last >= 2 && last <= 4) return "{% trans 'wpisy' %}";
+                return "{% trans 'wpisów' %}";
             },
         };
     }

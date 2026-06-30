@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags widget_tweaks %}
+{% load static planer_tags widget_tweaks i18n %}
 
-{% block title %}Raporty serwisowe — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Raporty serwisowe" %} — {% trans "Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -9,12 +9,12 @@
 {# ------------------------------------------------------------------ #}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
     <a href="{% url 'service:list' %}"
-       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Serwis" %}</a>
     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24"
          stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-slate-900 dark:text-slate-200 font-medium">Raporty</span>
+    <span class="text-slate-900 dark:text-slate-200 font-medium">{% trans "Raporty" %}</span>
 </nav>
 
 {# ------------------------------------------------------------------ #}
@@ -26,11 +26,11 @@
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <span>Statystyki i eksport</span>
+        <span>{% trans "Statystyki i eksport" %}</span>
     </div>
-    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Raporty serwisowe</h1>
+    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{% trans "Raporty serwisowe" %}</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-        Pobierz zbiorcze zestawienia kosztów i przeglądów wykonanych przez serwis.
+        {% trans "Pobierz zbiorcze zestawienia kosztów i przeglądów wykonanych przez serwis." %}
     </p>
 </header>
 
@@ -51,7 +51,7 @@
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
-            Zakres czasu
+            {% trans "Zakres czasu" %}
         </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -86,14 +86,14 @@
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
-            Typ raportu
+            {% trans "Typ raportu" %}
         </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
              role="radiogroup"
-             aria-label="Wybierz typ raportu">
+             aria-label="{% trans 'Wybierz typ raportu' %}">
 
-            {# Card 1 — Kwartalny XLSX (jedyna obecnie zaimplementowana opcja). #}
+            {# Card 1 — Kwartalny XLSX. Ikona: tabela (arkusz/spreadsheet). #}
             <label class="relative cursor-pointer rounded-lg border-2 p-4 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800"
                    :class="reportType === 'quarterly_xlsx' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
                 <input type="radio" name="report_type" value="quarterly_xlsx"
@@ -101,17 +101,17 @@
                        class="sr-only peer">
                 <div class="flex items-start gap-3">
                     <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h12A2.25 2.25 0 0020.25 14.25V3M3.75 3h16.5M3.75 3v.008M3.75 6.75h16.5m-16.5 3.75h16.5M8.25 6.75v7.5m7.5-7.5v7.5"/>
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Kwartalny XLSX</div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">{% trans "Kwartalny XLSX" %}</div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Wszystkie wpisy z wybranego kwartału, posortowane po UID maszyny i dacie. Z sumą RAZEM.
+                            {% trans "Wszystkie wpisy z wybranego kwartału, posortowane po UID maszyny i dacie. Z sumą RAZEM." %}
                         </p>
                         <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-                            Dostępne
+                            {% trans "Dostępne" %}
                         </span>
                     </div>
                     <svg x-show="reportType === 'quarterly_xlsx'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600 dark:text-brand-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -120,51 +120,73 @@
                 </div>
             </label>
 
-            {# Card 2 — Roczny PDF (preview / wkrótce). #}
-            <label class="relative rounded-lg border-2 p-4 transition-all cursor-not-allowed opacity-60"
-                   :class="'border-slate-200 dark:border-slate-700'"
-                   title="Raport roczny — dostępny wkrótce">
-                <input type="radio" name="report_type" value="yearly_pdf" disabled class="sr-only">
+            {# Card 2 — Roczny PDF. Ikona: słupki statystyk (raport zbiorczy). #}
+            <label class="relative cursor-pointer rounded-lg border-2 p-4 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800"
+                   :class="reportType === 'yearly_pdf' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
+                <input type="radio" name="report_type" value="yearly_pdf"
+                       x-model="reportType"
+                       class="sr-only peer">
                 <div class="flex items-start gap-3">
-                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Roczny PDF</div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">{% trans "Roczny PDF" %}</div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Zbiorczy raport roczny — koszty, statystyki, przeglądy zaległe.
+                            {% trans "Zbiorczy raport roczny — koszty, statystyki, przeglądy zaległe." %}
                         </p>
-                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                            Wkrótce
+                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                            {% trans "Dostępne" %}
                         </span>
                     </div>
+                    <svg x-show="reportType === 'yearly_pdf'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600 dark:text-brand-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
                 </div>
             </label>
 
-            {# Card 3 — Per-machine PDF (preview / wkrótce). #}
-            <label class="relative rounded-lg border-2 p-4 transition-all cursor-not-allowed opacity-60"
-                   :class="'border-slate-200 dark:border-slate-700'"
-                   title="Raport per maszyna — dostępny wkrótce">
-                <input type="radio" name="report_type" value="per_machine_pdf" disabled class="sr-only">
+            {# Card 3 — Per-machine PDF. Ikona: klucz+śrubokręt (serwis maszyny). #}
+            <label class="relative cursor-pointer rounded-lg border-2 p-4 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800"
+                   :class="reportType === 'per_machine_pdf' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
+                <input type="radio" name="report_type" value="per_machine_pdf"
+                       x-model="reportType"
+                       class="sr-only peer">
                 <div class="flex items-start gap-3">
                     <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437"/>
                         </svg>
                     </span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-white">Per maszyna PDF</div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-white">{% trans "Per maszyna PDF" %}</div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Karta serwisowa pojedynczej maszyny — kompletna historia w PDF.
+                            {% trans "Karta serwisowa pojedynczej maszyny — kompletna historia w PDF." %}
                         </p>
-                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                            Wkrótce
+                        <span class="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                            {% trans "Dostępne" %}
                         </span>
                     </div>
+                    <svg x-show="reportType === 'per_machine_pdf'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600 dark:text-brand-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
                 </div>
             </label>
+        </div>
+
+        {# Selektor maszyny — widoczny tylko dla raportu „per maszyna". #}
+        <div x-show="reportType === 'per_machine_pdf'" x-cloak class="mt-4">
+            <label for="machineSelect" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {% trans "Maszyna" %}
+            </label>
+            <select id="machineSelect" x-model="machineUid"
+                    class="w-full sm:max-w-sm min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="">{% trans "— wybierz maszynę —" %}</option>
+                {% for uid, name in machines %}
+                <option value="{{ uid }}">{{ uid }} — {{ name }}</option>
+                {% endfor %}
+            </select>
         </div>
     </section>
 
@@ -172,20 +194,19 @@
     <section class="surface-card p-5 md:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="text-sm text-slate-600 dark:text-slate-300">
-                <p>
-                    Pobierzesz raport za:
-                    <strong class="tabular-nums" x-text="`Q${quarter} ${year}`"></strong>
-                </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Plik zostanie zapisany na dysku.</p>
+                <p x-text="downloadLabel" class="tabular-nums"></p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% trans "Plik zostanie zapisany na dysku." %}</p>
             </div>
             <a id="downloadBtn"
-               :href="`{% url 'service:report_xlsx' year=0 quarter=1 %}`.replace('/0/', `/${year}/`).replace(/\/1\/$/, `/${quarter}/`)"
+               :href="downloadHref"
+               :class="canDownload ? '' : 'pointer-events-none opacity-50'"
+               :aria-disabled="(!canDownload).toString()"
                class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
-                Pobierz raport
+                {% trans "Pobierz raport" %}
             </a>
         </div>
     </section>
@@ -197,15 +218,133 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <p>
-            <strong>Wskazówka:</strong> raport kwartalny zawiera wszystkie wpisy serwisowe z podanego kwartału,
-            posortowane po UID maszyny i dacie wykonania, z sumą RAZEM na dole.
+            <strong>{% trans "Wskazówka:" %}</strong> {% trans "raport kwartalny zawiera wszystkie wpisy serwisowe z podanego kwartału, posortowane po UID maszyny i dacie wykonania, z sumą RAZEM na dole." %}
         </p>
     </div>
 </form>
+
+{# ============================== Koszt per maszyna (wykres + Excel) ============================== #}
+<section class="surface-card p-5 md:p-6 mt-6">
+    <h2 class="text-base font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        {% trans "Koszt serwisu per maszyna" %}
+    </h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+        {% trans "Wybierz dowolny okres — wykres, tabela i eksport Excel pokazują dokładnie ten sam zbiór wpisów." %}
+    </p>
+
+    <form method="get" action="" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div>
+            <label for="chart_after" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{% trans "Od dnia" %}</label>
+            <input type="date" id="chart_after" name="performed_after" value="{{ request.GET.performed_after }}"
+                   data-skip-flatpickr
+                   class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
+        </div>
+        <div>
+            <label for="chart_before" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{% trans "Do dnia" %}</label>
+            <input type="date" id="chart_before" name="performed_before" value="{{ request.GET.performed_before }}"
+                   data-skip-flatpickr
+                   class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
+        </div>
+        <div class="flex items-end">
+            <button type="submit"
+                    class="w-full min-h-[44px] rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold transition">
+                {% trans "Pokaż wykres" %}
+            </button>
+        </div>
+    </form>
+
+    <div class="relative" style="min-height:240px;">
+        <canvas id="costChart" height="120" aria-label="{% trans 'Wykres kosztów serwisu per maszyna' %}" role="img"></canvas>
+        <p id="costChartEmpty" class="hidden text-sm text-slate-500 dark:text-slate-400 py-8 text-center">
+            {% trans "Brak wpisów serwisowych dla wybranego okresu." %}
+        </p>
+    </div>
+
+    <p id="costChartNotice" class="hidden mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="costChartNoticeText"></span>
+    </p>
+
+    <div class="mt-4">
+        <a href="{% url 'service:export_all_xlsx' %}?{{ request.GET.urlencode }}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            {% trans "Pobierz Excel (ten sam okres)" %}
+        </a>
+    </div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'vendor/chart.umd.min.js' %}" nonce="{{ CSP_NONCE }}"></script>
 <script nonce="{{ CSP_NONCE }}">
+    // Wykres "koszt per maszyna" — pobiera dane z tego samego selektora co lista
+    // i eksport (identyczny querystring), więc wykres/tabela/Excel są spójne.
+    (function () {
+        const canvas = document.getElementById("costChart");
+        const empty = document.getElementById("costChartEmpty");
+        const notice = document.getElementById("costChartNotice");
+        const noticeText = document.getElementById("costChartNoticeText");
+        if (!canvas || typeof Chart === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        fetch("{% url 'service:report_data' %}?" + params.toString(), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+            .then((r) => r.json())
+            .then((d) => {
+                if (!d.labels || d.labels.length === 0) {
+                    canvas.classList.add("hidden");
+                    empty.classList.remove("hidden");
+                    return;
+                }
+                if (d.truncated && notice && noticeText) {
+                    noticeText.textContent =
+                        "{% trans 'Wykres pokazuje' %} " + d.top_n + " {% trans 'najdroższych maszyn.' %} " +
+                        "{% trans 'Pełne zestawienie wszystkich maszyn pobierzesz w eksporcie Excel.' %}";
+                    notice.classList.remove("hidden");
+                }
+                // Kolory osi/legendy zalezne od motywu (dark/light). Motyw jest
+                // ustawiany na <html> PRZED renderem (FOUC script), wiec odczyt
+                // przy tworzeniu wykresu pasuje do aktualnego trybu.
+                var isDark = document.documentElement.classList.contains("dark");
+                var tickColor = isDark ? "#CBD5E1" : "#475569";
+                var gridColor = isDark ? "rgba(148,163,184,0.18)" : "rgba(0,0,0,0.08)";
+                new Chart(canvas, {
+                    type: "bar",
+                    data: {
+                        labels: d.labels,
+                        datasets: [
+                            {
+                                label: "{% trans 'Koszt' %} (" + d.currency + ")",
+                                data: d.data,
+                                backgroundColor: isDark ? "rgba(96, 165, 250, 0.65)" : "rgba(37, 99, 235, 0.7)",
+                                borderColor: isDark ? "rgba(147, 197, 253, 1)" : "rgba(29, 78, 216, 1)",
+                                borderWidth: 1,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: tickColor }, grid: { color: gridColor } },
+                            x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                        },
+                        plugins: { legend: { display: true, labels: { color: tickColor } } },
+                    },
+                });
+            })
+            .catch(() => {});
+    })();
     // ---------------------------------------------------------------------
     // reportsPage() — Alpine state:
     //   * `year/quarter` — synced z <input>/<select> przez x-model, używane
@@ -221,6 +360,33 @@
             year: {{ form.year.value|default:0 }},
             quarter: "{{ form.quarter.value|default:'1' }}",
             reportType: "quarterly_xlsx",
+            machineUid: "",
+            get canDownload() {
+                return this.reportType === "per_machine_pdf" ? !!this.machineUid : true;
+            },
+            get downloadHref() {
+                if (this.reportType === "yearly_pdf") {
+                    return `{% url 'service:report_annual_pdf' year=0 %}`.replace("/0/", `/${this.year}/`);
+                }
+                if (this.reportType === "per_machine_pdf") {
+                    if (!this.machineUid) return "#";
+                    return `{% url 'service:report_machine_pdf' uid='__UID__' %}`
+                        .replace("__UID__", encodeURIComponent(this.machineUid));
+                }
+                return `{% url 'service:report_xlsx' year=0 quarter=1 %}`
+                    .replace("/0/", `/${this.year}/`).replace(/\/1\/$/, `/${this.quarter}/`);
+            },
+            get downloadLabel() {
+                if (this.reportType === "yearly_pdf") {
+                    return `{% trans 'Pobierzesz raport roczny za:' %} ${this.year}`;
+                }
+                if (this.reportType === "per_machine_pdf") {
+                    return this.machineUid
+                        ? `{% trans 'Karta serwisowa maszyny:' %} ${this.machineUid}`
+                        : `{% trans 'Wybierz maszynę powyżej, aby pobrać kartę serwisową.' %}`;
+                }
+                return `{% trans 'Pobierzesz raport za:' %} Q${this.quarter} ${this.year}`;
+            },
         };
     }
 </script>

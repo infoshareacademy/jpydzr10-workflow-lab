@@ -36,6 +36,9 @@ module.exports = {
     "dark:bg-amber-900/20", "dark:border-amber-800", "dark:text-amber-200",
     "bg-brand-50", "border-brand-200", "text-brand-800",
     "dark:bg-brand-900/20", "dark:border-brand-800", "dark:text-brand-200",
+    // Kropki statusu przegladu — budowane w machines_tags.inspection_dot
+    // (templatetags/*.py nie jest skanowany; klasa wstawiana dynamicznie).
+    "bg-emerald-500", "bg-amber-500", "bg-rose-500", "bg-slate-400", "dark:bg-slate-500",
   ],
   darkMode: "class",
   theme: {

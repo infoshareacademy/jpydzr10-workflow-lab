@@ -37,11 +37,17 @@ class TestReservationUpdateValidationError:
 
     @freeze_time("2026-05-16")
     def test_update_with_service_validation_error_renders_form(
-        self, client_logged, machine, monkeypatch
+        self, client_logged, user, machine, monkeypatch
     ):
         """Service rzuca VR → form_invalid path (lines 296-298)."""
 
         from django.core.exceptions import ValidationError
+
+        # Edycja rezerwacji = tylko superuser → logujemy admina na ten sam client.
+        admin = get_user_model().objects.create_superuser(
+            username="root-vr", password="x", email="vr@example.com"
+        )
+        client_logged.force_login(admin)
 
         def boom(*args, **kwargs):
             raise ValidationError("Service-level VR forced for coverage test.")
@@ -53,6 +59,7 @@ class TestReservationUpdateValidationError:
 
         res = PendingReservationFactory(
             machine=machine,
+            created_by=user,
             person="tester",
             start_date=date(2030, 1, 1),
             end_date=date(2030, 1, 5),
@@ -75,10 +82,16 @@ class TestReservationUpdateValidationError:
         assert response.status_code == 200
 
     @freeze_time("2026-05-16")
-    def test_update_success_path_redirects_to_detail(self, client_logged, machine):
+    def test_update_success_path_redirects_to_detail(self, client_logged, user, machine):
         """Happy path: form valid + service ok → 302 do detail."""
+        # Edycja rezerwacji = tylko superuser → logujemy admina na ten sam client.
+        admin = get_user_model().objects.create_superuser(
+            username="root-ok", password="x", email="ok@example.com"
+        )
+        client_logged.force_login(admin)
         res = PendingReservationFactory(
             machine=machine,
+            created_by=user,
             person="tester",
             start_date=date(2030, 1, 1),
             end_date=date(2030, 1, 5),
@@ -131,20 +144,13 @@ class TestReservationUpdateSuperuserBypass:
 
 @pytest.mark.django_db
 class TestReservationUpdateEmptyName:
-    """User z całkowicie pustym imieniem i pustym username → queryset.none()."""
+    """Edycja rezerwacji = admin-only — nawet ``change_reservation`` nie wystarcza."""
 
-    def test_user_with_empty_normalized_name_sees_nothing(self, client, db, machine):
-        """B-5 edge: normalize zwraca '' → get_queryset zwraca .none().
-
-        Tworzymy username z samych znaków cyrylickich — po NFKD + ASCII drop
-        zostaje pusty string. Defense-in-depth check (gdyby ktoś w przyszłości
-        podpiął email-as-username z samych non-ASCII znaków).
-        """
+    def test_non_superuser_with_change_perm_gets_403(self, client, db, machine):
+        """Nie-superuser z ``change_reservation`` na edycji rezerwacji → 403."""
         user_model = get_user_model()
-        # 'абв' to cyrylica — NFKD nie rozkłada, encode('ASCII','ignore') zwraca b''
-        # Django UnicodeUsernameValidator dopuszcza non-ASCII letters.
         user = user_model.objects.create_user(
-            username="абв",  # NFKD+ASCII drop = ''
+            username="bez-wlasnych",
             password="secret-pw-123!",
             first_name="",
             last_name="",
@@ -156,15 +162,14 @@ class TestReservationUpdateEmptyName:
         user.user_permissions.add(*perms)
         client.force_login(user)
 
-        # Stwórz res z dowolnym person — filter zwróci pusty queryset.
         res = PendingReservationFactory(
             machine=machine,
-            person="cokolwiek",
+            created_by=None,
             start_date=date.today() + timedelta(days=5),
             end_date=date.today() + timedelta(days=10),
         )
         response = client.get(reverse("reservations:update", args=[res.pk]))
-        assert response.status_code == 404  # .none() → 404 z DetailView lookup
+        assert response.status_code == 403  # edycja tylko dla admina/superusera
 
 
 # =============================================================================
@@ -995,6 +1000,7 @@ class TestReservationCreateHTMX:
             # reservationCreated + refreshTimeline + showToast (z payload z PK
             # rezerwacji i UID maszyny zeby user wiedzial co zostalo zapisane).
             import json as _json
+
             payload = _json.loads(response["HX-Trigger"])
             assert payload["reservationCreated"] is True
             assert payload["refreshTimeline"] is True

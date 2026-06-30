@@ -12,10 +12,12 @@ Konwencja:
 - Brak SECRET_KEY w tym pliku — każde środowisko musi go mieć w .env.
 """
 
+import logging
 import os
+import sys
 from pathlib import Path
 
-from django.utils.translation import gettext_lazy as _
+from csp.constants import NONCE
 from dotenv import load_dotenv
 
 # =============================================================================
@@ -71,6 +73,10 @@ THIRD_PARTY_APPS = [
     "widget_tweaks",  # widget.attrs class injection w template
     "axes",  # brute-force protection na login
     "django_cleanup.apps.CleanupConfig",  # auto-delete orphan FileField uploads
+    "djmoney",  # MoneyField (kwota + waluta) dla kosztów serwisowych
+    "django_otp",  # 2FA TOTP (Google Authenticator) dla kont uprzywilejowanych
+    "django_otp.plugins.otp_totp",  # urządzenia TOTP
+    "django_otp.plugins.otp_static",  # kody zapasowe (recovery codes)
 ]
 
 LOCAL_APPS = [
@@ -99,9 +105,13 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",  # request.user.is_verified() (2FA)
+    "accounts.middleware.TwoFactorEnforcementMiddleware",  # wymuszenie 2FA dla ról
+    "core.middleware.AuditLogMiddleware",  # dziennik zdarzeń (POST/PUT/PATCH/DELETE)
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",  # Content Security Policy
+    "core.middleware.AdminCspRelaxMiddleware",  # luzniejszy script-src tylko dla /admin/
     "django_htmx.middleware.HtmxMiddleware",  # request.htmx flag
     "simple_history.middleware.HistoryRequestMiddleware",  # request._history_user
     "chatbot.middleware.RatelimitedMiddleware",  # Ratelimited -> 429 + polski msg
@@ -132,6 +142,18 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "/"  # po login wracamy do home/dashboard, nie do profilu
 LOGOUT_REDIRECT_URL = "home"
+
+# =============================================================================
+# 2FA (django-otp) — TOTP wymagane dla kont uprzywilejowanych
+# =============================================================================
+# Wymuszenie drugiego składnika dla administratorów/kierowników/magazynierów.
+# Domyślnie włączone; w środowisku dev można wyłączyć ustawiając OTP_ENFORCE_2FA=0.
+OTP_ENFORCE_2FA = os.environ.get("OTP_ENFORCE_2FA", "1") == "1"
+# Nazwa wystawcy widoczna w aplikacji authenticator (np. Google Authenticator).
+OTP_TOTP_ISSUER = "Planer Maszyn"
+# Obejście 2FA dla testów — czytane w czasie żądania przez middleware
+# (włączane w settings/test.py oraz przez @override_settings).
+OTP_TESTING_BYPASS = False
 
 # django-axes config — wartości konserwatywne (5 prób, 1h lockout)
 AXES_FAILURE_LIMIT = 5
@@ -195,11 +217,13 @@ UNFOLD = {
 # =============================================================================
 # CONTENT SECURITY POLICY (django-csp 4.x)
 # =============================================================================
-# Aktualny stan (po Wave 9.2 C2 — Tailwind CLI build):
-#   - 'unsafe-inline' (script) zostaje: małe inline <script nonce> w base.html
-#     (FOUC prevention theme bootstrap, themeToggle definition). Migracja na
-#     strict nonce-based CSP wymaga przeniesienia tych snippetów do external
-#     /static/js/*.js — TODO w osobnej sesji (M3).
+# Aktualny stan (M3 — strict nonce-based script-src):
+#   - 'unsafe-inline' (script) USUNIĘTE: wszystkie inline <script> mają nonce
+#     ({{ CSP_NONCE }}), a inline event-handlery (onclick/onchange/onsubmit) zostały
+#     przeniesione na delegację zdarzeń w static/js/app.js (data-confirm /
+#     data-autosubmit / data-history-back / data-row-href). Panel /admin/ (szablony
+#     zewnętrzne django-unfold z inline on*) dostaje 'unsafe-inline' z powrotem przez
+#     AdminCspRelaxMiddleware — zaufana powierzchnia is_staff, front-end pozostaje ścisły.
 #   - 'unsafe-eval' (script) zostaje TYLKO ze względu na Alpine.js 3.x default
 #     build, który używa ``new Function()`` w evaluatorach x-data / x-show /
 #     @click. Tailwind Play CDN został wyłączony (poprzednio drugi requestor
@@ -224,8 +248,8 @@ CONTENT_SECURITY_POLICY = {
         "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com"),
         "script-src": (
             "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",
+            NONCE,  # emituje 'nonce-<...>' — pokrywa inline <script nonce="{{ CSP_NONCE }}">
+            "'unsafe-eval'",  # Alpine.js 3.x (new Function w evaluatorach) — patrz nota wyżej
             "https://maps.googleapis.com",
         ),
         "img-src": (
@@ -373,15 +397,30 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Wymuszamy europejski format daty (dd.mm.yyyy) w CAŁYM programie — niezależnie
+# od aktywnego języka (PL/EN) i adminie. Moduł nadpisuje wbudowane formaty
+# locale en/pl (decyzja Sebastiana: data zawsze w formacie europejskim).
+FORMAT_MODULE_PATH = ["planer_config.formats"]
+
+# Nazwy języków podajemy w ich WŁASNYM języku (endonimy) i celowo NIE
+# tłumaczymy — w przełączniku "Polski"/"English" mają wyglądać tak samo
+# niezależnie od aktualnego locale (standard UX selektorów języka).
 LANGUAGES = [
-    ("pl", _("Polski")),
-    ("nl", _("Nederlands")),
-    ("fr", _("Français")),
-    ("en", _("English")),
+    ("pl", "Polski"),
+    ("en", "English"),
 ]
 
 # LOCALE_PATHS — Django szuka tu .po/.mo files dla każdej języka.
 LOCALE_PATHS = [BASE_DIR / "locale"]
+
+# =============================================================================
+# WALUTY (django-money)
+# =============================================================================
+# Koszty serwisowe trzymamy jako MoneyField (kwota + waluta). Domyślnie EUR
+# (operacje w Belgii); PLN dostępne dla danych historycznych z Milestone 1.
+CURRENCIES = ("EUR", "PLN")
+CURRENCY_CHOICES = [("EUR", "EUR €"), ("PLN", "PLN zł")]
+DEFAULT_CURRENCY = "EUR"
 
 
 # =============================================================================
@@ -470,3 +509,87 @@ LOGGING = {
         },
     },
 }
+
+
+# =============================================================================
+# OBSERVABILITY — GlitchTip (Sentry SDK), opcjonalne i sterowane DSN
+# =============================================================================
+# Self-hosted GlitchTip (kompatybilny z Sentry SDK). Bez ``SENTRY_DSN`` w
+# środowisku inicjalizacja jest pomijana — aplikacja działa normalnie i NIE
+# wysyła żadnych zdarzeń (zero kosztu, brak zależności od usługi zewnętrznej).
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
+
+# Nie inicjalizujemy SDK pod pytest (nawet gdyby ktoś miał DSN w lokalnym .env).
+_RUNNING_TESTS = "pytest" in sys.modules
+
+# Dokładne (case-insensitive) nazwy kluczy do redakcji. Świadomie NIE używamy
+# dopasowania po podłańcuchu — `"token" in "session_tokens"` redagowałoby
+# legalne pola (`session_tokens`, `api_key_hash`, `user_secret_answer`). Tu
+# redagujemy wyłącznie klucze, których nazwa DOKŁADNIE pasuje (po lowercase).
+_SENTRY_REDACT_KEYS = frozenset(
+    {
+        "password",
+        "passwd",
+        "token",
+        "secret",
+        "csrf",
+        "csrftoken",
+        "csrfmiddlewaretoken",
+        "authorization",
+        "api_key",
+        "apikey",
+        "x-api-key",
+        "access_token",
+        "refresh_token",
+    }
+)
+
+# Pola zdarzenia Sentry, w których realnie pojawiają się dane wejściowe
+# użytkownika / nagłówki / breadcrumbs. Walk po nich wystarcza, by spełnić
+# minimalizację danych z ADR-006 bez przepisywania całego eventu (stacktrace
+# vars zostają — to celowe, do diagnostyki; PII i tak wyłączone send_default_pii).
+_SENTRY_SCRUB_FIELDS = ("request", "extra", "breadcrumbs", "contexts", "tags", "user")
+
+
+def _sentry_before_send(event, hint):  # pragma: no cover - wywoływane tylko z aktywnym DSN
+    """Wycina wrażliwe wartości z payloadu zanim trafi do GlitchTip.
+
+    Redaguje wartość, gdy DOKŁADNA (lowercase) nazwa klucza znajduje się w
+    ``_SENTRY_REDACT_KEYS``. Przechodzi rekurencyjnie po zagnieżdżonych dict/list,
+    więc tablice słowników (np. ``breadcrumbs``) też są czyszczone.
+    """
+
+    def _scrub(obj):
+        if isinstance(obj, dict):
+            return {
+                k: ("[redacted]" if str(k).lower() in _SENTRY_REDACT_KEYS else _scrub(v))
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [_scrub(v) for v in obj]
+        return obj
+
+    for field in _SENTRY_SCRUB_FIELDS:
+        value = event.get(field)
+        if isinstance(value, (dict, list)):
+            event[field] = _scrub(value)
+    return event
+
+
+if SENTRY_DSN and not _RUNNING_TESTS:  # pragma: no cover - ścieżka z aktywnym DSN
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(event_level=logging.ERROR),
+        ],
+        send_default_pii=False,
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "development"),
+        release=os.environ.get("APP_RELEASE"),
+        before_send=_sentry_before_send,
+    )

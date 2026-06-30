@@ -1,4 +1,4 @@
-.PHONY: help install dev db-up db-down db-logs test test-cov test-fast lint format check migrate seed run shell superuser clean css css-watch
+.PHONY: help install dev db-up db-down db-logs test test-cov test-fast e2e lint format check migrate seed run voice shell superuser clean css css-watch messages compilemessages
 
 help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
@@ -24,6 +24,7 @@ help:
 	@echo "  make test         — pytest -n auto"
 	@echo "  make test-cov     — pytest --cov"
 	@echo "  make test-fast    — pytest -q --no-cov (najszybsze)"
+	@echo "  make e2e          — pytest tests/e2e (Playwright, wymaga `make run`)"
 	@echo "  make lint         — ruff check"
 	@echo "  make format       — ruff format"
 	@echo "  make check        — django check --deploy"
@@ -58,6 +59,13 @@ test-cov:
 test-fast:
 	uv run pytest -q --no-cov --tb=line
 
+# Testy E2E (Playwright) — wymagają działającego serwera dev na :8002
+# (`make run` w drugim terminalu). Bez serwera scenariusze skipują się
+# (guard ERR_CONNECTION_REFUSED → pytest.skip). Dodaj `--headed`, aby
+# zobaczyć przeglądarkę: uv run pytest tests/e2e/ -m e2e --headed
+e2e:
+	uv run pytest tests/e2e/ -m e2e -v
+
 lint:
 	uv run ruff check .
 
@@ -76,8 +84,20 @@ superuser:
 seed:
 	uv run python manage.py seed_demo
 
-run:
+messages:
+	uv run python manage.py makemessages -l en --ignore=.venv --ignore=node_modules --ignore=static/vendor --ignore=archive
+
+compilemessages:
+	uv run python manage.py compilemessages --ignore=.venv --ignore=node_modules --ignore=archive
+
+run: compilemessages
 	uv run python manage.py runserver 0.0.0.0:8002
+
+# Agent głosowy — uvicorn pod dedykowanym modułem ustawień `voice` (DEBUG=False,
+# bez debug_toolbar, host tunelu w ALLOWED_HOSTS). Webhook /voice/incoming/ działa;
+# żywe gniazdo WS domykane przy uruchomieniu na żywo (patrz chatbot/voice_consumer.py).
+voice: compilemessages
+	DJANGO_SETTINGS_MODULE=planer_config.settings.voice uv run uvicorn planer_config.asgi:application --host 0.0.0.0 --port 8010
 
 shell:
 	uv run python manage.py shell

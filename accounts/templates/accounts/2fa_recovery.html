@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Kody zapasowe 2FA" %} — Planer Maszyn Budowlanych{% endblock %}
+
+{% block content %}
+<section class="flex items-center justify-center min-h-[70vh] py-6 sm:py-10" aria-labelledby="tfa-title">
+    <div class="w-full max-w-md mx-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
+            <h1 id="tfa-title" class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                {% trans "Twoje kody zapasowe" %}
+            </h1>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-5">
+                {% trans "Zapisz te kody w bezpiecznym miejscu. Każdy działa jednorazowo i pozwala zalogować się, gdy nie masz dostępu do aplikacji uwierzytelniającej." %}
+            </p>
+
+            <ul class="grid grid-cols-2 gap-2 mb-5 font-mono text-sm">
+                {% for code in codes %}
+                    <li class="rounded-lg bg-slate-100 dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 text-center">{{ code }}</li>
+                {% endfor %}
+            </ul>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'accounts:2fa_recovery_download' %}"
+                   class="flex-1 min-h-[44px] inline-flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                    {% trans "Pobierz jako plik TXT" %}
+                </a>
+                <a href="{% url 'home' %}"
+                   class="flex-1 min-h-[44px] inline-flex items-center justify-center rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold transition">
+                    {% trans "Przejdź do aplikacji" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

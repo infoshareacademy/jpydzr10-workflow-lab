@@ -10,11 +10,10 @@ disabled-od-M1 input w topbar, robi typeahead przez HTMX (``request.htmx``
 gdy operator naciśnie Enter zamiast klikać w wynik dropdownu.
 """
 
-import json
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import connection
 from django.db.models import Count, Q
 from django.http import JsonResponse
@@ -22,9 +21,19 @@ from django.shortcuts import render
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from django_ratelimit.decorators import ratelimit
 
 from core.search import global_search
+
+
+def privacy_policy(request):
+    """Strona polityki prywatności (RODO/GDPR) — dwujęzyczna przez {% trans %}.
+
+    Publiczna (bez logowania) — informuje o administratorze danych, zakresie
+    przetwarzania, podstawach prawnych, prawach osoby i okresie retencji.
+    """
+    return render(request, "core/privacy.html")
 
 
 def healthz(request):
@@ -56,6 +65,23 @@ def healthz(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
+def debug_boom(request):
+    """Celowo rzuca wyjątek — do weryfikacji integracji z GlitchTip.
+
+    Dostępny wyłącznie dla zalogowanego administratora (i poza listą wymuszenia
+    2FA). Służy jednorazowemu potwierdzeniu, że nieobsłużone wyjątki trafiają do
+    zgrupowanych zgłoszeń w GlitchTip.
+
+    ``@login_required`` (defense-in-depth) jawnie wymusza zalogowanie — nie
+    polegamy wyłącznie na tym, że ``user_passes_test`` przekieruje anonima. Nie
+    tworzymy też cichej zależności od pozycji ``/debug/boom`` na liście wyjątków
+    od wymuszenia 2FA w ``TwoFactorEnforcementMiddleware``.
+    """
+    raise RuntimeError("Celowy wyjątek testowy GlitchTip (/debug/boom/).")
+
+
+@login_required
 def home(request):
     """Dashboard z KPI cards — overdue inspections, active reservations, available machines.
 
@@ -73,11 +99,11 @@ def home(request):
     (active_today via manager). Każdy queryset jest limited[:5] z select_related
     żeby nie wybuchnąć N+1 (każda rezerwacja JOINuje machine + site).
     """
-    from machines.models import Machine
+    from machines.models import INSPECTION_WARNING_DAYS, Machine
     from reservations.models import ConstructionSite, Reservation
 
     today = date.today()
-    horizon = today + timedelta(days=14)
+    horizon = today + timedelta(days=INSPECTION_WARNING_DAYS)
 
     # Query 1 — wszystkie metryki maszyn w jednym round-tripie.
     # "Dostepne" = fizycznie w magazynie: W_MAGAZYNIE (wolne) + ZAREZERWOWANA
@@ -340,9 +366,14 @@ def maps_view(request):
             # spadaly na default warehouse. Teraz idą tam jawnie + frontend jitter
             # rozsuwa je w mini-spirali zeby nie nakladaly sie na jednym pinie.
             non_addresses = (
-                "magazyn", "warehouse", "magazynow",
-                "magazyn glowny", "magazyn główny",
-                "serwis", "service", "warsztat",
+                "magazyn",
+                "warehouse",
+                "magazynow",
+                "magazyn glowny",
+                "magazyn główny",
+                "serwis",
+                "service",
+                "warsztat",
             )
             if not stripped or stripped.lower() in non_addresses:
                 return None
@@ -383,7 +414,7 @@ def maps_view(request):
                 "inspection_date": (
                     machine.inspection_date.strftime("%d.%m.%Y")
                     if machine.inspection_date
-                    else "brak danych"
+                    else _("brak danych")
                 ),
                 "inspection_status": machine.inspection_status,
                 "location_address": location_address,
@@ -396,7 +427,10 @@ def maps_view(request):
         )
 
     context = {
-        "pins_json": json.dumps(pins, ensure_ascii=False),
+        # Przekazujemy listę — szablon renderuje ją przez ``json_script``, które
+        # escapuje ``< > &`` (ochrona przed stored-XSS, gdy pole tekstowe maszyny/
+        # budowy/adresu zawiera np. ``</script>``). NIE używać ``|safe`` na danych.
+        "pins": pins,
         "pins_count": len(pins),
         "gmap_api_key": settings.GOOGLE_MAPS_API_KEY,
     }

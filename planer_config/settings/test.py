@@ -16,6 +16,14 @@ from .base import *  # noqa: F403
 DEBUG = False
 ALLOWED_HOSTS = ["testserver"]
 
+# =============================================================================
+# 2FA — obejście wymuszenia w testach (czytane w czasie żądania przez middleware)
+# =============================================================================
+# Istniejące testy logują się przez ``force_login`` bez przechodzenia 2FA, więc
+# domyślnie omijamy wymuszenie. Dedykowane testy 2FA włączają je przez
+# ``@override_settings(OTP_TESTING_BYPASS=False)``.
+OTP_TESTING_BYPASS = True
+
 
 # =============================================================================
 # PASSWORD HASHER — najszybszy dla testów (czysty MD5, bezpieczny w pamięci)

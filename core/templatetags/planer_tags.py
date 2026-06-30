@@ -10,6 +10,7 @@ Użycie w template:
 from datetime import date as _date_cls
 
 from django import template
+from django.utils.translation import gettext_lazy as _
 
 register = template.Library()
 
@@ -25,8 +26,7 @@ STATUS_COLOR_CLASSES = {
     "Zarezerwowana": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
     "W serwisie": "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200",
     "Wycofana": (
-        "bg-slate-200 text-slate-600 line-through "
-        "dark:bg-slate-700/60 dark:text-slate-400"
+        "bg-slate-200 text-slate-600 line-through dark:bg-slate-700/60 dark:text-slate-400"
     ),
     # Statusy rezerwacji
     "oczekująca": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
@@ -112,7 +112,15 @@ def bar_class_for(status_value):
 
 
 # Krotkie nazwy dni tygodnia po polsku (Pn..Nd).
-DAY_NAMES_PL = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"]
+DAY_NAMES_PL = [
+    _("Pn"),
+    _("Wt"),
+    _("Śr"),
+    _("Cz"),
+    _("Pt"),
+    _("Sb"),
+    _("Nd"),
+]
 
 
 @register.filter

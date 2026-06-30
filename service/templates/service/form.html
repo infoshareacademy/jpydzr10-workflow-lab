@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags widget_tweaks %}
+{% load planer_tags widget_tweaks i18n %}
 
-{% block title %}{% if mode == "create" %}Nowy wpis serwisowy{% else %}Edycja wpisu #{{ form.instance.pk }}{% endif %} — Planer Maszyn{% endblock %}
+{% block title %}{% if mode == "create" %}{% trans "Nowy wpis serwisowy" %}{% else %}{% trans "Edycja wpisu" %} #{{ form.instance.pk }}{% endif %} — {% trans "Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -10,13 +10,13 @@
 {# ------------------------------------------------------------------ #}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-5 flex items-center gap-1.5" aria-label="Breadcrumb">
     <a href="{% url 'service:list' %}"
-       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Serwis</a>
+       class="hover:text-brand-600 dark:hover:text-brand-300 hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Serwis" %}</a>
     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24"
          stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
     </svg>
     <span class="text-slate-900 dark:text-slate-200 font-medium">
-        {% if mode == "create" %}Nowy wpis{% else %}Edycja wpisu #{{ form.instance.pk }}{% endif %}
+        {% if mode == "create" %}{% trans "Nowy wpis" %}{% else %}{% trans "Edycja wpisu" %} #{{ form.instance.pk }}{% endif %}
     </span>
 </nav>
 
@@ -29,10 +29,10 @@
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        <span>Wpis serwisowy</span>
+        <span>{% trans "Wpis serwisowy" %}</span>
     </div>
     <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-        {% if mode == "create" %}Nowy wpis serwisowy{% else %}Edycja wpisu #{{ form.instance.pk }}{% endif %}
+        {% if mode == "create" %}{% trans "Nowy wpis serwisowy" %}{% else %}{% trans "Edycja wpisu" %} #{{ form.instance.pk }}{% endif %}
     </h1>
 </header>
 
@@ -71,7 +71,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
             </span>
-            Maszyna i typ wpisu
+            {% trans "Maszyna i typ wpisu" %}
         </legend>
 
         <div>
@@ -80,7 +80,7 @@
                 {{ form.machine.label }}{% if form.machine.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
             </label>
             {{ form.machine }}
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Wybierz maszynę z magazynu, budowy lub serwisu — wszystkie są dostępne.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Wybierz maszynę z magazynu, budowy lub serwisu — wszystkie są dostępne." %}</p>
             {% if form.machine.errors %}
             <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.machine.errors|striptags }}</p>
             {% endif %}
@@ -91,11 +91,11 @@
         {# w container'ze, z hidden input synchronizowanym przez Alpine x-model.      #}
         <div>
             <span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Typ wpisu{% if form.record_type.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+                {% trans "Typ wpisu" %}{% if form.record_type.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
             </span>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"
                  role="radiogroup"
-                 aria-label="Typ wpisu serwisowego">
+                 aria-label="{% trans 'Typ wpisu serwisowego' %}">
                 {% for value, label in form.record_type.field.choices %}
                 <label class="relative cursor-pointer rounded-lg border-2 p-3 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800"
                        :class="recordType === '{{ value }}' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
@@ -118,10 +118,10 @@
                             <div class="text-sm font-semibold text-slate-900 dark:text-white">{{ label }}</div>
                             {# Helper opisujący kontekst typu. #}
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {% if value == "przegląd_kwartalny" %}Co 3 miesiące — np. silnik, hydraulika, układ chłodzenia.
-                                {% elif value == "przegląd_polroczny" %}Co 6 miesięcy — pełny przegląd techniczny.
-                                {% elif value == "przegląd_roczny" %}Co 12 miesięcy — homologacja / certyfikat.
-                                {% else %}Awaria, wymiana części, regeneracja.{% endif %}
+                                {% if value == "przegląd_kwartalny" %}{% trans "Co 3 miesiące — np. silnik, hydraulika, układ chłodzenia." %}
+                                {% elif value == "przegląd_polroczny" %}{% trans "Co 6 miesięcy — pełny przegląd techniczny." %}
+                                {% elif value == "przegląd_roczny" %}{% trans "Co 12 miesięcy — homologacja / certyfikat." %}
+                                {% else %}{% trans "Awaria, wymiana części, regeneracja." %}{% endif %}
                             </p>
                         </div>
                         {# Checkmark widoczny tylko gdy wybrane. #}
@@ -149,7 +149,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
             </span>
-            Data i wykonawca
+            {% trans "Data i wykonawca" %}
         </legend>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -159,7 +159,7 @@
                     {{ form.performed_date.label }}{% if form.performed_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
                 </label>
                 {{ form.performed_date }}
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Domyślnie dziś — możesz zmienić jeśli wpis jest po fakcie.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Domyślnie dziś — możesz zmienić jeśli wpis jest po fakcie." %}</p>
                 {% if form.performed_date.errors %}
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.performed_date.errors|striptags }}</p>
                 {% endif %}
@@ -171,7 +171,7 @@
                     {{ form.performed_by.label }}
                 </label>
                 {{ form.performed_by }}
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Imię/nazwisko serwisanta lub nazwa firmy zewnętrznej.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Imię/nazwisko serwisanta lub nazwa firmy zewnętrznej." %}</p>
                 {% if form.performed_by.errors %}
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.performed_by.errors|striptags }}</p>
                 {% endif %}
@@ -190,7 +190,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
             </span>
-            Opis prac i koszt
+            {% trans "Opis prac i koszt" %}
         </legend>
 
         <div>
@@ -198,8 +198,8 @@
                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {{ form.description.label }}
             </label>
-            {{ form.description|attr:"placeholder:Szczegóły wykonanych prac, wymienione części (jedna na linię), uwagi…" }}
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Wymień zastosowane części, użyte materiały, czas pracy.</p>
+            {{ form.description }}
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Wymień zastosowane części, użyte materiały, czas pracy." %}</p>
             {% if form.description.errors %}
             <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.description.errors|striptags }}</p>
             {% endif %}
@@ -213,10 +213,10 @@
             <div class="relative">
                 {{ form.cost }}
                 <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    PLN
+                    EUR
                 </span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Łączny koszt wpisu (części + robocizna). Zostaw 0 jeśli bezpłatne.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Łączny koszt wpisu (części + robocizna). Zostaw 0 jeśli bezpłatne." %}</p>
             {% if form.cost.errors %}
             <p class="text-xs text-rose-600 dark:text-rose-400 mt-1" role="alert">{{ form.cost.errors|striptags }}</p>
             {% endif %}
@@ -234,7 +234,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                 </svg>
             </span>
-            Protokół (PDF)
+            {% trans "Protokół (PDF)" %}
         </legend>
 
         <div @dragover.prevent="dragOver = true"
@@ -247,7 +247,7 @@
              tabindex="0"
              @keydown.enter="$refs.fileInput.click()"
              @keydown.space.prevent="$refs.fileInput.click()"
-             aria-label="Strefa wgrywania pliku PDF — kliknij lub przeciągnij i upuść">
+             aria-label="{% trans 'Strefa wgrywania pliku PDF — kliknij lub przeciągnij i upuść' %}">
 
             {# Hidden but functional — Alpine x-ref'em wywołujemy click().     #}
             {# Django renderuje pełny widget; ukrywamy SR-only i podpinamy ref. #}
@@ -261,9 +261,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                 </svg>
                 <p class="mt-2 text-sm text-slate-700 dark:text-slate-200 font-medium">
-                    Kliknij aby wybrać <span class="text-slate-500 dark:text-slate-400 font-normal">lub przeciągnij plik PDF</span>
+                    {% trans "Kliknij aby wybrać" %} <span class="text-slate-500 dark:text-slate-400 font-normal">{% trans "lub przeciągnij plik PDF" %}</span>
                 </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Maksymalnie 20 MB — wyłącznie PDF.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{% trans "Maksymalnie 20 MB — wyłącznie PDF." %}</p>
             </div>
 
             <div x-show="fileName" x-cloak class="flex items-center gap-3">
@@ -279,7 +279,7 @@
                 <button type="button"
                         @click.stop="clearFile()"
                         class="text-rose-600 dark:text-rose-300 hover:text-rose-700 dark:hover:text-rose-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1">
-                    Usuń
+                    {% trans "Usuń" %}
                 </button>
             </div>
         </div>
@@ -301,7 +301,7 @@
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
-            Anuluj
+            {% trans "Anuluj" %}
         </a>
         <button type="submit"
                 class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors">
@@ -309,7 +309,7 @@
                  stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
             </svg>
-            Zapisz
+            {% trans "Zapisz" %}
         </button>
     </div>
 </form>

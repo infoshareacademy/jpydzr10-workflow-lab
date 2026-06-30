@@ -48,15 +48,18 @@ def test_profile_post_valid_updates_via_service(client):
             "phone": "+48 600 100 200",
             "employee_id": "EMP-007",
             "theme_preference": "dark",
+            "preferred_language": "en",
         },
     )
     assert resp.status_code == 302
     assert resp["Location"] == reverse("accounts:profile")
 
     user.profile.refresh_from_db()
-    assert user.profile.phone == "+48 600 100 200"
+    # Wpis z separatorami jest normalizowany do ścisłego E.164.
+    assert user.profile.phone == "+48600100200"
     assert user.profile.employee_id == "EMP-007"
     assert user.profile.theme_preference == "dark"
+    assert user.profile.preferred_language == "en"
 
 
 @pytest.mark.django_db
@@ -172,5 +175,5 @@ class TestAxesLockedView:
     def test_locked_page_uses_base_template(self, client):
         """Strona musi extendować ``base.html`` (spójny UI, nav + footer)."""
         response = client.get(reverse("accounts:locked"))
-        # Sprawdź obecność elementów base — np. footer "Milestone 2".
-        assert b"Milestone 2" in response.content
+        # Sprawdź obecność elementów base — np. footer "Milestone 3".
+        assert b"Milestone 3" in response.content

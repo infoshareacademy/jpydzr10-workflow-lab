@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load planer_tags machines_tags widget_tweaks %}
+{% load planer_tags machines_tags widget_tweaks i18n %}
 
-{% block title %}Maszyny — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Maszyny — Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {# ------------------------------------------------------------------ #}
@@ -15,36 +15,36 @@
         <div class="space-y-1">
             <div class="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                <span>Park maszynowy</span>
+                <span>{% trans "Park maszynowy" %}</span>
             </div>
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Maszyny</h1>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{% trans "Maszyny" %}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                W bazie: <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ total_count }}</span>
-                {% if machines %}<span class="text-slate-400 dark:text-slate-500"> · widocznych: <span class="tabular-nums">{{ machines|length }}</span></span>{% endif %}
+                {% trans "W bazie:" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ total_count }}</span>
+                {% if machines %}<span class="text-slate-500 dark:text-slate-400"> · {% trans "widocznych:" %} <span class="tabular-nums">{{ machines|length }}</span></span>{% endif %}
             </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
             {# Grid/table toggle — sticky control near the top-right. #}
-            <div role="group" aria-label="Widok listy"
+            <div role="group" aria-label="{% trans 'Widok listy' %}"
                  class="inline-flex rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm p-0.5">
                 <button type="button"
                         @click="setView('table')"
                         :aria-pressed="view === 'table'"
                         :class="view === 'table' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
-                        aria-label="Widok tabeli">
+                        aria-label="{% trans 'Tabela' %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    <span class="hidden sm:inline">Tabela</span>
+                    <span class="hidden sm:inline">{% trans "Tabela" %}</span>
                 </button>
                 <button type="button"
                         @click="setView('grid')"
                         :aria-pressed="view === 'grid'"
                         :class="view === 'grid' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
-                        aria-label="Widok kafelków">
+                        aria-label="{% trans 'Kafelki' %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
-                    <span class="hidden sm:inline">Kafelki</span>
+                    <span class="hidden sm:inline">{% trans "Kafelki" %}</span>
                 </button>
             </div>
 
@@ -52,22 +52,22 @@
                 <a href="{% url 'machines:create' %}"
                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-md text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    <span class="hidden sm:inline">Dodaj maszynę</span>
-                    <span class="sm:hidden">Dodaj</span>
+                    <span class="hidden sm:inline">{% trans "Dodaj maszynę" %}</span>
+                    <span class="sm:hidden">{% trans "Dodaj" %}</span>
                 </a>
             {% endif %}
             <a href="{% url 'machines:export_xlsx' %}"
                class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                <span class="hidden md:inline">Eksport XLSX</span>
-                <span class="md:hidden">Eksport</span>
+                <span class="hidden md:inline">{% trans "Eksport XLSX" %}</span>
+                <span class="md:hidden">{% trans "Eksport" %}</span>
             </a>
             {% if perms.machines.add_machine %}
                 <a href="{% url 'machines:import_xlsx' %}"
                    class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <span class="hidden md:inline">Import XLSX</span>
-                    <span class="md:hidden">Import</span>
+                    <span class="hidden md:inline">{% trans "Import XLSX" %}</span>
+                    <span class="md:hidden">{% trans "Import" %}</span>
                 </a>
             {% endif %}
         </div>
@@ -88,13 +88,13 @@
                             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-900/50">
                                     <tr>
-                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">UID</th>
-                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Nazwa</th>
-                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Typ</th>
-                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Status</th>
-                                        <th scope="col" class="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Przegląd</th>
-                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Lokalizacja</th>
-                                        <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">Akcje</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "UID" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Nazwa" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Typ" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Status" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Przegląd" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Lokalizacja" %}</th>
+                                        <th scope="col" class="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">{% trans "Akcje" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -113,26 +113,26 @@
                                         <td class="px-3 py-2.5">
                                             {% status_badge machine.status as css %}
                                             <div class="flex flex-wrap items-center gap-1">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.get_status_display }}</span>
                                                 {% if not machine.is_reservable %}
-                                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="Maszyna magazynowa — nie podlega rezerwacjom.">
+                                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" title="{% trans 'Maszyna magazynowa — nie podlega rezerwacjom.' %}">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                                        Magazyn
+                                                        {% trans "Magazyn" %}
                                                     </span>
                                                 {% endif %}
                                             </div>
                                         </td>
                                         <td class="px-3 py-2.5 text-center" title="{{ machine.inspection_status_label }}">
-                                            <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                            <span class="inline-block h-3 w-3 rounded-full {{ machine.inspection_status|inspection_dot }}" role="img" aria-label="{{ machine.inspection_status_label }}"></span>
                                         </td>
                                         <td class="px-3 py-2.5 text-slate-600 dark:text-slate-300 text-xs">{{ machine.location }}</td>
                                         <td class="px-3 py-2.5 text-right whitespace-nowrap">
                                             <a href="{% url 'machines:detail' uid=machine.uid %}"
-                                               class="text-brand-600 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Szczegóły</a>
+                                               class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Szczegóły" %}</a>
                                             {% if perms.machines.change_machine %}
                                                 <span class="text-slate-300 dark:text-slate-600 mx-1" aria-hidden="true">·</span>
                                                 <a href="{% url 'machines:update' uid=machine.uid %}"
-                                                   class="text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-300 hover:underline text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">Edytuj</a>
+                                                   class="text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-300 hover:underline text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 rounded">{% trans "Edytuj" %}</a>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -154,10 +154,10 @@
                                     </div>
                                     <div class="flex flex-col items-end gap-1 flex-shrink-0">
                                         {% status_badge machine.status as css %}
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.status }}</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ css }}">{{ machine.get_status_display }}</span>
                                         {% if not machine.is_reservable %}
                                             <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                                Magazyn
+                                                {% trans "Magazyn" %}
                                             </span>
                                         {% endif %}
                                     </div>
@@ -165,7 +165,7 @@
                                 <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     <span>{{ machine.get_machine_type_display }}</span>
                                     <span class="flex items-center gap-1">
-                                        <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                        <span class="inline-block h-3 w-3 rounded-full {{ machine.inspection_status|inspection_dot }}" role="img" aria-label="{{ machine.inspection_status_label }}"></span>
                                         <span>{{ machine.location }}</span>
                                     </span>
                                 </div>
@@ -185,25 +185,25 @@
                                 {# Tag zwraca zawsze URL — albo uploaded.url, albo static webp z Imagen 4 katalogu. #}
                                 {% machine_image_url machine as machine_img %}
                                 <img src="{{ machine_img }}"
-                                     alt="Zdjęcie maszyny {{ machine.name }}"
+                                     alt="{% blocktrans with name=machine.name %}Zdjęcie maszyny {{ name }}{% endblocktrans %}"
                                      loading="lazy"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
 
                                 {# Status badge floats top-right of the photo. #}
                                 <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
                                     {% status_badge machine.status as css %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur shadow-sm {{ css }}">{{ machine.status }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium backdrop-blur shadow-sm {{ css }}">{{ machine.get_status_display }}</span>
                                     {% if not machine.is_reservable %}
-                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-100/95 text-slate-700 dark:bg-slate-800/95 dark:text-slate-200 backdrop-blur shadow-sm" title="Maszyna magazynowa">
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-slate-100/95 text-slate-700 dark:bg-slate-800/95 dark:text-slate-200 backdrop-blur shadow-sm" title="{% trans 'Maszyna magazynowa' %}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                            Magazyn
+                                            {% trans "Magazyn" %}
                                         </span>
                                     {% endif %}
                                 </div>
                                 <div class="absolute top-2 left-2">
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-white/85 dark:bg-slate-900/85 text-slate-700 dark:text-slate-200 backdrop-blur shadow-sm"
                                           title="{{ machine.inspection_status_label }}">
-                                        <span aria-label="{{ machine.inspection_status_label }}">{{ machine.inspection_status|inspection_icon }}</span>
+                                        <span class="inline-block h-3 w-3 rounded-full {{ machine.inspection_status|inspection_dot }}" role="img" aria-label="{{ machine.inspection_status_label }}"></span>
                                         <span class="hidden xs:inline">{{ machine.inspection_status_label }}</span>
                                     </span>
                                 </div>
@@ -212,7 +212,7 @@
                             <div class="p-4 space-y-1.5">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="font-mono text-xs text-brand-700 dark:text-brand-300 font-semibold">{{ machine.uid }}</span>
-                                    <span class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ machine.get_machine_type_display }}</span>
+                                    <span class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ machine.get_machine_type_display }}</span>
                                 </div>
                                 <h3 class="font-semibold text-slate-900 dark:text-white truncate">{{ machine.name }}</h3>
                                 <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 truncate">
@@ -229,23 +229,23 @@
                     {% include "_per_page_selector.html" %}
                 </div>
                 {% if is_paginated %}
-                <nav class="flex items-center justify-between mt-2 text-sm" aria-label="Stronicowanie">
+                <nav class="flex items-center justify-between mt-2 text-sm" aria-label="{% trans 'Stronicowanie' %}">
                     <span class="text-slate-500 dark:text-slate-400">
-                        Strona <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.number }}</span>
-                        z <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.paginator.num_pages }}</span>
+                        {% trans "Strona" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.number }}</span>
+                        {% trans "z" %} <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ page_obj.paginator.num_pages }}</span>
                     </span>
                     <ul class="flex gap-1">
                         {% if page_obj.has_previous %}
                             <li><a href="?{% qs_replace request page=page_obj.previous_page_number %}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                                Poprzednia
+                                {% trans "Poprzednia" %}
                             </a></li>
                         {% endif %}
                         {% if page_obj.has_next %}
                             <li><a href="?{% qs_replace request page=page_obj.next_page_number %}"
                                    class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                Następna
+                                {% trans "Następna" %}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                             </a></li>
                         {% endif %}

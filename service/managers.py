@@ -13,6 +13,11 @@ from decimal import Decimal
 
 from django.db import models
 
+# Domyślny próg "drogiej naprawy" w EUR. Po normalizacji waluty (migracja 0004)
+# wszystkie koszty są w EUR, więc próg jest jednoznaczny — nazwana stała zamiast
+# magic number rozsianego po managerze, formularzu i testach (ZASADA #8).
+EXPENSIVE_THRESHOLD_EUR = Decimal("1000")
+
 
 class ServiceRecordManager(models.Manager):
     """Domain-aware queryset helpers for :class:`service.models.ServiceRecord`."""
@@ -30,12 +35,14 @@ class ServiceRecordManager(models.Manager):
         """Filter by :class:`ServiceRecord.RecordType` value."""
         return self.filter(record_type=record_type)
 
-    def expensive(self, threshold: Decimal | float | int = Decimal("1000")):
-        """Records whose ``cost`` is strictly greater than ``threshold``.
+    def expensive(self, threshold: Decimal | float | int = EXPENSIVE_THRESHOLD_EUR):
+        """Records whose ``cost`` is strictly greater than ``threshold`` EUR.
 
-        Used by the reports view sidebar (``Drogie naprawy``). ``threshold``
-        is coerced to :class:`Decimal` so floats from the URL ``?threshold=``
-        do not blow up the comparison.
+        Used by the reports view sidebar (``Drogie naprawy``). Po normalizacji
+        waluty (migracja 0004) wszystkie koszty są w EUR, więc próg porównujemy
+        wprost na kwocie — bez dwuznaczności PLN vs EUR. ``threshold`` jest
+        koercowany do :class:`Decimal`, żeby floaty z URL ``?threshold=`` nie
+        wysadziły porównania.
         """
         return self.filter(cost__gt=Decimal(str(threshold)))
 

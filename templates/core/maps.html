@@ -82,7 +82,8 @@
        json_script byloby idealne ale potrzebujemy raw JSON do JSON.parse() -
        textContent jest bezpieczny (zadnego HTML interpretation).
     {% endcomment %}
-    <script id="pins-data" type="application/json" nonce="{{ CSP_NONCE }}">{{ pins_json|safe }}</script>
+    {# json_script escapuje < > & (ochrona stored-XSS); blok danych (nie wykonywany) #}
+    {{ pins|json_script:"pins-data" }}
 
     {# Init mapy: czeka az Google API zaladowane przez async loader. #}
     <script nonce="{{ CSP_NONCE }}">
@@ -120,10 +121,9 @@
             }
 
             var geocoder = new google.maps.Geocoder();
+            // Wbudowany przycisk zamkniecia (✕) InfoWindow obsluguje Google Maps
+            // natywnie — nie dorzucamy wlasnego (inline onclick lamalby strict CSP).
             var infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
-            // Expose globalnie zeby custom close button (✕) w renderInfoWindow
-            // mial dostep przez window.__planerMapsInfoWindow.close().
-            window.__planerMapsInfoWindow = infoWindow;
             var bounds = new google.maps.LatLngBounds();
             var resolved = 0;
 
@@ -224,10 +224,7 @@
             }[pin.inspection_status] || 'background:#e0e7ff;color:#3730a3;';
 
             var html = '' +
-                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;position:relative;">' +
-                  '<button onclick="window.__planerMapsInfoWindow && window.__planerMapsInfoWindow.close()" ' +
-                    'style="position:absolute;top:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.95);border:1px solid #cbd5e1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:#475569;z-index:10;padding:0;font-weight:bold;" ' +
-                    'title="Zamknij" aria-label="Zamknij okno informacji">✕</button>' +
+                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;">' +
                   '<img src="' + esc(pin.photo_url) + '" alt="' + esc(pin.name) +
                   '" style="width:100%;height:120px;object-fit:cover;border-radius:6px;background:#f1f5f9;" loading="lazy" />' +
                   '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:600;line-height:1.3;">' +
@@ -236,43 +233,58 @@
                     '</a>' +
                   '</h3>' +
                   '<p style="margin:2px 0;font-size:11px;color:#64748b;"><strong>UID:</strong> ' + esc(pin.uid) + '</p>' +
-                  '<p style="margin:2px 0;font-size:11px;"><strong>Typ:</strong> ' + esc(pin.machine_type) + '</p>' +
-                  '<p style="margin:2px 0;font-size:11px;"><strong>Status:</strong> ' + esc(pin.status) + '</p>' +
+                  '<p style="margin:2px 0;font-size:11px;"><strong>{% trans "Typ:" %}</strong> ' + esc(pin.machine_type) + '</p>' +
+                  '<p style="margin:2px 0;font-size:11px;"><strong>{% trans "Status:" %}</strong> ' + esc(pin.status) + '</p>' +
                   '<p style="margin:4px 0 2px 0;font-size:11px;">' +
-                    '<strong>Przeglad:</strong> ' + esc(pin.inspection_date) +
+                    '<strong>{% trans "Przegląd:" %}</strong> ' + esc(pin.inspection_date) +
                     ' <span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;' + inspectionBadgeColor + '">' +
                       esc(pin.inspection_status) +
                     '</span>' +
                   '</p>';
             if (pin.responsible) {
-                html += '<p style="margin:2px 0;font-size:11px;"><strong>Odpowiedzialny:</strong> ' + esc(pin.responsible) + '</p>';
+                html += '<p style="margin:2px 0;font-size:11px;"><strong>{% trans "Odpowiedzialny:" %}</strong> ' + esc(pin.responsible) + '</p>';
             }
             if (pin.site_label) {
-                html += '<p style="margin:2px 0;font-size:11px;color:#475569;"><strong>Budowa:</strong> ' + esc(pin.site_label) + '</p>';
+                html += '<p style="margin:2px 0;font-size:11px;color:#475569;"><strong>{% trans "Budowa:" %}</strong> ' + esc(pin.site_label) + '</p>';
             }
             html += '<p style="margin:6px 0 0 0;font-size:10px;color:#94a3b8;font-style:italic;">' + esc(pin.location_address) + '</p>' +
                 '</div>';
             return html;
         }
 
-        // Loader Google Maps API jest async/defer - sluchamy az dolaczy + odpalamy.
-        // Sprawdzamy okresowo (200ms) czy window.google.maps juz dostepne.
+        // Loader Google Maps API jest async/defer (loading=async&v=weekly). W tym trybie
+        // klasy (Map/Geocoder/Marker/...) laduja sie przez google.maps.importLibrary —
+        // bezposrednie ``new google.maps.Map`` rzuca "Map is not a constructor", dopoki
+        // biblioteka "maps" nie zostanie zaimportowana. Czekamy wiec az pojawi sie
+        // importLibrary, importujemy wymagane biblioteki (maps + geocoding), a dopiero
+        // potem rysujemy mape (importLibrary wypelnia globalny namespace google.maps.*).
+        function showMapsError() {
+            var mapEl = document.getElementById('machine-map');
+            if (mapEl) {
+                mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#991b1b;background:#fef2f2;height:100%;display:flex;align-items:center;justify-content:center;">' +
+                    '{% trans "Nie udało się załadować Google Maps API. Sprawdź konsolę przeglądarki + klucz API." %}' +
+                    '</div>';
+            }
+        }
         var checkCount = 0;
         var maxChecks = 50; // 10 sekund max
         var interval = setInterval(function () {
             checkCount++;
-            if (window.google && window.google.maps) {
+            if (window.google && window.google.maps && typeof google.maps.importLibrary === 'function') {
                 clearInterval(interval);
-                initMachineMap();
+                Promise.all([
+                    google.maps.importLibrary('maps'),
+                    google.maps.importLibrary('geocoding')
+                ]).then(function () {
+                    initMachineMap();
+                }).catch(function (e) {
+                    console.error('[Mapy] Nie udalo sie zaimportowac bibliotek Google Maps:', e);
+                    showMapsError();
+                });
             } else if (checkCount >= maxChecks) {
                 clearInterval(interval);
                 console.error('[Mapy] Google Maps API nie zaladowane w 10s - sprawdz klucz API i CSP.');
-                var mapEl = document.getElementById('machine-map');
-                if (mapEl) {
-                    mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#991b1b;background:#fef2f2;height:100%;display:flex;align-items:center;justify-content:center;">' +
-                        'Nie udalo sie zaladowac Google Maps API. Sprawdz konsole przegladarki + klucz API.' +
-                        '</div>';
-                }
+                showMapsError();
             }
         }, 200);
     })();

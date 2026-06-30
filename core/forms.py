@@ -17,7 +17,7 @@ from __future__ import annotations
 INPUT_CSS = (
     "block w-full rounded-md border-gray-300 dark:border-gray-600 "
     "dark:bg-gray-700 dark:text-gray-100 shadow-sm "
-    "focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
+    "focus:border-brand-500 focus:ring-2 focus:ring-brand-500 min-h-[44px] sm:text-sm"
 )
 
 # Wariant dla ``<textarea>`` — INPUT_CSS + minimalna wysokość.

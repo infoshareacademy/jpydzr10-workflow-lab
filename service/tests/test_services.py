@@ -126,8 +126,49 @@ def test_create_service_record_persists_all_fields(machine):
     record.refresh_from_db()
     assert record.performed_by == "Jan Kowalski"
     assert record.description == "Wymiana siłownika hydraulicznego"
-    assert record.cost == Decimal("4500.50")
+    assert record.cost.amount == Decimal("4500.50")
+    # MoneyField zapisuje też walutę — domyślnie EUR (jedyna waluta kosztów).
+    assert str(record.cost.currency) == "EUR"
     assert record.next_inspection is None
+
+
+@pytest.mark.django_db
+@freeze_time("2026-05-16")
+def test_create_service_record_accepts_float_cost(machine):
+    """``cost`` jako float (np. z importu JSON) jest koercowany przez Decimal(str()).
+
+    Bez ``Decimal(str(...))`` float 308.1 trafiłby do bazy jako 308.0999...;
+    koercja przez string daje dokładnie 308.10.
+    """
+    record = create_service_record(
+        machine=machine,
+        record_type=ServiceRecord.RecordType.NAPRAWA,
+        performed_date=date(2026, 5, 1),
+        cost=308.1,
+    )
+    record.refresh_from_db()
+    assert record.cost.amount == Decimal("308.10")
+    assert str(record.cost.currency) == "EUR"
+
+
+@pytest.mark.django_db
+@freeze_time("2026-05-16")
+def test_create_service_record_negative_cost_is_caller_responsibility(machine):
+    """Warstwa serwisowa NIE waliduje znaku kosztu — robi to formularz (clean_cost).
+
+    Dokumentuje świadomy kontrakt: ``create_service_record`` ufa wołającemu i
+    zapisuje kwotę jak podano (UI chroni ``ServiceRecordForm.clean_cost`` /
+    ``min_value`` w ``BulkInspectionForm``). Gdyby kontrakt się zmienił na
+    walidację w serwisie, ten test złapie regresję.
+    """
+    record = create_service_record(
+        machine=machine,
+        record_type=ServiceRecord.RecordType.NAPRAWA,
+        performed_date=date(2026, 5, 1),
+        cost=Decimal("-5.00"),
+    )
+    record.refresh_from_db()
+    assert record.cost.amount == Decimal("-5.00")
 
 
 @pytest.mark.django_db

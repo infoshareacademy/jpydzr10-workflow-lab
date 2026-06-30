@@ -5,8 +5,7 @@ rows are self-explanatory and consistent with the ``machines`` app
 convention (``W magazynie``, ``Na budowie`` …).
 
 ``ConstructionSite`` uses the local Polish project numbering format
-``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT the 9-digit Belgian format
-from WMS SEBASTIANA (which is a different business context).
+``BUD-RRRR-NNN`` (project decision, M2 W1) — NOT a plain 9-digit numeric format.
 
 ``Reservation`` ties a :class:`machines.Machine` to a date range, optionally
 referencing a :class:`ConstructionSite`. Status transitions are guarded in the
@@ -20,6 +19,7 @@ without a data migration.
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -47,7 +47,7 @@ PROJECT_NUMBER_PATTERN = r"^(?:10\d{2}\d{7}|BUD-\d{4}-\d{3})$"
 
 PROJECT_NUMBER_VALIDATOR = RegexValidator(
     regex=PROJECT_NUMBER_PATTERN,
-    message=(
+    message=_(
         "Numer projektu musi byc w formacie 10YYNNNNN (np. 10260000001) "
         "lub starym BUD-RRRR-NNN (np. BUD-2026-001)."
     ),
@@ -76,9 +76,9 @@ class ConstructionSite(TimestampedModel):
     class Status(models.TextChoices):
         """Lifecycle of the site. Values are Polish on purpose (ZASADA #2)."""
 
-        AKTYWNA = "aktywna", "Aktywna"
-        ZAKONCZONA = "zakończona", "Zakończona"
-        ANULOWANA = "anulowana", "Anulowana"
+        AKTYWNA = "aktywna", _("Aktywna")
+        ZAKONCZONA = "zakończona", _("Zakończona")
+        ANULOWANA = "anulowana", _("Anulowana")
 
     project_number = models.CharField(
         max_length=12,
@@ -86,7 +86,9 @@ class ConstructionSite(TimestampedModel):
         db_index=True,
         validators=[PROJECT_NUMBER_VALIDATOR],
         verbose_name=_("Numer projektu"),
-        help_text="Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). Stare numery BUD-RRRR-NNN dalej akceptowane.",
+        help_text=_(
+            "Format: 10YYNNNNNNN (11 cyfr: 10 + rok + 7-cyfrowy seq, np. 10260000001). Stare numery BUD-RRRR-NNN dalej akceptowane."
+        ),
     )
     name = models.CharField(max_length=200, verbose_name=_("Nazwa budowy"))
     client_name = models.CharField(max_length=200, blank=True, default="", verbose_name=_("Klient"))
@@ -109,6 +111,12 @@ class ConstructionSite(TimestampedModel):
         verbose_name = _("Budowa")
         verbose_name_plural = _("Budowy")
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=["aktywna", "zakończona", "anulowana"]),
+                name="constructionsite_status_valid",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.project_number} — {self.name}"
@@ -144,7 +152,7 @@ class ConstructionSite(TimestampedModel):
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError(
-                {"end_date": "Planowana data zakończenia musi być >= data rozpoczęcia."}
+                {"end_date": _("Planowana data zakończenia musi być >= data rozpoczęcia.")}
             )
 
 
@@ -174,10 +182,10 @@ class Reservation(TimestampedModel):
     class Status(models.TextChoices):
         """Lifecycle of a reservation. Values are Polish (M1-compatible)."""
 
-        OCZEKUJACA = "oczekująca", "Oczekująca"
-        POTWIERDZONA = "potwierdzona", "Potwierdzona"
-        ANULOWANA = "anulowana", "Anulowana"
-        ZAKONCZONA = "zakończona", "Zakończona"
+        OCZEKUJACA = "oczekująca", _("Oczekująca")
+        POTWIERDZONA = "potwierdzona", _("Potwierdzona")
+        ANULOWANA = "anulowana", _("Anulowana")
+        ZAKONCZONA = "zakończona", _("Zakończona")
 
     class CancellationReason(models.TextChoices):
         """Powód anulowania rezerwacji (B-2) — używane do raportów miesięcznych.
@@ -185,11 +193,11 @@ class Reservation(TimestampedModel):
         Wartości DB są ASCII snake_case (compatibility z fixturami), labele PL.
         """
 
-        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", "Klient zrezygnował"
-        AWARIA = "awaria", "Awaria maszyny"
-        ZMIANA_TERMINU = "zmiana_terminu", "Zmiana terminu / przesunięcie"
-        BRAK_DOSTEPNOSCI = "brak_dostepnosci", "Brak dostępności maszyny"
-        INNE = "inne", "Inne (zobacz notatkę)"
+        KLIENT_ZREZYGNOWAL = "klient_zrezygnowal", _("Klient zrezygnował")
+        AWARIA = "awaria", _("Awaria maszyny")
+        ZMIANA_TERMINU = "zmiana_terminu", _("Zmiana terminu / przesunięcie")
+        BRAK_DOSTEPNOSCI = "brak_dostepnosci", _("Brak dostępności maszyny")
+        INNE = "inne", _("Inne (zobacz notatkę)")
 
     # ------------------------------------------------------------------
     # Fields
@@ -276,8 +284,9 @@ class Reservation(TimestampedModel):
         db_index=True,
         verbose_name=_("Faktyczna data zwrotu"),
         help_text=_(
-            "Wcześniejszy zwrot — jeśli ustawione, używamy do konfliktów "
-            "zamiast planowanej daty końca."
+            "Data faktycznego (wcześniejszego) zwrotu maszyny — pole ewidencyjne. "
+            "Maszynę zwalnia samo zakończenie rezerwacji (status „Zakończona” jest "
+            "pomijany przy wykrywaniu konfliktów), nie ta data."
         ),
     )
 
@@ -318,6 +327,41 @@ class Reservation(TimestampedModel):
         ),
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reservations_created",
+        verbose_name=_("Utworzona przez"),
+        help_text=_(
+            "Użytkownik, który utworzył rezerwację. Decyduje o adresacie "
+            "powiadomienia e-mail po potwierdzeniu oraz o widoczności w edycji "
+            "dla pracowników niebędących administratorami."
+        ),
+    )
+    confirmation_email_queued_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("E-mail potwierdzający — zakolejkowany"),
+        help_text=_("Znacznik czasu zakolejkowania powiadomienia po potwierdzeniu."),
+    )
+    confirmation_email_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("E-mail potwierdzający — wysłany"),
+        help_text=_("Znacznik czasu skutecznego wysłania powiadomienia."),
+    )
+    reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Przypomnienie T-1 — wysłane"),
+        help_text=_(
+            "Znacznik wysłania przypomnienia o jutrzejszym starcie rezerwacji "
+            "(idempotency — cron wysyła tylko gdy puste)."
+        ),
+    )
+
     history = HistoricalRecords()
 
     objects = ReservationManager()
@@ -332,6 +376,19 @@ class Reservation(TimestampedModel):
             models.Index(fields=["machine", "-start_date"]),
             # Hot path: dashboard widgets ("upcoming pending", "active today").
             models.Index(fields=["status", "start_date"]),
+        ]
+        constraints = [
+            # Obrona na poziomie bazy: status MUSI być jedną z wartości
+            # ``Status`` (Django ``choices`` waliduje tylko w ``full_clean``,
+            # które omijają zapisy ``update_fields`` i surowe importy). Wartości
+            # zahardcodowane bo Meta nie widzi zagnieżdżonej klasy Status —
+            # zgodność pilnuje test ``test_status_check_constraint``.
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["oczekująca", "potwierdzona", "zakończona", "anulowana"]
+                ),
+                name="reservation_status_valid",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -380,4 +437,4 @@ class Reservation(TimestampedModel):
         """Cross-field validation — ``end_date`` must be ≥ ``start_date``."""
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
-            raise ValidationError({"end_date": "Data końca musi być >= data początku."})
+            raise ValidationError({"end_date": _("Data końca musi być >= data początku.")})

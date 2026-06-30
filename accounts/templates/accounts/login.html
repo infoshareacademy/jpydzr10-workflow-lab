@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
-{% block title %}Logowanie — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Logowanie — Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -29,13 +29,13 @@
         <div class="text-center mb-6">
             <a href="{% url 'home' %}"
                class="inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg px-2 py-1"
-               aria-label="Planer Maszyn — strona główna">
+               aria-label="{% trans 'Planer Maszyn — strona główna' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none"
                      viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M3 7l9-4 9 4M3 7v10l9 4M3 7l9 4m9-4v10l-9 4M12 11v10"/>
                 </svg>
-                <span class="text-2xl font-bold tracking-tight">Planer Maszyn</span>
+                <span class="text-2xl font-bold tracking-tight">{% trans "Planer Maszyn" %}</span>
             </a>
         </div>
 
@@ -52,10 +52,10 @@
             {# === Heading === #}
             <h1 id="login-title"
                 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1 tracking-tight">
-                Zaloguj się
+                {% trans "Zaloguj się" %}
             </h1>
             <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                Wprowadź dane logowania aby kontynuować.
+                {% trans "Wprowadź dane logowania aby kontynuować." %}
             </p>
 
             {# === Form === #}
@@ -82,7 +82,7 @@
                 <div>
                     <label for="{{ form.username.id_for_label }}"
                            class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
-                        Nazwa użytkownika
+                        {% trans "Nazwa użytkownika" %}
                     </label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 dark:text-slate-500">
@@ -92,7 +92,7 @@
                                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
                         </span>
-                        {% render_field form.username class+="form-input block w-full pl-10 pr-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" autocomplete="username" autofocus="autofocus" placeholder="np. jan.kowalski" %}
+                        {% render_field form.username class+="form-input block w-full pl-10 pr-3 py-2.5 min-h-[44px] rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" autocomplete="username" autofocus="autofocus" %}
                     </div>
                     {% if form.username.errors %}
                         <p class="mt-1.5 text-sm text-rose-600 dark:text-rose-400" role="alert">
@@ -108,13 +108,13 @@
                     <div class="flex items-baseline justify-between mb-1.5">
                         <label for="{{ form.password.id_for_label }}"
                                class="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                            Hasło
+                            {% trans "Hasło" %}
                         </label>
-                        {# „Zapomniałeś hasła?" — placeholder dla M3 (mailto admina) #}
-                        <a href="mailto:administrator@planer-maszyn.local?subject=Zapomniane%20has%C5%82o"
+                        {# „Zapomniałeś hasła?" — link do flow resetu hasła (mail z linkiem) #}
+                        <a href="{% url 'accounts:password_reset' %}"
                            class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-                           title="Skontaktuj się z administratorem żeby zresetować hasło">
-                            Zapomniałeś hasła?
+                           title="{% trans 'Zresetuj hasło przez e-mail' %}">
+                            {% trans "Zapomniałeś hasła?" %}
                         </a>
                     </div>
                     <div class="relative">
@@ -130,7 +130,7 @@
                         <button type="button"
                                 @click="show = !show; $refs.pwd.type = show ? 'text' : 'password'"
                                 :aria-pressed="show"
-                                :aria-label="show ? 'Ukryj hasło' : 'Pokaż hasło'"
+                                :aria-label="show ? '{% trans "Ukryj hasło" %}' : '{% trans "Pokaż hasło" %}'"
                                 class="absolute inset-y-0 right-0 flex items-center justify-center px-3 min-w-[44px]
                                        text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300
                                        focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset rounded-r-lg
@@ -173,14 +173,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                     </svg>
-                    <span>Zaloguj się</span>
+                    <span>{% trans "Zaloguj się" %}</span>
                 </button>
             </form>
         </div>
 
         {# === Footer hint — kontakt admina, mały tekst === #}
         <p class="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
-            Brak konta? Skontaktuj się z administratorem systemu.
+            {% trans "Brak konta? Skontaktuj się z administratorem systemu." %}
         </p>
     </div>
 </section>

@@ -9,19 +9,20 @@ submissions.
 from __future__ import annotations
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 
 class ChatMessageForm(forms.Form):
     """Pojedyncze pytanie do agenta + opcjonalne id istniejącej konwersacji."""
 
     question = forms.CharField(
-        label="Pytanie",
+        label=_("Pytanie"),
         min_length=3,
         max_length=2000,
         widget=forms.Textarea(
             attrs={
                 "rows": 2,
-                "placeholder": "Np. Czy maszyna KOP-001 jest dostępna od 1 do 5 czerwca?",
+                "placeholder": _("Np. Czy maszyna KOP-001 jest dostępna od 1 do 5 czerwca?"),
                 "class": (
                     "w-full px-3 py-2 border border-gray-300 rounded-md "
                     "focus:outline-none focus:ring-2 focus:ring-brand-500 "
@@ -30,9 +31,9 @@ class ChatMessageForm(forms.Form):
             }
         ),
         error_messages={
-            "required": "Pytanie jest wymagane.",
-            "min_length": "Pytanie musi mieć co najmniej 3 znaki.",
-            "max_length": "Pytanie nie może przekraczać 2000 znaków.",
+            "required": _("Pytanie jest wymagane."),
+            "min_length": _("Pytanie musi mieć co najmniej 3 znaki."),
+            "max_length": _("Pytanie nie może przekraczać 2000 znaków."),
         },
     )
     conversation_id = forms.IntegerField(required=False, widget=forms.HiddenInput)

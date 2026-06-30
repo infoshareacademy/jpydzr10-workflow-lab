@@ -228,7 +228,7 @@ class TestImportServiceCommand:
         call_command("import_service", str(f), stdout=StringIO(), stderr=StringIO())
         rec = ServiceRecord.objects.get(machine=machine)
         # cost zfallbackował do 0.00.
-        assert rec.cost is None or float(rec.cost) == 0.0
+        assert rec.cost is None or float(rec.cost.amount) == 0.0
 
 
 # =============================================================================
@@ -290,13 +290,22 @@ class TestImportServiceCoverageGaps:
         ]
         f = tmp_path / "vr.json"
         f.write_text(json.dumps(payload))
+        out = StringIO()
         err = StringIO()
-        call_command("import_service", str(f), stdout=StringIO(), stderr=err)
-        # Sprawdzamy że albo poszło OK albo zalogowało błąd — nie crash
-        # (cel: pokrycie kodu, nie business asercja).
-        # Liczba kosztów minus może być akceptowana albo nie zależnie od validatorów.
-        # Wystarczy żeby command nie crashował.
-        # If VR (line 133-135) — pokrywa; jeśli nie VR — pokrywa line 132 created+=1
+        call_command("import_service", str(f), stdout=out, stderr=err)
+
+        from service.models import ServiceRecord
+
+        machine = Machine.objects.get(uid="VR-01")
+        created = ServiceRecord.objects.filter(machine=machine).count()
+        # data=2099-12-31 jest w przyszłości → create_service_record rzuca
+        # ValidationError ("nie może być w przyszłości"), więc wpis NIE powstaje,
+        # a command loguje błąd na stderr i kończy się bez crasha (error path
+        # import_service.py:133-135).
+        assert created == 0
+        assert "Błąd przy wpisie VR-001" in err.getvalue()
+        # Podsumowanie zawsze trafia na stdout (command dobiegł do końca).
+        assert "Import zakończony" in out.getvalue()
 
 
 # =============================================================================

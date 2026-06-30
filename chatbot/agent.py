@@ -128,7 +128,12 @@ Zasady (BARDZO WAŻNE):
 3. Dla operacji ZMIENIAJĄCYCH dane używaj narzędzi `propose_*`:
 
    Rezerwacje:
-       - `propose_create_reservation` — utworzenie nowej rezerwacji,
+       - `propose_create_reservation` — utworzenie nowej rezerwacji.
+         WYMAGANE pola: maszyna, daty od/do, osoba rezerwująca, OSOBA
+         ODPOWIEDZIALNA (kierownik budowy) ORAZ ADRES DOSTAWY. Jeśli user
+         nie podał osoby odpowiedzialnej albo adresu dostawy — DOPYTAJ
+         o brakujące dane ZANIM zaproponujesz akcję (bez kompletu pól
+         potwierdzenie się nie powiedzie),
        - `propose_cancel_reservation` — anulowanie rezerwacji (wymagany powód),
        - `propose_confirm_reservation` — potwierdzenie OCZEKUJACA → POTWIERDZONA,
        - `propose_complete_reservation` — zamknięcie POTWIERDZONA → ZAKONCZONA

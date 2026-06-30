@@ -17,29 +17,63 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_signal_adds_group_for_magazynier():
-    """Nowy profil z function="Magazynier" → user dostaje grupę "Magazynierzy"."""
+    """Nowy profil z function="magazynier" → user dostaje grupę "Magazynierzy"."""
     user = User.objects.create_user(username="mag1", password="x")
     profile = user.profile
-    profile.function = "Magazynier"
+    profile.function = "magazynier"
     profile.save()
     group_names = set(user.groups.values_list("name", flat=True))
     assert "Magazynierzy" in group_names
 
 
 @pytest.mark.django_db
+def test_signal_adds_group_for_admin():
+    """Profil z function="admin" → user dostaje grupę "Administratorzy"."""
+    user = User.objects.create_user(username="adm1", password="x")
+    profile = user.profile
+    profile.function = "admin"
+    profile.save()
+    assert user.groups.filter(name="Administratorzy").exists()
+
+
+@pytest.mark.django_db
+def test_signal_admin_function_transition():
+    """Pełna macierz przejść z udziałem ADMIN: admin → magazynier → admin.
+
+    Sygnał musi sprzątać grupę Administratorzy przy zejściu z funkcji ADMIN
+    i ponownie ją nadać przy powrocie — bez pozostawiania osieroconej grupy.
+    """
+    user = User.objects.create_user(username="admswap", password="x")
+    profile = user.profile
+
+    profile.function = "admin"
+    profile.save()
+    assert set(user.groups.values_list("name", flat=True)) == {"Administratorzy"}
+
+    profile.function = "magazynier"
+    profile.save()
+    names = set(user.groups.values_list("name", flat=True))
+    assert "Administratorzy" not in names
+    assert names == {"Magazynierzy"}
+
+    profile.function = "admin"
+    profile.save()
+    assert set(user.groups.values_list("name", flat=True)) == {"Administratorzy"}
+
+
+@pytest.mark.django_db
 def test_signal_swaps_groups_on_function_change():
-    """Zmiana z "Magazynier" → "Dyrektor" usuwa starą grupę, dodaje nowe."""
+    """Zmiana z "magazynier" → "kierownik" usuwa starą grupę, dodaje nową."""
     user = User.objects.create_user(username="swap1", password="x")
     profile = user.profile
-    profile.function = "Magazynier"
+    profile.function = "magazynier"
     profile.save()
     assert "Magazynierzy" in set(user.groups.values_list("name", flat=True))
 
-    profile.function = "Dyrektor"
+    profile.function = "kierownik"
     profile.save()
     group_names = set(user.groups.values_list("name", flat=True))
     assert "Magazynierzy" not in group_names
-    assert "Dyrekcja" in group_names
     assert "Kierownicy" in group_names
 
 
@@ -48,7 +82,7 @@ def test_signal_clears_groups_when_inactive():
     """Deaktywacja pracownika (is_active_employee=False) czyści wszystkie grupy."""
     user = User.objects.create_user(username="inact1", password="x")
     profile = user.profile
-    profile.function = "Administrator"
+    profile.function = "admin"
     profile.save()
     assert "Administratorzy" in set(user.groups.values_list("name", flat=True))
 
@@ -62,7 +96,7 @@ def test_signal_clears_groups_when_anonymized():
     """Anonimizacja profilu (is_anonymized=True) czyści wszystkie grupy."""
     user = User.objects.create_user(username="anon1", password="x")
     profile = user.profile
-    profile.function = "Magazynier"
+    profile.function = "magazynier"
     profile.save()
     assert user.groups.count() > 0
 
@@ -78,7 +112,7 @@ def test_signal_preserves_unmanaged_groups():
     ad_hoc = Group.objects.create(name="Audytorzy")
     user.groups.add(ad_hoc)
     profile = user.profile
-    profile.function = "Magazynier"
+    profile.function = "magazynier"
     profile.save()
     group_names = set(user.groups.values_list("name", flat=True))
     assert "Audytorzy" in group_names

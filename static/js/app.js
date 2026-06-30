@@ -160,39 +160,126 @@
         };
     };
 
+    /* Flatpickr a11y: altInput (widoczny klon) nie dziedziczy etykiety ani
+       sensownego tabindex. onReady kopiuje tekst <label for=origId> jako
+       aria-label na altInput i czysci dodatni tabindex (anti-pattern WCAG).
+       Oryginalny (ukryty) input zachowuje name -> formularz dziala bez zmian. */
+    function flatpickrA11yReady(selectedDates, dateStr, instance) {
+        var alt = instance.altInput;
+        if (!alt) return;
+        var ti = alt.getAttribute("tabindex");
+        if (ti !== null && parseInt(ti, 10) > 0) alt.setAttribute("tabindex", "0");
+        if (!alt.getAttribute("aria-label")) {
+            var orig = instance.input;
+            var labelText = "";
+            if (orig.id) {
+                var lbl = document.querySelector('label[for="' + orig.id + '"]');
+                if (lbl) labelText = lbl.textContent.trim();
+            }
+            if (!labelText && orig.getAttribute("aria-label")) {
+                labelText = orig.getAttribute("aria-label");
+            }
+            if (labelText) alt.setAttribute("aria-label", labelText);
+        }
+    }
+
+    function buildFlatpickrConfig(extra) {
+        var cfg = {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d.m.Y",
+            allowInput: true,
+            onReady: flatpickrA11yReady,
+        };
+        if (extra) {
+            for (var k in extra) {
+                if (Object.prototype.hasOwnProperty.call(extra, k)) cfg[k] = extra[k];
+            }
+        }
+        return cfg;
+    }
+
     /* Flatpickr auto-init dla pol z klasa .flatpickr / input[type=date]. */
     document.addEventListener("DOMContentLoaded", function () {
         if (window.flatpickr) {
-            if (window.flatpickr.l10ns && window.flatpickr.l10ns.pl) {
+            // Lokalizuj kalendarz do polskiego TYLKO gdy interfejs jest po polsku.
+            // W trybie EN zostaje wbudowany angielski flatpickr (nazwy dni/miesięcy
+            // nie mieszają się z językiem UI).
+            const uiLang = (document.documentElement.lang || "pl").toLowerCase();
+            if (uiLang.startsWith("pl") && window.flatpickr.l10ns && window.flatpickr.l10ns.pl) {
                 window.flatpickr.localize(window.flatpickr.l10ns.pl);
             }
-            document.querySelectorAll(".flatpickr, input[type='date']").forEach((el) => {
-                window.flatpickr(el, {
-                    dateFormat: "Y-m-d",
-                    altInput: true,
-                    altFormat: "d.m.Y",
-                    allowInput: true,
-                    // Renderuj kalendarz inline w DOM modala (nie na body),
-                    // zeby klikniecie daty nie bylo interpretowane jako
-                    // "click outside modal" -> nie zamyka popupa rezerwacji.
-                    static: true,
-                });
+            // data-skip-flatpickr: pozostaw natywny <input type=date> (w pelni
+            // dostepny — etykieta for/id, brak altInput). Uzywane tam, gdzie liczy
+            // sie deterministyczna dostepnosc (filtry raportow).
+            document.querySelectorAll(".flatpickr, input[type='date']:not([data-skip-flatpickr])").forEach((el) => {
+                // static: renderuj kalendarz inline w DOM modala (nie na body),
+                // zeby klikniecie daty nie bylo interpretowane jako "click outside
+                // modal" -> nie zamyka popupa rezerwacji.
+                window.flatpickr(el, buildFlatpickrConfig({ static: true }));
             });
         }
     });
 
     document.addEventListener("htmx:afterSwap", function (e) {
         if (window.flatpickr) {
-            e.target.querySelectorAll(".flatpickr, input[type='date']").forEach((el) => {
+            e.target.querySelectorAll(".flatpickr, input[type='date']:not([data-skip-flatpickr])").forEach((el) => {
                 if (!el._flatpickr) {
-                    window.flatpickr(el, {
-                        dateFormat: "Y-m-d",
-                        altInput: true,
-                        altFormat: "d.m.Y",
-                        allowInput: true,
-                    });
+                    window.flatpickr(el, buildFlatpickrConfig());
                 }
             });
         }
+    });
+
+    /* ========================================================================
+     * Delegowane handlery zdarzeń (strict CSP — zero inline ``on*`` atrybutow).
+     * ------------------------------------------------------------------------
+     * Po usunieciu ``'unsafe-inline'`` ze ``script-src`` inline event-handlery
+     * (``onclick``/``onchange``/``onsubmit``) sa blokowane przez przegladarke.
+     * Zastepujemy je delegacja na ``document`` + atrybutami ``data-*``.
+     * KLUCZOWE: listener na ``document`` przezywa podmiany HTMX (partiale listy
+     * sa swapowane bez pelnego reloadu), wiec np. dialogi potwierdzenia dzialaja
+     * takze PO przefiltrowaniu/stronicowaniu listy rezerwacji — inaczej niz
+     * dyrektywy Alpine, ktore nie re-inicjalizuja sie na swapowanym HTML.
+     * ====================================================================== */
+
+    // 1) Potwierdzenie przed wyslaniem formularza: <form data-confirm="...">.
+    //    Zdarzenie `submit` babelkuje do document, wiec lapie tez formularze
+    //    wstrzykniete przez HTMX. Anulowanie w confirm() blokuje wysylke.
+    document.addEventListener("submit", function (e) {
+        const form = e.target;
+        if (form instanceof HTMLFormElement && form.dataset.confirm) {
+            if (!window.confirm(form.dataset.confirm)) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    // 2) Auto-submit selecta po zmianie: <select data-autosubmit>.
+    //    Zastepuje onchange="this.form.submit()" (przelacznik jezyka, per-page).
+    document.addEventListener("change", function (e) {
+        const el = e.target;
+        if (el && el.matches && el.matches("[data-autosubmit]")) {
+            const form = el.form || (el.closest && el.closest("form"));
+            if (form) form.submit();
+        }
+    });
+
+    // 3) Przycisk „wstecz" z fallbackiem: <button data-history-back> (403/404).
+    document.addEventListener("click", function (e) {
+        const trigger = e.target.closest && e.target.closest("[data-history-back]");
+        if (trigger && window.history.length > 1) {
+            window.history.back();
+        }
+    });
+
+    // 4) Klikalny wiersz tabeli: <tr data-row-href="URL"> (lista budow).
+    //    Klikniecie w link/przycisk wewnatrz wiersza dziala normalnie (nie
+    //    porywamy go) — zastepuje onclick + onclick="event.stopPropagation()".
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest) return;
+        if (e.target.closest("a, button, input, select, textarea, label")) return;
+        const row = e.target.closest("[data-row-href]");
+        if (row) window.location = row.dataset.rowHref;
     });
 })();

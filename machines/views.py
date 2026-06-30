@@ -25,7 +25,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -45,7 +45,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 from core.pagination import PerPageMixin
 
 from .forms import MachineFilterForm, MachineForm, MachineImportXlsxForm
-from .models import Machine
+from .models import INSPECTION_WARNING_DAYS, Machine
 from .services import (
     close_repair,
     create_machine,
@@ -115,7 +115,7 @@ class MachineListView(PerPageMixin, LoginRequiredMixin, ListView):
 def _apply_inspection_filter(queryset, bucket: str):
     """Translate the four ``inspection_status`` buckets into ORM filters."""
     today = date.today()
-    warning_until = today + timedelta(days=14)
+    warning_until = today + timedelta(days=INSPECTION_WARNING_DAYS)
     if bucket == "ok":
         return queryset.filter(inspection_date__gt=warning_until)
     if bucket == "warning":
@@ -254,7 +254,21 @@ class MachineDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
 
     def form_valid(self, form):
         uid = self.object.uid
-        response = super().form_valid(form)
+        # FK rezerwacji/serwisu są na PROTECT (brak cichego kasowania danych
+        # biznesowych) — bez tego guarda DeleteView rzuciłby ProtectedError i
+        # zwrócił 500. Zamiast tego pokazujemy przyjazną odmowę.
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                _(
+                    "Nie można usunąć maszyny %(uid)s — ma powiązane rezerwacje "
+                    "lub wpisy serwisowe. Najpierw usuń lub przenieś te powiązania."
+                )
+                % {"uid": uid},
+            )
+            return redirect("machines:detail", uid=uid)
         messages.success(self.request, _("Maszyna %(uid)s została usunięta.") % {"uid": uid})
         return response
 
@@ -562,9 +576,9 @@ def inspections_due_modal_view(request):
     """
     today = date.today()
     overdue_qs = Machine.objects.overdue_inspection(today=today).order_by("inspection_date")
-    upcoming_qs = Machine.objects.upcoming_inspection(days=14, today=today).order_by(
-        "inspection_date"
-    )[:20]
+    upcoming_qs = Machine.objects.upcoming_inspection(
+        days=INSPECTION_WARNING_DAYS, today=today
+    ).order_by("inspection_date")[:20]
     return render(
         request,
         "machines/_inspections_due_modal.html",

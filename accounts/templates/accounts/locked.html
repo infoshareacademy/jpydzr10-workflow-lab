@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Konto tymczasowo zablokowane — Planer Maszyn Budowlanych{% endblock %}
+{% block title %}{% trans "Konto tymczasowo zablokowane — Planer Maszyn Budowlanych" %}{% endblock %}
 
 {% block content %}
 {% comment %} ============================================================================
@@ -56,19 +57,18 @@
                         text-rose-700 dark:text-rose-300
                         text-xs font-semibold uppercase tracking-wider">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500" aria-hidden="true"></span>
-                <span>Konto zablokowane</span>
+                <span>{% trans "Konto zablokowane" %}</span>
             </div>
 
             {# === Heading — keyword "zablokowane" (test assertion) === #}
             <h1 id="locked-title"
                 class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mb-3 tracking-tight">
-                Konto tymczasowo zablokowane
+                {% trans "Konto tymczasowo zablokowane" %}
             </h1>
 
             {# === Body — przyczyna + ETA reset === #}
             <p class="text-base text-slate-700 dark:text-slate-200 mb-3">
-                Wykryto zbyt wiele nieudanych prób logowania. Z powodów bezpieczeństwa
-                konto zostało tymczasowo zablokowane.
+                {% trans "Wykryto zbyt wiele nieudanych prób logowania. Z powodów bezpieczeństwa konto zostało tymczasowo zablokowane." %}
             </p>
 
             {# Reset ETA — tabular-nums dla 1 godziny #}
@@ -81,13 +81,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>Zostanie odblokowane automatycznie za <span class="font-semibold tabular-nums">1 godzinę</span></span>
+                <span>{% blocktrans %}Zostanie odblokowane automatycznie za <span class="font-semibold tabular-nums">1 godzinę</span>{% endblocktrans %}</span>
             </div>
 
             {# === Body 2 — admin contact (test asserts "administratorem") === #}
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">
-                Jeśli to pomyłka lub potrzebujesz odblokować konto wcześniej —
-                skontaktuj się z administratorem systemu.
+                {% trans "Jeśli to pomyłka lub potrzebujesz odblokować konto wcześniej — skontaktuj się z administratorem systemu." %}
             </p>
 
             {# === CTAs — primary "Wróć do logowania" + secondary mailto === #}
@@ -107,7 +106,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                     </svg>
-                    <span>Wróć na stronę logowania</span>
+                    <span>{% trans "Wróć na stronę logowania" %}</span>
                 </a>
 
                 {# Secondary — mailto admin #}
@@ -128,13 +127,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
-                    <span>Skontaktuj się z administratorem</span>
+                    <span>{% trans "Skontaktuj się z administratorem" %}</span>
                 </a>
             </div>
 
             {# Footer hint — security context #}
             <p class="mt-6 text-xs text-slate-400 dark:text-slate-500">
-                Limit 5 nieudanych prób / godzinę chroni przed atakami brute-force.
+                {% trans "Limit 5 nieudanych prób / godzinę chroni przed atakami brute-force." %}
             </p>
         </div>
     </div>

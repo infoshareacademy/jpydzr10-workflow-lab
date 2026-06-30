@@ -4,7 +4,8 @@ Trzy grupy odpowiadają wartościom enum :class:`EmployeeProfile.Function`
 (montażysta celowo nie ma grupy — read-only access przez login_required):
 
 * **Magazynierzy** — pełny CRUD rezerwacji i budów, view/edit maszyn, wpisy serwisowe.
-* **Kierownicy** — rezerwacje (add/change/view) + dodawanie wpisów serwisowych.
+* **Kierownicy** — składanie wniosków o rezerwacje (add/view, BEZ zatwierdzania),
+  budowy (add/change/delete), dodawanie wpisów serwisowych.
 * **Administratorzy** — wszystkie permissions w obrębie 4 aplikacji domenowych.
 
 Idempotent: kolejne uruchomienia tylko synchronizują permissions
@@ -44,9 +45,11 @@ GROUPS_PERMISSIONS: dict[str, list[str]] = {
         "service.change_servicerecord",
     ],
     "Kierownicy": [
-        # Rezerwacje add/change/view + delete budów + serwis.
+        # Rezerwacje: kierownik SKŁADA wnioski (add → rezerwacja oczekująca),
+        # ale NIE zatwierdza/edytuje — to robi magazynier lub admin. Stąd brak
+        # change_reservation (potwierdzanie/anulowanie/edycja = magazynier/admin;
+        # sama edycja formularza = wyłącznie admin/superuser).
         "reservations.add_reservation",
-        "reservations.change_reservation",
         "reservations.view_reservation",
         "reservations.add_constructionsite",
         "reservations.change_constructionsite",

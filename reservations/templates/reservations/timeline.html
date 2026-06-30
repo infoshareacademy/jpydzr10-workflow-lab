@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static planer_tags %}
+{% load static planer_tags i18n %}
 
 {% comment %}
     Timeline rezerwacji — Gantt-style siatka (maszyna × dzien).
@@ -31,7 +31,7 @@
     sie pod 768px na rzecz listy w `_timeline_mobile.html`.
 {% endcomment %}
 
-{% block title %}Timeline rezerwacji — Planer Maszyn{% endblock %}
+{% block title %}{% trans "Timeline rezerwacji — Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 {% url 'reservations:timeline' as timeline_url %}
@@ -57,12 +57,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                         </span>
-                        <span>Timeline rezerwacji</span>
+                        <span>{% trans "Timeline rezerwacji" %}</span>
                     </h1>
                     <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 ml-9 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span class="inline-flex items-center gap-1.5">
                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 status-dot-pulse" aria-hidden="true"></span>
-                            <span class="font-semibold tabular-nums">{{ machine_rows|length }}</span> maszyn
+                            <span class="font-semibold tabular-nums">{{ machine_rows|length }}</span> {% trans "maszyn" %}
                         </span>
                         <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
                         <span class="font-mono tabular-nums">{{ start|date_pl }}</span>
@@ -72,9 +72,9 @@
                             <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
                             <a href="{% url 'reservations:timeline' %}?period={{ period }}"
                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[0.625rem] font-semibold uppercase tracking-wider hover:bg-brand-200 dark:hover:bg-brand-900/60 transition focus:outline-none focus:ring-2 focus:ring-brand-500"
-                               title="Wyczyść wszystkie filtry">
+                               title="{% trans 'Wyczyść wszystkie filtry' %}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                Wyczyść
+                                {% trans "Wyczyść" %}
                             </a>
                         {% endif %}
                     </p>
@@ -108,41 +108,43 @@
             </div>
 
             {# View type — segment control (HTMX swap, nie page reload) #}
-            <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900/60 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 text-xs sm:text-sm" role="group" aria-label="Wybór okresu">
+            <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-900/60 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 text-xs sm:text-sm" role="group" aria-label="{% trans 'Wybór okresu' %}">
                 <a href="?period=week&start={{ start_iso }}{{ filter_qs }}"
                    hx-get="?period=week&start={{ start_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == 'week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
-                   aria-current="{% if period == 'week' %}page{% endif %}">7 dni</a>
+                   aria-current="{% if period == 'week' %}page{% endif %}">{% trans "7 dni" %}</a>
                 <a href="?period=2week&start={{ start_iso }}{{ filter_qs }}"
                    hx-get="?period=2week&start={{ start_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == '2week' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
-                   aria-current="{% if period == '2week' %}page{% endif %}">14 dni</a>
+                   aria-current="{% if period == '2week' %}page{% endif %}">{% trans "14 dni" %}</a>
                 <a href="?period=month&start={{ start_iso }}{{ filter_qs }}"
                    hx-get="?period=month&start={{ start_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2.5 sm:px-3 py-1.5 rounded-md font-medium transition inline-flex items-center justify-center min-h-[44px] sm:min-h-[32px] {% if period == 'month' %}bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
-                   aria-current="{% if period == 'month' %}page{% endif %}">Miesiąc</a>
+                   aria-current="{% if period == 'month' %}page{% endif %}">{% trans "Miesiąc" %}</a>
             </div>
 
             {# Mini-step nav: «-30d ‹-7d Dziś +7d› +30d» (HTMX swap, scroll-preserving) #}
-            <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm" role="group" aria-label="Nawigacja w czasie">
+            <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm" role="group" aria-label="{% trans 'Nawigacja w czasie' %}">
                 <a href="?period={{ period }}&start={{ prev_30_iso }}{{ filter_qs }}"
                    hx-get="?period={{ period }}&start={{ prev_30_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2 sm:px-2.5 py-1.5 sm:py-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 font-mono text-sm"
-                   title="-30 dni" aria-label="Cofnij 30 dni">«</a>
+                   data-step="-30"
+                   title="{% trans '-30 dni' %}" aria-label="{% trans 'Cofnij 30 dni' %}">«</a>
                 <a href="?period={{ period }}&start={{ prev_7_iso }}{{ filter_qs }}"
                    hx-get="?period={{ period }}&start={{ prev_7_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-                   title="-7 dni" aria-label="Cofnij 7 dni">
+                   data-step="-7"
+                   title="{% trans '-7 dni' %}" aria-label="{% trans 'Cofnij 7 dni' %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 </a>
                 <a href="?period={{ period }}&start={{ today_iso }}{{ filter_qs }}"
@@ -150,15 +152,17 @@
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-3 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-                   title="Skocz do dzis" aria-label="Pokaz okres zaczynajacy sie dzis">
-                    Dziś
+                   data-step="today"
+                   title="{% trans 'Skocz do dzis' %}" aria-label="{% trans 'Pokaz okres zaczynajacy sie dzis' %}">
+                    {% trans "Dziś" %}
                 </a>
                 <a href="?period={{ period }}&start={{ next_7_iso }}{{ filter_qs }}"
                    hx-get="?period={{ period }}&start={{ next_7_iso }}{{ filter_qs }}"
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-                   title="+7 dni" aria-label="Przesun o 7 dni do przodu">
+                   data-step="+7"
+                   title="{% trans '+7 dni' %}" aria-label="{% trans 'Przesun o 7 dni do przodu' %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                 </a>
                 <a href="?period={{ period }}&start={{ next_30_iso }}{{ filter_qs }}"
@@ -166,13 +170,14 @@
                    hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
                    hx-indicator="#tl-loading"
                    class="px-2 sm:px-2.5 py-1.5 sm:py-2 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500 font-mono text-sm"
-                   title="+30 dni" aria-label="Przesun o 30 dni do przodu">»</a>
+                   data-step="+30"
+                   title="{% trans '+30 dni' %}" aria-label="{% trans 'Przesun o 30 dni do przodu' %}">»</a>
             </div>
 
             {# Loading indicator dla HTMX requestow — pokazuje sie tylko gdy hx-request w toku. #}
             <span id="tl-loading" class="htmx-indicator inline-flex items-center text-xs text-brand-600 dark:text-brand-300 ml-1">
                 <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                Ładuję…
+                {% trans "Ładuję…" %}
             </span>
         </div>
 
@@ -180,14 +185,14 @@
         {# w collapse <details>, zostaw rozwiniete'). Layout: prefix 'Legenda:' + #}
         {# inline chipy z odstepami gap-x-4 zeby nie nachodzily na mniejszych ekranach.  #}
         <div class="px-5 sm:px-6 pb-2 -mt-1 flex flex-wrap items-center gap-x-10 gap-y-3 text-[11px]">
-            <span class="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Legenda:</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-500 flex-shrink-0"></span>Oczekuje</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-emerald-500 flex-shrink-0"></span>Potwierdzona</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-400 flex-shrink-0"></span>Zakończona</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-500 flex-shrink-0"></span>Anulowana</span>
+            <span class="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[9px]">{% trans "Legenda:" %}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-500 flex-shrink-0"></span>{% trans "Oczekuje" %}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-emerald-500 flex-shrink-0"></span>{% trans "Potwierdzona" %}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-400 flex-shrink-0"></span>{% trans "Zakończona" %}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-500 flex-shrink-0"></span>{% trans "Anulowana" %}</span>
             <span class="text-slate-400 dark:text-slate-500" aria-hidden="true">|</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-100 dark:bg-rose-900/30 border border-rose-300 flex-shrink-0"></span>Przegląd po terminie</span>
-            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-300 flex-shrink-0"></span>Przegląd wkrótce</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-rose-100 dark:bg-rose-900/30 border border-rose-300 flex-shrink-0"></span>{% trans "Przegląd po terminie" %}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-300 flex-shrink-0"></span>{% trans "Przegląd wkrótce" %}</span>
         </div>
     </div>
 
@@ -197,12 +202,12 @@
     {# Sebastian 2026-05-31: "czemu 6 oczekujacych skoro w bazie jest 37" -- bo      #}
     {# pozostale 31 oczekujacych ma daty poza wybranym oknem. Tooltip wyjasnia.       #}
     {% with total_bars=0 pending_bars=0 confirmed_bars=0 %}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="Statystyki w aktualnie widzianym okresie">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" role="region" aria-label="{% trans 'Statystyki w aktualnie widzianym okresie' %}">
         <div class="surface-card kpi-card px-4 py-3 text-slate-700 dark:text-slate-200"
-             title="Liczba rezerwacji (bars) widocznych w aktualnym okresie na osi czasu">
+             title="{% trans 'Liczba rezerwacji (bars) widocznych w aktualnym okresie na osi czasu' %}">
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h4a4 4 0 014 4v2M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14"/></svg>
-                Rezerwacji w okresie
+                {% trans "Rezerwacji w okresie" %}
             </div>
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="totalReservations">0</div>
         </div>
@@ -211,7 +216,7 @@
              x-init="count = machineRows.reduce((s, m) => s + (m.bars||[]).filter(b => b.status === 'oczekująca').length, 0)">
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-amber-600 dark:text-amber-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Oczekuje
+                {% trans "Oczekuje" %}
             </div>
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
         </div>
@@ -220,7 +225,7 @@
              x-init="count = machineRows.reduce((s, m) => s + (m.bars||[]).filter(b => b.status === 'potwierdzona').length, 0)">
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold text-brand-600 dark:text-brand-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Potwierdzone
+                {% trans "Potwierdzone" %}
             </div>
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
         </div>
@@ -231,14 +236,14 @@
             <div class="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wider font-semibold"
                  :class="count === 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                Maszyny
+                {% trans "Maszyny" %}
             </div>
             <div class="mt-1 text-2xl font-bold tabular-nums" x-text="count">0</div>
         </div>
     </div>
     <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>Liczniki powyżej dotyczą tylko bieżącego okresu na osi czasu (np. wybranego miesiąca). Globalne sumy znajdziesz na <a href="{% url 'home' %}" class="underline hover:text-brand-600 font-medium">panelu głównym</a>.</span>
+        <span>{% url 'home' as home_url %}{% blocktrans %}Liczniki powyżej dotyczą tylko bieżącego okresu na osi czasu (np. wybranego miesiąca). Globalne sumy znajdziesz na <a href="{{ home_url }}" class="underline hover:text-brand-600 font-medium">panelu głównym</a>.{% endblocktrans %}</span>
     </p>
     {% endwith %}
 
@@ -249,7 +254,7 @@
     {# ============================== LAYOUT — pelnoszerokie, bez sidebar ============================== #}
     <div class="space-y-3">
         {# Timeline grid (desktop) + mobile fallback #}
-        <section aria-label="Siatka rezerwacji">
+        <section aria-label="{% trans 'Siatka rezerwacji' %}">
             {# Wave 14-A Bundle 9 scroll-bar usunięty: redundantny względem mini-step nav  #}
             {# w sticky #tl-controls (≪ ‹ Dziś › ≫). Sebastian: 'nauczyciel mnie zapyta  #}
             {# po co to jest, skoro tam masz u góry dodatkowy widget'.                    #}
@@ -328,7 +333,7 @@
 {# uzywa tej zmiennej w `top: var(--tl-ctrl-h)` dla CSS sticky — przykleja sie   #}
 {# DOKLADNIE pod paskiem zamiast na top viewportu. Po resize licznik leci pono- #}
 {# wnie. Pure CSS sticky + 1 numer z JS = zero scroll listenerow, zero IntObs.  #}
-<script>
+<script nonce="{{ CSP_NONCE }}">
 (function () {
     var ctrl = document.getElementById('tl-controls');
     if (!ctrl) return;
@@ -457,25 +462,27 @@
             if (qmark < 0) return;
             var linkParams = new URLSearchParams(url.slice(qmark + 1));
 
-            // Decide new start based on label/title (heuristic: title says "-30 dni" / "+7 dni" etc.)
-            var title = (a.getAttribute('title') || '').toLowerCase();
+            // Decide new start based on data-step (stable identifier, locale-proof).
+            // Mini-step buttons carry data-step="-30/-7/today/+7/+30"; period
+            // switcher links have no data-step (-> stay on same start).
+            var step = a.getAttribute('data-step') || '';
             var newStart = startIso;
-            if (title.indexOf('-30') >= 0) newStart = _addDays(startIso, -30);
-            else if (title.indexOf('+30') >= 0) newStart = _addDays(startIso, 30);
-            else if (title.indexOf('-7') >= 0) newStart = _addDays(startIso, -7);
-            else if (title.indexOf('+7') >= 0) newStart = _addDays(startIso, 7);
-            else if (title.indexOf('dzis') >= 0 || title.indexOf('dziś') >= 0) newStart = todayIso;
+            if (step === '-30') newStart = _addDays(startIso, -30);
+            else if (step === '+30') newStart = _addDays(startIso, 30);
+            else if (step === '-7') newStart = _addDays(startIso, -7);
+            else if (step === '+7') newStart = _addDays(startIso, 7);
+            else if (step === 'today') newStart = todayIso;
             else newStart = startIso;  // period switcher: stay on same start
 
             // Bierz aktualny URL (z hx-push-url) jako baza filtrow
             var newParams = new URLSearchParams(window.location.search);
-            // Period: dla mini-step buttonow (title=+/-7/+/-30/Dzis) ZACHOWAJ
-            // aktualny period (z URL). Dla period switcher (puste title)
+            // Period: dla mini-step buttonow (data-step=+/-7/+/-30/today) ZACHOWAJ
+            // aktualny period (z URL). Dla period switcher (brak data-step)
             // wymus period z link href. BUG sebastian 2026-05-31: dla mini-step
             // tez nadpisywalismy period z link href ktory byl ze server-render
             // (= initial period), wiec klik +7d po wyborze 'Miesiac' wracal na
             // 'week'.
-            if (title) {
+            if (step) {
                 // mini-step button: zachowaj period z aktualnego URL
                 if (!newParams.get('period')) newParams.set('period', period);
             } else {

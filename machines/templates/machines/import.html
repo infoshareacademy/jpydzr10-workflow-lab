@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Import maszyn z XLSX{% endblock %}
+{% block title %}{% trans "Import maszyn z XLSX" %}{% endblock %}
 
 {% block content %}
 <nav class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-    <a href="{% url 'machines:list' %}" class="hover:underline">Maszyny</a>
+    <a href="{% url 'machines:list' %}" class="hover:underline">{% trans "Maszyny" %}</a>
     <span class="mx-1">/</span>
-    <span class="text-slate-900 dark:text-slate-200">Import XLSX</span>
+    <span class="text-slate-900 dark:text-slate-200">{% trans "Import XLSX" %}</span>
 </nav>
 
-<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Import maszyn z pliku XLSX</h1>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{% trans "Import maszyn z pliku XLSX" %}</h1>
 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
-    Wgraj plik XLSX z listą maszyn. Każdy wiersz tworzy jedną maszynę; duplikaty UID są pomijane.
+    {% trans "Wgraj plik XLSX z listą maszyn. Każdy wiersz tworzy jedną maszynę; duplikaty UID są pomijane." %}
 </p>
 
 <form method="post" enctype="multipart/form-data"
@@ -34,9 +35,9 @@
     {% endfor %}
 
     <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-md p-4 text-xs text-slate-600 dark:text-slate-300">
-        <p class="font-semibold mb-1">Wymagane kolumny:</p>
+        <p class="font-semibold mb-1">{% trans "Wymagane kolumny:" %}</p>
         <code class="block font-mono text-xs">uid, name, machine_type</code>
-        <p class="mt-2 font-semibold mb-1">Opcjonalne kolumny:</p>
+        <p class="mt-2 font-semibold mb-1">{% trans "Opcjonalne kolumny:" %}</p>
         <code class="block font-mono text-xs">
             model, capacity, status, location, inspection_date, manufacturer,
             serial_number, build_year, notes
@@ -46,11 +47,11 @@
     <div class="flex items-center justify-end gap-3 pt-2">
         <a href="{% url 'machines:list' %}"
            class="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700">
-            Anuluj
+            {% trans "Anuluj" %}
         </a>
         <button type="submit"
                 class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-sm font-medium">
-            Importuj
+            {% trans "Importuj" %}
         </button>
     </div>
 </form>

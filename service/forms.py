@@ -48,6 +48,18 @@ class ServiceRecordForm(forms.ModelForm):
     the form as a non-field error.
     """
 
+    # Koszt jest modelowo MoneyField (kwota + waluta), ale w formularzu zostaje
+    # pojedynczym polem kwoty — waluta to domyślne EUR (ustawiane przez model).
+    # Dzięki temu UI nie zyskuje selektora waluty, a warstwa serwisowa zapisuje
+    # Decimal, który MoneyField opakowuje w EUR.
+    cost = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        label=_("Koszt (EUR)"),
+        widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
+    )
+
     class Meta:
         model = ServiceRecord
         fields = [
@@ -65,7 +77,6 @@ class ServiceRecordForm(forms.ModelForm):
             "performed_date": _("Data wykonania"),
             "performed_by": _("Wykonawca"),
             "description": _("Opis"),
-            "cost": _("Koszt"),
             "inspection_document": _("Protokół (PDF)"),
         }
         widgets = {
@@ -83,8 +94,15 @@ class ServiceRecordForm(forms.ModelForm):
             "performed_by": forms.TextInput(
                 attrs={"class": INPUT_CSS, "placeholder": _("np. Jan Kowalski")}
             ),
-            "description": forms.Textarea(attrs={"class": TEXTAREA_CSS, "rows": 3}),
-            "cost": forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
+            "description": forms.Textarea(
+                attrs={
+                    "class": TEXTAREA_CSS,
+                    "rows": 3,
+                    "placeholder": _(
+                        "Szczegóły wykonanych prac, wymienione części (jedna na linię), uwagi…"
+                    ),
+                }
+            ),
             "inspection_document": forms.ClearableFileInput(
                 attrs={"class": FILE_INPUT_CSS, "accept": "application/pdf"}
             ),
@@ -95,6 +113,9 @@ class ServiceRecordForm(forms.ModelForm):
         # Default to a sensible "today" so the input is not blank.
         if not self.is_bound and not self.initial.get("performed_date"):
             self.initial["performed_date"] = date.today()
+        # Edycja istniejącego wpisu: pole kwoty pokazuje samą wartość (bez waluty).
+        if self.instance and self.instance.pk and self.instance.cost is not None:
+            self.initial.setdefault("cost", self.instance.cost.amount)
         # All machines are addable — even in-service / on-site (operator may
         # log post-factum a repair done on a machine that is currently
         # somewhere else). Order by UID for predictable dropdown ordering.
@@ -155,13 +176,19 @@ class BulkInspectionForm(forms.Form):
         max_digits=10,
         decimal_places=2,
         initial=Decimal("0.00"),
-        label=_("Koszt na maszynę (PLN)"),
+        label=_("Koszt na maszynę (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     description = forms.CharField(
         required=False,
         label=_("Opis (wspólny)"),
-        widget=forms.Textarea(attrs={"class": TEXTAREA_CSS, "rows": 2}),
+        widget=forms.Textarea(
+            attrs={
+                "class": TEXTAREA_CSS,
+                "rows": 2,
+                "placeholder": _("Wspólny opis przeglądu — np. zakres prac, użyte materiały."),
+            }
+        ),
     )
     inspection_document = forms.FileField(
         required=False,
@@ -268,12 +295,15 @@ class ServiceRecordFilterForm(forms.Form):
             },
         ),
     )
+    # Progi kosztu operują na kwocie w EUR (jedyna waluta kosztów serwisowych po
+    # normalizacji — migracja 0004). Porównanie ``cost__gte/lte`` jest więc
+    # jednoznaczne: wszystkie rekordy są w tej samej walucie.
     cost_min = forms.DecimalField(
         required=False,
         min_value=Decimal("0.00"),
         max_digits=10,
         decimal_places=2,
-        label=_("Koszt min"),
+        label=_("Koszt min (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     cost_max = forms.DecimalField(
@@ -281,12 +311,12 @@ class ServiceRecordFilterForm(forms.Form):
         min_value=Decimal("0.00"),
         max_digits=10,
         decimal_places=2,
-        label=_("Koszt max"),
+        label=_("Koszt max (EUR)"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "0", "step": "0.01"}),
     )
     expensive_only = forms.BooleanField(
         required=False,
-        label=_("Tylko drogie naprawy (powyżej 1000 PLN)"),
+        label=_("Tylko drogie naprawy (powyżej 1000 EUR)"),
         widget=forms.CheckboxInput(
             attrs={
                 "class": (

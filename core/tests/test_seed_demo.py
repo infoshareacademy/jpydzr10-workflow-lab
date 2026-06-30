@@ -18,7 +18,7 @@ from django.core.management import call_command
 
 @pytest.mark.django_db
 def test_seed_demo_default_creates_data():
-    """Default invocation → 3 sub-commands wywołane (machines/sites/reservations)."""
+    """Default invocation → 4 sub-commands wywołane (machines/sites/reservations/service)."""
     out = StringIO()
     call_command(
         "seed_demo",
@@ -34,6 +34,93 @@ def test_seed_demo_default_creates_data():
     user_model = get_user_model()
     # Superuser stworzony
     assert user_model.objects.filter(username="sebastian").exists()
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_service_records_in_eur():
+    """Seed tworzy wpisy serwisowe (fundament raportów) — wszystkie w EUR.
+
+    Bez tych danych feature raportów (koszt per maszyna + wykres top-N + Excel)
+    nie ma czego pokazać. Sprawdzamy że wpisy powstają i mają walutę EUR
+    (migracja 0004 znormalizowała bazę do EUR).
+    """
+    from service.models import ServiceRecord
+
+    call_command(
+        "seed_demo",
+        "--machines",
+        "3",
+        "--sites",
+        "1",
+        "--reservations",
+        "0",
+        "--service-per-machine",
+        "3",
+        stdout=StringIO(),
+    )
+    records = ServiceRecord.objects.all()
+    # 3 maszyny x 3 wpisy = 9 wpisów serwisowych.
+    assert records.count() == 9
+    # Wszystkie koszty w EUR — żaden inny kod waluty się nie prześlizgnął.
+    currencies = {str(r.cost.currency) for r in records}
+    assert currencies == {"EUR"}
+
+
+@pytest.mark.django_db
+def test_seed_demo_service_seeding_is_idempotent():
+    """Drugi run seed_demo NIE duplikuje wpisów serwisowych (seed_service skip)."""
+    from service.models import ServiceRecord
+
+    common = ("--machines", "2", "--sites", "1", "--reservations", "0")
+    call_command("seed_demo", *common, stdout=StringIO())
+    first_count = ServiceRecord.objects.count()
+    assert first_count > 0
+
+    out = StringIO()
+    call_command("seed_demo", *common, stdout=out)
+    # Brak akumulacji — seed_service pomija gdy wpisy już istnieją.
+    assert ServiceRecord.objects.count() == first_count
+    assert "pomijam seed" in out.getvalue()
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_role_accounts():
+    """Seed tworzy 3 konta ról (kierownik/magazynier/montażysta) + admina."""
+    from accounts.models import EmployeeProfile
+
+    call_command(
+        "seed_demo", "--machines", "1", "--sites", "1", "--reservations", "0", stdout=StringIO()
+    )
+    user_model = get_user_model()
+
+    admin = user_model.objects.get(username="sebastian")
+    assert admin.is_superuser
+    assert admin.email  # adres skrzynki demo (adresat powiadomień)
+
+    expected = {
+        "seba1": EmployeeProfile.Function.KIEROWNIK,
+        "seba2": EmployeeProfile.Function.MAGAZYNIER,
+        "seba3": EmployeeProfile.Function.MONTAZYSTA,
+    }
+    for username, function in expected.items():
+        user = user_model.objects.get(username=username)
+        assert not user.is_superuser
+        assert user.profile.function == function
+        assert user.profile.phone  # unikalny numer E.164
+
+    # Numery telefonów są unikalne między kontami.
+    phones = [user_model.objects.get(username=u).profile.phone for u in expected]
+    assert len(set(phones)) == len(phones)
+
+    # RBAC end-to-end: sygnał sync_groups_on_employee_save musi przypisać konta
+    # ról do właściwych grup uprawnień (kierownik→Kierownicy, magazynier→
+    # Magazynierzy). Montażysta celowo NIE ma grupy (least privilege).
+    seba1 = user_model.objects.get(username="seba1")
+    seba2 = user_model.objects.get(username="seba2")
+    seba3 = user_model.objects.get(username="seba3")
+    assert seba1.groups.filter(name="Kierownicy").exists()
+    assert seba2.groups.filter(name="Magazynierzy").exists()
+    assert not seba3.groups.exists()
 
 
 @pytest.mark.django_db

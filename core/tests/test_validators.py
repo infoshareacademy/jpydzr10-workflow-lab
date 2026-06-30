@@ -179,3 +179,80 @@ def test_validate_document_upload_skips_magic_check_when_read_fails():
     """OSError w read → walidator early-returns (rozmiar+ext OK)."""
     bad_read = _OSErrorFile("doc.pdf", 1024)
     validate_document_upload(bad_read)
+
+
+# =============================================================================
+# Normalizacja i walidacja numerów telefonu (E.164)
+# =============================================================================
+
+
+class TestNormalizePhoneE164:
+    """Kontrakt ``normalize_phone_e164`` — patrz docstring funkcji.
+
+    Funkcja CELOWO nie waliduje wyniku (zwraca oczyszczonego kandydata, nie
+    ``None`` dla błędnego formatu) — by formularz mógł pokazać błąd, a webhook
+    głosowy nie wywracał się na losowym caller-ID. Ścisłe E.164 egzekwuje
+    ``EmployeeProfile.save`` / walidator pola.
+    """
+
+    def test_empty_and_none_return_none(self):
+        from core.validators import normalize_phone_e164
+
+        assert normalize_phone_e164(None) is None
+        assert normalize_phone_e164("") is None
+        assert normalize_phone_e164("   ") is None
+
+    def test_strips_separators(self):
+        from core.validators import normalize_phone_e164
+
+        assert normalize_phone_e164("+48 600 100 200") == "+48600100200"
+        assert normalize_phone_e164("+48-600-100-200") == "+48600100200"
+        assert normalize_phone_e164("(48) 600.100.200") == "+48600100200"
+
+    def test_prefixes_plus_for_bare_digits(self):
+        from core.validators import normalize_phone_e164
+
+        assert normalize_phone_e164("48600100200") == "+48600100200"
+
+    def test_returns_cleaned_candidate_even_if_not_valid_e164(self):
+        # Świadomy kontrakt: błędny numer NIE jest zamieniany na None tutaj —
+        # to pozwala wyższym warstwom zgłosić czytelny błąd zamiast cicho
+        # wyzerować pole.
+        from core.validators import normalize_phone_e164
+
+        assert normalize_phone_e164("+0123456789") == "+0123456789"
+        assert normalize_phone_e164("abc") == "abc"
+
+
+class TestIsValidE164:
+    def test_accepts_valid_numbers(self):
+        from core.validators import is_valid_e164
+
+        assert is_valid_e164("+48600100200")
+        assert is_valid_e164("+12025550123")
+
+    def test_rejects_invalid_numbers(self):
+        from core.validators import is_valid_e164
+
+        assert not is_valid_e164(None)
+        assert not is_valid_e164("")
+        assert not is_valid_e164("+0123456789")  # leading 0 po "+"
+        assert not is_valid_e164("+1234567")  # za krótki (7 cyfr po +)
+        assert not is_valid_e164("+123456789012345678")  # za długi (>15)
+        assert not is_valid_e164("48600100200")  # brak "+"
+        assert not is_valid_e164("abc")
+
+
+def test_e164_pattern_matches_migration():
+    """Wzorzec E.164 w core.validators == wzorzec w migracji 0005 (DRY guard).
+
+    Regex jest świadomie zduplikowany (migracje muszą być samowystarczalne),
+    więc pilnujemy testem, że oba źródła pozostają identyczne — rozjazd
+    przepuściłby numery przez jedną warstwę a odrzucił w drugiej.
+    """
+    import importlib
+
+    from core.validators import E164_PATTERN
+
+    migration = importlib.import_module("accounts.migrations.0005_normalize_phone_e164")
+    assert migration._E164_RE.pattern == E164_PATTERN

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load planer_tags %}
+{% load planer_tags i18n %}
 
 {% comment %}
     Reservation detail — 2-column layout (md:+ split, mobile stacked).
@@ -21,16 +21,16 @@
     (M2 F12 P1 #8 — używamy properties zamiast string-literal compare).
 {% endcomment %}
 
-{% block title %}Rezerwacja #{{ reservation.pk }} — Planer Maszyn{% endblock %}
+{% block title %}{% trans "Rezerwacja" %} #{{ reservation.pk }} — {% trans "Planer Maszyn" %}{% endblock %}
 
 {% block content %}
 <div class="space-y-5">
 
     {# ============================== BREADCRUMB ============================== #}
-    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="Ścieżka">
+    <nav class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400" aria-label="{% trans 'Ścieżka' %}">
         <a href="{% url 'reservations:list' %}"
            class="hover:text-brand-700 dark:hover:text-brand-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 -mx-1">
-            Rezerwacje
+            {% trans "Rezerwacje" %}
         </a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -48,13 +48,13 @@
                 </svg>
             </span>
             <div class="min-w-0 flex-1">
-                <h2 class="font-semibold text-amber-900 dark:text-amber-100">Rezerwacja wymieniona na inną maszynę</h2>
+                <h2 class="font-semibold text-amber-900 dark:text-amber-100">{% trans "Rezerwacja wymieniona na inną maszynę" %}</h2>
                 <p class="text-sm text-amber-700 dark:text-amber-300 mt-0.5">
-                    Ta rezerwacja została zakończona z powodu wymiany maszyny.
-                    Kontynuacja:
+                    {% trans "Ta rezerwacja została zakończona z powodu wymiany maszyny." %}
+                    {% trans "Kontynuacja:" %}
                     <a href="{% url 'reservations:detail' reservation.replaced_by.pk %}"
                        class="font-semibold underline hover:text-amber-900 dark:hover:text-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded">
-                        rezerwacja #{{ reservation.replaced_by.pk }} na maszynie {{ reservation.replaced_by.machine.uid }}
+                        {% blocktrans with pk=reservation.replaced_by.pk uid=reservation.replaced_by.machine.uid %}rezerwacja #{{ pk }} na maszynie {{ uid }}{% endblocktrans %}
                     </a>.
                 </p>
             </div>
@@ -71,13 +71,13 @@
                 </svg>
             </span>
             <div class="min-w-0 flex-1">
-                <h2 class="font-semibold text-brand-900 dark:text-brand-100">Część grupy rezerwacji</h2>
+                <h2 class="font-semibold text-brand-900 dark:text-brand-100">{% trans "Część grupy rezerwacji" %}</h2>
                 <p class="text-sm text-brand-700 dark:text-brand-300 mt-0.5">
-                    Ta rezerwacja należy do grupy multi-maszynowej.
+                    {% trans "Ta rezerwacja należy do grupy multi-maszynowej." %}
                     <a href="{% url 'reservations:batch_detail' reservation.batch_id %}"
                        class="font-semibold underline hover:text-brand-900 dark:hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-                        Otwórz grupę {{ reservation.batch_id|stringformat:"s"|slice:":8" }}
-                    </a> żeby zobaczyć wszystkie rezerwacje i akcje grupowe.
+                        {% blocktrans with batch=reservation.batch_id|stringformat:"s"|slice:":8" %}Otwórz grupę {{ batch }}{% endblocktrans %}
+                    </a> {% trans "żeby zobaczyć wszystkie rezerwacje i akcje grupowe." %}
                 </p>
             </div>
         </div>
@@ -94,9 +94,9 @@
                     </svg>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <h2 class="font-semibold text-brand-900 dark:text-brand-100">Rezerwacja zastępcza (wymiana)</h2>
+                    <h2 class="font-semibold text-brand-900 dark:text-brand-100">{% trans "Rezerwacja zastępcza (wymiana)" %}</h2>
                     <p class="text-sm text-brand-700 dark:text-brand-300 mt-0.5">
-                        Ta rezerwacja zastąpiła:
+                        {% trans "Ta rezerwacja zastąpiła:" %}
                         {% for prev in replaces %}
                             <a href="{% url 'reservations:detail' prev.pk %}"
                                class="font-semibold underline hover:text-brand-900 dark:hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
@@ -118,9 +118,9 @@
                 </svg>
             </span>
             <div class="min-w-0">
-                <h2 class="font-semibold text-rose-900 dark:text-rose-100">Rezerwacja anulowana</h2>
+                <h2 class="font-semibold text-rose-900 dark:text-rose-100">{% trans "Rezerwacja anulowana" %}</h2>
                 <p class="text-sm text-rose-700 dark:text-rose-300 mt-0.5">
-                    Ta rezerwacja została anulowana i nie wpływa już na status maszyny. Edycja jest zablokowana.
+                    {% trans "Ta rezerwacja została anulowana i nie wpływa już na status maszyny. Edycja jest zablokowana." %}
                 </p>
             </div>
         </div>
@@ -136,14 +136,14 @@
             <article class="surface-card overflow-hidden">
                 <header class="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div class="min-w-0">
-                        <div class="text-xs uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">Rezerwacja</div>
+                        <div class="text-xs uppercase tracking-widest font-semibold text-slate-500 dark:text-slate-400">{% trans "Rezerwacja" %}</div>
                         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1 break-words">
                             {{ reservation.title }}
                         </h1>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="font-mono">#{{ reservation.pk }}</span>
                             <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-                            <span class="tabular-nums">{{ reservation.duration_days }} dni</span>
+                            <span class="tabular-nums">{{ reservation.duration_days }} {% trans "dni" %}</span>
                         </p>
                     </div>
                     {% status_badge reservation.status as badge_css %}
@@ -159,7 +159,7 @@
 
                         {# Maszyna — link to machines:detail #}
                         <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Maszyna</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Maszyna" %}</dt>
                             <dd>
                                 <a href="{% url 'machines:detail' uid=reservation.machine.uid %}"
                                    class="inline-flex items-center gap-1.5 text-brand-700 dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
@@ -174,7 +174,7 @@
 
                         {# Budowa — link to site_detail jeśli ustawiona #}
                         <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Budowa</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Budowa" %}</dt>
                             <dd>
                                 {% if reservation.site %}
                                     <a href="{% url 'reservations:site_detail' reservation.site.pk %}"
@@ -186,25 +186,25 @@
                                     </a>
                                     <div class="text-slate-700 dark:text-slate-200 mt-0.5">{{ reservation.site.name }}</div>
                                 {% else %}
-                                    <span class="text-slate-400 dark:text-slate-500">— bez budowy —</span>
+                                    <span class="text-slate-400 dark:text-slate-500">{% trans "— bez budowy —" %}</span>
                                 {% endif %}
                             </dd>
                         </div>
 
                         {# Termin (od → do) #}
                         <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Termin</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Termin" %}</dt>
                             <dd class="tabular-nums text-slate-900 dark:text-slate-100">
                                 <span class="font-mono">{{ reservation.start_date|date_pl }}</span>
                                 <span class="text-slate-400 mx-1" aria-hidden="true">→</span>
                                 <span class="font-mono">{{ reservation.end_date|date_pl }}</span>
-                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ reservation.duration_days }} dni włącznie</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ reservation.duration_days }} {% trans "dni włącznie" %}</div>
                             </dd>
                         </div>
 
                         {# Osoba rezerwująca #}
                         <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Osoba rezerwująca</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Osoba rezerwująca" %}</dt>
                             <dd class="text-slate-900 dark:text-slate-100 flex items-center gap-2">
                                 <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-semibold">
                                     {{ reservation.person|slice:":1"|upper }}
@@ -215,27 +215,27 @@
 
                         {# Wave 14-A Bundle 4 — Osoba odpowiedzialna na budowie (kierownik/brygadzista) #}
                         <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Osoba odpowiedzialna na budowie</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Osoba odpowiedzialna na budowie" %}</dt>
                             <dd class="text-slate-900 dark:text-slate-100 flex items-center gap-2">
                                 {% if reservation.responsible_person %}
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold" title="Kierownik / brygadzista">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold" title="{% trans 'Kierownik / brygadzista' %}">
                                         {{ reservation.responsible_person|slice:":1"|upper }}
                                     </span>
                                     <span>{{ reservation.responsible_person }}</span>
                                 {% else %}
-                                    <span class="text-slate-400 dark:text-slate-500 italic">— nie przypisano —</span>
+                                    <span class="text-slate-400 dark:text-slate-500 italic">{% trans "— nie przypisano —" %}</span>
                                 {% endif %}
                             </dd>
                         </div>
 
                         {# Adres dostawy (Wave 14-A: required) #}
                         <div class="sm:col-span-2">
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Adres dostawy</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Adres dostawy" %}</dt>
                             <dd class="text-slate-700 dark:text-slate-200">
                                 {% if reservation.address %}
                                     {{ reservation.address }}
                                 {% else %}
-                                    <span class="text-amber-600 dark:text-amber-400 italic">— brak (rezerwacja sprzed Wave 14-A) —</span>
+                                    <span class="text-amber-600 dark:text-amber-400 italic">{% trans "— brak (rezerwacja sprzed Wave 14-A) —" %}</span>
                                 {% endif %}
                             </dd>
                         </div>
@@ -243,7 +243,7 @@
                         {# Notatki #}
                         {% if reservation.notes %}
                             <div class="sm:col-span-2">
-                                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Notatki</dt>
+                                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{% trans "Notatki" %}</dt>
                                 <dd class="text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-900/30 rounded-lg p-3 border border-slate-100 dark:border-slate-700">{{ reservation.notes }}</dd>
                             </div>
                         {% endif %}
@@ -261,9 +261,9 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Historia zmian
+                                {% trans "Historia zmian" %}
                             </h2>
-                            <span class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">ostatnie {{ history|length }}</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{% trans "ostatnie" %} {{ history|length }}</span>
                         </header>
                         <ol class="divide-y divide-slate-100 dark:divide-slate-700/60">
                             {% for record in history %}
@@ -286,16 +286,16 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex flex-wrap items-baseline gap-x-2">
                                             <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                {% if record.history_type == '+' %}Utworzono
-                                                {% elif record.history_type == '-' %}Usunięto
-                                                {% else %}Zmieniono{% endif %}
+                                                {% if record.history_type == '+' %}{% trans "Utworzono" %}
+                                                {% elif record.history_type == '-' %}{% trans "Usunięto" %}
+                                                {% else %}{% trans "Zmieniono" %}{% endif %}
                                             </span>
                                             <span class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                                                 {{ record.history_date|date:"d.m.Y H:i" }}
                                             </span>
                                         </div>
                                         <div class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
-                                            <span>Status:</span>
+                                            <span>{% trans "Status:" %}</span>
                                             <span class="font-medium text-slate-700 dark:text-slate-200">{{ record.get_status_display }}</span>
                                             {% if record.history_user %}
                                                 <span class="text-slate-400 dark:text-slate-500" aria-hidden="true">·</span>
@@ -326,10 +326,10 @@
             {% endcomment %}
             {% if reservation.status != 'anulowana' %}
                 <div class="surface-card p-5">
-                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Status rezerwacji</h2>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">{% trans "Status rezerwacji" %}</h2>
 
                     {% with status=reservation.status %}
-                    <ol class="space-y-0 relative" aria-label="Postęp rezerwacji">
+                    <ol class="space-y-0 relative" aria-label="{% trans 'Postęp rezerwacji' %}">
 
                         {# Step 1: Oczekująca #}
                         {% if status == 'oczekująca' %}{% with state="current" %}{% endwith %}{% endif %}
@@ -339,7 +339,7 @@
                                 {% if status == 'potwierdzona' or status == 'zakończona' %}bg-emerald-500{% else %}bg-slate-200 dark:bg-slate-700{% endif %}" aria-hidden="true"></span>
 
                             <span class="relative z-10 flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ring-4
-                                {% if status == 'oczekująca' %}bg-amber-500 text-white ring-amber-100 dark:ring-amber-900/40{% elif status == 'potwierdzona' or status == 'zakończona' %}bg-emerald-500 text-white ring-emerald-100 dark:ring-emerald-900/40{% else %}bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 ring-slate-100 dark:ring-slate-800{% endif %}">
+                                {% if status == 'oczekująca' %}bg-amber-600 text-white ring-amber-100 dark:ring-amber-900/40{% elif status == 'potwierdzona' or status == 'zakończona' %}bg-emerald-600 text-white ring-emerald-100 dark:ring-emerald-900/40{% else %}bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 ring-slate-100 dark:ring-slate-800{% endif %}">
                                 {% if status == 'potwierdzona' or status == 'zakończona' %}
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 {% else %}
@@ -349,9 +349,9 @@
                             <div class="min-w-0 pt-0.5">
                                 <div class="text-sm font-semibold
                                     {% if status == 'oczekująca' %}text-amber-700 dark:text-amber-300{% elif status == 'potwierdzona' or status == 'zakończona' %}text-slate-900 dark:text-slate-100{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                                    Oczekująca
+                                    {% trans "Oczekująca" %}
                                 </div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400">Utworzona, czeka na potwierdzenie</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{% trans "Utworzona, czeka na potwierdzenie" %}</div>
                             </div>
                         </li>
 
@@ -373,9 +373,9 @@
                             <div class="min-w-0 pt-0.5">
                                 <div class="text-sm font-semibold
                                     {% if status == 'potwierdzona' %}text-brand-700 dark:text-brand-300{% elif status == 'zakończona' %}text-slate-900 dark:text-slate-100{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                                    Potwierdzona
+                                    {% trans "Potwierdzona" %}
                                 </div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400">Maszyna zarezerwowana, oczekuje wydania</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{% trans "Maszyna zarezerwowana, oczekuje wydania" %}</div>
                             </div>
                         </li>
 
@@ -392,9 +392,9 @@
                             <div class="min-w-0 pt-0.5">
                                 <div class="text-sm font-semibold
                                     {% if status == 'zakończona' %}text-emerald-700 dark:text-emerald-300{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                                    Zakończona
+                                    {% trans "Zakończona" %}
                                 </div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400">Maszyna wróciła do magazynu</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{% trans "Maszyna wróciła do magazynu" %}</div>
                             </div>
                         </li>
                     </ol>
@@ -404,10 +404,12 @@
 
             {# ============================== AKCJE ============================== #}
             <div class="surface-card p-5">
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Akcje</h2>
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">{% trans "Akcje" %}</h2>
 
                 <div class="space-y-2">
 
+                    {# Akcje zapisujące — bramkowane change_reservation (montażysta widzi tylko PDF). #}
+                    {% if perms.reservations.change_reservation %}
                     {# Potwierdź — tylko dla pending #}
                     {% if reservation.is_pending %}
                         <form method="post" action="{% url 'reservations:confirm' reservation.pk %}" class="block">
@@ -417,7 +419,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Potwierdź rezerwację
+                                {% trans "Potwierdź rezerwację" %}
                             </button>
                         </form>
                     {% endif %}
@@ -439,7 +441,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 8l4-4m0 0l4 4M9 4v12m6 4l4-4m0 0l-4-4m4 4H7"/>
                                 </svg>
-                                Zakończ (zwrot maszyny)
+                                {% trans "Zakończ (zwrot maszyny)" %}
                             </button>
 
                             <template x-teleport="body">
@@ -468,16 +470,16 @@
                                                 <div class="min-w-0 flex-1">
                                                     <h3 id="complete-modal-title-{{ reservation.pk }}"
                                                         class="text-lg font-bold text-slate-900 dark:text-white">
-                                                        Zakończenie rezerwacji
+                                                        {% trans "Zakończenie rezerwacji" %}
                                                     </h3>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Maszyna {{ reservation.machine.uid }} wróci do magazynu
+                                                        {% blocktrans with uid=reservation.machine.uid %}Maszyna {{ uid }} wróci do magazynu{% endblocktrans %}
                                                     </p>
                                                 </div>
                                                 <button type="button"
                                                         @click="open = false"
                                                         class="flex-shrink-0 -mr-2 -mt-2 p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                                                        aria-label="Zamknij">
+                                                        aria-label="{% trans 'Zamknij' %}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
                                             </div>
@@ -490,7 +492,7 @@
                                                 <div>
                                                     <label for="actual-return-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Faktyczna data zwrotu
+                                                        {% trans "Faktyczna data zwrotu" %}
                                                     </label>
                                                     <input type="date"
                                                            name="actual_return_date"
@@ -500,21 +502,21 @@
                                                            min="{{ reservation.start_date|date:'Y-m-d' }}"
                                                            class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Domyślnie dzisiaj. Wcześniejszy zwrot
-                                                        (planowo: <span class="font-mono">{{ reservation.end_date|date_pl }}</span>)
-                                                        zwalnia maszynę dla kolejnego klienta.
+                                                        {% trans "Domyślnie dzisiaj. Wcześniejszy zwrot" %}
+                                                        ({% trans "planowo:" %} <span class="font-mono">{{ reservation.end_date|date_pl }}</span>)
+                                                        {% trans "zwalnia maszynę dla kolejnego klienta." %}
                                                     </p>
                                                 </div>
 
                                                 <div class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 rounded-lg p-3 text-xs text-brand-900 dark:text-brand-200">
                                                     <p class="font-semibold mb-1.5 flex items-center gap-1.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                        Co się stanie?
+                                                        {% trans "Co się stanie?" %}
                                                     </p>
                                                     <ul class="space-y-0.5 ml-5 list-disc">
-                                                        <li>Status rezerwacji → <span class="font-semibold">Zakończona</span>.</li>
-                                                        <li>Maszyna → <span class="font-mono">W magazynie</span>.</li>
-                                                        <li>Audit historii zachowuje datę zwrotu.</li>
+                                                        <li>{% trans "Status rezerwacji" %} → <span class="font-semibold">{% trans "Zakończona" %}</span>.</li>
+                                                        <li>{% trans "Maszyna" %} → <span class="font-mono">{% trans "W magazynie" %}</span>.</li>
+                                                        <li>{% trans "Audit historii zachowuje datę zwrotu." %}</li>
                                                     </ul>
                                                 </div>
 
@@ -522,14 +524,14 @@
                                                     <button type="button"
                                                             @click="open = false"
                                                             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                                                        Wróć
+                                                        {% trans "Wróć" %}
                                                     </button>
                                                     <button type="submit"
                                                             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                                         </svg>
-                                                        Zakończ rezerwację
+                                                        {% trans "Zakończ rezerwację" %}
                                                     </button>
                                                 </div>
                                             </form>
@@ -560,7 +562,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.71-3L13.71 4a2 2 0 00-3.42 0L3.36 16a2 2 0 001.71 3z"/>
                                 </svg>
-                                Zgłoś awarię
+                                {% trans "Zgłoś awarię" %}
                             </button>
 
                             {# Modal — scrim + centered dialog #}
@@ -592,16 +594,16 @@
                                                 <div class="min-w-0 flex-1">
                                                     <h3 id="breakdown-modal-title-{{ reservation.pk }}"
                                                         class="text-lg font-bold text-slate-900 dark:text-white">
-                                                        Zgłoszenie awarii
+                                                        {% trans "Zgłoszenie awarii" %}
                                                     </h3>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Rezerwacja #{{ reservation.pk }} · {{ reservation.machine.uid }}
+                                                        {% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Rezerwacja #{{ pk }} · {{ uid }}{% endblocktrans %}
                                                     </p>
                                                 </div>
                                                 <button type="button"
                                                         @click="open = false"
                                                         class="flex-shrink-0 -mr-2 -mt-2 p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                                                        aria-label="Zamknij">
+                                                        aria-label="{% trans 'Zamknij' %}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
                                             </div>
@@ -614,8 +616,8 @@
                                                 <div>
                                                     <label for="breakdown-description-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Opis awarii
-                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="wymagane">*</span>
+                                                        {% trans "Opis awarii" %}
+                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="{% trans 'wymagane' %}">*</span>
                                                     </label>
                                                     <textarea name="description"
                                                               id="breakdown-description-{{ reservation.pk }}"
@@ -623,24 +625,24 @@
                                                               required
                                                               minlength="5"
                                                               rows="3"
-                                                              placeholder="Np. silnik nie startuje, sygnał błędu E12, hałas mechaniczny..."
+                                                              placeholder="{% trans 'Np. silnik nie startuje, sygnał błędu E12, hałas mechaniczny...' %}"
                                                               class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm min-h-[6rem]"
                                                               aria-describedby="breakdown-help-{{ reservation.pk }}"></textarea>
                                                     <p id="breakdown-help-{{ reservation.pk }}"
                                                        class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Min. 5 znaków. Trafi do wpisu serwisowego maszyny.
+                                                        {% trans "Min. 5 znaków. Trafi do wpisu serwisowego maszyny." %}
                                                     </p>
                                                 </div>
 
                                                 <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
                                                     <p class="font-semibold mb-1.5 flex items-center gap-1.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                        Co się stanie po kliknięciu?
+                                                        {% trans "Co się stanie po kliknięciu?" %}
                                                     </p>
                                                     <ul class="space-y-0.5 ml-5 list-disc">
-                                                        <li>Rezerwacja zostanie zamknięta dniem dzisiejszym.</li>
-                                                        <li>Maszyna trafi do statusu <span class="font-mono font-semibold">W serwisie</span>.</li>
-                                                        <li>Utworzy się wpis serwisowy typu <em>"Naprawa"</em>.</li>
+                                                        <li>{% trans "Rezerwacja zostanie zamknięta dniem dzisiejszym." %}</li>
+                                                        <li>{% trans "Maszyna trafi do statusu" %} <span class="font-mono font-semibold">{% trans "W serwisie" %}</span>.</li>
+                                                        <li>{% trans "Utworzy się wpis serwisowy typu" %} <em>"{% trans "Naprawa" %}"</em>.</li>
                                                     </ul>
                                                 </div>
 
@@ -648,7 +650,7 @@
                                                     <button type="button"
                                                             @click="open = false"
                                                             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                                                        Anuluj
+                                                        {% trans "Anuluj" %}
                                                     </button>
                                                     <button type="submit"
                                                             :disabled="description.trim().length < 5"
@@ -657,7 +659,7 @@
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.71-3L13.71 4a2 2 0 00-3.42 0L3.36 16a2 2 0 001.71 3z"/>
                                                         </svg>
-                                                        Zgłoś awarię
+                                                        {% trans "Zgłoś awarię" %}
                                                     </button>
                                                 </div>
                                             </form>
@@ -686,7 +688,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM20 8v6m3-3h-6"/>
                                 </svg>
-                                Zmień osobę
+                                {% trans "Zmień osobę" %}
                             </button>
 
                             <template x-teleport="body">
@@ -715,22 +717,22 @@
                                                 <div class="min-w-0 flex-1">
                                                     <h3 id="change-operator-modal-title-{{ reservation.pk }}"
                                                         class="text-lg font-bold text-slate-900 dark:text-white">
-                                                        Zmiana osoby
+                                                        {% trans "Zmiana osoby" %}
                                                     </h3>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Rezerwacja #{{ reservation.pk }} · {{ reservation.machine.uid }}
+                                                        {% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Rezerwacja #{{ pk }} · {{ uid }}{% endblocktrans %}
                                                     </p>
                                                 </div>
                                                 <button type="button"
                                                         @click="open = false"
                                                         class="flex-shrink-0 -mr-2 -mt-2 p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                                                        aria-label="Zamknij">
+                                                        aria-label="{% trans 'Zamknij' %}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
                                             </div>
 
                                             <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
-                                                Obecnie:
+                                                {% trans "Obecnie:" %}
                                                 <strong class="font-semibold text-slate-900 dark:text-slate-100">{{ reservation.person }}</strong>
                                             </p>
 
@@ -742,8 +744,8 @@
                                                 <div>
                                                     <label for="new-person-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Nowa osoba
-                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="wymagane">*</span>
+                                                        {% trans "Nowa osoba" %}
+                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="{% trans 'wymagane' %}">*</span>
                                                     </label>
                                                     <input type="text"
                                                            name="new_person"
@@ -753,24 +755,24 @@
                                                            minlength="3"
                                                            maxlength="100"
                                                            autocomplete="off"
-                                                           placeholder="np. Sven Olsen"
+                                                           placeholder="{% trans 'np. Sven Olsen' %}"
                                                            class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                                                            aria-describedby="new-person-help-{{ reservation.pk }}">
                                                     <p id="new-person-help-{{ reservation.pk }}"
                                                        class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Min. 3 znaki. Historia zmian zostanie zachowana automatycznie.
+                                                        {% trans "Min. 3 znaki. Historia zmian zostanie zachowana automatycznie." %}
                                                     </p>
                                                 </div>
 
                                                 <div class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 rounded-lg p-3 text-xs text-brand-900 dark:text-brand-200">
                                                     <p class="font-semibold mb-1.5 flex items-center gap-1.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                        Co się stanie?
+                                                        {% trans "Co się stanie?" %}
                                                     </p>
                                                     <ul class="space-y-0.5 ml-5 list-disc">
-                                                        <li>Pole <em>"Osoba"</em> zostanie zaktualizowane.</li>
-                                                        <li>Maszyna, daty i status pozostają bez zmian.</li>
-                                                        <li>Poprzednia osoba zostanie w historii zmian.</li>
+                                                        <li>{% trans "Pole" %} <em>"{% trans "Osoba" %}"</em> {% trans "zostanie zaktualizowane." %}</li>
+                                                        <li>{% trans "Maszyna, daty i status pozostają bez zmian." %}</li>
+                                                        <li>{% trans "Poprzednia osoba zostanie w historii zmian." %}</li>
                                                     </ul>
                                                 </div>
 
@@ -778,7 +780,7 @@
                                                     <button type="button"
                                                             @click="open = false"
                                                             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                                                        Anuluj
+                                                        {% trans "Anuluj" %}
                                                     </button>
                                                     <button type="submit"
                                                             :disabled="newPerson.trim().length < 3"
@@ -787,7 +789,7 @@
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                                         </svg>
-                                                        Zmień osobę
+                                                        {% trans "Zmień osobę" %}
                                                     </button>
                                                 </div>
                                             </form>
@@ -818,7 +820,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                                 </svg>
-                                Wymień maszynę
+                                {% trans "Wymień maszynę" %}
                             </button>
 
                             <template x-teleport="body">
@@ -847,16 +849,16 @@
                                                 <div class="min-w-0 flex-1">
                                                     <h3 id="swap-machine-modal-title-{{ reservation.pk }}"
                                                         class="text-lg font-bold text-slate-900 dark:text-white">
-                                                        Wymiana maszyny
+                                                        {% trans "Wymiana maszyny" %}
                                                     </h3>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Rezerwacja #{{ reservation.pk }} · obecnie {{ reservation.machine.uid }}
+                                                        {% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Rezerwacja #{{ pk }} · obecnie {{ uid }}{% endblocktrans %}
                                                     </p>
                                                 </div>
                                                 <button type="button"
                                                         @click="open = false"
                                                         class="flex-shrink-0 -mr-2 -mt-2 p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                                                        aria-label="Zamknij">
+                                                        aria-label="{% trans 'Zamknij' %}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
                                             </div>
@@ -869,15 +871,15 @@
                                                 <div>
                                                     <label for="new-machine-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Maszyna zastępcza
-                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="wymagane">*</span>
+                                                        {% trans "Maszyna zastępcza" %}
+                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="{% trans 'wymagane' %}">*</span>
                                                     </label>
                                                     <select name="new_machine"
                                                             id="new-machine-{{ reservation.pk }}"
                                                             x-model="newMachine"
                                                             required
                                                             class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
-                                                        <option value="">— wybierz maszynę zastępczą —</option>
+                                                        <option value="">{% trans "— wybierz maszynę zastępczą —" %}</option>
                                                         {% for machine in swap_machine_form.new_machine.field.queryset %}
                                                             <option value="{{ machine.pk }}">
                                                                 {{ machine.uid }} — {{ machine.name }} ({{ machine.get_status_display }})
@@ -885,37 +887,37 @@
                                                         {% endfor %}
                                                     </select>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Lista zawiera maszyny dostępne do przejęcia rezerwacji (wykluczono wycofane i w serwisie).
+                                                        {% trans "Lista zawiera maszyny dostępne do przejęcia rezerwacji (wykluczono wycofane i w serwisie)." %}
                                                     </p>
                                                 </div>
 
                                                 <div>
                                                     <label for="swap-reason-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Powód wymiany (opcjonalnie)
+                                                        {% trans "Powód wymiany (opcjonalnie)" %}
                                                     </label>
                                                     <textarea name="reason"
                                                               id="swap-reason-{{ reservation.pk }}"
                                                               x-model="reason"
                                                               rows="3"
                                                               maxlength="500"
-                                                              placeholder="np. Awaria silnika, klient wymaga ciągłej pracy..."
+                                                              placeholder="{% trans 'np. Awaria silnika, klient wymaga ciągłej pracy...' %}"
                                                               class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"></textarea>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Trafia do notatek obu rezerwacji (audit).
+                                                        {% trans "Trafia do notatek obu rezerwacji (audit)." %}
                                                     </p>
                                                 </div>
 
                                                 <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
                                                     <p class="font-semibold mb-1.5 flex items-center gap-1.5">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                        Co się stanie po kliknięciu?
+                                                        {% trans "Co się stanie po kliknięciu?" %}
                                                     </p>
                                                     <ul class="space-y-0.5 ml-5 list-disc">
-                                                        <li>Bieżąca rezerwacja zostanie zamknięta dziś (status <span class="font-mono">Zakończona</span>).</li>
-                                                        <li>Powstanie <strong>nowa rezerwacja potwierdzona</strong> na zastępczej maszynie, pokrywająca pozostały okres.</li>
-                                                        <li>Osoba, budowa, adres dostawy i daty końca zostają skopiowane.</li>
-                                                        <li>Obecna maszyna trafi do statusu <span class="font-mono">W serwisie</span> (jeśli nie ma innych rezerwacji).</li>
+                                                        <li>{% trans "Bieżąca rezerwacja zostanie zamknięta dziś (status" %} <span class="font-mono">{% trans "Zakończona" %}</span>).</li>
+                                                        <li>{% trans "Powstanie" %} <strong>{% trans "nowa rezerwacja potwierdzona" %}</strong> {% trans "na zastępczej maszynie, pokrywająca pozostały okres." %}</li>
+                                                        <li>{% trans "Osoba, budowa, adres dostawy i daty końca zostają skopiowane." %}</li>
+                                                        <li>{% trans "Obecna maszyna trafi do statusu" %} <span class="font-mono">{% trans "W serwisie" %}</span> {% trans "(jeśli nie ma innych rezerwacji)." %}</li>
                                                     </ul>
                                                 </div>
 
@@ -923,7 +925,7 @@
                                                     <button type="button"
                                                             @click="open = false"
                                                             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                                                        Anuluj
+                                                        {% trans "Anuluj" %}
                                                     </button>
                                                     <button type="submit"
                                                             :disabled="!newMachine"
@@ -932,7 +934,7 @@
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                                                         </svg>
-                                                        Wymień maszynę
+                                                        {% trans "Wymień maszynę" %}
                                                     </button>
                                                 </div>
                                             </form>
@@ -943,16 +945,17 @@
                         </div>
                     {% endif %}
 
-                    {# Edytuj — dla wszystkich nie-closed #}
-                    {% if not reservation.is_closed %}
+                    {# Edytuj — WYŁĄCZNIE admin/superuser (pozostali tylko przeglądają). #}
+                    {% if user.is_superuser and not reservation.is_closed %}
                         <a href="{% url 'reservations:update' reservation.pk %}"
                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
-                            Edytuj
+                            {% trans "Edytuj" %}
                         </a>
                     {% endif %}
+                    {% endif %}{# /perms.change_reservation — PDF poniżej dostępny dla wszystkich ról #}
 
                     {# Drukuj PDF — zawsze dostępne #}
                     <a href="{% url 'reservations:pdf' reservation.pk %}"
@@ -960,9 +963,10 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                         </svg>
-                        Drukuj PDF
+                        {% trans "Drukuj PDF" %}
                     </a>
 
+                    {% if perms.reservations.change_reservation %}
                     {# ============================== ANULUJ (B-2) — modal z dropdown reason ============================== #}
                     {% comment %}
                        B-2 — dropdown reason wymagany przed anulowaniem.
@@ -984,7 +988,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                 </svg>
-                                Anuluj rezerwację
+                                {% trans "Anuluj rezerwację" %}
                             </button>
 
                             <template x-teleport="body">
@@ -1013,16 +1017,16 @@
                                                 <div class="min-w-0 flex-1">
                                                     <h3 id="cancel-modal-title-{{ reservation.pk }}"
                                                         class="text-lg font-bold text-slate-900 dark:text-white">
-                                                        Anulowanie rezerwacji
+                                                        {% trans "Anulowanie rezerwacji" %}
                                                     </h3>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Rezerwacja #{{ reservation.pk }} · {{ reservation.machine.uid }}
+                                                        {% blocktrans with pk=reservation.pk uid=reservation.machine.uid %}Rezerwacja #{{ pk }} · {{ uid }}{% endblocktrans %}
                                                     </p>
                                                 </div>
                                                 <button type="button"
                                                         @click="open = false"
                                                         class="flex-shrink-0 -mr-2 -mt-2 p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                                                        aria-label="Zamknij">
+                                                        aria-label="{% trans 'Zamknij' %}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
                                             </div>
@@ -1035,35 +1039,35 @@
                                                 <div>
                                                     <label for="cancel-reason-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Powód anulowania
-                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="wymagane">*</span>
+                                                        {% trans "Powód anulowania" %}
+                                                        <span class="text-rose-600 dark:text-rose-400" aria-label="{% trans 'wymagane' %}">*</span>
                                                     </label>
                                                     <select name="cancellation_reason"
                                                             id="cancel-reason-{{ reservation.pk }}"
                                                             x-model="reason"
                                                             required
                                                             class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
-                                                        <option value="">— wybierz powód —</option>
+                                                        <option value="">{% trans "— wybierz powód —" %}</option>
                                                         {% for value, label in reservation.CancellationReason.choices %}
                                                             <option value="{{ value }}">{{ label }}</option>
                                                         {% endfor %}
                                                     </select>
                                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                                                        Wymagane do raportu miesięcznego (statystyki anulowań).
+                                                        {% trans "Wymagane do raportu miesięcznego (statystyki anulowań)." %}
                                                     </p>
                                                 </div>
 
                                                 <div>
                                                     <label for="cancel-note-{{ reservation.pk }}"
                                                            class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1.5">
-                                                        Notatka (opcjonalna)
+                                                        {% trans "Notatka (opcjonalna)" %}
                                                     </label>
                                                     <textarea name="cancellation_note"
                                                               id="cancel-note-{{ reservation.pk }}"
                                                               x-model="note"
                                                               rows="2"
                                                               maxlength="500"
-                                                              placeholder="Dodatkowy kontekst — np. konkretny powód awarii, dane kontaktowe..."
+                                                              placeholder="{% trans 'Dodatkowy kontekst — np. konkretny powód awarii, dane kontaktowe...' %}"
                                                               class="block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"></textarea>
                                                 </div>
 
@@ -1071,7 +1075,7 @@
                                                     <button type="button"
                                                             @click="open = false"
                                                             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">
-                                                        Wróć
+                                                        {% trans "Wróć" %}
                                                     </button>
                                                     <button type="submit"
                                                             :disabled="!reason"
@@ -1080,7 +1084,7 @@
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                                         </svg>
-                                                        Anuluj rezerwację
+                                                        {% trans "Anuluj rezerwację" %}
                                                     </button>
                                                 </div>
                                             </form>
@@ -1090,19 +1094,20 @@
                             </template>
                         </div>
                     {% endif %}
+                    {% endif %}{# /perms.change_reservation (anuluj) #}
                 </div>
             </div>
 
             {# ============================== METADATA ============================== #}
             <div class="surface-card p-5">
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Metadane</h2>
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">{% trans "Metadane" %}</h2>
                 <dl class="space-y-2 text-xs">
                     <div class="flex items-center justify-between gap-2">
-                        <dt class="text-slate-500 dark:text-slate-400">Utworzono</dt>
+                        <dt class="text-slate-500 dark:text-slate-400">{% trans "Utworzono" %}</dt>
                         <dd class="font-mono tabular-nums text-slate-700 dark:text-slate-200">{{ reservation.created_at|date:"d.m.Y H:i" }}</dd>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <dt class="text-slate-500 dark:text-slate-400">Zaktualizowano</dt>
+                        <dt class="text-slate-500 dark:text-slate-400">{% trans "Zaktualizowano" %}</dt>
                         <dd class="font-mono tabular-nums text-slate-700 dark:text-slate-200">{{ reservation.updated_at|date:"d.m.Y H:i" }}</dd>
                     </div>
                 </dl>

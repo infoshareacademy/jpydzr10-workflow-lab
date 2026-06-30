@@ -43,12 +43,20 @@ User = get_user_model()
 
 @pytest.fixture
 def staff_user(db):
-    """Staff user widzi wszystkie encje bez ownership-filter."""
-    return User.objects.create_user(
+    """Staff user widzi wszystkie encje bez ownership-filter.
+
+    Dostaje też ``view_servicerecord`` — wyszukiwarka serwisu wymaga tej
+    permisji (monter bez niej nie widzi kosztów; staff/admin widzi).
+    """
+    from django.contrib.auth.models import Permission
+
+    user = User.objects.create_user(
         username="staff-search",
         password="pw-search-1234!Tajne",
         is_staff=True,
     )
+    user.user_permissions.add(Permission.objects.get(codename="view_servicerecord"))
+    return user
 
 
 @pytest.fixture

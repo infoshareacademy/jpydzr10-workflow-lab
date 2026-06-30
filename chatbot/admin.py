@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 
 from .models import Conversation, Message
@@ -39,15 +40,15 @@ class ConversationAdmin(ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     inlines = (MessageInline,)
     fieldsets = (
-        ("Konwersacja", {"fields": ("user", "title", "is_archived")}),
-        ("Audyt", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+        (_("Konwersacja"), {"fields": ("user", "title", "is_archived")}),
+        (_("Audyt"), {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
-    @admin.display(description="Tytuł")
+    @admin.display(description=_("Tytuł"))
     def title_preview(self, obj: Conversation) -> str:
         return obj.title or "—"
 
-    @admin.display(description="Wiadomości")
+    @admin.display(description=_("Wiadomości"))
     def message_count(self, obj: Conversation) -> int:
         return obj.messages.count()
 
@@ -71,7 +72,7 @@ class MessageAdmin(ModelAdmin):
     raw_id_fields = ("conversation",)
     readonly_fields = ("created_at", "updated_at")
 
-    @admin.display(description="Rola")
+    @admin.display(description=_("Rola"))
     def role_badge(self, obj: Message) -> str:
         colors = {
             Message.Role.USER: "bg-blue-100 text-blue-800",
@@ -84,6 +85,6 @@ class MessageAdmin(ModelAdmin):
             '<span class="px-2 py-0.5 rounded text-xs {}">{}</span>', css, obj.get_role_display()
         )
 
-    @admin.display(description="Treść")
+    @admin.display(description=_("Treść"))
     def content_preview(self, obj: Message) -> str:
         return obj.content[:80] + ("…" if len(obj.content) > 80 else "")

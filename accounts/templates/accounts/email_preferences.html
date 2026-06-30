@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Preferencje e-mail — Planer Maszyn Budowlanych" %}{% endblock %}
+
+{% block content %}
+<section class="flex items-center justify-center min-h-[70vh] py-6 sm:py-10"
+         aria-labelledby="prefs-title">
+    <div class="w-full max-w-md mx-auto">
+        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800
+                    border border-slate-200 dark:border-slate-700 shadow-sm
+                    px-6 py-7 sm:px-8 sm:py-8">
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-brand-600 to-brand-500"
+                 aria-hidden="true"></div>
+
+            {% if invalid_token %}
+                <h1 id="prefs-title"
+                    class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2 tracking-tight">
+                    {% trans "Link nieprawidłowy" %}
+                </h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                    {% trans "Ten link do zarządzania preferencjami e-mail jest nieprawidłowy lub uszkodzony. Zaloguj się, aby zmienić ustawienia w profilu." %}
+                </p>
+            {% else %}
+                <h1 id="prefs-title"
+                    class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1 tracking-tight">
+                    {% trans "Preferencje e-mail" %}
+                </h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-5">
+                    {% blocktrans %}Wybierz, które nieobowiązkowe powiadomienia chcesz otrzymywać. Maile transakcyjne (potwierdzenia, anulowania) wysyłamy zawsze.{% endblocktrans %}
+                </p>
+
+                {% if focus_label %}
+                    <div class="mb-5 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20
+                                border border-amber-200 dark:border-amber-800
+                                text-amber-800 dark:text-amber-200 text-sm">
+                        {% blocktrans with cat=focus_label %}Aby wypisać się z „{{ cat }}", odznacz tę pozycję poniżej i zapisz.{% endblocktrans %}
+                    </div>
+                {% endif %}
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div role="status"
+                             class="mb-4 px-3 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20
+                                    border border-emerald-200 dark:border-emerald-800
+                                    text-emerald-800 dark:text-emerald-200 text-sm">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" class="space-y-4" novalidate>
+                    {% csrf_token %}
+                    {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+
+                    <ul class="space-y-3">
+                        {% for row in rows %}
+                            <li class="flex items-start gap-3 px-3 py-2.5 rounded-lg
+                                       border border-slate-200 dark:border-slate-700">
+                                <input type="checkbox" id="cat_{{ row.key }}" name="cat_{{ row.key }}"
+                                       {% if row.subscribed %}checked{% endif %}
+                                       class="mt-0.5 h-5 w-5 rounded border-slate-300 dark:border-slate-600
+                                              text-brand-600 focus:ring-brand-500">
+                                <label for="cat_{{ row.key }}"
+                                       class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    {{ row.label }}
+                                </label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <button type="submit"
+                            class="btn-primary w-full inline-flex items-center justify-center
+                                   px-5 py-2.5 min-h-[44px] mt-2 rounded-lg text-sm font-semibold
+                                   bg-brand-600 hover:bg-brand-700 text-white shadow-sm hover:shadow transition-colors
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                                   dark:focus-visible:ring-offset-slate-900">
+                        {% trans "Zapisz preferencje" %}
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

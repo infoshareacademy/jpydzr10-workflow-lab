@@ -23,6 +23,7 @@ import io
 import logging
 from datetime import date
 
+from django.utils.translation import gettext
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -69,8 +70,8 @@ def generate_reservation_pdf(reservation: Reservation) -> bytes:
         bottomMargin=2 * cm,
         leftMargin=2 * cm,
         rightMargin=2 * cm,
-        title=f"Rezerwacja {reservation.pk}",
-        author="Planer Maszyn Budowlanych",
+        title=gettext("Rezerwacja %(pk)s") % {"pk": reservation.pk},
+        author=gettext("Planer Maszyn Budowlanych"),
     )
 
     styles = getSampleStyleSheet()
@@ -98,7 +99,7 @@ def generate_reservation_pdf(reservation: Reservation) -> bytes:
     )
 
     story: list = []
-    story.append(Paragraph("Rezerwacja maszyny", h1))
+    story.append(Paragraph(gettext("Rezerwacja maszyny"), h1))
     story.append(Spacer(1, 12))
 
     # Bug 2026-05-29: pdfplumber extract_text() sklejał label+value bez spacji
@@ -110,16 +111,16 @@ def generate_reservation_pdf(reservation: Reservation) -> bytes:
         return f" {s}"
 
     table_data = [
-        ["Numer rezerwacji:", _val(str(reservation.pk))],
-        ["Maszyna:", _val(f"{reservation.machine.uid} — {reservation.machine.name}")],
-        ["Data od:", _val(reservation.start_date.strftime("%d.%m.%Y"))],
-        ["Data do:", _val(reservation.end_date.strftime("%d.%m.%Y"))],
-        ["Status:", _val(reservation.get_status_display())],
-        ["Osoba rezerwująca:", _val(reservation.person or "—")],
+        [gettext("Numer rezerwacji:"), _val(str(reservation.pk))],
+        [gettext("Maszyna:"), _val(f"{reservation.machine.uid} — {reservation.machine.name}")],
+        [gettext("Data od:"), _val(reservation.start_date.strftime("%d.%m.%Y"))],
+        [gettext("Data do:"), _val(reservation.end_date.strftime("%d.%m.%Y"))],
+        [gettext("Status:"), _val(reservation.get_status_display())],
+        [gettext("Osoba rezerwująca:"), _val(reservation.person or "—")],
         # Wave 14-A Bundle 4 + 8 -- responsible_person field (kierownik/brygadzista).
-        ["Osoba na budowie:", _val(reservation.responsible_person or "—")],
-        ["Adres dostawy:", _val(reservation.address or "—")],
-        ["Budowa:", _val(str(reservation.site) if reservation.site else "—")],
+        [gettext("Osoba na budowie:"), _val(reservation.responsible_person or "—")],
+        [gettext("Adres dostawy:"), _val(reservation.address or "—")],
+        [gettext("Budowa:"), _val(str(reservation.site) if reservation.site else "—")],
     ]
     table = Table(table_data, colWidths=[5 * cm, 11 * cm])
     table.setStyle(
@@ -147,11 +148,16 @@ def generate_reservation_pdf(reservation: Reservation) -> bytes:
     story.append(Spacer(1, 20))
 
     if reservation.notes:
-        story.append(Paragraph("Notatki:", h2))
+        story.append(Paragraph(gettext("Notatki:"), h2))
         story.append(Paragraph(reservation.notes, body))
 
     story.append(Spacer(1, 30))
-    story.append(Paragraph(f"Wydruk: {date.today().strftime('%d.%m.%Y')}", body))
+    story.append(
+        Paragraph(
+            gettext("Wydruk: %(date)s") % {"date": date.today().strftime("%d.%m.%Y")},
+            body,
+        )
+    )
 
     doc.build(story)
     return buffer.getvalue()

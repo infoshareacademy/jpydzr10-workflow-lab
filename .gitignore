@@ -457,3 +457,6 @@ node_modules/
 # (nadrzędne reguły Python wyżej ignorują *.pyc, __pycache__/ etc. — to OK)
 !archive/**/*.json           # jawnie śledzimy dane M1 w archive/milestone-1/data/
 !archive/**/*.py             # jawnie śledzimy kod M1 w archive/milestone-1/console/
+
+# macOS atomic-save / temp write artifacts
+.!*!*

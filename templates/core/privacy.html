@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Polityka prywatności" %} — {% trans "Planer Maszyn Budowlanych" %}{% endblock %}
+
+{% block content %}
+<div class="prose dark:prose-invert max-w-3xl mx-auto">
+  <h1>{% trans "Polityka prywatności" %}</h1>
+  <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "Zgodna z RODO (GDPR — rozporządzenie UE 2016/679)." %}</p>
+
+  <h2>{% trans "1. Administrator danych" %}</h2>
+  <p>{% blocktrans %}Administratorem danych jest operator aplikacji Planer Maszyn Budowlanych. Kontakt w sprawach ochrony danych: info@werkstroomlab.be.{% endblocktrans %}</p>
+
+  <h2>{% trans "2. Jakie dane przetwarzamy" %}</h2>
+  <p>{% blocktrans %}Przetwarzamy dane konta pracownika (imię, nazwisko, adres e-mail, numer telefonu, funkcja), dane rezerwacji i serwisu maszyn oraz techniczne dzienniki zdarzeń (adres IP, czas i rodzaj akcji) niezbędne do bezpieczeństwa i rozliczalności.{% endblocktrans %}</p>
+
+  <h2>{% trans "3. Cele i podstawy prawne" %}</h2>
+  <p>{% blocktrans %}Dane przetwarzamy w celu świadczenia usługi planowania pracy maszyn (wykonanie umowy), zapewnienia bezpieczeństwa systemu (prawnie uzasadniony interes) oraz spełnienia obowiązków prawnych. Nie wykorzystujemy danych do profilowania ani reklamy.{% endblocktrans %}</p>
+
+  <h2>{% trans "4. Ciasteczka" %}</h2>
+  <p>{% blocktrans %}Używamy wyłącznie niezbędnych ciasteczek: sesji (logowanie), preferencji języka oraz ochrony przed atakami (CSRF). Nie stosujemy ciasteczek śledzących ani analitycznych.{% endblocktrans %}</p>
+
+  <h2>{% trans "5. Okres przechowywania" %}</h2>
+  <p>{% blocktrans %}Dane konta przechowujemy przez czas zatrudnienia i okres wymagany przepisami. Wpisy dziennika zdarzeń są usuwane po 90 dniach. Po zakończeniu zatrudnienia dane mogą zostać zanonimizowane.{% endblocktrans %}</p>
+
+  <h2>{% trans "6. Twoje prawa" %}</h2>
+  <p>{% blocktrans %}Masz prawo dostępu do danych, ich sprostowania, usunięcia (prawo do bycia zapomnianym), ograniczenia przetwarzania oraz przenoszenia danych. Zalogowany użytkownik może pobrać kopię swoich danych w formacie JSON ze stopki aplikacji („Moje dane (eksport)").{% endblocktrans %}</p>
+
+  <h2>{% trans "7. Eksport i usunięcie danych" %}</h2>
+  <p>{% blocktrans %}Eksport danych jest dostępny samoobsługowo po zalogowaniu. Usunięcie (anonimizację) danych pracownika przeprowadza administrator na żądanie — operacja jest nieodwracalna i obejmuje także powiązane dzienniki zdarzeń i historię czatu.{% endblocktrans %}</p>
+
+  <h2>{% trans "8. Kontakt" %}</h2>
+  <p>{% blocktrans %}W sprawach dotyczących ochrony danych skontaktuj się z administratorem: info@werkstroomlab.be. Masz również prawo wniesienia skargi do organu nadzorczego.{% endblocktrans %}</p>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ admin pozostał szybki przy tysiącach maszyn.
 from __future__ import annotations
 
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from core.admin import PlanerHistoryAdmin
 
@@ -41,23 +42,23 @@ class ServiceRecordAdmin(PlanerHistoryAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (
-            "Wpis serwisowy",
+            _("Wpis serwisowy"),
             {"fields": ("machine", "record_type", "performed_date", "performed_by")},
         ),
         (
-            "Szczegóły",
+            _("Szczegóły"),
             {"fields": ("description", "cost", "inspection_document")},
         ),
         (
-            "Następny przegląd",
+            _("Następny przegląd"),
             {"fields": ("next_inspection",)},
         ),
         (
-            "Audyt",
+            _("Audyt"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
 
-    @admin.display(description="UID maszyny", ordering="machine__uid")
+    @admin.display(description=_("UID maszyny"), ordering="machine__uid")
     def machine_uid(self, obj: ServiceRecord) -> str:
         return obj.machine.uid

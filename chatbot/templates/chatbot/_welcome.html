@@ -10,6 +10,7 @@
 {# Kontekst:                                                                #}
 {#   * conversations — queryset ostatnich N konwersacji usera (lub pusty)  #}
 {# ====================================================================== #}
+{% load i18n %}
 
 {% if conversations %}
     <div class="rounded-lg bg-white dark:bg-slate-800
@@ -17,7 +18,7 @@
                 p-3 mb-2">
         <p class="text-[11px] uppercase tracking-wide
                   text-slate-500 dark:text-slate-400 font-medium mb-2">
-            Ostatnie konwersacje ({{ conversations|length }})
+            {% blocktrans with count=conversations|length %}Ostatnie konwersacje ({{ count }}){% endblocktrans %}
         </p>
         <ul class="space-y-1">
             {% for conv in conversations %}
@@ -39,7 +40,7 @@
                         <span class="text-slate-400 dark:text-slate-500 tabular-nums flex-shrink-0">
                             #{{ conv.pk }}
                         </span>
-                        <span class="truncate min-w-0">{{ conv.title|default:"(bez tytułu)" }}</span>
+                        <span class="truncate min-w-0">{% if conv.title %}{{ conv.title }}{% else %}{% trans "(bez tytułu)" %}{% endif %}</span>
                     </button>
                 </li>
             {% endfor %}
@@ -59,85 +60,85 @@
             </svg>
         </div>
         <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Cześć! Jak mogę pomóc?
+            {% trans "Cześć! Jak mogę pomóc?" %}
         </p>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">
-            Odpowiem na pytania o dane lub zaproponuję zmianę &mdash;
-            przed zapisem zawsze poproszę o potwierdzenie.
+            {% blocktrans %}Odpowiem na pytania o dane lub zaproponuję zmianę &mdash;
+            przed zapisem zawsze poproszę o potwierdzenie.{% endblocktrans %}
         </p>
         <ul class="text-left text-[11px] text-slate-600 dark:text-slate-300
                    space-y-1 max-w-[280px] mx-auto">
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                status maszyny po UID (np. KOP-001)
+                {% trans "status maszyny po UID (np. KOP-001)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                dostępność w wybranym terminie
+                {% trans "dostępność w wybranym terminie" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                przeglądy nadchodzące i przeterminowane
+                {% trans "przeglądy nadchodzące i przeterminowane" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                koszty serwisowe per typ maszyny
+                {% trans "koszty serwisowe per typ maszyny" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                utworzenie / anulowanie rezerwacji (za zgodą)
+                {% trans "utworzenie / anulowanie rezerwacji (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                zmiana operatora / wymiana maszyny (za zgodą)
+                {% trans "zmiana operatora / wymiana maszyny (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                oddanie maszyny do serwisu (za zgodą)
+                {% trans "oddanie maszyny do serwisu (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                wpisanie przeglądu / naprawy z kosztem (za zgodą)
+                {% trans "wpisanie przeglądu / naprawy z kosztem (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                poprawa wpisu serwisowego (opis, koszt) (za zgodą)
+                {% trans "poprawa wpisu serwisowego (opis, koszt) (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                przesunięcie daty przeglądu maszyny (za zgodą)
+                {% trans "przesunięcie daty przeglądu maszyny (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                potwierdzenie / zamknięcie rezerwacji (za zgodą)
+                {% trans "potwierdzenie / zamknięcie rezerwacji (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                edycja dat / osoby rezerwacji (za zgodą)
+                {% trans "edycja dat / osoby rezerwacji (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                zgłoszenie awarii (one-click: zamknij + serwis) (za zgodą)
+                {% trans "zgłoszenie awarii (one-click: zamknij + serwis) (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                dodanie / edycja maszyny w flocie (za zgodą)
+                {% trans "dodanie / edycja maszyny w flocie (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                zwrot maszyny do magazynu / zakończenie naprawy (za zgodą)
+                {% trans "zwrot maszyny do magazynu / zakończenie naprawy (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                wycofanie maszyny z floty (za zgodą)
+                {% trans "wycofanie maszyny z floty (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                dodanie / edycja / usunięcie budowy (za zgodą)
+                {% trans "dodanie / edycja / usunięcie budowy (za zgodą)" %}
             </li>
             <li class="flex gap-1.5">
                 <span class="text-brand-500 dark:text-brand-400">·</span>
-                zwolnienie / anonimizacja pracownika (za zgodą, GDPR)
+                {% trans "zwolnienie / anonimizacja pracownika (za zgodą, GDPR)" %}
             </li>
         </ul>
     </div>

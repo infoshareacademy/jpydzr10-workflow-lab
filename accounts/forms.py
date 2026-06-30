@@ -1,14 +1,32 @@
 """Formularze aplikacji accounts."""
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.forms import INPUT_CSS, SELECT_CSS
+from core.validators import normalize_phone_e164, phone_e164_validator
 
 from .models import EmployeeProfile
 
 User = get_user_model()
+
+
+def _clean_phone_field(raw: str | None) -> str:
+    """Normalizuje i waliduje numer telefonu z formularza.
+
+    Akceptuje wpis z separatorami ("+48 600 100 200"), sprowadza go do ścisłego
+    E.164 i waliduje; pusty wpis zwraca ``""`` (formularz konwertuje na NULL
+    przez ``EmployeeProfile.save``).
+    """
+    normalized = normalize_phone_e164(raw)
+    if normalized is None:
+        return ""
+    phone_e164_validator(normalized)
+    return normalized
 
 
 class ProfileForm(forms.ModelForm):
@@ -16,17 +34,22 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = EmployeeProfile
-        fields = ["phone", "employee_id", "theme_preference"]
+        fields = ["phone", "employee_id", "theme_preference", "preferred_language"]
         labels = {
             "phone": _("Telefon"),
             "employee_id": _("Identyfikator pracownika"),
             "theme_preference": _("Motyw interfejsu"),
+            "preferred_language": _("Preferowany język"),
         }
         widgets = {
             "phone": forms.TextInput(attrs={"class": INPUT_CSS, "placeholder": "+48 …"}),
             "employee_id": forms.TextInput(attrs={"class": INPUT_CSS}),
             "theme_preference": forms.Select(attrs={"class": SELECT_CSS}),
+            "preferred_language": forms.Select(attrs={"class": SELECT_CSS}),
         }
+
+    def clean_phone(self):
+        return _clean_phone_field(self.cleaned_data.get("phone"))
 
 
 class RegisterEmployeeForm(forms.Form):
@@ -124,6 +147,9 @@ class RegisterEmployeeForm(forms.Form):
             raise forms.ValidationError(_("Użytkownik o takim loginie już istnieje."))
         return username
 
+    def clean_phone(self):
+        return _clean_phone_field(self.cleaned_data.get("phone"))
+
     def clean(self):
         cleaned = super().clean()
         pwd1 = cleaned.get("password1")
@@ -131,3 +157,70 @@ class RegisterEmployeeForm(forms.Form):
         if pwd1 and pwd2 and pwd1 != pwd2:
             self.add_error("password2", _("Hasła nie pasują do siebie."))
         return cleaned
+
+
+class PlanerAuthenticationForm(AuthenticationForm):
+    """Formularz logowania z tłumaczalnym placeholderem na polu loginu.
+
+    Rozszerza ``AuthenticationForm`` tylko o ``placeholder`` (przez
+    ``gettext_lazy``), żeby tekst podpowiedzi reagował na język UI zamiast
+    być wpisanym na stałe w szablonie.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.setdefault("placeholder", _("np. jan.kowalski"))
+
+
+class BilingualPasswordResetForm(PasswordResetForm):
+    """Formularz „zapomniałem hasła" wysyłający dwujęzyczny (PL+EN) mail.
+
+    ``PasswordResetForm`` Django renderuje pojedynczy, jednojęzyczny szablon
+    maila. Tutaj nadpisujemy :meth:`send_mail`, by skorzystać z firmowego,
+    brandowanego i dwujęzycznego mechanizmu (``core.mailing``) — spójnego z
+    pozostałymi mailami transakcyjnymi (potwierdzenie/anulowanie rezerwacji,
+    przypomnienia, alerty przeglądowe). Reszta logiki (token, ochrona przed
+    enumeracją kont — brak ujawnienia czy adres istnieje) pozostaje z bazowej
+    klasy.
+    """
+
+    email = forms.EmailField(
+        label=_("Adres e-mail"),
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "class": INPUT_CSS,
+                "autocomplete": "email",
+                "placeholder": "jan.kowalski@firma.pl",
+            }
+        ),
+    )
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        # Import lokalny — spójny ze wzorcem w ``reservations.emails`` (unika
+        # cyklicznych importów i kosztu na ścieżce, gdzie mail nie jest wysyłany).
+        from core.mailing import build_bilingual_email, send_bilingual_mail
+
+        base = getattr(settings, "EMAIL_LINK_BASE_URL", "http://localhost:8002").rstrip("/")
+        reset_path = reverse(
+            "accounts:password_reset_confirm",
+            kwargs={"uidb64": context["uid"], "token": context["token"]},
+        )
+        user = context["user"]
+        valid_hours = int(getattr(settings, "PASSWORD_RESET_TIMEOUT", 259200) // 3600)
+        mail_context = {
+            "recipient_name": user.get_full_name() or user.get_username(),
+            "reset_url": f"{base}{reset_path}",
+            "valid_hours": valid_hours,
+        }
+        html_body, text_body = build_bilingual_email("password_reset", mail_context)
+        subject = "Reset hasła / Password reset — Planer Maszyn Budowlanych"
+        send_bilingual_mail(subject, html_body, text_body, [to_email])

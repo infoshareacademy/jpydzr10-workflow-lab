@@ -447,15 +447,17 @@
 .timeline-bar.status-oczekujaca {
     background: linear-gradient(135deg, rgb(234 179 8) 0%, rgb(202 138 4) 100%);
 }
+/* Kolory pasków timeline ujednolicone z badge'ami statusów (planer_tags.py):
+   potwierdzona = zielony (emerald), zakończona = szary (slate). */
 .timeline-bar.status-potwierdzona {
-    background: linear-gradient(135deg, rgb(37 99 235) 0%, rgb(29 78 216) 100%);
+    background: linear-gradient(135deg, rgb(16 185 129) 0%, rgb(5 150 105) 100%);
 }
 .timeline-bar.status-anulowana {
     background: linear-gradient(135deg, rgb(148 163 184) 0%, rgb(100 116 139) 100%);
     opacity: 0.7;
 }
 .timeline-bar.status-zakonczona {
-    background: linear-gradient(135deg, rgb(16 185 129) 0%, rgb(5 150 105) 100%);
+    background: linear-gradient(135deg, rgb(148 163 184) 0%, rgb(100 116 139) 100%);
 }
 
 .timeline-tooltip {

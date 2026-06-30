@@ -1,24 +1,25 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Usuń wpis serwisowy #{{ record.pk }}{% endblock %}
+{% block title %}{% trans "Usuń wpis serwisowy" %} #{{ record.pk }}{% endblock %}
 
 {% block content %}
 <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 max-w-md">
-    <h1 class="text-xl font-bold text-red-700 dark:text-red-300 mb-2">Usuń wpis serwisowy</h1>
+    <h1 class="text-xl font-bold text-red-700 dark:text-red-300 mb-2">{% trans "Usuń wpis serwisowy" %}</h1>
     <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
-        Na pewno usunąć wpis <span class="font-mono">#{{ record.pk }}</span>
-        dla maszyny <span class="font-mono">{{ record.machine.uid }}</span>
-        z dnia {{ record.performed_date }}?
+        {% blocktrans with pk=record.pk uid=record.machine.uid performed_date=record.performed_date|date:'d.m.Y' %}Na pewno usunąć wpis <span class="font-mono">#{{ pk }}</span>
+        dla maszyny <span class="font-mono">{{ uid }}</span>
+        z dnia {{ performed_date }}?{% endblocktrans %}
     </p>
     <form method="post" class="flex gap-2">
         {% csrf_token %}
         <button type="submit"
                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm">
-            Tak, usuń
+            {% trans "Tak, usuń" %}
         </button>
         <a href="{% url 'service:detail' pk=record.pk %}"
            class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-md text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-            Anuluj
+            {% trans "Anuluj" %}
         </a>
     </form>
 </div>

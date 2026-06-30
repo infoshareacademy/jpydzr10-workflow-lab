@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %} Filtry timeline — Wave 14-J refactor: kompaktowy chip-row obok h1.
 
 Wcześniejsza wersja: sidebar 280px z osobnym Wyczyść/Zastosuj. Teraz: 5 pól
@@ -19,7 +20,7 @@ chip w h1 meta, nie tutaj.
       hx-trigger="change delay:300ms from:input, change delay:300ms from:select, submit"
       hx-push-url="true"
       class="timeline-filters-inline grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 items-center"
-      aria-label="Filtry timeline">
+      aria-label="{% trans 'Filtry timeline' %}">
 
     {# Persistent period + start — niewidoczne pola zeby HTMX zachowal kontekst #}
     <input type="hidden" name="period" value="{{ period }}">
@@ -27,49 +28,49 @@ chip w h1 meta, nie tutaj.
 
     {# Search — najsilniejszy filtr, najszerszy field (col-span-2 zeby placeholder sie zmiescil) #}
     <div class="relative col-span-2">
-        <label for="filter-search" class="sr-only">Szukaj maszyny</label>
+        <label for="filter-search" class="sr-only">{% trans "Szukaj maszyny" %}</label>
         <span class="pointer-events-none absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 dark:text-slate-500" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </span>
         <input id="filter-search" type="search" name="search" value="{{ current_search }}"
-               placeholder="Szukaj UID / nazwa…"
+               placeholder="{% trans 'Szukaj UID / nazwa…' %}"
                autocomplete="off"
-               class="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition">
+               class="w-full pl-7 pr-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition">
     </div>
 
     <select name="machine_type"
-            aria-label="Typ maszyny"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— typ —</option>
+            aria-label="{% trans 'Typ maszyny' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— typ —" %}</option>
         {% for value, label in machine_types %}
             <option value="{{ value }}" {% if value == current_machine_type %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
     </select>
 
     <select name="status"
-            aria-label="Status maszyny"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— status —</option>
+            aria-label="{% trans 'Status maszyny' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— status —" %}</option>
         {% for value, label in statuses %}
             <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
     </select>
 
     <select name="inspection"
-            aria-label="Status przeglądu"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— przegląd —</option>
-        <option value="ok" {% if current_inspection == 'ok' %}selected{% endif %}>Aktualny</option>
-        <option value="warning" {% if current_inspection == 'warning' %}selected{% endif %}>Wkrótce (≤14 dni)</option>
-        <option value="overdue" {% if current_inspection == 'overdue' %}selected{% endif %}>Po terminie</option>
-        <option value="unknown" {% if current_inspection == 'unknown' %}selected{% endif %}>Brak daty</option>
+            aria-label="{% trans 'Status przeglądu' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— przegląd —" %}</option>
+        <option value="ok" {% if current_inspection == 'ok' %}selected{% endif %}>{% trans "Aktualny" %}</option>
+        <option value="warning" {% if current_inspection == 'warning' %}selected{% endif %}>{% trans "Wkrótce (≤14 dni)" %}</option>
+        <option value="overdue" {% if current_inspection == 'overdue' %}selected{% endif %}>{% trans "Po terminie" %}</option>
+        <option value="unknown" {% if current_inspection == 'unknown' %}selected{% endif %}>{% trans "Brak daty" %}</option>
     </select>
 
     <select name="site"
-            aria-label="Budowa"
-            title="Filtruj rezerwacje po budowie — pokazuje tylko maszyny przypisane do wybranego projektu"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— wszystkie budowy —</option>
+            aria-label="{% trans 'Budowa' %}"
+            title="{% trans 'Filtruj rezerwacje po budowie — pokazuje tylko maszyny przypisane do wybranego projektu' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— wszystkie budowy —" %}</option>
         {% for s in sites %}
             <option value="{{ s.project_number }}"
                     title="{{ s.project_number }} — {{ s.name }}{% if s.client_name %} ({{ s.client_name }}){% endif %}"
@@ -83,20 +84,20 @@ chip w h1 meta, nie tutaj.
     {# user = Sebastian Nowak ale dane testowe maja losowe osoby) — 2 dropdowny z LISTY        #}
     {# istniejacych osob. Person = kto wpisal rezerwacje, Responsible = kierownik budowy.      #}
     <select name="person"
-            aria-label="Osoba rezerwująca"
-            title="Filtruj po osobie ktora wpisala rezerwacje (Reservation.person)"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— rezerwujący —</option>
+            aria-label="{% trans 'Osoba rezerwująca' %}"
+            title="{% trans 'Filtruj po osobie ktora wpisala rezerwacje (Reservation.person)' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— rezerwujący —" %}</option>
         {% for p in persons %}
             <option value="{{ p }}" {% if p == current_person %}selected{% endif %}>{{ p }}</option>
         {% endfor %}
     </select>
 
     <select name="responsible"
-            aria-label="Osoba odpowiedzialna na budowie"
-            title="Filtruj po kierowniku budowy (Reservation.responsible_person)"
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="">— odpowiedzialny —</option>
+            aria-label="{% trans 'Osoba odpowiedzialna na budowie' %}"
+            title="{% trans 'Filtruj po kierowniku budowy (Reservation.responsible_person)' %}"
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="">{% trans "— odpowiedzialny —" %}</option>
         {% for p in responsibles %}
             <option value="{{ p }}" {% if p == current_responsible %}selected{% endif %}>{{ p }}</option>
         {% endfor %}
@@ -105,12 +106,12 @@ chip w h1 meta, nie tutaj.
     {# Sortowanie maszyn po dacie przegladu — Sebastian: chce widziec maszyny     #}
     {# ktorym najszybciej konczy sie przeglad (inspection_date ASC). NULL na koncu. #}
     <select name="sort"
-            aria-label="Sortowanie maszyn"
-            title="Sortuj wiersze maszyn — domyslnie po UID alfabetycznie. Opcja 'Przeglad najwczesniej' pokazuje na gorze maszyny z najblizszym terminem przegladu."
-            class="px-2 py-1.5 text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition w-full">
-        <option value="uid" {% if current_sort == 'uid' or not current_sort %}selected{% endif %}>↕ UID (A→Z)</option>
-        <option value="inspection_asc" {% if current_sort == 'inspection_asc' %}selected{% endif %}>↑ Przegląd najwcześniej</option>
-        <option value="inspection_desc" {% if current_sort == 'inspection_desc' %}selected{% endif %}>↓ Przegląd najpóźniej</option>
+            aria-label="{% trans 'Sortowanie maszyn' %}"
+            title='{% trans "Sortuj wiersze maszyn — domyslnie po UID alfabetycznie. Opcja Przeglad najwczesniej pokazuje na gorze maszyny z najblizszym terminem przegladu." %}'
+            class="px-2 py-1.5 min-h-[44px] text-xs rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:outline-none transition w-full">
+        <option value="uid" {% if current_sort == 'uid' or not current_sort %}selected{% endif %}>{% trans "↕ UID (A→Z)" %}</option>
+        <option value="inspection_asc" {% if current_sort == 'inspection_asc' %}selected{% endif %}>{% trans "↑ Przegląd najwcześniej" %}</option>
+        <option value="inspection_desc" {% if current_sort == 'inspection_desc' %}selected{% endif %}>{% trans "↓ Przegląd najpóźniej" %}</option>
     </select>
 
     {# "Wyczysc filtry" — link do timeline'a bez params, zachowuje tylko period. #}
@@ -118,15 +119,15 @@ chip w h1 meta, nie tutaj.
     <a href="{% url 'reservations:timeline' %}?period={{ period }}"
        hx-get="{% url 'reservations:timeline' %}?period={{ period }}"
        hx-target="#timeline-grid" hx-swap="outerHTML" hx-push-url="true"
-       title="Wyczysc wszystkie aktywne filtry (zachowaj tylko aktualny period)"
-       class="px-2 py-1.5 text-xs rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 transition text-center inline-flex items-center justify-center gap-1 w-full">
+       title="{% trans 'Wyczysc wszystkie aktywne filtry (zachowaj tylko aktualny period)' %}"
+       class="px-2 py-1.5 min-h-[44px] text-xs rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 transition text-center inline-flex items-center justify-center gap-1 w-full">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        Wyczyść filtry
+        {% trans "Wyczyść filtry" %}
     </a>
 
     <noscript>
         <button type="submit" class="px-2 py-1.5 text-xs rounded-md bg-brand-600 text-white">
-            Zastosuj
+            {% trans "Zastosuj" %}
         </button>
     </noscript>
 </form>

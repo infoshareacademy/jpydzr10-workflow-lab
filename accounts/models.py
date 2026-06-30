@@ -1,11 +1,14 @@
 """Modele aplikacji accounts (EmployeeProfile rozszerzający Django User)."""
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from core.models import TimestampedModel
+from core.validators import is_valid_e164, normalize_phone_e164, phone_e164_validator
 
 User = get_user_model()
 
@@ -20,17 +23,17 @@ class EmployeeProfile(TimestampedModel):
     class Function(models.TextChoices):
         """Funkcja pracownika w firmie."""
 
-        MAGAZYNIER = "magazynier", "Magazynier"
-        MONTAZYSTA = "montażysta", "Montażysta"
-        KIEROWNIK = "kierownik", "Kierownik"
-        ADMIN = "admin", "Administrator"
+        MAGAZYNIER = "magazynier", _("Magazynier")
+        MONTAZYSTA = "montażysta", _("Montażysta")
+        KIEROWNIK = "kierownik", _("Kierownik")
+        ADMIN = "admin", _("Administrator")
 
     class Theme(models.TextChoices):
         """Preferencja motywu UI (light/dark/auto)."""
 
-        AUTO = "auto", "Automatyczny"
-        LIGHT = "light", "Jasny"
-        DARK = "dark", "Ciemny"
+        AUTO = "auto", _("Automatyczny")
+        LIGHT = "light", _("Jasny")
+        DARK = "dark", _("Ciemny")
 
     user = models.OneToOneField(
         User,
@@ -44,7 +47,14 @@ class EmployeeProfile(TimestampedModel):
         default=Function.MONTAZYSTA,
         verbose_name=_("Funkcja"),
     )
-    phone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefon"))
+    phone = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        unique=True,
+        validators=[phone_e164_validator],
+        verbose_name=_("Telefon"),
+    )
     employee_id = models.CharField(
         max_length=20,
         blank=True,
@@ -56,6 +66,24 @@ class EmployeeProfile(TimestampedModel):
         default=Theme.AUTO,
         verbose_name=_("Motyw interfejsu"),
     )
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=settings.LANGUAGES,
+        default=settings.LANGUAGE_CODE,
+        verbose_name=_("Preferowany język"),
+        help_text=_(
+            "Domyślny język interfejsu po zalogowaniu (maile są zawsze dwujęzyczne PL+EN)."
+        ),
+    )
+    email_opt_outs = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_("Rezygnacje e-mail"),
+        help_text=_(
+            "Lista kategorii nieobowiązkowych maili, z których pracownik się wypisał "
+            "(np. przypomnienia, alerty przeglądowe). Maile transakcyjne wysyłane zawsze."
+        ),
+    )
     is_active_employee = models.BooleanField(
         default=True,
         verbose_name=_("Aktywny pracownik"),
@@ -63,31 +91,50 @@ class EmployeeProfile(TimestampedModel):
     is_anonymized = models.BooleanField(
         default=False,
         verbose_name=_("Zanonimizowany"),
-        help_text="Czy profil został zanonimizowany (GDPR Art.17).",
+        help_text=_("Czy profil został zanonimizowany (GDPR Art.17)."),
     )
     anonymized_at = models.DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Data anonimizacji"),
-        help_text="Data anonimizacji (UTC).",
+        help_text=_("Data anonimizacji (UTC)."),
     )
     termination_date = models.DateField(
         null=True,
         blank=True,
         verbose_name=_("Data zakończenia zatrudnienia"),
-        help_text="Data rozwiązania umowy/zakończenia zatrudnienia.",
+        help_text=_("Data rozwiązania umowy/zakończenia zatrudnienia."),
     )
     termination_reason = models.CharField(
         max_length=200,
         blank=True,
         verbose_name=_("Powód zakończenia"),
-        help_text="Powód zakończenia (opcjonalnie).",
+        help_text=_("Powód zakończenia (opcjonalnie)."),
     )
     history = HistoricalRecords()
 
     class Meta:
         verbose_name = _("Profil pracownika")
         verbose_name_plural = _("Profile pracowników")
+
+    def save(self, *args, **kwargs):
+        # Numer telefonu jest UNIQUE — pusty numer musi być przechowywany jako
+        # NULL (dwa profile z ``""`` złamałyby unikalność). Dodatkowo oczyszczamy
+        # separatory ("+48 600…" → "+48600…"), aby każda ścieżka zapisu
+        # (formularz, admin, serwis, sygnał) trzymała ścisłe E.164.
+        normalized = normalize_phone_e164(self.phone)
+        # Niepusty numer, który po normalizacji wciąż nie jest poprawnym E.164
+        # (np. "+0123", "abc"), musi zostać ODRZUCONY zamiast po cichu zapisany
+        # lub wyzerowany do NULL — inaczej ścieżki zapisu omijające full_clean
+        # (serwis register_employee z update_fields, sygnał) wpuściłyby śmieci do
+        # bazy. Pusty wpis (None) jest legalny i przechodzi jako NULL.
+        if normalized is not None and not is_valid_e164(normalized):
+            raise ValidationError(
+                {"phone": phone_e164_validator.message},
+                code="invalid_phone",
+            )
+        self.phone = normalized
+        super().save(*args, **kwargs)
 
     def __str__(self):
         full_name = self.user.get_full_name() or self.user.username

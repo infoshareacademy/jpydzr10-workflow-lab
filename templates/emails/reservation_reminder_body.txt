@@ -1,0 +1,13 @@
+{% load i18n %}{% blocktrans with name=recipient_name %}Dzień dobry {{ name }},{% endblocktrans %}
+
+{% blocktrans with uid=machine.uid %}przypominamy, że rezerwacja maszyny {{ uid }} rozpoczyna się jutro.{% endblocktrans %}
+
+{% trans "Maszyna" %}: {{ machine.uid }} — {{ machine.name }}
+{% trans "Termin" %}: {{ reservation.start_date|date:'d.m.Y' }} – {{ reservation.end_date|date:'d.m.Y' }}
+{% trans "Osoba rezerwująca" %}: {{ reservation.person }}{% if site %}
+{% trans "Budowa" %}: {{ site.project_number }} — {{ site.name }}{% endif %}
+{% if detail_url %}
+{% trans "Szczegóły rezerwacji" %}: {{ detail_url }}{% endif %}
+
+{% trans "Pozdrawiamy," %}
+Planer Maszyn Budowlanych

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
 from core.admin import PlanerHistoryAdmin
 from core.templatetags.planer_tags import status_badge
@@ -31,7 +32,7 @@ class MachineAdmin(PlanerHistoryAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (
-            "Podstawowe",
+            _("Podstawowe"),
             {
                 "fields": (
                     "uid",
@@ -44,26 +45,26 @@ class MachineAdmin(PlanerHistoryAdmin):
             },
         ),
         (
-            "Specyfikacja",
+            _("Specyfikacja"),
             {"fields": ("model", "capacity", "manufacturer", "serial_number", "build_year")},
         ),
-        ("Przegląd", {"fields": ("inspection_date",)}),
-        ("Zdjęcie", {"fields": ("image",)}),
-        ("Notatki", {"fields": ("notes",)}),
-        ("Audyt", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+        (_("Przegląd"), {"fields": ("inspection_date",)}),
+        (_("Zdjęcie"), {"fields": ("image",)}),
+        (_("Notatki"), {"fields": ("notes",)}),
+        (_("Audyt"), {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
     # Pretty list-column renderers
     # -----------------------------------------------------------------
 
-    @admin.display(description="Status")
+    @admin.display(description=_("Status"))
     def status_badge_admin(self, obj: Machine) -> str:
         css = status_badge(obj.status)
         return format_html(
             '<span class="px-2 py-0.5 rounded text-xs {}">{}</span>', css, obj.status
         )
 
-    @admin.display(description="Przegląd")
+    @admin.display(description=_("Przegląd"))
     def inspection_status_admin(self, obj: Machine) -> str:
         icons = {"ok": "✅", "warning": "⚠️", "overdue": "🔴", "unknown": "❓"}
         marker = icons.get(obj.inspection_status, "❓")

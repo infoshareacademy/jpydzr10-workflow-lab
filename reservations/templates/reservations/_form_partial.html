@@ -1,4 +1,4 @@
-{% load widget_tweaks %}
+{% load widget_tweaks i18n %}
 
 {% comment %}
     Reservation form partial — używany TAK SAMO w pełnej stronie form.html
@@ -42,7 +42,7 @@
                 </svg>
             </span>
             <div class="min-w-0 flex-1">
-                <h2 class="font-semibold text-rose-900 dark:text-rose-100">Nie można zapisać rezerwacji</h2>
+                <h2 class="font-semibold text-rose-900 dark:text-rose-100">{% trans "Nie można zapisać rezerwacji" %}</h2>
                 <ul class="mt-1 space-y-0.5 text-sm text-rose-700 dark:text-rose-300 list-disc list-inside">
                     {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
                 </ul>
@@ -55,14 +55,14 @@
         <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
             <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">1</span>
-                <span>Maszyna</span>
+                <span>{% trans "Maszyna" %}</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Wybierz urządzenie, które ma zostać zarezerwowane.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Wybierz urządzenie, które ma zostać zarezerwowane." %}</p>
         </header>
         <div class="p-5">
             <label for="{{ form.machine.id_for_label }}"
                    class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                {{ form.machine.label }}{% if form.machine.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                {{ form.machine.label }}{% if form.machine.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
             </label>
             {{ form.machine|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
             {% if form.machine.help_text %}
@@ -82,9 +82,9 @@
         <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
             <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">2</span>
-                <span>Termin</span>
+                <span>{% trans "Termin" %}</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Wybierz początek i koniec rezerwacji. Konflikty wykrywane automatycznie.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Wybierz początek i koniec rezerwacji. Konflikty wykrywane automatycznie." %}</p>
         </header>
         <div class="p-5 space-y-4">
 
@@ -93,7 +93,7 @@
                 <div>
                     <label for="{{ form.start_date.id_for_label }}"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        {{ form.start_date.label }}{% if form.start_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                        {{ form.start_date.label }}{% if form.start_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                     </label>
                     {{ form.start_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                     {% for err in form.start_date.errors %}
@@ -105,7 +105,7 @@
                 <div>
                     <label for="{{ form.end_date.id_for_label }}"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                        {{ form.end_date.label }}{% if form.end_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                        {{ form.end_date.label }}{% if form.end_date.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                     </label>
                     {{ form.end_date|add_class:"flatpickr block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                     {% for err in form.end_date.errors %}
@@ -142,9 +142,9 @@
         <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
             <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">3</span>
-                <span>Osoby i budowa</span>
+                <span>{% trans "Osoby i budowa" %}</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Kto rezerwuje, kto odpowiada na budowie, i dla jakiej budowy.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Kto rezerwuje, kto odpowiada na budowie, i dla jakiej budowy." %}</p>
         </header>
         <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -152,10 +152,10 @@
             <div>
                 <label for="{{ form.person.id_for_label }}"
                        class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    {{ form.person.label }}{% if form.person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    {{ form.person.label }}{% if form.person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                 </label>
                 {{ form.person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Kto wpisuje rezerwacje (biuro / magazynier).</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{% trans "Kto wpisuje rezerwacje (biuro / magazynier)." %}</p>
                 {% for err in form.person.errors %}
                     <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
                 {% endfor %}
@@ -165,10 +165,10 @@
             <div>
                 <label for="{{ form.responsible_person.id_for_label }}"
                        class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    {{ form.responsible_person.label }}{% if form.responsible_person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    {{ form.responsible_person.label }}{% if form.responsible_person.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                 </label>
                 {{ form.responsible_person|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Kierownik / brygadzista odpowiedzialny za maszyne na budowie.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{% trans "Kierownik / brygadzista odpowiedzialny za maszyne na budowie." %}</p>
                 {% for err in form.responsible_person.errors %}
                     <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400" role="alert">{{ err }}</p>
                 {% endfor %}
@@ -178,7 +178,7 @@
             <div class="sm:col-span-2">
                 <label for="{{ form.site.id_for_label }}"
                        class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    {{ form.site.label }}{% if form.site.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    {{ form.site.label }}{% if form.site.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                 </label>
                 <div class="flex items-stretch gap-2">
                     {{ form.site|add_class:"flex-1 block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
@@ -188,11 +188,11 @@
                             hx-swap="innerHTML"
                             @click="$dispatch('open-modal')"
                             class="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 whitespace-nowrap min-h-[44px]"
-                            aria-label="Dodaj nową budowę">
+                            aria-label="{% trans 'Dodaj nową budowę' %}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/>
                         </svg>
-                        <span class="hidden sm:inline">Dodaj</span>
+                        <span class="hidden sm:inline">{% trans "Dodaj" %}</span>
                     </button>
                 </div>
                 {% for err in form.site.errors %}
@@ -207,9 +207,9 @@
         <header class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
             <h2 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-xs font-bold">4</span>
-                <span>Dodatkowe informacje</span>
+                <span>{% trans "Dodatkowe informacje" %}</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">Opcjonalne: adres dostawy maszyny + uwagi.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-8">{% trans "Opcjonalne: adres dostawy maszyny + uwagi." %}</p>
         </header>
         <div class="p-5 space-y-4">
 
@@ -217,7 +217,7 @@
             <div>
                 <label for="{{ form.address.id_for_label }}"
                        class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">(wymagane)</span>{% endif %}
+                    {{ form.address.label }}{% if form.address.field.required %} <span class="text-rose-500" aria-hidden="true">*</span><span class="sr-only">{% trans "(wymagane)" %}</span>{% endif %}
                 </label>
                 {{ form.address|add_class:"block w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" }}
                 {% if form.address.help_text %}
@@ -249,7 +249,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
-            {% if mode == 'edit' %}Wstecz{% else %}Anuluj{% endif %}
+            {% if mode == 'edit' %}{% trans "Wstecz" %}{% else %}{% trans "Anuluj" %}{% endif %}
         </a>
         {% comment %}
             Terminal-state guard: zakonczone/anulowane rezerwacje sa immutable;
@@ -263,16 +263,16 @@
                 class="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 min-h-[44px]">
             {% if mode == 'edit' %}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                Zapisz zmiany
+                {% trans "Zapisz zmiany" %}
             {% else %}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                Utwórz rezerwację
+                {% trans "Utwórz rezerwację" %}
             {% endif %}
         </button>
         {% else %}
         <p class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            Rezerwacja {{ reservation.get_status_display|lower }} — tylko do odczytu
+            {% blocktrans with status=reservation.get_status_display|lower %}Rezerwacja {{ status }} — tylko do odczytu{% endblocktrans %}
         </p>
         {% endif %}
     </div>
@@ -311,7 +311,7 @@
          @click.self="openModal = false"
          role="dialog"
          aria-modal="true"
-         aria-label="Nowa budowa">
+         aria-label="{% trans 'Nowa budowa' %}">
         <div id="modal-inner" class="max-w-2xl w-full max-h-[90vh] overflow-y-auto"></div>
     </div>
 </div>

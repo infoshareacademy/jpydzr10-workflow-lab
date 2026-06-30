@@ -142,6 +142,7 @@ class TestActionComplete:
         # date.today() pod spodem -> uzywamy past dates zeby symulowac realna
         # sytuacje 'rezerwacja sie zaczela, czas zakonczyc'.
         from datetime import timedelta as _td
+
         confirmed = ConfirmedReservationFactory(
             machine=machine,
             start_date=date.today() - _td(days=5),

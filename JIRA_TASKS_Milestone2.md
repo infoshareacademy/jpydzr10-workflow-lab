@@ -1,6 +1,6 @@
 # JIRA Tasks — Milestone 2: Aplikacja Web (Django)
 
-**Projekt:** Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy **Isocab Construct**.
+**Projekt:** Planer Maszyn Budowlanych — system rezerwacji i serwisu maszyn dla firmy **BudMech**.
 **Milestone 1 (Aplikacja konsolowa):** zakończony 12.04.2026, 175 testów, 20 maszyn demo, 33 rezerwacje, 150+ wpisów serwisowych.
 **Milestone 2 (Aplikacja web — Django):** rozpoczyna się **20.04.2026**, deadline prezentacji **14.06.2026** (8 tygodni).
 **Milestone 3 (Aplikacja web zaawansowana):** 15.06 → 09.08.2026 (propozycje w `NOTES_FOR_MILESTONE_3.md`).
@@ -25,7 +25,7 @@ Ten plan rozszerza ten zakres o dojrzały stack, refaktor UI na wzorzec Alpine R
 
 ## Konwencje i bezwzględne zasady
 
-- **Język UI:** 100% polski. Zero angielskich/niderlandzkich/francuskich stringów w Milestone 2. Internacjonalizacja (PL/NL/FR/EN) wchodzi w Milestone 3.
+- **Język UI:** 100% polski. Zero angielskich/niderlandzkich/francuskich stringów w Milestone 2. Internacjonalizacja (PL/EN) wchodzi w Milestone 3.
 - **Język kodu:** angielski (nazwy klas, funkcji, zmiennych, komentarzy, docstringów). Wyjątek: nazwy domenowe biznesowe (`BudowaManager` → preferuj `ConstructionSiteManager`).
 - **Git workflow:** `feature/m2-sN-<nazwa>` branche → rebase na develop → squash merge do develop → sprint end: develop → main z merge commit.
 - **Commit messages:** `typ: opis` (np. `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`, `style:`). Bez `--amend` (chyba że Sebastian wyraźnie poprosi), bez `--no-verify`.
@@ -326,12 +326,12 @@ Dodaj wszystkie pakiety produkcyjne + dev:
 [project]
 name = "planer-maszyn"
 version = "2.0.0"                       # M2 major bump
-description = "Planer Maszyn Budowlanych — system rezerwacji maszyn dla Isocab Construct"
+description = "Planer Maszyn Budowlanych — system rezerwacji maszyn dla BudMech"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 requires-python = ">=3.14"
 authors = [
-    { name = "Sebastian", email = "sebastian@werkstroomlab.be" },
+    { name = "Sebastian", email = "kontakt@budmech.pl" },
 ]
 dependencies = [
     "django>=5.2,<5.3",
@@ -509,7 +509,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 Struktura `templates/base.html`:
 
-- `<head>`: meta, title (block), **FOUC prevention script** (inline, synchroniczne czytanie theme z localStorage PRZED pierwszym paint — ze wzorca WMS), `{% static "vendor/tailwind.min.css" %}`, `{% static "vendor/flatpickr.min.css" %}`, CSS vars theme.
+- `<head>`: meta, title (block), **FOUC prevention script** (inline, synchroniczne czytanie theme z localStorage PRZED pierwszym paint — ze sprawdzonego wzorca), `{% static "vendor/tailwind.min.css" %}`, `{% static "vendor/flatpickr.min.css" %}`, CSS vars theme.
 - `<body>`: nav, main (block content), footer, toast container.
 - `<script>` na końcu `<body>`: `htmx.min.js`, htmx-ext-loading-states, htmx-ext-response-targets, `alpine-persist.js` (PRZED alpine), `alpine-focus.js`, `alpine-mask.js`, `alpine.min.js`, `flatpickr.min.js`, `flatpickr-pl.js`, `flatpickr.localize(window.flatpickr.l10ns.pl)`.
 
@@ -1116,7 +1116,7 @@ def create_machine(uid, name, machine_type, ...) -> Machine:
 def update_machine(machine, **fields) -> list[str]:
     warnings = []
     if "status" in fields:
-        # logika ostrzeżeń o desynchronizacji z rezerwacjami (jak w WMS)
+        # logika ostrzeżeń o desynchronizacji z rezerwacjami (standardowy pattern)
         ...
     for k, v in fields.items():
         setattr(machine, k, v)
@@ -1574,7 +1574,7 @@ Dashboard card: "Oczekują na zatwierdzenie: X" + "Zwroty spóźnione: Y".
 
 - [ ] App `reservations` z 2 modelami: Reservation + ConstructionSite.
 - [ ] Migracje + data migration (seed z M1 JSON).
-- [ ] Admin z inline ProjectNumber? (jeśli mamy ten model — w tym M2 nie, to była rozszerzenie WMS).
+- [ ] Admin z inline ProjectNumber? (jeśli mamy ten model — w tym M2 nie, to było rozszerzenie poza zakresem projektu).
 - [ ] 15+ widoków (list, detail, create, edit, cancel, complete dla reservations; list, detail, create, edit, delete, inline-create dla sites).
 - [ ] Services: `has_conflict`, `run_daily_sync`, `create_reservation`, `update_reservation`, `cancel_reservation`, `complete_reservation`, `create_site`, `update_site`, `delete_site`.
 - [ ] 40+ testów (unit + integration), z hypothesis i freezegun.
@@ -1837,7 +1837,7 @@ Extension `seed_all` o `--service` option. Import z `archive/milestone-1/console
 
 ### S5-T05 — Template `_timeline_grid.html` (CSS Grid)
 
-Strukturę przepisujemy z wzorca WMS `machines/_timeline_grid.html`:
+Strukturę przepisujemy ze sprawdzonego wzorca `machines/_timeline_grid.html`:
 
 - Sticky header row z days (`sticky top: var(--tl-ctrl-h, 0px);`).
 - Weekend days highlighted (`bg-gray-100`), today (`bg-blue-50`).
@@ -2304,7 +2304,7 @@ Reusable validator dla bulk_commit + pojedynczego edit view.
 
 ### S6-T11 — Invalidate snapshots po commicie (spójność)
 
-Jeśli w przyszłości dodamy "draft snapshots" (analog do Cladseal `proposals_snapshot`), unieważnić po commit.
+Jeśli w przyszłości dodamy "draft snapshots" (analog do snapshotów wersji roboczych), unieważnić po commit.
 
 ## DoD Sprint 6
 
@@ -2532,7 +2532,7 @@ Cheatsheet modal z listą skrótów.
 }
 ```
 
-PDF export: **reportlab** (nie w M2 — pattern z WMS, ale można dodać jako nice-to-have task w S7).
+PDF export: **reportlab** (nie w M2 — sprawdzony pattern, ale można dodać jako nice-to-have task w S7).
 
 ---
 

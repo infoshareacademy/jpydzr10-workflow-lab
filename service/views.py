@@ -31,9 +31,9 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.text import slugify
@@ -61,18 +61,43 @@ from .forms import (
 )
 from .models import ServiceRecord
 from .reports import (
-    generate_all_service_records_xlsx,
+    generate_annual_report_pdf,
+    generate_filtered_service_records_xlsx,
     generate_inspection_pdf,
+    generate_machine_service_pdf,
     generate_machine_service_xlsx,
     generate_quarterly_report_xlsx,
 )
-from .services import close_service, create_service_record, update_service_record
+from .selectors import filter_service_records
+from .services import (
+    close_service,
+    create_service_record,
+    delete_service_record,
+    update_service_record,
+)
 
 logger = logging.getLogger("service")
 
-PAGE_SIZE = 20
-
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+class ServiceReadPermMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    """Wymaga zalogowania + ``view_servicerecord``.
+
+    Decyzja Sebastiana: monter (montażysta) NIE widzi kosztów maszyn — a serwis,
+    raporty i eksporty są danymi kosztowymi. Montażysta nie ma tej permisji →
+    403 na całym module serwisowym (read), włącznie z raportami i eksportami.
+
+    Niezalogowany → przekierowanie do logowania (302). Zalogowany bez uprawnienia
+    → 403 (custom strona „Brak dostępu"), nie redirect do logowania.
+    """
+
+    permission_required = "service.view_servicerecord"
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            raise PermissionDenied
+        return super().handle_no_permission()
 
 
 # =============================================================================
@@ -80,10 +105,13 @@ XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml
 # =============================================================================
 
 
-class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
+class ServiceRecordListView(PerPageMixin, ServiceReadPermMixin, ListView):
     """Paginated list of service records with sidebar filters.
 
     PerPageMixin: ?per_page=N (whitelist 10/20/50/100/500/5000), default 100.
+
+    Wymaga ``view_servicerecord`` — montażysta (bez tej permisji) NIE widzi
+    serwisu ani kosztów (decyzja Sebastiana: monter nie widzi kosztów maszyn).
     """
 
     model = ServiceRecord
@@ -91,29 +119,11 @@ class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
     context_object_name = "records"
 
     def get_queryset(self):
-        qs = ServiceRecord.objects.select_related("machine").order_by("-performed_date", "-pk")
+        # Filtrowanie delegowane do współdzielonego selektora (te same 8 filtrów
+        # dla listy, eksportu i wykresu). Sortowanie zostaje tu — poza selektorem.
         self.filter_form = ServiceRecordFilterForm(self.request.GET or None)
-        if self.filter_form.is_valid():
-            data = self.filter_form.cleaned_data
-            if data.get("record_type"):
-                qs = qs.filter(record_type=data["record_type"])
-            if data.get("machine"):
-                qs = qs.filter(machine=data["machine"])
-            if data.get("performed_after"):
-                qs = qs.filter(performed_date__gte=data["performed_after"])
-            if data.get("performed_before"):
-                qs = qs.filter(performed_date__lte=data["performed_before"])
-            if data.get("cost_min") is not None:
-                qs = qs.filter(cost__gte=data["cost_min"])
-            if data.get("cost_max") is not None:
-                qs = qs.filter(cost__lte=data["cost_max"])
-            if data.get("expensive_only"):
-                # F-2: enable expensive() manager (cost > 1000 PLN).
-                qs = qs.filter(pk__in=ServiceRecord.objects.expensive().values("pk"))
-            if data.get("only_inspections"):
-                # F-3: enable inspections() manager (excludes naprawa).
-                qs = qs.filter(pk__in=ServiceRecord.objects.inspections().values("pk"))
-        return qs
+        qs = filter_service_records(self.request.GET)
+        return qs.order_by("-performed_date", "-pk")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -129,8 +139,8 @@ class ServiceRecordListView(PerPageMixin, LoginRequiredMixin, ListView):
         return [self.template_name]
 
 
-class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
-    """Detail page for a single service record."""
+class ServiceRecordDetailView(ServiceReadPermMixin, DetailView):
+    """Detail page for a single service record (wymaga ``view_servicerecord``)."""
 
     model = ServiceRecord
     template_name = "service/detail.html"
@@ -170,7 +180,9 @@ class ServiceRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             return self.form_invalid(form)
 
         messages.success(
-            self.request, f"Wpis serwisowy {record.pk} dla maszyny {record.machine.uid} dodany."
+            self.request,
+            _("Wpis serwisowy %(pk)s dla maszyny %(uid)s dodany.")
+            % {"pk": record.pk, "uid": record.machine.uid},
         )
         return redirect("service:detail", pk=record.pk)
 
@@ -211,7 +223,8 @@ class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Updat
 
         messages.success(
             self.request,
-            f"Wpis serwisowy #{record.pk} dla maszyny {record.machine.uid} zaktualizowany.",
+            _("Wpis serwisowy #%(pk)s dla maszyny %(uid)s zaktualizowany.")
+            % {"pk": record.pk, "uid": record.machine.uid},
         )
         return redirect("service:detail", pk=record.pk)
 
@@ -233,10 +246,14 @@ class ServiceRecordDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
     raise_exception = True
 
     def form_valid(self, form):
-        pk = self.object.pk
-        response = super().form_valid(form)
-        messages.success(self.request, f"Wpis serwisowy #{pk} usunięty.")
-        return response
+        # Usuwamy przez serwis (nie surowy DeleteView), żeby przeliczyć
+        # ``Machine.inspection_date`` z pozostałych przeglądów — inaczej maszyna
+        # trzymałaby datę przeglądu, którego już nie ma.
+        record = self.object
+        pk = record.pk
+        delete_service_record(record)
+        messages.success(self.request, _("Wpis serwisowy #%(pk)s usunięty.") % {"pk": pk})
+        return HttpResponseRedirect(self.get_success_url())
 
 
 # =============================================================================
@@ -288,7 +305,7 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                         continue
                     created.append(record.pk)
                     # Rewind the uploaded file so the next iteration can read
-                    # the bytes again — matches the WMS bulk_inspection pattern.
+                    # the bytes again — matches the bulk_inspection pattern.
                     if upload is not None:
                         upload.seek(0)
                 if errors and not created:
@@ -302,12 +319,16 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         if created:
             messages.success(
                 self.request,
-                f"Utworzono {len(created)} wpisów przeglądu ({record_type}).",
+                _("Utworzono %(count)s wpisów przeglądu (%(record_type)s).")
+                % {"count": len(created), "record_type": record_type},
             )
         for err in errors[:10]:
             messages.warning(self.request, err)
         if len(errors) > 10:
-            messages.warning(self.request, f"...oraz {len(errors) - 10} dalszych błędów.")
+            messages.warning(
+                self.request,
+                _("...oraz %(count)s dalszych błędów.") % {"count": len(errors) - 10},
+            )
         return super().form_valid(form)
 
 
@@ -316,18 +337,27 @@ class BulkInspectionView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 # =============================================================================
 
 
-class ReportPageView(LoginRequiredMixin, TemplateView):
+class ReportPageView(ServiceReadPermMixin, TemplateView):
     """Landing page for reports — form to pick year + quarter."""
 
     template_name = "service/reports.html"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["form"] = ReportFilterForm(self.request.GET or None)
+        # Wiążemy formularz kwartalny TYLKO gdy faktycznie podano year/quarter.
+        # Inaczej parametry filtra wykresu (performed_after/before) z tej samej
+        # strony związałyby formularz jako "niepoprawny" i pokazały błędy +
+        # rok=0 zaraz po wejściu. Bez year/quarter → niezwiązany (initial = rok bieżący).
+        has_quarterly = "year" in self.request.GET or "quarter" in self.request.GET
+        ctx["form"] = ReportFilterForm(self.request.GET if has_quarterly else None)
+        # Lista maszyn do selektora raportu „per maszyna" (PDF karty serwisowej).
+        from machines.models import Machine
+
+        ctx["machines"] = Machine.objects.order_by("uid").values_list("uid", "name")
         return ctx
 
 
-class ReportXlsxView(LoginRequiredMixin, View):
+class ReportXlsxView(ServiceReadPermMixin, View):
     """Stream the kwartalny report as a single XLSX attachment."""
 
     def get(self, request: HttpRequest, year: int, quarter: int) -> HttpResponse:
@@ -343,7 +373,7 @@ class ReportXlsxView(LoginRequiredMixin, View):
         return response
 
 
-class MachineServiceXlsxView(LoginRequiredMixin, View):
+class MachineServiceXlsxView(ServiceReadPermMixin, View):
     """Stream historię serwisu pojedynczej maszyny jako XLSX attachment.
 
     URL: ``/serwis/eksport/maszyna/<uid>/`` — pobierany z karty maszyny
@@ -361,7 +391,7 @@ class MachineServiceXlsxView(LoginRequiredMixin, View):
         return response
 
 
-class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
+class AllServiceRecordsXlsxView(ServiceReadPermMixin, View):
     """Stream pełną historię serwisu (wszystkie maszyny) jako XLSX attachment.
 
     URL: ``/serwis/eksport/wszystkie/`` — pobierany z listy serwisów
@@ -369,20 +399,87 @@ class AllServiceRecordsXlsxView(LoginRequiredMixin, View):
     """
 
     def get(self, request: HttpRequest) -> HttpResponse:
-        payload = generate_all_service_records_xlsx()
+        # Eksport respektuje aktywne filtry listy (te same 8 filtrów przez selektor)
+        # — Excel zawiera dokładnie te wiersze, które widać na ekranie.
+        records = filter_service_records(request.GET).order_by("-performed_date", "-pk")
+        payload = generate_filtered_service_records_xlsx(records=records)
         filename = slugify(f"serwis-wszystkie-{date.today().isoformat()}") + ".xlsx"
         response = HttpResponse(payload, content_type=XLSX_CONTENT_TYPE)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
 
-class InspectionPdfView(LoginRequiredMixin, View):
+class ReportDataView(ServiceReadPermMixin, View):
+    """Zwraca dane do wykresu Chart.js: koszt serwisu per maszyna dla aktywnych
+    filtrów (ten sam selektor co lista i eksport → identyczny zbiór rekordów)."""
+
+    # Maksymalna liczba słupków na wykresie — przy dziesiątkach maszyn etykiety
+    # osi X stają się nieczytelne. Pokazujemy najdroższe maszyny (top-N).
+    CHART_TOP_N = 15
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.db.models import Sum
+        from django.http import JsonResponse
+
+        # Po normalizacji waluty (migracja 0004) wszystkie koszty są w EUR, więc
+        # Sum('cost') + sortowanie po sumie + top-N są jednowalutowe i poprawne
+        # liczbowo — nie sumujemy już PLN z EUR.
+        qs = filter_service_records(request.GET)
+        rows = list(
+            qs.values("machine__uid").annotate(total=Sum("cost")).order_by("-total", "machine__uid")
+        )
+        truncated = len(rows) > self.CHART_TOP_N
+        rows = rows[: self.CHART_TOP_N]
+        labels: list[str] = []
+        data: list[float] = []
+        for row in rows:
+            total = row["total"]
+            amount = getattr(total, "amount", total) or Decimal("0")
+            labels.append(row["machine__uid"])
+            data.append(float(amount))
+        return JsonResponse(
+            {
+                "labels": labels,
+                "data": data,
+                "currency": "EUR",
+                "truncated": truncated,
+                "top_n": self.CHART_TOP_N,
+            }
+        )
+
+
+class InspectionPdfView(ServiceReadPermMixin, View):
     """Stream a single PDF protokół for one :class:`ServiceRecord`."""
 
     def get(self, request: HttpRequest, pk: int) -> HttpResponse:
         record = get_object_or_404(ServiceRecord.objects.select_related("machine"), pk=pk)
         payload = generate_inspection_pdf(service_record=record)
         filename = slugify(f"protokol-srv-{record.pk:06d}-{date.today().isoformat()}") + ".pdf"
+        response = HttpResponse(payload, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class AnnualReportPdfView(ServiceReadPermMixin, View):
+    """Stream the annual aggregate report as a PDF attachment."""
+
+    def get(self, request: HttpRequest, year: int) -> HttpResponse:
+        payload = generate_annual_report_pdf(year=year)
+        filename = slugify(f"raport-roczny-{year}") + ".pdf"
+        response = HttpResponse(payload, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
+class MachineServicePdfView(ServiceReadPermMixin, View):
+    """Stream a single machine's full service card as a PDF attachment."""
+
+    def get(self, request: HttpRequest, uid: str) -> HttpResponse:
+        from machines.models import Machine
+
+        machine = get_object_or_404(Machine, uid=uid)
+        payload = generate_machine_service_pdf(machine=machine)
+        filename = slugify(f"karta-serwisowa-{machine.uid}-{date.today().isoformat()}") + ".pdf"
         response = HttpResponse(payload, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response

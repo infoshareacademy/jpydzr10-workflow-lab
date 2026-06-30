@@ -1,6 +1,8 @@
 """Admin (django-unfold) dla aplikacji accounts."""
 
 from django.contrib import admin, messages
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 
 from core.admin import PlanerHistoryAdmin
 
@@ -31,9 +33,9 @@ class EmployeeProfileAdmin(PlanerHistoryAdmin):
     readonly_fields = ("created_at", "updated_at", "anonymized_at")
     actions = ["action_terminate", "action_anonymize"]
     fieldsets = (
-        ("Powiązanie z użytkownikiem", {"fields": ("user",)}),
+        (_("Powiązanie z użytkownikiem"), {"fields": ("user",)}),
         (
-            "Dane pracownika",
+            _("Dane pracownika"),
             {
                 "fields": (
                     "function",
@@ -43,9 +45,9 @@ class EmployeeProfileAdmin(PlanerHistoryAdmin):
                 ),
             },
         ),
-        ("Preferencje UI", {"fields": ("theme_preference",)}),
+        (_("Preferencje UI"), {"fields": ("theme_preference",)}),
         (
-            "Offboarding / GDPR",
+            _("Offboarding / GDPR"),
             {
                 "fields": (
                     "termination_date",
@@ -55,10 +57,10 @@ class EmployeeProfileAdmin(PlanerHistoryAdmin):
                 ),
             },
         ),
-        ("Metadane", {"fields": ("created_at", "updated_at")}),
+        (_("Metadane"), {"fields": ("created_at", "updated_at")}),
     )
 
-    @admin.action(description="Zakończ zatrudnienie wybranych")
+    @admin.action(description=_("Zakończ zatrudnienie wybranych"))
     def action_terminate(self, request, queryset):
         """Bulk-terminacja aktywnych pracowników (z pominięciem zanonimizowanych)."""
         count = 0
@@ -67,11 +69,11 @@ class EmployeeProfileAdmin(PlanerHistoryAdmin):
             count += 1
         self.message_user(
             request,
-            f"Zakończono zatrudnienie {count} pracowników.",
+            gettext("Zakończono zatrudnienie %(count)s pracowników.") % {"count": count},
             level=messages.SUCCESS,
         )
 
-    @admin.action(description="Anonimizuj wybranych (GDPR Art.17)")
+    @admin.action(description=_("Anonimizuj wybranych (GDPR Art.17)"))
     def action_anonymize(self, request, queryset):
         """Bulk-anonimizacja pracowników (idempotentnie pomija już zanonimizowanych)."""
         count = 0
@@ -80,6 +82,6 @@ class EmployeeProfileAdmin(PlanerHistoryAdmin):
             count += 1
         self.message_user(
             request,
-            f"Zanonimizowano {count} pracowników.",
+            gettext("Zanonimizowano %(count)s pracowników.") % {"count": count},
             level=messages.WARNING,
         )

@@ -24,7 +24,7 @@
             border-2 border-yellow-300 dark:border-yellow-700/60
             shadow-sm animate-msg-in"
      role="region"
-     aria-label="Wymagane potwierdzenie akcji"
+     aria-label="{% trans 'Wymagane potwierdzenie akcji' %}"
      data-pending-action="{{ pending.action }}">
 
     {# Nagłówek z ikoną "shield-check" — Heroicons outline. #}
@@ -39,7 +39,7 @@
         <div class="min-w-0 flex-1">
             <p class="text-[11px] font-semibold uppercase tracking-wide
                       text-yellow-800 dark:text-yellow-200">
-                Wymagane potwierdzenie
+                {% trans "Wymagane potwierdzenie" %}
             </p>
             {% if pending.preview %}
                 <p class="text-sm text-slate-900 dark:text-slate-100 mt-0.5 break-words">
@@ -92,13 +92,13 @@
                            focus:outline-none focus:ring-2 focus:ring-emerald-500
                            focus:ring-offset-2 dark:focus:ring-offset-slate-900
                            transition-colors"
-                    aria-label="Potwierdź akcję chatbota">
+                    aria-label="{% trans 'Potwierdź akcję chatbota' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
                      stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
                 </svg>
-                Potwierdź
+                {% trans "Potwierdź" %}
             </button>
         </form>
 
@@ -124,20 +124,20 @@
                            focus:outline-none focus:ring-2 focus:ring-slate-400
                            focus:ring-offset-2 dark:focus:ring-offset-slate-900
                            transition-colors"
-                    aria-label="Anuluj proponowaną akcję">
+                    aria-label="{% trans 'Anuluj proponowaną akcję' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
                      stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M6 18 18 6M6 6l12 12"/>
                 </svg>
-                Anuluj
+                {% trans "Anuluj" %}
             </button>
         </form>
     </div>
 
     {# Pomocniczy hint — można też pisać po klawiaturze. #}
     <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2 text-center">
-        Możesz też wpisać „tak" lub „nie" w polu wiadomości.
+        {% trans 'Możesz też wpisać „tak" lub „nie" w polu wiadomości.' %}
     </p>
 </div>
