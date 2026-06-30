@@ -246,13 +246,18 @@ def email_preferences_view(request):
 
 
 @login_required
-@ratelimit(key="user", rate="6/h", method="GET", block=True)
+@require_POST
+@ratelimit(key="user", rate="1/d", method="POST", block=True)
 def data_export_view(request):
     """Eksport danych zalogowanego użytkownika (RODO Art. 20 — przenoszalność).
 
     Zwraca komplet danych usera w formacie JSON (do pobrania): konto, profil,
     rezerwacje utworzone przez niego oraz wpisy dziennika zdarzeń go dotyczące.
     Samoobsługowo — każdy widzi WYŁĄCZNIE własne dane.
+
+    Tylko POST (CSRF + brak przypadkowego wyzwolenia przez prefetch/crawler na
+    GET) oraz rate-limit 1×/dobę per użytkownik — eksport jest idempotentny
+    (te same dane), a dzienna kadencja wystarcza dla prawa do przenoszalności.
     """
     from core.models import AuditLogEntry
     from reservations.models import Reservation

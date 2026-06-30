@@ -218,10 +218,10 @@ omit = [
 branch = true
 
 [tool.coverage.report]
-# Wave 12: ratchet z 60 → 95 (faktycznie repo ma 98.76%).
-# fail_under odpalany przez ``--cov-fail-under=95`` na CI; tutaj jest też
-# default żeby lokalnie ``pytest --cov`` ostrzegał spójnie.
-fail_under = 95.0
+# Próg pokrycia: kanon = 80 (jedna prawda). CI odpala ``--cov-fail-under=80``;
+# ten default trzyma lokalne ``pytest --cov`` w zgodzie z CI. Faktyczne pokrycie
+# repo jest znacznie wyższe (~98%), 80 to bezpieczna podłoga przeciw regresji.
+fail_under = 80.0
 show_missing = true
 skip_covered = false
 exclude_lines = [

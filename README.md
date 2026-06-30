@@ -51,7 +51,7 @@ PL/EN, uwierzytelnianie dwuskładnikowe, mailing transakcyjny, raporty
 | Framework | Django 5.2 LTS |
 | Package manager | uv |
 | Baza danych | PostgreSQL 16 (via Docker / OrbStack) |
-| Frontend | HTMX 2 + Alpine.js 3 + Tailwind CSS 3 (vendored, zero CDN) |
+| Frontend | HTMX 2 + Alpine.js 3 (vendored) + Tailwind CSS 3 (kompilowany CLI do `static/css/tailwind.css`), zero CDN |
 | Date picker | Flatpickr (z polską lokalizacją) |
 | Admin theme | django-unfold |
 | Audit trail | django-simple-history |
@@ -286,7 +286,8 @@ planer-maszyn/
 ├── core/                     # shared: utils, mixins, base templates, PDF
 ├── templates/                # Django templates (base.html + per-app)
 ├── locale/en/                # katalog tłumaczeń EN (.po/.mo)
-├── static/vendor/            # HTMX, Alpine, Tailwind, Flatpickr (vendored)
+├── static/vendor/            # HTMX, Alpine, Chart.js, Flatpickr (vendored)
+├── static/css/tailwind.css   # Tailwind skompilowany CLI (input.css + tailwind.config.js)
 ├── docker-compose.yml        # PostgreSQL 16 dla dev
 ├── .env.example              # template konfiguracji
 └── pyproject.toml            # Django + uv + ruff + pytest stack

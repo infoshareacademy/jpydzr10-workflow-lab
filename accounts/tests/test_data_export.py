@@ -24,8 +24,15 @@ def _user(username="exp", email="exp@demo.test"):
 
 
 def test_export_requires_login():
-    resp = Client().get(reverse("accounts:data_export"))
+    resp = Client().post(reverse("accounts:data_export"))
     assert resp.status_code == 302  # redirect do logowania
+
+
+def test_export_rejects_get_for_authenticated(client):
+    # Eksport jest POST-only (CSRF + brak prefetch na GET) — GET zalogowanego = 405.
+    client.force_login(_user("getreject", "getreject@demo.test"))
+    resp = client.get(reverse("accounts:data_export"))
+    assert resp.status_code == 405
 
 
 def test_export_returns_own_data_as_json_download(client):
@@ -46,7 +53,7 @@ def test_export_returns_own_data_as_json_download(client):
         created_by=user,
     )
     client.force_login(user)
-    resp = client.get(reverse("accounts:data_export"))
+    resp = client.post(reverse("accounts:data_export"))
 
     assert resp.status_code == 200
     assert resp["Content-Type"].startswith("application/json")
@@ -79,8 +86,19 @@ def test_export_excludes_other_users_reservations(client):
         created_by=other,
     )
     client.force_login(me)
-    data = json.loads(client.get(reverse("accounts:data_export")).content)
+    data = json.loads(client.post(reverse("accounts:data_export")).content)
     assert data["reservations"] == []  # cudza rezerwacja niewidoczna
+
+
+def test_export_rate_limited_to_once_per_day(client):
+    # Drugi eksport tego samego dnia jest zablokowany (rate-limit 1/d) —
+    # pierwszy 200, drugi NIE 200 (ochrona przed nadużyciem wysyłki danych).
+    user = _user("ratelimited", "rl@demo.test")
+    client.force_login(user)
+    first = client.post(reverse("accounts:data_export"))
+    assert first.status_code == 200
+    second = client.post(reverse("accounts:data_export"))
+    assert second.status_code != 200
 
 
 def test_anonymize_scrubs_audit_log_pii():

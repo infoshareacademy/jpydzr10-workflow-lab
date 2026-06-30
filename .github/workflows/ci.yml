@@ -69,8 +69,14 @@ jobs:
       - name: Testy + pokrycie
         run: uv run pytest -n auto --cov=. --cov-report=term-missing --cov-fail-under=80
 
-      # Skanery bezpieczeństwa traktujemy jako doradcze (Python 3.14 wyprzedza
-      # wsparcie AST części narzędzi) — raportują, ale nie blokują pipeline'u.
+      # Skanery bezpieczeństwa są DORADCZE (continue-on-error) — świadoma decyzja,
+      # nie przeoczenie:
+      #  * bandit na Pythonie 3.14 nie parsuje jeszcze części plików (błędy AST na
+      #    np. accounts/admin.py, forms.py) — jego „brak uwag" NIE jest miarodajny,
+      #    więc egzekwowanie byłoby teatrem (zielone bo nie przeanalizował, nie bo
+      #    kod jest czysty). Zostaje jako sygnał, aż bandit dogoni 3.14.
+      #  * pip-audit zależy od kanału CVE, który zmienia się codziennie — twarde
+      #    egzekwowanie wywracałoby CI przy CVE niezwiązanym ze zmianą w PR.
       - name: Bandit — analiza bezpieczeństwa kodu
         continue-on-error: true
         run: uv run --with "bandit==1.8.6" bandit -r . -x ./tests,./archive,./.venv,./scripts -ll
