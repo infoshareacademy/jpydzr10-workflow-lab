@@ -22,6 +22,10 @@ DEBUG = True
 # W dev pozwalamy na cały localhost, 127.0.0.1 + dowolny *.localhost
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
 
+# Lokalny rozwój agenta głosowego bez tokenu Twilio — webhook idzie bypassem
+# (profil ``voice`` za publicznym tunelem nadpisuje to z powrotem na True).
+VOICE_REQUIRE_SIGNATURE = False
+
 
 # =============================================================================
 # django-debug-toolbar — SQL profiling, request inspection, settings dump

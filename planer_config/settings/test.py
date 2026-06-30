@@ -30,6 +30,9 @@ ALLOWED_HOSTS = ["testserver"]
 # lokalnie (override_settings), więc nadal weryfikuje odrzucenie złego podpisu.
 _os.environ.pop("TWILIO_AUTH_TOKEN", None)
 TWILIO_AUTH_TOKEN = ""
+# Bez tokenu webhook głosowy domyślnie wpada w bypass (200) — testy ścieżki
+# pozytywnej i fail-closed jawnie nadpisują tę flagę przez ``settings`` fixture.
+VOICE_REQUIRE_SIGNATURE = False
 
 # =============================================================================
 # 2FA — obejście wymuszenia w testach (czytane w czasie żądania przez middleware)

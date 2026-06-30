@@ -48,15 +48,34 @@ def _reconstructed_url(request) -> str:
 
 
 def _signature_valid(request) -> bool:
-    """Waliduje podpis Twilio, jeśli skonfigurowano ``TWILIO_AUTH_TOKEN``."""
+    """Waliduje podpis Twilio.
+
+    Bez ``TWILIO_AUTH_TOKEN`` zachowanie zależy od ``VOICE_REQUIRE_SIGNATURE``:
+
+    * ``True`` (prod / profil ``voice`` za publicznym tunelem) → **fail-closed**:
+      odrzucamy żądanie, bo bez tokenu nie sposób odróżnić prawdziwego Twilio od
+      podszywającego się klienta (sfałszowany ``From`` = podszycie pod uprawnionego).
+    * ``False`` (dev / test) → bypass z ostrzeżeniem, by rozwijać lokalnie bez tokenu.
+    """
     auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", None) or _env_auth_token()
     if not auth_token:
+        if getattr(settings, "VOICE_REQUIRE_SIGNATURE", True):
+            logger.error(
+                "Voice webhook: brak TWILIO_AUTH_TOKEN przy VOICE_REQUIRE_SIGNATURE=True "
+                "— odrzucam żądanie (fail-closed)."
+            )
+            return False
         logger.warning("Voice webhook: brak TWILIO_AUTH_TOKEN — pomijam walidację podpisu (dev).")
         return True
     from twilio.request_validator import RequestValidator
 
     validator = RequestValidator(auth_token)
     signature = request.META.get("HTTP_X_TWILIO_SIGNATURE", "")
+    # ``POST.dict()`` spłaszcza QueryDict do {klucz: wartość}. To kanoniczny format
+    # dla ``RequestValidator.validate`` i jest bezpieczny dla webhooków Twilio:
+    # parametry połączenia (From/To/CallSid/...) są jednowartościowe, a Twilio liczy
+    # podpis nad tymi samymi pojedynczymi wartościami. (Pełny QueryDict zepsułby
+    # walidację — validate() oczekuje płaskiego dict.)
     return validator.validate(_reconstructed_url(request), request.POST.dict(), signature)
 
 

@@ -512,6 +512,20 @@ LOGGING = {
 
 
 # =============================================================================
+# AGENT GŁOSOWY — bezpieczeństwo webhooka Twilio
+# =============================================================================
+# Czy webhook ``/voice/incoming/`` MUSI mieć poprawny podpis Twilio.
+#
+# Gdy ``True`` (domyślnie — bezpieczny default) i w środowisku BRAKUJE
+# ``TWILIO_AUTH_TOKEN``, webhook jest ODRZUCANY (fail-closed). Bez tej bramki
+# brak tokenu oznaczał „pomiń walidację" → każdy mógłby wysłać sfałszowany
+# ``From`` i podszyć się pod uprawnionego dzwoniącego. Dev/test jawnie ustawiają
+# ``False`` (lokalny rozwój bez tokenu), a profil ``voice`` (publiczny tunel) —
+# ``True``.
+VOICE_REQUIRE_SIGNATURE = True
+
+
+# =============================================================================
 # OBSERVABILITY — GlitchTip (Sentry SDK), opcjonalne i sterowane DSN
 # =============================================================================
 # Self-hosted GlitchTip (kompatybilny z Sentry SDK). Bez ``SENTRY_DSN`` w

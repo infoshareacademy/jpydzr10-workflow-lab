@@ -143,6 +143,43 @@ class TestVoiceWebhook:
         )
         assert response.status_code == 403
 
+    def test_valid_signature_accepted_when_token_set(self, client, settings):
+        """POPRAWNY podpis Twilio → 200 z TwiML. Test POZYTYWNY: dowodzi, że
+        ``validator.validate`` jest faktycznie wykonywane i akceptuje prawidłowy
+        podpis — bez tego implementacja mogłaby twardo zwracać 403, a test
+        negatywny i tak by przeszedł."""
+        from twilio.request_validator import RequestValidator
+
+        token = "test-token-xyz"
+        settings.TWILIO_AUTH_TOKEN = token
+        _role_user("validsig", EmployeeProfile.Function.KIEROWNIK, "+48600000012")
+        params = {"From": "+48600000012", "CallSid": "CA26"}
+        # URL musi się zgadzać z ``_reconstructed_url`` (proto https, host testserver).
+        url = "https://testserver/voice/incoming/"
+        signature = RequestValidator(token).compute_signature(url, params)
+        response = client.post("/voice/incoming/", params, HTTP_X_TWILIO_SIGNATURE=signature)
+        assert response.status_code == 200
+        assert "ConversationRelay" in response.content.decode("utf-8")
+
+    def test_missing_token_fail_closed_when_required(self, client, settings, monkeypatch):
+        """Bez tokenu i przy VOICE_REQUIRE_SIGNATURE=True (prod/voice) webhook
+        jest ODRZUCANY (fail-closed) — inaczej każdy mógłby podszyć się pod
+        uprawnionego dzwoniącego sfałszowanym ``From``."""
+        monkeypatch.delenv("TWILIO_AUTH_TOKEN", raising=False)
+        settings.TWILIO_AUTH_TOKEN = ""
+        settings.VOICE_REQUIRE_SIGNATURE = True
+        response = client.post("/voice/incoming/", {"From": "+48600000011", "CallSid": "CA27"})
+        assert response.status_code == 403
+
+    def test_missing_token_bypass_when_not_required(self, client, settings, monkeypatch):
+        """Bez tokenu i przy VOICE_REQUIRE_SIGNATURE=False (dev/test) webhook
+        idzie ścieżką bypass (200) — lokalny rozwój bez tokenu Twilio."""
+        monkeypatch.delenv("TWILIO_AUTH_TOKEN", raising=False)
+        settings.TWILIO_AUTH_TOKEN = ""
+        settings.VOICE_REQUIRE_SIGNATURE = False
+        response = client.post("/voice/incoming/", {"From": "+48600000011", "CallSid": "CA28"})
+        assert response.status_code == 200
+
 
 # -----------------------------------------------------------------------------
 # Dyspozytor propozycja → potwierdzenie (reużycie uprawnień)

@@ -80,9 +80,11 @@ class TestSetupGroupsMissingPermission:
         err = StringIO()
         call_command("setup_groups", stdout=out, stderr=err)
 
-        # Stderr ma warning'i o brakujących permissionach
+        # Stderr nazywa KONKRETNE brakujące permission (nie samo generyczne
+        # słowo "Pominięto" — to przeszłoby też dla pominięcia z innego powodu).
         stderr_content = err.getvalue()
-        assert "does_not_exist_perm" in stderr_content or "Pominięto" in stderr_content
+        assert "does_not_exist_perm" in stderr_content
+        assert "also_missing_perm" in stderr_content
 
 
 # =============================================================================
@@ -118,8 +120,13 @@ class TestRegisterEmployeeServiceValidationError:
                 "password2": "TrudneHaslo!2026",
             },
         )
-        # Form re-rendered z błędem (200), nie redirect
+        # Form re-rendered z błędem (200), nie redirect — ORAZ błąd z warstwy
+        # serwisu (VR) faktycznie wylądował na polu password1 (add_form_errors).
+        # Bez tej asercji widok mógłby renderować pusty formularz, a test by przeszedł.
         assert response.status_code == 200
+        form = response.context["form"]
+        assert form.errors.get("password1"), "VR powinien trafić na pole password1"
+        assert any("skompromitowane" in msg for msg in form.errors["password1"])
 
 
 # =============================================================================
@@ -129,23 +136,26 @@ class TestRegisterEmployeeServiceValidationError:
 
 @pytest.mark.django_db
 class TestSeedDemoMissingReservationsJson:
-    """Pokrywa seed_demo.py:132 (else branch gdy nie istnieje reservations.json)."""
+    """Pokrywa gałąź else w ``_import_from_m1`` (brak reservations.json)."""
 
-    def test_seed_demo_without_reservations_json(self, tmp_path, monkeypatch):
-        """Brak reservations.json → command loguje 'Brak ... pomijam'."""
-        import contextlib
+    def test_seed_demo_import_m1_without_reservations_json_skips(self, tmp_path, monkeypatch):
+        """``--import-m1`` z machines.json, ale BEZ reservations.json → gałąź
+        else loguje konkretne 'pomijam' i komenda NIE wywraca się.
 
+        Wcześniejsza wersja wołała ``seed_demo`` bez ``--import-m1`` (więc
+        ``_import_from_m1`` w ogóle się nie wykonywało!), suppress(Exception)
+        łykał błędy, a asercja ``out != ""`` przechodziła dla DOWOLNEGO wyjścia
+        — czysty teatr. Teraz realnie wchodzimy w testowaną gałąź i asertujemy
+        jej konkretny ślad."""
         out = StringIO()
         from core.management.commands import seed_demo as mod
 
-        # Patch M1_DATA_DIR — minimal valid JSONs, ale BEZ reservations.json
         monkeypatch.setattr(mod, "M1_DATA_DIR", tmp_path)
-        # machines.json istnieje (pusta lista), reservations.json brakuje
         (tmp_path / "machines.json").write_text("[]")
-        # Nie tworzymy reservations.json — branch else triggered
+        # reservations.json celowo NIE istnieje → gałąź else.
 
-        # Może wybuchnąć po branch (np. nie ma userów), ale linia 134 trafiona.
-        with contextlib.suppress(Exception):
-            call_command("seed_demo", stdout=out)
-        # Output zawiera ślad gałęzi else lub successful run
-        assert out.getvalue() != ""
+        call_command("seed_demo", import_m1=True, stdout=out)
+
+        output = out.getvalue()
+        assert "reservations.json" in output
+        assert "pomijam" in output

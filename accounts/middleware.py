@@ -24,29 +24,32 @@ _TOTP_REQUIRED_FUNCTIONS = frozenset(
     }
 )
 
-# Prefiksy ścieżek dostępne BEZ przejścia 2FA (logowanie, sam setup 2FA, statyki,
-# przełącznik języka, healthcheck, panel logowania admina, debug-trigger F4).
+# Ścieżki dostępne BEZ przejścia 2FA. Rozdzielone na dwa rodzaje, by ZAMKNĄĆ
+# atak sufiksowy (``/accounts/login`` jako goły prefiks łapałby też hipotetyczne
+# ``/accounts/loginAYZ``), zachowując jednocześnie realne trasy z ukośnikiem
+# (``/accounts/login/``):
 #
-# Dopasowanie jest PREFIKSOWE (``str.startswith``): wpisy katalogowe (``/static/``,
-# ``/accounts/2fa/``) celowo obejmują wszystkie podścieżki, a wpisy „tras" (np.
-# ``/accounts/login``) obejmują też ewentualne sufiksy tej samej trasy. To
-# świadomy kompromis — allow-lista wskazuje wyłącznie nieczułe na 2FA obszary
-# (auth, statyki, healthcheck), więc nadmiarowe dopasowanie podścieżek nie
-# odsłania chronionych zasobów.
-_ALLOWED_PREFIXES = (
+# * katalogi (kończą się ``/``) — dopasowanie prefiksowe obejmuje wszystkie
+#   podścieżki (statyki, strony setupu/weryfikacji 2FA, i18n, narzędzia debug);
+# * trasy (gołe) — dopasowanie KOTWICZONE: pełna równość albo ``trasa + "/"``.
+#
+# ``/media/`` świadomie NIE jest zwolnione: pliki przesłane (protokoły przeglądów)
+# to zasób chroniony — uprawniony użytkownik bez 2FA nie powinien ich pobierać.
+_ALLOWED_DIR_PREFIXES = (
+    "/accounts/2fa/",
+    "/static/",
+    "/i18n/",
+    "/jsi18n/",
+    "/__debug__/",
+)
+_ALLOWED_EXACT_ROUTES = (
     "/accounts/login",
     "/accounts/logout",
-    "/accounts/2fa/",
     "/accounts/zablokowane",
     "/admin/login",
     "/admin/logout",
-    "/static/",
-    "/media/",
-    "/i18n/",
-    "/jsi18n/",
     "/healthz",
     "/debug/boom",
-    "/__debug__/",
 )
 
 
@@ -103,4 +106,8 @@ class TwoFactorEnforcementMiddleware:
         return redirect("accounts:2fa_setup")
 
     def _is_allowed_path(self, path: str) -> bool:
-        return path == self.home_url or path.startswith(_ALLOWED_PREFIXES)
+        if path == self.home_url or path.startswith(_ALLOWED_DIR_PREFIXES):
+            return True
+        # Trasy gołe: równość albo trasa zakończona ukośnikiem (np.
+        # ``/accounts/login/``) — ale NIE ``/accounts/loginXYZ`` (atak sufiksowy).
+        return any(path == route or path.startswith(route + "/") for route in _ALLOWED_EXACT_ROUTES)
