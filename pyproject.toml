@@ -53,6 +53,7 @@ dependencies = [
     "twilio>=9.10.9",
     "uvicorn>=0.49,<0.50",
     "fastapi>=0.136,<0.137",
+    "google-genai>=2.3.0",
 ]
 
 # =============================================================================
@@ -69,7 +70,6 @@ dev = [
     # --- Linter + formatter ---
     "ruff>=0.15",                      # pycodestyle + pyflakes + isort + black + bugbear w 1
     "pre-commit>=4.5",                 # git hook manager
-
     # --- Pytest stack ---
     "pytest>=9.0",
     "pytest-django>=4.11",             # Django integration (DJANGO_SETTINGS_MODULE)
@@ -79,10 +79,10 @@ dev = [
     "freezegun>=1.5",                  # mock date.today() / timezone.now()
     "hypothesis>=6.152",               # property-based testing dla has_conflict, run_daily_sync
     "pytest-bdd>=8.1",                 # Gherkin scenarios (Sprint 6+ bonus)
-
     # --- Dev convenience ---
     "django-debug-toolbar>=4.4",       # SQL profiling, request inspection
     "django-extensions>=3.2",          # manage.py shell_plus, show_urls, etc.
+    "pytest-playwright>=0.8.0",
 ]
 
 prod = [
@@ -119,7 +119,11 @@ exclude = ["tests*", "media*", "static*"]
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "planer_config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_test.py"]
-addopts = "-v --tb=short --strict-markers --reuse-db --ignore=archive"
+# Domyślnie pomijamy testy ``e2e`` (Playwright) — wymagają żywego serwera (:8002)
+# i pobranej przeglądarki, więc nie pasują do uruchomień jednostkowych ani CI bez
+# tej infrastruktury. Uruchamiasz je jawnie: ``make e2e`` (``-m e2e`` z CLI nadpisuje
+# ten filtr) po ``make run``.
+addopts = "-v --tb=short --strict-markers --reuse-db --ignore=archive -m 'not e2e'"
 # pytest-bdd — wszystkie .feature żyją w tests/bdd/features/, step modules
 # w tests/bdd/steps/test_*.py. Bazowy katalog pozwala na ``scenarios(
 # "../features/X.feature")`` z dowolnego step modułu.
