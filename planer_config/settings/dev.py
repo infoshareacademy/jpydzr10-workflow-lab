@@ -28,15 +28,21 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
 # =============================================================================
 # Pokazuje się jako pasek po prawej stronie w przeglądarce gdy DEBUG=True
 # i request idzie z INTERNAL_IPS.
+#
+# Można wyłączyć przez ``DJDT_DISABLED=1`` w środowisku — przydatne do audytów,
+# które toolbar zaburza: kontrast a11y (przycisk toolbara to jedyny dev-only fail
+# Lighthouse) oraz CSP (toolbar dorzuca własne skrypty). Wtedy ``make run`` daje
+# czysty obraz aplikacji bez przełączania na DEBUG=False.
 
-INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
+if os.environ.get("DJDT_DISABLED") != "1":
+    INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
 
-# Middleware MUSI być wstawione PRZED HtmxMiddleware (żeby toolbar
-# nie był renderowany w HTMX partial responses) — znajdujemy index ręcznie.
-_htmx_idx = MIDDLEWARE.index("django_htmx.middleware.HtmxMiddleware")  # noqa: F405
-MIDDLEWARE.insert(_htmx_idx, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
+    # Middleware MUSI być wstawione PRZED HtmxMiddleware (żeby toolbar
+    # nie był renderowany w HTMX partial responses) — znajdujemy index ręcznie.
+    _htmx_idx = MIDDLEWARE.index("django_htmx.middleware.HtmxMiddleware")  # noqa: F405
+    MIDDLEWARE.insert(_htmx_idx, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 
-INTERNAL_IPS = ["127.0.0.1", "localhost"]
+    INTERNAL_IPS = ["127.0.0.1", "localhost"]
 
 DEBUG_TOOLBAR_CONFIG = {
     # ProfilingPanel wyłączony: cProfile koliduje przy współbieżnych requestach

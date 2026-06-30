@@ -42,7 +42,10 @@ urlpatterns = [
 
 if settings.DEBUG:  # pragma: no cover — dev-only branch, test settings have DEBUG=False
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+    # debug_toolbar można wyłączyć przez DJDT_DISABLED=1 (audyty a11y/CSP) — wtedy
+    # app nie jest zainstalowany, więc include'ujemy jego URL-e tylko gdy obecny.
+    if "debug_toolbar" in settings.INSTALLED_APPS:
+        urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
 
 # Custom error handlers — jawnie wskazane (mimo że to wartości domyślne Django),
 # żeby udokumentować, że projekt świadomie korzysta z własnych szablonów
