@@ -252,24 +252,39 @@
             return html;
         }
 
-        // Loader Google Maps API jest async/defer - sluchamy az dolaczy + odpalamy.
-        // Sprawdzamy okresowo (200ms) czy window.google.maps juz dostepne.
+        // Loader Google Maps API jest async/defer (loading=async&v=weekly). W tym trybie
+        // klasy (Map/Geocoder/Marker/...) laduja sie przez google.maps.importLibrary —
+        // bezposrednie ``new google.maps.Map`` rzuca "Map is not a constructor", dopoki
+        // biblioteka "maps" nie zostanie zaimportowana. Czekamy wiec az pojawi sie
+        // importLibrary, importujemy wymagane biblioteki (maps + geocoding), a dopiero
+        // potem rysujemy mape (importLibrary wypelnia globalny namespace google.maps.*).
+        function showMapsError() {
+            var mapEl = document.getElementById('machine-map');
+            if (mapEl) {
+                mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#991b1b;background:#fef2f2;height:100%;display:flex;align-items:center;justify-content:center;">' +
+                    '{% trans "Nie udało się załadować Google Maps API. Sprawdź konsolę przeglądarki + klucz API." %}' +
+                    '</div>';
+            }
+        }
         var checkCount = 0;
         var maxChecks = 50; // 10 sekund max
         var interval = setInterval(function () {
             checkCount++;
-            if (window.google && window.google.maps) {
+            if (window.google && window.google.maps && typeof google.maps.importLibrary === 'function') {
                 clearInterval(interval);
-                initMachineMap();
+                Promise.all([
+                    google.maps.importLibrary('maps'),
+                    google.maps.importLibrary('geocoding')
+                ]).then(function () {
+                    initMachineMap();
+                }).catch(function (e) {
+                    console.error('[Mapy] Nie udalo sie zaimportowac bibliotek Google Maps:', e);
+                    showMapsError();
+                });
             } else if (checkCount >= maxChecks) {
                 clearInterval(interval);
                 console.error('[Mapy] Google Maps API nie zaladowane w 10s - sprawdz klucz API i CSP.');
-                var mapEl = document.getElementById('machine-map');
-                if (mapEl) {
-                    mapEl.innerHTML = '<div style="padding:24px;text-align:center;color:#991b1b;background:#fef2f2;height:100%;display:flex;align-items:center;justify-content:center;">' +
-                        '{% trans "Nie udało się załadować Google Maps API. Sprawdź konsolę przeglądarki + klucz API." %}' +
-                        '</div>';
-                }
+                showMapsError();
             }
         }, 200);
     })();
