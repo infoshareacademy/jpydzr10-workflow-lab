@@ -298,7 +298,7 @@
             <span class="text-slate-600 dark:text-slate-400">
                 {% trans "Strona" %} <span class="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{{ page_obj.number }}</span>
                 {% trans "z" %} <span class="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{{ page_obj.paginator.num_pages }}</span>
-                <span class="text-slate-400 dark:text-slate-500 ml-1">{% blocktrans with count=page_obj.paginator.count %}({{ count }} wyników){% endblocktrans %}</span>
+                <span class="text-slate-500 dark:text-slate-400 ml-1">{% blocktrans with count=page_obj.paginator.count %}({{ count }} wyników){% endblocktrans %}</span>
             </span>
             <ul class="flex gap-1">
                 {% if page_obj.has_previous %}

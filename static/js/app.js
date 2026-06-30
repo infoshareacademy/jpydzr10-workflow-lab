@@ -160,6 +160,45 @@
         };
     };
 
+    /* Flatpickr a11y: altInput (widoczny klon) nie dziedziczy etykiety ani
+       sensownego tabindex. onReady kopiuje tekst <label for=origId> jako
+       aria-label na altInput i czysci dodatni tabindex (anti-pattern WCAG).
+       Oryginalny (ukryty) input zachowuje name -> formularz dziala bez zmian. */
+    function flatpickrA11yReady(selectedDates, dateStr, instance) {
+        var alt = instance.altInput;
+        if (!alt) return;
+        var ti = alt.getAttribute("tabindex");
+        if (ti !== null && parseInt(ti, 10) > 0) alt.setAttribute("tabindex", "0");
+        if (!alt.getAttribute("aria-label")) {
+            var orig = instance.input;
+            var labelText = "";
+            if (orig.id) {
+                var lbl = document.querySelector('label[for="' + orig.id + '"]');
+                if (lbl) labelText = lbl.textContent.trim();
+            }
+            if (!labelText && orig.getAttribute("aria-label")) {
+                labelText = orig.getAttribute("aria-label");
+            }
+            if (labelText) alt.setAttribute("aria-label", labelText);
+        }
+    }
+
+    function buildFlatpickrConfig(extra) {
+        var cfg = {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d.m.Y",
+            allowInput: true,
+            onReady: flatpickrA11yReady,
+        };
+        if (extra) {
+            for (var k in extra) {
+                if (Object.prototype.hasOwnProperty.call(extra, k)) cfg[k] = extra[k];
+            }
+        }
+        return cfg;
+    }
+
     /* Flatpickr auto-init dla pol z klasa .flatpickr / input[type=date]. */
     document.addEventListener("DOMContentLoaded", function () {
         if (window.flatpickr) {
@@ -170,31 +209,23 @@
             if (uiLang.startsWith("pl") && window.flatpickr.l10ns && window.flatpickr.l10ns.pl) {
                 window.flatpickr.localize(window.flatpickr.l10ns.pl);
             }
-            document.querySelectorAll(".flatpickr, input[type='date']").forEach((el) => {
-                window.flatpickr(el, {
-                    dateFormat: "Y-m-d",
-                    altInput: true,
-                    altFormat: "d.m.Y",
-                    allowInput: true,
-                    // Renderuj kalendarz inline w DOM modala (nie na body),
-                    // zeby klikniecie daty nie bylo interpretowane jako
-                    // "click outside modal" -> nie zamyka popupa rezerwacji.
-                    static: true,
-                });
+            // data-skip-flatpickr: pozostaw natywny <input type=date> (w pelni
+            // dostepny — etykieta for/id, brak altInput). Uzywane tam, gdzie liczy
+            // sie deterministyczna dostepnosc (filtry raportow).
+            document.querySelectorAll(".flatpickr, input[type='date']:not([data-skip-flatpickr])").forEach((el) => {
+                // static: renderuj kalendarz inline w DOM modala (nie na body),
+                // zeby klikniecie daty nie bylo interpretowane jako "click outside
+                // modal" -> nie zamyka popupa rezerwacji.
+                window.flatpickr(el, buildFlatpickrConfig({ static: true }));
             });
         }
     });
 
     document.addEventListener("htmx:afterSwap", function (e) {
         if (window.flatpickr) {
-            e.target.querySelectorAll(".flatpickr, input[type='date']").forEach((el) => {
+            e.target.querySelectorAll(".flatpickr, input[type='date']:not([data-skip-flatpickr])").forEach((el) => {
                 if (!el._flatpickr) {
-                    window.flatpickr(el, {
-                        dateFormat: "Y-m-d",
-                        altInput: true,
-                        altFormat: "d.m.Y",
-                        allowInput: true,
-                    });
+                    window.flatpickr(el, buildFlatpickrConfig());
                 }
             });
         }

@@ -240,11 +240,13 @@
         <div>
             <label for="chart_after" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{% trans "Od dnia" %}</label>
             <input type="date" id="chart_after" name="performed_after" value="{{ request.GET.performed_after }}"
+                   data-skip-flatpickr
                    class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
         </div>
         <div>
             <label for="chart_before" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{% trans "Do dnia" %}</label>
             <input type="date" id="chart_before" name="performed_before" value="{{ request.GET.performed_before }}"
+                   data-skip-flatpickr
                    class="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-slate-900 dark:text-slate-100">
         </div>
         <div class="flex items-end">
