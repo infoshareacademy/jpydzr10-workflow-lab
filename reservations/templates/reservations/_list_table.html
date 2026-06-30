@@ -154,7 +154,7 @@
 
                                         {% if r.is_pending %}
                                             <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="block"
-                                                  onsubmit="return confirm('{% blocktrans with pk=r.pk uid=r.machine.uid %}Potwierdzić rezerwację #{{ pk }} ({{ uid }})? Status zmieni się z oczekującej na potwierdzoną.{% endblocktrans %}');">
+                                                  data-confirm="{% blocktrans with pk=r.pk uid=r.machine.uid %}Potwierdzić rezerwację #{{ pk }} ({{ uid }})? Status zmieni się z oczekującej na potwierdzoną.{% endblocktrans %}">
                                                 {% csrf_token %}
                                                 <button type="submit"
                                                         role="menuitem"
@@ -169,7 +169,7 @@
 
                                         {% if r.is_confirmed %}
                                             <form method="post" action="{% url 'reservations:complete' r.pk %}" class="block"
-                                                  onsubmit="return confirm('{% blocktrans with pk=r.pk uid=r.machine.uid %}Zakończyć rezerwację #{{ pk }} ({{ uid }})? Maszyna wróci do magazynu — tej operacji NIE da się cofnąć.{% endblocktrans %}');">
+                                                  data-confirm="{% blocktrans with pk=r.pk uid=r.machine.uid %}Zakończyć rezerwację #{{ pk }} ({{ uid }})? Maszyna wróci do magazynu — tej operacji NIE da się cofnąć.{% endblocktrans %}">
                                                 {% csrf_token %}
                                                 <button type="submit"
                                                         role="menuitem"
@@ -184,7 +184,7 @@
 
                                         {% if not r.is_closed %}
                                             <form method="post" action="{% url 'reservations:cancel' r.pk %}" class="block"
-                                                  onsubmit="return confirm('{% blocktrans with pk=r.pk %}Czy na pewno anulować rezerwację #{{ pk }}?{% endblocktrans %}');">
+                                                  data-confirm="{% blocktrans with pk=r.pk %}Czy na pewno anulować rezerwację #{{ pk }}?{% endblocktrans %}">
                                                 {% csrf_token %}
                                                 <button type="submit"
                                                         role="menuitem"
@@ -267,7 +267,7 @@
                     </a>
                     {% if r.is_pending %}
                         <form method="post" action="{% url 'reservations:confirm' r.pk %}" class="flex-1 min-w-[6rem]"
-                              onsubmit="return confirm('{% blocktrans with pk=r.pk uid=r.machine.uid %}Potwierdzić rezerwację #{{ pk }} ({{ uid }})?{% endblocktrans %}');">
+                              data-confirm="{% blocktrans with pk=r.pk uid=r.machine.uid %}Potwierdzić rezerwację #{{ pk }} ({{ uid }})?{% endblocktrans %}">
                             {% csrf_token %}
                             <button type="submit"
                                     class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
@@ -276,7 +276,7 @@
                         </form>
                     {% elif r.is_confirmed %}
                         <form method="post" action="{% url 'reservations:complete' r.pk %}" class="flex-1 min-w-[6rem]"
-                              onsubmit="return confirm('{% blocktrans with pk=r.pk uid=r.machine.uid %}Zakończyć rezerwację #{{ pk }}? Maszyna {{ uid }} wróci do magazynu — nie da się cofnąć.{% endblocktrans %}');">
+                              data-confirm="{% blocktrans with pk=r.pk uid=r.machine.uid %}Zakończyć rezerwację #{{ pk }}? Maszyna {{ uid }} wróci do magazynu — nie da się cofnąć.{% endblocktrans %}">
                             {% csrf_token %}
                             <button type="submit"
                                     class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">

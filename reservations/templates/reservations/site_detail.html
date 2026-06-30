@@ -218,7 +218,7 @@
                     {% if perms.reservations.delete_constructionsite %}
                     <div class="pt-2 border-t border-slate-100 dark:border-slate-700 mt-3">
                         <form method="post" action="{% url 'reservations:site_delete' site.pk %}" class="block"
-                              onsubmit="return confirm('{% blocktrans with number=site.project_number %}Usunąć budowę {{ number }}? Tej operacji nie można cofnąć.{% endblocktrans %}');">
+                              data-confirm="{% blocktrans with number=site.project_number %}Usunąć budowę {{ number }}? Tej operacji nie można cofnąć.{% endblocktrans %}">
                             {% csrf_token %}
                             <button type="submit"
                                     class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 min-h-[44px]">

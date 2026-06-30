@@ -17,6 +17,7 @@ import os
 import sys
 from pathlib import Path
 
+from csp.constants import NONCE
 from dotenv import load_dotenv
 
 # =============================================================================
@@ -110,6 +111,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",  # Content Security Policy
+    "core.middleware.AdminCspRelaxMiddleware",  # luzniejszy script-src tylko dla /admin/
     "django_htmx.middleware.HtmxMiddleware",  # request.htmx flag
     "simple_history.middleware.HistoryRequestMiddleware",  # request._history_user
     "chatbot.middleware.RatelimitedMiddleware",  # Ratelimited -> 429 + polski msg
@@ -215,11 +217,13 @@ UNFOLD = {
 # =============================================================================
 # CONTENT SECURITY POLICY (django-csp 4.x)
 # =============================================================================
-# Aktualny stan (po Wave 9.2 C2 — Tailwind CLI build):
-#   - 'unsafe-inline' (script) zostaje: małe inline <script nonce> w base.html
-#     (FOUC prevention theme bootstrap, themeToggle definition). Migracja na
-#     strict nonce-based CSP wymaga przeniesienia tych snippetów do external
-#     /static/js/*.js — TODO w osobnej sesji (M3).
+# Aktualny stan (M3 — strict nonce-based script-src):
+#   - 'unsafe-inline' (script) USUNIĘTE: wszystkie inline <script> mają nonce
+#     ({{ CSP_NONCE }}), a inline event-handlery (onclick/onchange/onsubmit) zostały
+#     przeniesione na delegację zdarzeń w static/js/app.js (data-confirm /
+#     data-autosubmit / data-history-back / data-row-href). Panel /admin/ (szablony
+#     zewnętrzne django-unfold z inline on*) dostaje 'unsafe-inline' z powrotem przez
+#     AdminCspRelaxMiddleware — zaufana powierzchnia is_staff, front-end pozostaje ścisły.
 #   - 'unsafe-eval' (script) zostaje TYLKO ze względu na Alpine.js 3.x default
 #     build, który używa ``new Function()`` w evaluatorach x-data / x-show /
 #     @click. Tailwind Play CDN został wyłączony (poprzednio drugi requestor
@@ -244,8 +248,8 @@ CONTENT_SECURITY_POLICY = {
         "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com"),
         "script-src": (
             "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",
+            NONCE,  # emituje 'nonce-<...>' — pokrywa inline <script nonce="{{ CSP_NONCE }}">
+            "'unsafe-eval'",  # Alpine.js 3.x (new Function w evaluatorach) — patrz nota wyżej
             "https://maps.googleapis.com",
         ),
         "img-src": (

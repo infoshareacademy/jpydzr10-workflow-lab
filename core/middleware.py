@@ -107,3 +107,36 @@ class AuditLogMiddleware:
             for item in touched
         ]
         AuditLogEntry.objects.bulk_create(entries)
+
+
+class AdminCspRelaxMiddleware:
+    """Dopuszcza ``'unsafe-inline'`` w ``script-src`` WYŁĄCZNIE dla ``/admin/``.
+
+    Aplikacja użytkownika korzysta ze ścisłego, opartego na nonce CSP — bez
+    ``'unsafe-inline'`` w ``script-src`` (inline ``<script>`` mają nonce, a dawne
+    inline event-handlery ``on*`` zostały przeniesione na delegację zdarzeń w
+    ``static/js/app.js``). Panel administracyjny Django opiera się jednak na
+    szablonach zewnętrznych (``django-unfold`` / ``django.contrib.admin``), które
+    zawierają inline event-handlery (np. ``oninput="this.submit()"`` w filtrach) —
+    nie kontrolujemy ich i nie chcemy nadpisywać cudzych szablonów. Bez tej
+    relaksacji filtry/akcje panelu przestałyby działać.
+
+    Panel jest dostępny tylko dla ``is_staff``/superusera (zaufana powierzchnia,
+    nieeksponowana publicznie), więc luźniejszy ``script-src`` jest tu akceptowalny;
+    front-end pozostaje ścisły.
+
+    Mechanika: ustawia ``response._csp_update`` — atrybut odczytywany przez
+    ``csp.middleware.CSPMiddleware`` przy budowie nagłówka. Dlatego w ``MIDDLEWARE``
+    MUSI stać PO ``CSPMiddleware`` (kolejność ``process_response`` jest odwrotna do
+    listy, więc ten middleware wykona się wcześniej i ustawi atrybut, zanim CSP
+    zbuduje politykę).
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.path.startswith("/admin/"):
+            response._csp_update = {"script-src": ["'unsafe-inline'"]}
+        return response

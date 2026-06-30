@@ -199,4 +199,56 @@
             });
         }
     });
+
+    /* ========================================================================
+     * Delegowane handlery zdarzeń (strict CSP — zero inline ``on*`` atrybutow).
+     * ------------------------------------------------------------------------
+     * Po usunieciu ``'unsafe-inline'`` ze ``script-src`` inline event-handlery
+     * (``onclick``/``onchange``/``onsubmit``) sa blokowane przez przegladarke.
+     * Zastepujemy je delegacja na ``document`` + atrybutami ``data-*``.
+     * KLUCZOWE: listener na ``document`` przezywa podmiany HTMX (partiale listy
+     * sa swapowane bez pelnego reloadu), wiec np. dialogi potwierdzenia dzialaja
+     * takze PO przefiltrowaniu/stronicowaniu listy rezerwacji — inaczej niz
+     * dyrektywy Alpine, ktore nie re-inicjalizuja sie na swapowanym HTML.
+     * ====================================================================== */
+
+    // 1) Potwierdzenie przed wyslaniem formularza: <form data-confirm="...">.
+    //    Zdarzenie `submit` babelkuje do document, wiec lapie tez formularze
+    //    wstrzykniete przez HTMX. Anulowanie w confirm() blokuje wysylke.
+    document.addEventListener("submit", function (e) {
+        const form = e.target;
+        if (form instanceof HTMLFormElement && form.dataset.confirm) {
+            if (!window.confirm(form.dataset.confirm)) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    // 2) Auto-submit selecta po zmianie: <select data-autosubmit>.
+    //    Zastepuje onchange="this.form.submit()" (przelacznik jezyka, per-page).
+    document.addEventListener("change", function (e) {
+        const el = e.target;
+        if (el && el.matches && el.matches("[data-autosubmit]")) {
+            const form = el.form || (el.closest && el.closest("form"));
+            if (form) form.submit();
+        }
+    });
+
+    // 3) Przycisk „wstecz" z fallbackiem: <button data-history-back> (403/404).
+    document.addEventListener("click", function (e) {
+        const trigger = e.target.closest && e.target.closest("[data-history-back]");
+        if (trigger && window.history.length > 1) {
+            window.history.back();
+        }
+    });
+
+    // 4) Klikalny wiersz tabeli: <tr data-row-href="URL"> (lista budow).
+    //    Klikniecie w link/przycisk wewnatrz wiersza dziala normalnie (nie
+    //    porywamy go) — zastepuje onclick + onclick="event.stopPropagation()".
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest) return;
+        if (e.target.closest("a, button, input, select, textarea, label")) return;
+        const row = e.target.closest("[data-row-href]");
+        if (row) window.location = row.dataset.rowHref;
+    });
 })();

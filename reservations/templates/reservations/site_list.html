@@ -143,11 +143,10 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                         {% for s in sites %}
                             <tr class="group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
-                                onclick="window.location='{% url 'reservations:site_detail' s.pk %}'">
+                                data-row-href="{% url 'reservations:site_detail' s.pk %}">
                                 <td class="px-3 py-3 font-mono text-xs">
                                     <a href="{% url 'reservations:site_detail' s.pk %}"
-                                       class="text-brand-700 dark:text-brand-300 hover:underline font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                                       onclick="event.stopPropagation();">
+                                       class="text-brand-700 dark:text-brand-300 hover:underline font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                                         {{ s.project_number }}
                                     </a>
                                 </td>

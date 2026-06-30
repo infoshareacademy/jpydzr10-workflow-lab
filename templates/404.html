@@ -118,7 +118,7 @@
 
             {# Secondary — history.back() z fallback (jeśli brak historii to no-op) #}
             <button type="button"
-                    onclick="if (window.history.length > 1) { window.history.back(); }"
+                    data-history-back
                     class="btn-secondary inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px]
                            rounded-lg text-sm font-medium
                            bg-white dark:bg-slate-800

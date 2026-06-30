@@ -121,10 +121,9 @@
             }
 
             var geocoder = new google.maps.Geocoder();
+            // Wbudowany przycisk zamkniecia (✕) InfoWindow obsluguje Google Maps
+            // natywnie — nie dorzucamy wlasnego (inline onclick lamalby strict CSP).
             var infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
-            // Expose globalnie zeby custom close button (✕) w renderInfoWindow
-            // mial dostep przez window.__planerMapsInfoWindow.close().
-            window.__planerMapsInfoWindow = infoWindow;
             var bounds = new google.maps.LatLngBounds();
             var resolved = 0;
 
@@ -225,10 +224,7 @@
             }[pin.inspection_status] || 'background:#e0e7ff;color:#3730a3;';
 
             var html = '' +
-                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;position:relative;">' +
-                  '<button onclick="window.__planerMapsInfoWindow && window.__planerMapsInfoWindow.close()" ' +
-                    'style="position:absolute;top:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.95);border:1px solid #cbd5e1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:#475569;z-index:10;padding:0;font-weight:bold;" ' +
-                    'title="{% trans "Zamknij" %}" aria-label="{% trans "Zamknij okno informacji" %}">✕</button>' +
+                '<div style="max-width:300px;min-width:240px;font-family:system-ui,sans-serif;">' +
                   '<img src="' + esc(pin.photo_url) + '" alt="' + esc(pin.name) +
                   '" style="width:100%;height:120px;object-fit:cover;border-radius:6px;background:#f1f5f9;" loading="lazy" />' +
                   '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:600;line-height:1.3;">' +
