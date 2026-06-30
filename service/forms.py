@@ -230,16 +230,23 @@ class ReportFilterForm(forms.Form):
     year = forms.IntegerField(
         min_value=2000,
         max_value=2100,
-        initial=date.today().year,
         label=_("Rok"),
         widget=forms.NumberInput(attrs={"class": INPUT_CSS, "min": "2000", "max": "2100"}),
     )
     quarter = forms.ChoiceField(
         choices=QUARTER_CHOICES,
-        initial=((date.today().month - 1) // 3) + 1,
         label=_("Kwartał"),
         widget=forms.Select(attrs={"class": SELECT_CSS}),
     )
+
+    def __init__(self, *args, **kwargs):
+        # Domyślny rok/kwartał liczony PER-INSTANCJA (w __init__, nie przy imporcie
+        # modułu na poziomie klasy) — inaczej `initial` zamarza na dacie startu
+        # procesu i po granicy kwartału pokazuje stary kwartał (oraz psuje freezegun).
+        super().__init__(*args, **kwargs)
+        today = date.today()
+        self.fields["year"].initial = today.year
+        self.fields["quarter"].initial = ((today.month - 1) // 3) + 1
 
 
 # =============================================================================

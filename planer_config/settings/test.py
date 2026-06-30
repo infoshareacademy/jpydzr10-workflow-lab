@@ -7,6 +7,8 @@ szybkich, izolowanych testów (MD5 hasher, locmem cache, InMemoryStorage,
 axes off).
 """
 
+import os as _os
+
 from .base import *  # noqa: F403
 
 # =============================================================================
@@ -15,6 +17,19 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 ALLOWED_HOSTS = ["testserver"]
+
+# =============================================================================
+# TWILIO — neutralizuj realny token z .env w testach (inaczej suita czerwona)
+# =============================================================================
+# ``chatbot.voice_views._signature_valid`` włącza walidację podpisu Twilio, gdy
+# ``TWILIO_AUTH_TOKEN`` jest ustawiony w settings LUB os.environ. Na maszynie z
+# wypełnionym ``.env`` realny token sprawia, że niepodpisane żądania testowe
+# webhooka dostają 403 (7 testów voice pada — CI jest zielone tylko dlatego, że
+# nie ma tam ``.env``). Usuwamy token ze środowiska procesu testowego → webhook
+# idzie ścieżką dev-bypass (200). Test negatywny ustawia ``settings.TWILIO_AUTH_TOKEN``
+# lokalnie (override_settings), więc nadal weryfikuje odrzucenie złego podpisu.
+_os.environ.pop("TWILIO_AUTH_TOKEN", None)
+TWILIO_AUTH_TOKEN = ""
 
 # =============================================================================
 # 2FA — obejście wymuszenia w testach (czytane w czasie żądania przez middleware)
