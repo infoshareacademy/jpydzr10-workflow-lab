@@ -109,7 +109,11 @@ def test_reservation_approval_gate_by_role(roles, role, action):
     resp = client.post(reverse(f"reservations:{action}", args=[res.pk]))
 
     if role in ("admin", "magazynier"):
-        assert resp.status_code != 403, f"{role} powinien móc {action}"
+        # Allowed = nie tylko „nie 403", ale poprawnie obsłużone: redirect po akcji
+        # (302) lub re-render z walidacją (200). Wyklucza też ciche 5xx/404.
+        assert resp.status_code in (200, 302), (
+            f"{role} powinien móc {action} (got {resp.status_code})"
+        )
     else:
         assert resp.status_code == 403, (
             f"{role} NIE powinien móc {action} (kier=składa, monter=read-only)"
@@ -129,7 +133,9 @@ def test_site_delete_gate_by_role(roles, role, expected_denied):
     if expected_denied:
         assert resp.status_code == 403
     else:
-        assert resp.status_code != 403
+        assert resp.status_code in (200, 302), (
+            f"{role} powinien móc usunąć budowę (got {resp.status_code})"
+        )
 
 
 @pytest.mark.parametrize("role", ["magazynier", "kierownik", "montazysta"])
