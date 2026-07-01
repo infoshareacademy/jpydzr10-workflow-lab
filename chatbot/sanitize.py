@@ -48,8 +48,14 @@ _INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     # Ujawnij/wypisz system prompt — bardziej specyficzne wzorce PRZED ogólnym
     # "system\s*prompt", inaczej krótki regex pożera fragment i dłuższy
     # ("ujawnij swoj system") już nie matchuje.
+    #
+    # Zawężenie: "system"/"prompt" są jednoznaczne (żądanie ujawnienia konfiguracji
+    # agenta), ale "instrukcje" jest dwuznaczne — "wypisz instrukcje przeglądu"
+    # to legalne pytanie o dane. Dlatego "instrukcje" łapiemy TYLKO gdy poprzedza
+    # je "swój" (= instrukcje agenta), a "system"/"prompt" łapiemy zawsze.
     re.compile(
-        r"(ujawnij|pokaz|wypisz)(\s+swoj)?\s+(system|prompt|instrukcje)",
+        r"(ujawnij|pokaz|poka[zż]|wypisz)\s+(swoj\w*\s+)?(system\b|prompt\b)"
+        r"|(ujawnij|pokaz|poka[zż]|wypisz)\s+swoj\w*\s+instrukcj",
         re.IGNORECASE,
     ),
     re.compile(
@@ -88,7 +94,44 @@ _INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(skip|pomi[jń])\s+(confirmation|potwierdzeni)", re.IGNORECASE),
     # Privilege escalation marker.
     re.compile(r"(developer|admin|root)\s+mode", re.IGNORECASE),
-    re.compile(r"(tryb|mode)\s+(administra|developer|admin|root)", re.IGNORECASE),
+    # Zawężenie: łapiemy rdzeń ROLI (rzeczownik: "administrator", "developer",
+    # "root", "admin") a NIE przymiotnik "administracyjny" — "tryb administracyjny
+    # magazynu" to legalny widok biznesowy, nie próba eskalacji.
+    re.compile(
+        r"(tryb|mode)\s+(administrator|developer|dewelop|root\b|admin\b)",
+        re.IGNORECASE,
+    ),
+    # -----------------------------------------------------------------------
+    # Hardening 2026-07: domknięcie luk PL wykrytych w audycie prompt-injection.
+    # Regexy PL były pisane bez diakrytyków i tylko w jednym szyku wyrazów, więc
+    # naturalne polskie warianty ataku przechodziły. Poniższe wzorce są WĄSKIE
+    # (celują tylko w atak-only sygnatury), by NIE psuć legalnych zapytań
+    # biznesowych ("zignoruj poprzednią rezerwację" MA przejść).
+    # -----------------------------------------------------------------------
+    # N1 — reveal system prompt PL, dowolny szyk + diakrytyki ("prompt systemowy",
+    # "instrukcje systemowe", "instrukcje systemu"). Fraza techniczna nieobecna
+    # w domenie maszyn budowlanych.
+    re.compile(r"prompt\w*\s+systemow", re.IGNORECASE),
+    re.compile(r"instrukcj\w*\s+systemow", re.IGNORECASE),
+    re.compile(r"(prompt|instrukcj\w*|polece\w+)\s+systemu\b", re.IGNORECASE),
+    # N2 — role hijacking PL z diakrytykami ("jesteś teraz ..."). Whitelist
+    # JEDNOZNACZNYCH ról, żeby nie łapać "jesteś teraz na budowie?" / "jesteś
+    # teraz wolny?" (legalne). "nieograniczonym asystentem" złapie się na "asystent".
+    re.compile(
+        r"jeste[sś]\s+teraz\s+\w*\s*"
+        r"(admin|root|asystent|modelem|systemem|haker|deweloper|programist|\bdan\b)",
+        re.IGNORECASE,
+    ),
+    # N3 — auto-confirm PL w dowolnym szyku ("potwierdzaj automatycznie" /
+    # "automatycznie potwierdzaj").
+    re.compile(r"potwierdzaj\s+(wszystko|automatyczn)", re.IGNORECASE),
+    re.compile(r"automatyczn\w*\s+potwierdzaj", re.IGNORECASE),
+    # N4 — EN "ignore/disregard" z wtrętem słowa ("ignore your/the previous").
+    # Poprzedni wzorzec dopuszczał tylko "all" pomiędzy.
+    re.compile(
+        r"(ignore|disregard)\s+(your|the|any|these|those)\s+(previous|prior|above|earlier)",
+        re.IGNORECASE,
+    ),
 )
 
 # Marker zastępujący wycięte wzorce — agent widzi że coś zostało wycięte.
