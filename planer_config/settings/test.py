@@ -30,6 +30,10 @@ ALLOWED_HOSTS = ["testserver"]
 # lokalnie (override_settings), więc nadal weryfikuje odrzucenie złego podpisu.
 _os.environ.pop("TWILIO_AUTH_TOKEN", None)
 TWILIO_AUTH_TOKEN = ""
+# GlitchTip/Sentry wyłączony w testach — nie wysyłamy błędów do panelu z testów
+# (``.env`` może mieć realny SENTRY_DSN do dev/demo).
+_os.environ.pop("SENTRY_DSN", None)
+SENTRY_DSN = None
 # Bez tokenu webhook głosowy domyślnie wpada w bypass (200) — testy ścieżki
 # pozytywnej i fail-closed jawnie nadpisują tę flagę przez ``settings`` fixture.
 VOICE_REQUIRE_SIGNATURE = False

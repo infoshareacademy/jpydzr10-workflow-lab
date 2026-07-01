@@ -55,6 +55,16 @@ class EmployeeProfile(TimestampedModel):
         validators=[phone_e164_validator],
         verbose_name=_("Telefon"),
     )
+    voice_pin_hash = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        verbose_name=_("PIN głosowy (hash)"),
+        help_text=_(
+            "Hash PIN-u do autoryzacji w agencie głosowym (drugi czynnik obok numeru "
+            "telefonu). Puste = brak PIN. Ustawiany przez pracownika (self-service) lub admina."
+        ),
+    )
     employee_id = models.CharField(
         max_length=20,
         blank=True,

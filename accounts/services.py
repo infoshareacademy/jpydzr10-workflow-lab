@@ -11,6 +11,7 @@ do audytu zmian.
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 
 from django.contrib.auth import get_user_model
@@ -87,6 +88,46 @@ def update_profile(profile: EmployeeProfile, **data) -> EmployeeProfile:
     profile.full_clean()
     profile.save()
     return profile
+
+
+# PIN głosowy — zbyt oczywiste wartości odrzucane (za łatwe do zgadnięcia).
+_TRIVIAL_VOICE_PINS = frozenset(
+    {"1234", "4321", "12345", "54321", "123456", "654321", "112233", "121212"}
+)
+
+
+def set_voice_pin(profile: EmployeeProfile, raw_pin: str, *, actor: User | None = None) -> None:
+    """Ustawia PIN głosowy pracownika (hash PBKDF2 — NIGDY plaintext).
+
+    Waliduje: 4–6 cyfr, nie trywialny (``1234``/``0000``/ciągi/powtórki). PIN jest
+    DRUGIM czynnikiem uwierzytelnienia w agencie głosowym (obok numeru/caller-ID) —
+    dzwoniący musi go podać przy każdym połączeniu. Rzuca ``ValidationError`` gdy
+    PIN nie spełnia wymagań.
+    """
+    from django.contrib.auth.hashers import make_password
+
+    pin = (raw_pin or "").strip()
+    if not re.fullmatch(r"\d{4,6}", pin):
+        raise ValidationError(_("PIN musi składać się z 4–6 cyfr."))
+    if pin in _TRIVIAL_VOICE_PINS or len(set(pin)) == 1:
+        raise ValidationError(_("PIN jest zbyt prosty — wybierz mniej oczywisty."))
+    profile.voice_pin_hash = make_password(pin)
+    profile.save(update_fields=["voice_pin_hash", "updated_at"])
+    if actor is not None:
+        logger.info(
+            "set_voice_pin: actor=%s ustawił PIN dla user=%s",
+            getattr(actor, "username", "system"),
+            profile.user.username,
+        )
+
+
+def verify_voice_pin(profile: EmployeeProfile, raw_pin: str) -> bool:
+    """Weryfikuje PIN głosowy (``check_password``). ``False`` gdy brak PIN skonfigurowanego."""
+    from django.contrib.auth.hashers import check_password
+
+    if not profile.voice_pin_hash:
+        return False
+    return check_password((raw_pin or "").strip(), profile.voice_pin_hash)
 
 
 @transaction.atomic
@@ -240,6 +281,7 @@ def anonymize_employee(
         user.save()
 
         profile.phone = None
+        profile.voice_pin_hash = ""  # RODO: kasujemy hash PIN-u głosowego
         profile.is_anonymized = True
         profile.anonymized_at = timezone.now()
         profile.save()
@@ -300,6 +342,6 @@ def anonymize_employee(
     # (``normalize_phone_e164("")`` → ``None``); historyczne wpisy muszą trzymać
     # tę samą reprezentację „braku numeru", inaczej powstaje rozjazd ''/NULL
     # między rekordem bieżącym a historią (audyt RODO oczekuje spójności).
-    profile.history.update(phone=None)
+    profile.history.update(phone=None, voice_pin_hash="")
 
     return profile
