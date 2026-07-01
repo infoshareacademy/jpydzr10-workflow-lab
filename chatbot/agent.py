@@ -299,8 +299,22 @@ def build_agent() -> Any | None:
             "Używaj TYCH dat w wywołaniach narzędzi, NIE zgaduj na podstawie "
             "własnej wiedzy modelu. Jeśli użytkownik prosi 'dziś' a jest po "
             "godzinach pracy (>18:00), zwróć mu na to uwagę zanim utworzysz "
-            "rezerwację — to często pomyłka."
+            "rezerwację na DZIŚ — to często pomyłka (dla dat przyszłych nie ostrzegaj)."
         )
+
+    @agent.system_prompt
+    def _inject_user_permissions(ctx: RunContext[ChatDeps]) -> str:
+        """Dorzuca do promptu zwięzłe podsumowanie uprawnień rozmówcy.
+
+        Parytet z agentem głosowym (który już to robi w ``_system_instruction``):
+        model wie z góry, jakich akcji zapisujących dany użytkownik MOŻE zażądać,
+        więc zamiast proponować akcję ponad uprawnienia (i tak odrzuconą przez
+        bramkę serwerową) — od razu grzecznie kieruje do właściwej osoby.
+        Oszczędza rundę API i daje lepszy komunikat niż surowa odmowa.
+        """
+        from chatbot.voice_consumer import build_user_perms_summary
+
+        return build_user_perms_summary(ctx.deps.user)
 
     @agent.tool
     def get_machine_status(ctx: RunContext[ChatDeps], uid: str) -> str:

@@ -121,18 +121,35 @@ _PROPOSE_TOOLS: frozenset[str] = frozenset(
 # Wave 14-C — Multi-turn confirmation flow helpers
 # =============================================================================
 
-# Affirmative/negative detection — celowo wąski zestaw słów, żeby zminimalizować
-# false-positive ("nieprawda" zaczyna się od "nie" — testujemy regex z word
-# boundary). Skoro user musi explicit potwierdzić write action, każda
-# niejednoznaczność powinna być traktowana jako "nie wiem" (nie wykonujemy
-# i nie czyścimy pending, pozwalamy zadać pytanie wyjaśniające).
+# Affirmative/negative detection — dopasowanie KOTWICZONE (^...$), żeby
+# zminimalizować false-positive ("nieprawda" zaczyna się od "nie", "taktyka" od
+# "tak"). Skoro user musi explicit potwierdzić write action, każda
+# niejednoznaczność jest traktowana jako "nie wiem" (nie wykonujemy i nie
+# czyścimy pending, pozwalamy zadać pytanie wyjaśniające).
+# Rozpoznajemy naturalne warianty PL potwierdzenia/odmowy (kotwiczone ^...$, żeby
+# wieloznaczne odpowiedzi typu "nie, ale zmień datę" przeszły do agenta, nie do
+# ślepego potwierdzenia). Zachowane oryginalne słowa + dodane potoczne warianty
+# ("tak, poproszę", "jasne", "dawaj", "zróbmy") — bez nich naturalne "tak" gubiło
+# akcję (bot mówił "nie widzę propozycji"), co było realnym demo-killerem.
 _AFFIRMATIVE_PATTERN = re.compile(
-    r"^\s*(tak|potwierdzam|potwierdź|ok|okej|kontynuuj|wykonaj|"
-    r"yes|y|confirm|proceed)\s*[.!]?\s*$",
+    r"^\s*(?:"
+    r"tak(?:[,\s]+(?:tak|prosz[eę]|poprosz[eę]|jasne|pewnie|dawaj))?"
+    r"|potwierdzam|potwierd[zź]|potwierdzenie"
+    r"|ok|okej|okay|oki|spoko|zgoda|zgadzam\s+si[eę]"
+    r"|dobra(?:\s+dawaj)?|dobrze"
+    r"|jasne|pewnie|oczywi[sś]cie|[sś]mia[lł]o"
+    r"|kontynuuj|wykonaj|zr[oó]b\s+to|zr[oó]bmy(?:\s+to)?|dawaj(?:my)?|no\s+dawaj"
+    r"|yes|yeah|yep|y|sure|confirm|proceed|go"
+    r")\s*[.!]?\s*$",
     re.IGNORECASE,
 )
 _NEGATIVE_PATTERN = re.compile(
-    r"^\s*(nie|anuluj|stop|cancel|odmów|abort|no|n)\s*[.!]?\s*$",
+    r"^\s*(?:"
+    r"nie(?:[,\s]+(?:nie|dzi[eę]kuj[eę]|chc[eę]|teraz|r[oó]b|tego))?"
+    r"|jednak\s+nie"
+    r"|anuluj|odrzu[cć](?:am)?|zrezygnuj|rezygnuj[eę]|zostaw|przesta[nń]"
+    r"|stop|cancel|odm[oó]w|abort|no|n|nope"
+    r")\s*[.!]?\s*$",
     re.IGNORECASE,
 )
 
@@ -145,6 +162,32 @@ def _is_affirmative(text: str) -> bool:
 def _is_negative(text: str) -> bool:
     """Czy user explicit odrzucił pending action (krótka odpowiedź "nie")."""
     return bool(_NEGATIVE_PATTERN.match(text or ""))
+
+
+def _tool_return_is_business_error(content) -> bool:
+    """Czy zwrot ``propose_*`` to błąd walidacji biznesowej ({"error": ...}).
+
+    ``propose_*`` zwraca albo happy-path ``{"proposed_action": ..., "confirmation_required": true}``
+    albo ``{"error": "..."}`` (np. data w przeszłości, maszyna już w serwisie, zły
+    status rezerwacji). Rozpoznajemy błąd po obecności ``error`` i BRAKU
+    ``proposed_action`` — wtedy NIE budujemy pending (agent już napisał odmowę).
+
+    Uwaga: błędy braku UPRAWNIEŃ też mają kształt ``{"error": ...}``, ale są
+    przechwytywane wcześniej przez osobną bramkę ``_check_user_can`` (``blocked``),
+    więc ta funkcja jest wołana dopiero gdy użytkownik MA uprawnienia — czyli
+    ``error`` oznacza tu wyłącznie walidację biznesową.
+    """
+    if content is None:
+        return False
+    data = content
+    if isinstance(content, str):
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError, ValueError:
+            return False
+    if not isinstance(data, dict):
+        return False
+    return "error" in data and "proposed_action" not in data
 
 
 def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
@@ -175,7 +218,7 @@ def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
     # Lazy import — Pydantic AI nie musi być zainstalowane do testu
     # samej funkcji (np. mock z SimpleNamespace bez ``all_messages``).
     try:
-        from pydantic_ai.messages import ToolCallPart
+        from pydantic_ai.messages import ToolCallPart, ToolReturnPart
     except ImportError:  # pragma: no cover — fail-soft dla minimalnej instalacji
         return None
 
@@ -187,6 +230,16 @@ def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
         # niż 500 na endpoint).
         logger.exception("result.all_messages() crashed — assuming no proposal")
         return None
+
+    # Mapa zwrotów narzędzi (tool_call_id → content) — pozwala rozpoznać, że
+    # ``propose_*`` ZWRÓCIŁO błąd walidacji biznesowej i wtedy NIE budować pending
+    # (inaczej agent "obiecuje i nie dowozi": pokazuje "Proponowana akcja…", user
+    # potwierdza "tak", a wykonanie i tak pada na tej samej walidacji).
+    returns_by_id: dict[str, object] = {}
+    for _msg in messages or []:
+        for _part in getattr(_msg, "parts", []) or []:
+            if isinstance(_part, ToolReturnPart):
+                returns_by_id[_part.tool_call_id] = _part.content
 
     # Iterujemy od końca — interesują nas NAJNOWSZE tool calls z tej
     # tury (przy multi-turn historii starsze ``propose_*`` nie mogą
@@ -231,6 +284,11 @@ def _extract_proposal_from_tool_calls(result, user=None) -> dict | None:
                     except json.JSONDecodeError, ValueError:
                         msg = auth_err
                     return {"action": action, "params": {}, "preview": msg, "blocked": True}
+            # Użytkownik MA uprawnienia — ale jeśli ``propose_*`` zwróciło błąd
+            # walidacji biznesowej, NIE budujemy pending (agent już napisał odmowę
+            # w odpowiedzi tekstowej; pokażemy ją zamiast pustej obietnicy).
+            if _tool_return_is_business_error(returns_by_id.get(part.tool_call_id)):
+                return None
             preview = _build_preview_from_tool_call(action, args_dict, result)
             return {
                 "action": action,
