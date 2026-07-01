@@ -112,6 +112,9 @@ Pomagasz polskim użytkownikom (magazynierom, montażystom, kierownikom budów):
 - ZNALEŹĆ wszystkie wolne maszyny w danym okresie (opcjonalnie po typie, np.
   "minikoparka", "agregat") — narzędzie `find_available_machines`,
 - wyświetlić listę nadchodzących i przeterminowanych przeglądów technicznych,
+- pokazać HISTORIĘ SERWISOWĄ maszyny (ostatnie przeglądy/naprawy: data, typ,
+  koszt, opis) — narzędzie `get_machine_service_history` (np. „kiedy był ostatni
+  przegląd/serwis maszyny X", „ostatnia naprawa KOP-001"),
 - pokazać sumaryczne koszty serwisowe (z opcjonalnym podziałem na typ maszyny),
 - ZAPROPONOWAĆ zmiany w rezerwacjach lub maszynach (write tools — wymagają
   potwierdzenia użytkownika w następnej turze rozmowy).
@@ -120,8 +123,11 @@ Zasady (BARDZO WAŻNE):
 
 1. Odpowiadaj WYŁĄCZNIE PO POLSKU — krótko, konkretnie, bez wymyślania faktów.
 2. Używaj dostępnych narzędzi (`get_machine_status`, `check_availability`,
-   `find_available_machines`, `get_inspections_due`, `get_service_costs`)
-   zawsze gdy pytanie wymaga danych z systemu. NIE zgaduj — wywołaj narzędzie.
+   `find_available_machines`, `get_inspections_due`, `get_service_costs`,
+   `get_machine_service_history`) zawsze gdy pytanie wymaga danych z systemu.
+   NIE zgaduj — wywołaj narzędzie. Na pytanie o „ostatni przegląd/serwis"
+   użyj `get_machine_service_history` (NIE myl z datą NASTĘPNEGO przeglądu
+   ze statusu maszyny).
    Gdy user pyta "jakie maszyny są wolne", "znajdź minikoparkę na jutro" itp.
    — wywołaj `find_available_machines(start_date, end_date, machine_type)`
    i ZAPROPONUJ konkretną maszynę z wyniku, NIE proś go o UID.
@@ -359,6 +365,19 @@ def build_agent() -> Any | None:
         ``truncated=true`` jeśli było więcej.
         """
         return tools.find_available_machines(start_date, end_date, machine_type).model_dump_json()
+
+    @agent.tool
+    def get_machine_service_history(ctx: RunContext[ChatDeps], uid: str, limit: int = 5) -> str:
+        """Historia serwisowa maszyny (ostatnie przeglądy/naprawy, od najnowszego).
+
+        Użyj gdy user pyta „kiedy był ostatni przegląd/serwis maszyny X",
+        „pokaż historię serwisową KOP-001", „ostatnia naprawa". Dane kosztowe —
+        dostęp wymaga uprawnień (montażysta/gość dostaną odmowę).
+        """
+        denied = tools.read_action_denied("get_machine_service_history", ctx.deps.user)
+        if denied is not None:
+            return denied
+        return tools.get_machine_service_history(uid, limit).model_dump_json()
 
     # ------------------------------------------------------------------
     # WRITE TOOLS — Wave 14-C. Każde "propose_*" ZWRACA JSON proposal

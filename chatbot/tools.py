@@ -118,6 +118,27 @@ class ServiceCostResult(BaseModel):
     by_type: dict[str, float]
 
 
+class ServiceHistoryItem(BaseModel):
+    """Pojedynczy wpis w historii serwisowej maszyny."""
+
+    performed_date: str
+    record_type: str
+    cost: float
+    description: str
+    performed_by: str
+    next_inspection: str | None = None
+
+
+class MachineServiceHistoryResult(BaseModel):
+    """Wynik :func:`get_machine_service_history` — ostatnie wpisy serwisowe."""
+
+    uid: str
+    name: str | None = None
+    found: int = 0
+    records: list[ServiceHistoryItem] = Field(default_factory=list)
+    error: str | None = None
+
+
 class AvailableMachineItem(BaseModel):
     """Pojedyncza maszyna na liście dostępnych w danym okresie."""
 
@@ -349,6 +370,58 @@ def get_service_costs(machine_type: str | None = None, days: int = 90) -> Servic
         total_cost=float(total),
         record_count=len(records),
         by_type=by_type,
+    )
+
+
+# Domyślna liczba ostatnich wpisów serwisowych zwracanych przez
+# ``get_machine_service_history`` (oszczędność kontekstu promptu; user zwykle
+# pyta o „ostatni" przegląd/naprawę, nie o całą historię).
+SERVICE_HISTORY_DEFAULT_LIMIT = 5
+SERVICE_HISTORY_MAX_LIMIT = 20
+
+
+def get_machine_service_history(
+    uid: str, limit: int = SERVICE_HISTORY_DEFAULT_LIMIT
+) -> MachineServiceHistoryResult:
+    """Ostatnie wpisy serwisowe (przeglądy/naprawy) maszyny — od najnowszego.
+
+    Używaj gdy user pyta „kiedy był ostatni przegląd/serwis maszyny X",
+    „pokaż historię serwisową KOP-001", „ostatnia naprawa minikoparki".
+    Zwraca do ``limit`` najnowszych wpisów: data wykonania, typ, koszt (EUR),
+    opis, wykonawca oraz data następnego przeglądu (jeśli dotyczy). Dane
+    kosztowe są wrażliwe — dostęp wymaga uprawnienia ``service.view_servicerecord``
+    (montażysta/gość dostaną odmowę, tak jak w interfejsie).
+    """
+    from machines.models import Machine
+    from service.models import ServiceRecord
+
+    uid = (uid or "").strip().upper()
+    limit = max(1, min(limit, SERVICE_HISTORY_MAX_LIMIT))
+    machine = Machine.objects.filter(uid=uid).first()
+    if machine is None:
+        return MachineServiceHistoryResult(
+            uid=uid,
+            error=_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": uid},
+        )
+    records = list(
+        ServiceRecord.objects.filter(machine=machine).order_by("-performed_date")[:limit]
+    )
+    items = [
+        ServiceHistoryItem(
+            performed_date=r.performed_date.isoformat(),
+            record_type=r.get_record_type_display(),
+            cost=float(r.cost.amount),
+            description=r.description or "",
+            performed_by=r.performed_by or "",
+            next_inspection=r.next_inspection.isoformat() if r.next_inspection else None,
+        )
+        for r in records
+    ]
+    return MachineServiceHistoryResult(
+        uid=machine.uid,
+        name=machine.name,
+        found=len(items),
+        records=items,
     )
 
 
@@ -1855,6 +1928,7 @@ READ_ACTIONS: dict[str, Any] = {
     "check_availability": check_availability,
     "get_inspections_due": get_inspections_due,
     "get_service_costs": get_service_costs,
+    "get_machine_service_history": get_machine_service_history,
 }
 
 # Uprawnienia dla odczytów ujawniających dane WRAŻLIWE (koszty serwisowe).
@@ -1864,6 +1938,7 @@ READ_ACTIONS: dict[str, Any] = {
 # agenta, inaczej chatbot/voice obchodziłby blokadę kosztów z interfejsu.
 READ_ACTION_PERMS: dict[str, tuple[str, ...]] = {
     "get_service_costs": ("service.view_servicerecord",),
+    "get_machine_service_history": ("service.view_servicerecord",),
 }
 
 

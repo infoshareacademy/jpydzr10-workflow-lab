@@ -178,6 +178,17 @@ _READ_PARAM_SCHEMAS: dict[str, dict] = {
         },
         "required": [],
     },
+    "get_machine_service_history": {
+        "type": "object",
+        "properties": {
+            "uid": {"type": "string", "description": "UID maszyny (np. KOP-001)"},
+            "limit": {
+                "type": "integer",
+                "description": "Ile ostatnich wpisów serwisowych (domyślnie 5)",
+            },
+        },
+        "required": ["uid"],
+    },
 }
 
 
