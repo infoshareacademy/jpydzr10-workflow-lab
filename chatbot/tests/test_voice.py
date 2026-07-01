@@ -163,6 +163,67 @@ class TestVoiceWebhook:
         response = client.post("/voice/incoming/", {"From": "+48600000077", "CallSid": "CAwl3"})
         assert "<Reject" in response.content.decode("utf-8")
 
+    # -- PIN głosowy (drugi czynnik, brama DTMF przed Gemini) --
+
+    def test_known_caller_gets_pin_gather_when_required(self, client, settings):
+        """Znany numer + VOICE_REQUIRE_PIN → <Gather> (PIN), NIE od razu ConversationRelay."""
+        settings.VOICE_REQUIRE_PIN = True
+        _role_user("pin_kier", EmployeeProfile.Function.KIEROWNIK, "+48600000088")
+        response = client.post("/voice/incoming/", {"From": "+48600000088", "CallSid": "CApin1"})
+        body = response.content.decode("utf-8")
+        assert "<Gather" in body
+        assert "ConversationRelay" not in body  # Gemini NIE uruchamia się bez PIN
+
+    def test_verify_pin_correct_connects_relay(self, client, settings):
+        """Poprawny PIN na verify-pin → ConversationRelay z tożsamością usera."""
+        from accounts.services import set_voice_pin
+
+        settings.VOICE_REQUIRE_PIN = True
+        user = _role_user("pin_ok", EmployeeProfile.Function.KIEROWNIK, "+48600000089")
+        set_voice_pin(user.profile, "4821")
+        response = client.post(
+            "/voice/verify-pin/",
+            {"From": "+48600000089", "CallSid": "CApin2", "Digits": "4821"},
+        )
+        body = response.content.decode("utf-8")
+        assert "ConversationRelay" in body
+        assert f'value="{user.pk}"' in body
+
+    def test_verify_pin_wrong_retries_then_rejects(self, client, settings):
+        """Zły PIN < 3 razy → <Gather> ponów; 3. raz → <Reject> (lockout)."""
+        from accounts.services import set_voice_pin
+
+        settings.VOICE_REQUIRE_PIN = True
+        _role_user("pin_bad", EmployeeProfile.Function.KIEROWNIK, "+48600000090")
+        from accounts.models import EmployeeProfile as _EP
+
+        set_voice_pin(_EP.objects.get(user__username="pin_bad"), "4821")
+        payload = {"From": "+48600000090", "CallSid": "CApin3", "Digits": "0000"}
+        r1 = client.post("/voice/verify-pin/", payload)  # 1. zły → ponów
+        assert "<Gather" in r1.content.decode("utf-8")
+        client.post("/voice/verify-pin/", payload)  # 2. zły
+        r3 = client.post("/voice/verify-pin/", payload)  # 3. zły → lockout
+        assert "<Reject" in r3.content.decode("utf-8")
+
+    def test_verify_pin_no_pin_configured_hangs_up(self, client, settings):
+        """User bez skonfigurowanego PIN → komunikat + <Hangup>, brak relay."""
+        settings.VOICE_REQUIRE_PIN = True
+        _role_user("pin_none", EmployeeProfile.Function.KIEROWNIK, "+48600000091")
+        response = client.post(
+            "/voice/verify-pin/",
+            {"From": "+48600000091", "CallSid": "CApin4", "Digits": "4821"},
+        )
+        body = response.content.decode("utf-8")
+        assert "<Hangup" in body
+        assert "ConversationRelay" not in body
+
+    def test_pin_not_required_connects_directly(self, client, settings):
+        """VOICE_REQUIRE_PIN=False → incoming od razu ConversationRelay (regresja)."""
+        settings.VOICE_REQUIRE_PIN = False
+        _role_user("pin_off", EmployeeProfile.Function.KIEROWNIK, "+48600000092")
+        response = client.post("/voice/incoming/", {"From": "+48600000092", "CallSid": "CApin5"})
+        assert "ConversationRelay" in response.content.decode("utf-8")
+
     def test_invalid_signature_rejected_when_token_set(self, client, settings):
         """Gdy skonfigurowano TWILIO_AUTH_TOKEN, błędny podpis → 403."""
         settings.TWILIO_AUTH_TOKEN = "test-token-abc"

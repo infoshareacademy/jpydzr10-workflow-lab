@@ -40,6 +40,8 @@ VOICE_REQUIRE_SIGNATURE = False
 # Biały list wyłączony w testach — testy ścieżki gościa zostają; test odrzucenia
 # jawnie włącza flagę przez ``settings`` fixture (override_settings).
 VOICE_REJECT_UNKNOWN_CALLERS = False
+# PIN wyłączony w testach; test bramy PIN jawnie włącza flagę (override_settings).
+VOICE_REQUIRE_PIN = False
 
 # =============================================================================
 # 2FA — obejście wymuszenia w testach (czytane w czasie żądania przez middleware)

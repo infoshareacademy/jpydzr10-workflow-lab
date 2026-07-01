@@ -30,6 +30,8 @@ VOICE_REQUIRE_SIGNATURE = False
 # Biały list wyłączony lokalnie — pozwala debugować ścieżkę gościa (read-only) bez
 # odrzucania nieznanych numerów. Profil ``voice`` przywraca ``True``.
 VOICE_REJECT_UNKNOWN_CALLERS = False
+# PIN głosowy wyłączony lokalnie (debug bez wpisywania PIN); voice profil = True.
+VOICE_REQUIRE_PIN = False
 
 
 # =============================================================================

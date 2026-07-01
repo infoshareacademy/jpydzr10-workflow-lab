@@ -14,4 +14,5 @@ app_name = "voice"
 
 urlpatterns = [
     path("incoming/", voice_views.voice_incoming, name="incoming"),
+    path("verify-pin/", voice_views.voice_verify_pin, name="verify_pin"),
 ]
