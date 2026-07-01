@@ -224,6 +224,49 @@ class TestNormalizePhoneE164:
         assert normalize_phone_e164("abc") == "abc"
 
 
+class TestNormalizeLocalPhone:
+    """``normalize_local_phone`` — pole formularza, domyślny kierunkowy +32 (Belgia)."""
+
+    def test_bare_national_gets_belgian_prefix(self):
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone("468274944") == "+32468274944"
+        assert normalize_local_phone("468 27 49 44") == "+32468274944"
+
+    def test_leading_zero_stripped(self):
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone("0468274944") == "+32468274944"
+        assert normalize_local_phone("0468 27 49 44") == "+32468274944"
+
+    def test_double_zero_international_prefix(self):
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone("0032468274944") == "+32468274944"
+
+    def test_plus_prefixed_is_respected(self):
+        # Numer zagraniczny (Francja) wpisany pełny — NIE dostaje +32.
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone("+33612345678") == "+33612345678"
+        assert normalize_local_phone("+48 600 100 200") == "+48600100200"
+
+    def test_empty_and_none(self):
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone(None) is None
+        assert normalize_local_phone("") is None
+        assert normalize_local_phone("   ") is None
+
+    def test_demo_admin_number_matches_caller_id(self):
+        # Krajowy wpis Sebastiana MUSI dać dokładnie +32468274944 (= DEMO_ADMIN_PHONE)
+        # — inaczej caller-ID z Twilio (From = pełne E.164) go nie zmatchuje.
+        from core.validators import normalize_local_phone
+
+        assert normalize_local_phone("468274944") == "+32468274944"
+        assert normalize_local_phone("0468274944") == "+32468274944"
+
+
 class TestIsValidE164:
     def test_accepts_valid_numbers(self):
         from core.validators import is_valid_e164
