@@ -147,7 +147,10 @@ filterwarnings = [
 # RUFF — linter + formatter
 # =============================================================================
 [tool.ruff]
-target-version = "py314"
+# target py313 (a nie py314) celowo: py314 pozwala na "except A, B:" bez nawiasów,
+# a ruff format aktywnie usuwa nawiasy pod tym targetem (wyglada jak Python 2).
+# Trzymamy klasyczne "except (A, B):" — czytelne i zgodne wstecz. Runtime i tak >=3.14.
+target-version = "py313"
 line-length = 100
 extend-exclude = ["archive", "*/migrations"]
 

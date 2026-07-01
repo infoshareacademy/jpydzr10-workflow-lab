@@ -32,5 +32,5 @@ def parse_iso_date(raw: str | None, fallback: date | None = None) -> date | None
         return fallback
     try:
         return date.fromisoformat(raw)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return fallback
