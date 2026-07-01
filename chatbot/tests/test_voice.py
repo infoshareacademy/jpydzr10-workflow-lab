@@ -195,9 +195,7 @@ class TestVoiceWebhook:
 
         settings.VOICE_REQUIRE_PIN = True
         _role_user("pin_bad", EmployeeProfile.Function.KIEROWNIK, "+48600000090")
-        from accounts.models import EmployeeProfile as _EP
-
-        set_voice_pin(_EP.objects.get(user__username="pin_bad"), "4821")
+        set_voice_pin(EmployeeProfile.objects.get(user__username="pin_bad"), "4821")
         payload = {"From": "+48600000090", "CallSid": "CApin3", "Digits": "0000"}
         r1 = client.post("/voice/verify-pin/", payload)  # 1. zły → ponów
         assert "<Gather" in r1.content.decode("utf-8")

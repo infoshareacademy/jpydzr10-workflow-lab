@@ -32,11 +32,11 @@ class TestVoiceScope:
             assert not session.has_pending()  # NIE zaproponowano do potwierdzenia
 
     def test_blocked_set_contents(self):
-        assert VOICE_BLOCKED_ACTIONS == {
+        assert {
             "terminate_employee",
             "anonymize_employee",
             "delete_site",
-        }
+        } == VOICE_BLOCKED_ACTIONS
 
     def test_confirm_defense_in_depth(self):
         # Nawet gdyby pending jakoś zawierał blocked action, confirm odmawia.
