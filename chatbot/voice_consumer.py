@@ -31,6 +31,14 @@ _REFUSAL = "Nie masz uprawnień do tej operacji."
 _GUEST_REFUSAL = "Ta operacja wymaga zalogowanego konta. Dzwonisz jako gość."
 _UNKNOWN_ACTION = "Nie rozpoznaję tej operacji."
 
+# Akcje NIEODWRACALNE zablokowane na kanale GŁOSOWYM niezależnie od roli — wymagają
+# pełnego kontekstu UI, a kanał głosowy (caller-ID + PIN) jest słabszym czynnikiem
+# niż praca z ekranu. Wykonywane wyłącznie w aplikacji. (Decyzja Sebastiana 2026-07-01.)
+VOICE_BLOCKED_ACTIONS = frozenset({"terminate_employee", "anonymize_employee", "delete_site"})
+_VOICE_BLOCKED_REFUSAL = (
+    "Ta operacja jest zbyt wrażliwa, aby wykonać ją głosowo — proszę użyć aplikacji."
+)
+
 # Maksymalny wiek nonce tożsamości (sekundy). Połączenie głosowe nie żyje
 # dłużej niż kilka minut, więc krótki TTL zamyka okno replay przechwyconego
 # nonce. Egzekwowane przez ``TimestampSigner.unsign(nonce, max_age=...)`` przy
@@ -56,6 +64,10 @@ def build_user_perms_summary(user) -> str:
 def propose_or_execute(session: VoiceCallSession, action: str, params: dict) -> str:
     """Dla akcji zapisującej: sprawdź uprawnienia i zapamiętaj do potwierdzenia.
     Dla akcji odczytu: wykonaj od razu. Zwraca tekst do wypowiedzenia."""
+    # Nieodwracalne operacje (RODO/zwolnienia/usuwanie budów) są niedostępne
+    # głosowo — niezależnie od roli i uprawnień dzwoniącego.
+    if action in VOICE_BLOCKED_ACTIONS:
+        return _VOICE_BLOCKED_REFUSAL
     if action in WRITE_ACTION_PERMS:
         if session.is_guest:
             return _GUEST_REFUSAL
@@ -76,6 +88,8 @@ def confirm_pending(session: VoiceCallSession) -> str:
     if not session.has_pending():
         return "Nie ma akcji oczekującej na potwierdzenie."
     action, params = session.confirm()
+    if action in VOICE_BLOCKED_ACTIONS:  # defense-in-depth (propose już blokuje)
+        return _VOICE_BLOCKED_REFUSAL
     result = execute_confirmed_action(action, params, session.user)
     logger.info("Voice confirm: action=%s user=%s", action, getattr(session.user, "pk", None))
     return result
