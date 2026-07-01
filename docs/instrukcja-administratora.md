@@ -56,6 +56,17 @@ System wymaga drugiego składnika logowania dla kont personelu (w tym administra
 
 Po kilku błędnych próbach kod zostanie chwilowo zablokowany (cooldown) — odczekaj chwilę i spróbuj ponownie.
 
+### 2.4. Reset 2FA innego użytkownika
+
+Gdy pracownik utraci telefon i kody zapasowe, **administrator** może zresetować jego 2FA przez panel administracyjny:
+
+1. Wejdź na `/admin/` i zaloguj się jako administrator.
+2. Otwórz **TOTP devices** (`/admin/otp_totp/totpdevice/`) — znajdź urządzenie należące do danego użytkownika i **usuń je**.
+3. (Opcjonalnie) Otwórz **Static devices** (`/admin/otp_static/staticdevice/`) i usuń stare kody zapasowe użytkownika.
+4. Przy następnym logowaniu użytkownik zostanie ponownie poprowadzony przez konfigurację 2FA (nowy kod QR + nowe kody zapasowe).
+
+Każda taka operacja jest rejestrowana w dzienniku panelu administracyjnego (kto i kiedy usunął urządzenie), więc pozostaje ślad audytowy.
+
 ---
 
 ## 3. Pulpit (dashboard) i wskaźniki
