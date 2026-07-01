@@ -37,7 +37,9 @@ if VOICE_TUNNEL_HOST:
 # przywracamy bezpieczny default: brak ``TWILIO_AUTH_TOKEN`` → webhook odrzucony.
 VOICE_REQUIRE_SIGNATURE = True
 
-# Model Gemini Live (zamrażany w .env po weryfikacji dostępu do API). Default na
-# model Live native-audio (TYLKO Live); jeśli nie streamuje TEXT-out wymaganego
-# przez ConversationRelay → ustaw w .env fallback Live (``gemini-live-2.5-flash-preview``).
-GEMINI_LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-latest")
+# Model Gemini Live (zamrożony też w .env). Żaden model Live NIE streamuje TEXT-out
+# (API zwraca 1007) — most używa AUDIO-out + transkrypcji tekstowej
+# (``output_audio_transcription``), a transkrypt idzie do ConversationRelay jako
+# ramki ``text``. Zweryfikowane realnymi połączeniami: gemini-3.1-flash-live-preview
+# (niższa latencja) oraz gemini-2.5-flash-native-audio-latest działają.
+GEMINI_LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
