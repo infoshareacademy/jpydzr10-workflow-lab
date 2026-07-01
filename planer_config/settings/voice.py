@@ -37,6 +37,10 @@ if VOICE_TUNNEL_HOST:
 # przywracamy bezpieczny default: brak ``TWILIO_AUTH_TOKEN`` → webhook odrzucony.
 VOICE_REQUIRE_SIGNATURE = True
 
+# Biały list numerów WŁĄCZONY na scenie/prod (dziedziczymy ``False`` z ``dev.py``,
+# więc przywracamy ``True``): nieznany numer = odrzucone połączenie, zero Gemini.
+VOICE_REJECT_UNKNOWN_CALLERS = True
+
 # Model Gemini Live (zamrożony też w .env). Żaden model Live NIE streamuje TEXT-out
 # (API zwraca 1007) — most używa AUDIO-out + transkrypcji tekstowej
 # (``output_audio_transcription``), a transkrypt idzie do ConversationRelay jako

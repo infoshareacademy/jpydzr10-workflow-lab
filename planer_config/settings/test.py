@@ -33,6 +33,9 @@ TWILIO_AUTH_TOKEN = ""
 # Bez tokenu webhook głosowy domyślnie wpada w bypass (200) — testy ścieżki
 # pozytywnej i fail-closed jawnie nadpisują tę flagę przez ``settings`` fixture.
 VOICE_REQUIRE_SIGNATURE = False
+# Biały list wyłączony w testach — testy ścieżki gościa zostają; test odrzucenia
+# jawnie włącza flagę przez ``settings`` fixture (override_settings).
+VOICE_REJECT_UNKNOWN_CALLERS = False
 
 # =============================================================================
 # 2FA — obejście wymuszenia w testach (czytane w czasie żądania przez middleware)

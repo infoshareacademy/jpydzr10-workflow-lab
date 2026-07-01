@@ -128,10 +128,40 @@ class TestVoiceWebhook:
 
     def test_raw_digits_unknown_number_falls_back_to_guest(self, client):
         """Caller-ID jako same cyfry (bez '+') jest normalizowany do '+<cyfry>';
-        gdy nie pasuje do żadnego profilu → gość (brak wycieku tożsamości)."""
+        gdy nie pasuje do żadnego profilu → gość (brak wycieku tożsamości).
+        (Biały list w test.py = False, więc gość zachowany dla tego testu.)"""
         response = client.post("/voice/incoming/", {"From": "600000999", "CallSid": "CA24"})
         assert response.status_code == 200
         assert 'value="guest"' in response.content.decode("utf-8")
+
+    # -- Biały list numerów (anti-token-drain) — flaga VOICE_REJECT_UNKNOWN_CALLERS --
+
+    def test_unknown_caller_rejected_when_whitelist_on(self, client, settings):
+        """Nieznany numer + biały list ON → <Reject>, ZERO ConversationRelay (Gemini nietknięty)."""
+        settings.VOICE_REJECT_UNKNOWN_CALLERS = True
+        response = client.post("/voice/incoming/", {"From": "+48999999999", "CallSid": "CAwl1"})
+        assert response.status_code == 200
+        body = response.content.decode("utf-8")
+        assert "<Reject" in body
+        assert "ConversationRelay" not in body  # dowód: agent AI się NIE uruchamia
+
+    def test_known_caller_relay_even_with_whitelist(self, client, settings):
+        """Znany numer + biały list ON → nadal ConversationRelay (biała lista go przepuszcza)."""
+        settings.VOICE_REJECT_UNKNOWN_CALLERS = True
+        _role_user("wl_known", EmployeeProfile.Function.KIEROWNIK, "+48600000066")
+        response = client.post("/voice/incoming/", {"From": "+48600000066", "CallSid": "CAwl2"})
+        body = response.content.decode("utf-8")
+        assert "ConversationRelay" in body
+        assert "<Reject" not in body
+
+    def test_anonymized_caller_rejected_when_whitelist_on(self, client, settings):
+        """Zanonimizowany profil (user_for_phone→None) + biały list ON → <Reject>."""
+        settings.VOICE_REJECT_UNKNOWN_CALLERS = True
+        user = _role_user("wl_anon", EmployeeProfile.Function.KIEROWNIK, "+48600000077")
+        user.profile.is_anonymized = True
+        user.profile.save(update_fields=["is_anonymized", "updated_at"])
+        response = client.post("/voice/incoming/", {"From": "+48600000077", "CallSid": "CAwl3"})
+        assert "<Reject" in response.content.decode("utf-8")
 
     def test_invalid_signature_rejected_when_token_set(self, client, settings):
         """Gdy skonfigurowano TWILIO_AUTH_TOKEN, błędny podpis → 403."""

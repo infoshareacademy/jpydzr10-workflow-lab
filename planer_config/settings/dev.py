@@ -27,6 +27,9 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
 # Lokalny rozwój agenta głosowego bez tokenu Twilio — webhook idzie bypassem
 # (profil ``voice`` za publicznym tunelem nadpisuje to z powrotem na True).
 VOICE_REQUIRE_SIGNATURE = False
+# Biały list wyłączony lokalnie — pozwala debugować ścieżkę gościa (read-only) bez
+# odrzucania nieznanych numerów. Profil ``voice`` przywraca ``True``.
+VOICE_REJECT_UNKNOWN_CALLERS = False
 
 
 # =============================================================================
