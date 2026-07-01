@@ -526,6 +526,32 @@ class TestWriteRateLimit:
         first.conversation.refresh_from_db()
         assert first.conversation.pending_action is None
 
+    def test_fail_closed_when_cache_get_raises(self, monkeypatch, user_full_perms):
+        """Cache padł na odczycie → fail-CLOSED (odmowa, NIE przepuszczenie).
+
+        Broni przed batch attack via prompt injection podczas outage cache
+        backendu — lepiej odmówić niż pozwolić na nieograniczone zapisy.
+        Mutacja ``except → return True`` musi tu paść.
+        """
+        from django.core.cache import cache
+
+        def _boom(*_args, **_kwargs):
+            raise RuntimeError("cache backend down")
+
+        monkeypatch.setattr(cache, "get", _boom)
+        assert _check_write_rate_limit(user_full_perms.pk) is False
+
+    def test_fail_closed_when_cache_set_raises(self, monkeypatch, user_full_perms):
+        """Cache padł na zapisie licznika → fail-CLOSED (odmowa)."""
+        from django.core.cache import cache
+
+        def _boom(*_args, **_kwargs):
+            raise RuntimeError("cache backend down")
+
+        # get działa (zwraca 0), ale set rzuca — i tak fail-closed.
+        monkeypatch.setattr(cache, "set", _boom)
+        assert _check_write_rate_limit(user_full_perms.pk) is False
+
 
 # =============================================================================
 # 4. Audit log — write operations są logowane
