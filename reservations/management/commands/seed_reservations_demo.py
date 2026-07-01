@@ -235,7 +235,7 @@ def _ensure_sites() -> list[ConstructionSite]:
         try:
             num = int(site.project_number.split("-")[-1])
             last_num = max(last_num, num)
-        except ValueError, IndexError:
+        except (ValueError, IndexError):
             continue
 
     created_extra = []

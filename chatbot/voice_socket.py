@@ -266,7 +266,7 @@ def resolve_caller(setup: dict):
     signer = TimestampSigner(salt=_NONCE_SALT)
     try:
         signed_user_id = signer.unsign(nonce, max_age=NONCE_MAX_AGE_SECONDS)
-    except BadSignature, SignatureExpired:
+    except (BadSignature, SignatureExpired):
         logger.warning("Voice WS: nieprawidłowy/wygasły nonce — degradacja do gościa.")
         return None
 
@@ -282,7 +282,7 @@ def resolve_caller(setup: dict):
 
     try:
         return User.objects.get(pk=int(signed_user_id), is_active=True)
-    except User.DoesNotExist, ValueError:
+    except (User.DoesNotExist, ValueError):
         logger.warning("Voice WS: user_id=%s nie odpowiada aktywnemu kontu — gość.", signed_user_id)
         return None
 
