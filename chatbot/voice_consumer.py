@@ -65,7 +65,9 @@ def propose_or_execute(session: VoiceCallSession, action: str, params: dict) -> 
         return f"Czy potwierdzasz akcję „{action}”? Powiedz tak, aby wykonać."
     if action in READ_ACTIONS:
         # Akcje odczytu — bez potwierdzenia, dostępne także gościom (read-only).
-        return execute_read_action(action, params)
+        # Przekazujemy usera: wrażliwe odczyty (koszty serwisowe) wymagają
+        # uprawnień tak samo jak w UI (montażysta/gość ich nie zobaczy).
+        return execute_read_action(action, params, session.user)
     return _UNKNOWN_ACTION
 
 

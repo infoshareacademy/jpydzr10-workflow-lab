@@ -1857,16 +1857,44 @@ READ_ACTIONS: dict[str, Any] = {
     "get_service_costs": get_service_costs,
 }
 
+# Uprawnienia dla odczytów ujawniających dane WRAŻLIWE (koszty serwisowe).
+# Większość odczytów (status / dostępność / przeglądy) jest dostępna wszystkim —
+# także gościom — ale KOSZTY serwisowe są w UI zablokowane dla montażysty/gościa
+# (brak ``service.view_servicerecord``). Ta sama reguła musi obowiązywać przez
+# agenta, inaczej chatbot/voice obchodziłby blokadę kosztów z interfejsu.
+READ_ACTION_PERMS: dict[str, tuple[str, ...]] = {
+    "get_service_costs": ("service.view_servicerecord",),
+}
 
-def execute_read_action(action: str, params: dict) -> str:
+
+def read_action_denied(action: str, user) -> str | None:
+    """Zwraca JSON z odmową, jeśli ``user`` nie ma prawa do wrażliwego odczytu.
+
+    ``None`` = wolno (akcja spoza :data:`READ_ACTION_PERMS` — dostępna wszystkim,
+    także gościom — albo user ma wymagane uprawnienia).
+    """
+    perms = READ_ACTION_PERMS.get(action)
+    if not perms:
+        return None
+    if user is None or not getattr(user, "is_authenticated", False):
+        return _error_json(_("Ta informacja wymaga zalogowanego konta z uprawnieniami."))
+    if any(not user.has_perm(p) for p in perms):
+        return _error_json(_("Nie masz uprawnień do przeglądania kosztów serwisowych."))
+    return None
+
+
+def execute_read_action(action: str, params: dict, user=None) -> str:
     """Wykonuje akcję odczytu i zwraca deterministyczny JSON (string).
 
-    Akcje odczytu nie mają efektów ubocznych i NIE wymagają zalogowania —
-    dostępne także gościom (``user is None``). Celowo nie przyjmuje ``user``:
-    brak ścieżki, którą dałoby się tędy wykonać akcję zapisującą. Każde
-    narzędzie odczytu zwraca model Pydantic, więc serializujemy go do JSON
-    spójnie z resztą warstwy narzędzi.
+    Większość odczytów nie ma efektów ubocznych i jest dostępna także gościom
+    (``user is None``). Wyjątek: odczyty z :data:`READ_ACTION_PERMS` (koszty
+    serwisowe) wymagają uprawnień — inaczej agent obchodziłby blokadę z UI.
+    ``READ_ACTIONS`` jest rozłączny z ``WRITE_ACTION_PERMS``, więc tędy nadal
+    nie da się wykonać żadnej akcji zapisującej.
     """
+    denied = read_action_denied(action, user)
+    if denied is not None:
+        return denied
     tool = READ_ACTIONS.get(action)
     if tool is None:
         return _("Nieznana akcja odczytu: %(action)s.") % {"action": action}
@@ -2381,6 +2409,13 @@ def _execute_terminate_employee(params: dict, user) -> str:
     from accounts.services import terminate_employee
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
+    # Self-guard (defense-in-depth): przez agenta nie wolno zakończyć własnego
+    # zatrudnienia ani konta administratora — to nieodwracalne, a kanał agenta
+    # (zwłaszcza głosowy po caller-ID) jest słabszym czynnikiem niż panel UI.
+    if profile.user_id == getattr(user, "pk", None):
+        return _("Nie można zakończyć zatrudnienia własnego konta przez agenta.")
+    if profile.user.is_superuser:
+        return _("Nie można zakończyć zatrudnienia konta administratora przez agenta.")
     terminate_employee(profile, reason=params.get("reason", ""), actor=user)
     return _("Zatrudnienie pracownika '%(username)s' zakończone.") % {
         "username": params["username"]
@@ -2392,6 +2427,12 @@ def _execute_anonymize_employee(params: dict, user) -> str:
     from accounts.services import anonymize_employee
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
+    # Self-guard (defense-in-depth): anonimizacja RODO jest NIEODWRACALNA — przez
+    # agenta nie wolno zanonimizować własnego konta ani administratora.
+    if profile.user_id == getattr(user, "pk", None):
+        return _("Nie można zanonimizować własnego konta przez agenta.")
+    if profile.user.is_superuser:
+        return _("Nie można zanonimizować konta administratora przez agenta.")
     anonymize_employee(profile, actor=user)
     return _("Pracownik '%(username)s' zanonimizowany (GDPR Art.17).") % {
         "username": params["username"]

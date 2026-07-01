@@ -336,8 +336,18 @@ def test_build_agent_tool_callbacks_invoked(monkeypatch):
     # (dict name → Tool). Każdy Tool ma .function — wewnętrzna closure z
     # build_agent. Wywołujemy ją z fake ctx żeby pokryć linie 138/145/150/157.
 
+    class _FakeUser:
+        is_authenticated = True
+
+        def has_perm(self, _perm):
+            return True
+
+    class _FakeDeps:
+        user = _FakeUser()
+
     class FakeCtx:
-        deps = None
+        # get_service_costs sprawdza uprawnienia przez ctx.deps.user (RBAC kosztów).
+        deps = _FakeDeps()
 
     tools_dict = agent._function_toolset.tools
     # Każda funkcja: delegacja do tools.* (już zmonkeypatched).

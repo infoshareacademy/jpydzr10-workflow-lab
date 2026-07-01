@@ -338,6 +338,9 @@ def build_agent() -> Any | None:
         ctx: RunContext[ChatDeps], machine_type: str | None = None, days: int = 90
     ) -> str:
         """Sumaryczne koszty serwisowe w ostatnich N dniach (opcjonalnie filtr typu)."""
+        denied = tools.read_action_denied("get_service_costs", ctx.deps.user)
+        if denied is not None:
+            return denied
         return tools.get_service_costs(machine_type, days).model_dump_json()
 
     @agent.tool
