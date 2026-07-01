@@ -531,6 +531,11 @@ VOICE_REQUIRE_SIGNATURE = True
 # (demo/prod) — ``True``.
 VOICE_REJECT_UNKNOWN_CALLERS = True
 
+# PIN głosowy: znany dzwoniący musi wpisać PIN (DTMF) przed podłączeniem Gemini —
+# drugi czynnik obok caller-ID (numer można podrobić, PIN-u nie zna atakujący).
+# Dev/test=False (bez PIN lokalnie); profil ``voice`` (demo/prod)=True.
+VOICE_REQUIRE_PIN = True
+
 
 # =============================================================================
 # OBSERVABILITY — GlitchTip (Sentry SDK), opcjonalne i sterowane DSN

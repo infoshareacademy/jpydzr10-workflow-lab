@@ -41,6 +41,10 @@ VOICE_REQUIRE_SIGNATURE = True
 # więc przywracamy ``True``): nieznany numer = odrzucone połączenie, zero Gemini.
 VOICE_REJECT_UNKNOWN_CALLERS = True
 
+# PIN głosowy wymagany na scenie/prod (drugi czynnik) — dziedziczymy ``False``
+# z ``dev.py``, więc przywracamy ``True``.
+VOICE_REQUIRE_PIN = True
+
 # Model Gemini Live (zamrożony też w .env). Żaden model Live NIE streamuje TEXT-out
 # (API zwraca 1007) — most używa AUDIO-out + transkrypcji tekstowej
 # (``output_audio_transcription``), a transkrypt idzie do ConversationRelay jako

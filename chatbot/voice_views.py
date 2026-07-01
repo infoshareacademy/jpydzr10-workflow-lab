@@ -111,6 +111,104 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
     )
 
 
+def _ws_url(request) -> str:
+    """URL gniazda WS agenta (za tunelem cloudflared albo host żądania)."""
+    tunnel_host = getattr(settings, "VOICE_TUNNEL_HOST", "") or request.get_host()
+    return f"wss://{tunnel_host}/ws/voice/"
+
+
+# =============================================================================
+# PIN — drugi czynnik uwierzytelnienia (DTMF) PRZED podłączeniem Gemini
+# =============================================================================
+#
+# Gdy ``VOICE_REQUIRE_PIN`` jest włączony, znany dzwoniący musi wpisać PIN na
+# klawiaturze (DTMF) ZANIM webhook zwróci ``ConversationRelay`` — Gemini NIE
+# uruchamia się bez poprawnego PIN (podwójna weryfikacja: numer + PIN; dodatkowo
+# oszczędza tokeny). Weryfikacja jest 100% server-side (``verify_voice_pin``),
+# nigdy nie ufamy LLM. Liczbę prób ograniczamy per ``CallSid`` (cache).
+
+_PIN_MAX_ATTEMPTS = 3
+_PIN_ATTEMPTS_TTL = 600  # 10 min — okno jednego połączenia
+
+_NO_PIN_TWIML = (
+    '<?xml version="1.0" encoding="UTF-8"?><Response>'
+    '<Say language="pl-PL">Brak skonfigurowanego PIN-u dla tego numeru. '
+    "Skontaktuj się z administratorem.</Say><Hangup/></Response>"
+)
+
+
+def build_gather_pin_twiml(prompt: str) -> str:
+    """TwiML proszący o PIN (DTMF). Po zebraniu cyfr Twilio POST-uje na verify-pin."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?><Response>'
+        '<Gather input="dtmf" numDigits="6" finishOnKey="#" timeout="10" '
+        'action="/voice/verify-pin/" method="POST">'
+        f'<Say language="pl-PL">{escape(prompt)}</Say>'
+        "</Gather>"
+        '<Reject reason="rejected"/>'  # brak wpisu (timeout) → odrzuć połączenie
+        "</Response>"
+    )
+
+
+def _pin_attempts_key(call_sid: str) -> str:
+    return f"voice:pin:attempts:{call_sid or 'unknown'}"
+
+
+def _bump_pin_attempts(call_sid: str) -> int:
+    from django.core.cache import cache
+
+    key = _pin_attempts_key(call_sid)
+    count = cache.get(key, 0) + 1
+    cache.set(key, count, _PIN_ATTEMPTS_TTL)
+    return count
+
+
+def _clear_pin_attempts(call_sid: str) -> None:
+    from django.core.cache import cache
+
+    cache.delete(_pin_attempts_key(call_sid))
+
+
+@csrf_exempt
+@require_POST
+def voice_verify_pin(request):
+    """Weryfikuje PIN wpisany DTMF; po sukcesie łączy z ConversationRelay."""
+    if not _signature_valid(request):
+        return HttpResponseForbidden("Invalid Twilio signature")
+
+    from_number = request.POST.get("From", "")
+    user = user_for_phone(normalize_phone_e164(from_number))
+    if user is None:  # defensywnie — webhook incoming już odsiał nieznane numery
+        return HttpResponse(_REJECT_TWIML, content_type="text/xml")
+
+    call_sid = request.POST.get("CallSid", "")
+    digits = request.POST.get("Digits", "")
+    profile = user.profile
+
+    from accounts.services import verify_voice_pin
+
+    if not profile.voice_pin_hash:
+        logger.warning("Voice verify-pin: user=%s bez PIN skonfigurowanego.", user.username)
+        return HttpResponse(_NO_PIN_TWIML, content_type="text/xml")
+
+    if verify_voice_pin(profile, digits):
+        _clear_pin_attempts(call_sid)
+        logger.info("Voice PIN OK: user=%s call=%s", user.username, call_sid)
+        nonce = mint_identity_nonce(user)
+        twiml = build_twiml(ws_url=_ws_url(request), user=user, nonce=nonce)
+        return HttpResponse(twiml, content_type="text/xml")
+
+    attempts = _bump_pin_attempts(call_sid)
+    logger.warning("Voice PIN FAIL: user=%s call=%s attempt=%d", user.username, call_sid, attempts)
+    if attempts >= _PIN_MAX_ATTEMPTS:
+        _clear_pin_attempts(call_sid)
+        return HttpResponse(_REJECT_TWIML, content_type="text/xml")
+    return HttpResponse(
+        build_gather_pin_twiml("Błędny PIN. Spróbuj ponownie."),
+        content_type="text/xml",
+    )
+
+
 @csrf_exempt
 @require_POST
 def voice_incoming(request):
@@ -135,8 +233,13 @@ def voice_incoming(request):
         getattr(user, "username", "guest"),
     )
 
+    # Znany numer + PIN wymagany → poproś o PIN (brama DTMF przed Gemini).
+    if user is not None and getattr(settings, "VOICE_REQUIRE_PIN", False):
+        return HttpResponse(
+            build_gather_pin_twiml("Podaj swój PIN i zakończ krzyżykiem."),
+            content_type="text/xml",
+        )
+
     nonce = mint_identity_nonce(user)
-    tunnel_host = getattr(settings, "VOICE_TUNNEL_HOST", "") or request.get_host()
-    ws_url = f"wss://{tunnel_host}/ws/voice/"
-    twiml = build_twiml(ws_url=ws_url, user=user, nonce=nonce)
+    twiml = build_twiml(ws_url=_ws_url(request), user=user, nonce=nonce)
     return HttpResponse(twiml, content_type="text/xml")
