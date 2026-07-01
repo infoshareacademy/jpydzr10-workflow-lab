@@ -1,8 +1,10 @@
 """
 Ustawienia środowiska deweloperskiego.
 
-Wczytywane przez `manage.py` (default) i przez pytest (`pyproject.toml`
-ustawia `DJANGO_SETTINGS_MODULE = "planer_config.settings.dev"`).
+Wczytywane przez `manage.py` jako DEFAULT dla developmentu. Testy NIE używają
+tego modułu — `pyproject.toml` ustawia `DJANGO_SETTINGS_MODULE =
+"planer_config.settings.test"` (dedykowany profil: MD5 hasher, locmem cache,
+axes off, bypass 2FA, neutralizacja tokenu Twilio) importujący z `base`.
 
 Wszystko co specyficzne tylko dla developmentu (DEBUG, debug-toolbar,
 weaker security, console email backend) trafia tutaj. Importujemy `*` z `base`
@@ -21,6 +23,10 @@ DEBUG = True
 
 # W dev pozwalamy na cały localhost, 127.0.0.1 + dowolny *.localhost
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".localhost"]
+
+# Lokalny rozwój agenta głosowego bez tokenu Twilio — webhook idzie bypassem
+# (profil ``voice`` za publicznym tunelem nadpisuje to z powrotem na True).
+VOICE_REQUIRE_SIGNATURE = False
 
 
 # =============================================================================

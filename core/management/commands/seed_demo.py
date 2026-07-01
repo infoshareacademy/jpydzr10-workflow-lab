@@ -117,9 +117,11 @@ class Command(BaseCommand):
     # Hasło kont demo — słaby default, nadpisywalny ze środowiska. Nigdy nie
     # commitujemy realnego hasła w kodzie seeda.
     DEMO_PASSWORD = os.environ.get("DEMO_SEED_PASSWORD", "Planer2026!")
-    # Numer, z którego prowadzący zadzwoni na scenie — caller-ID administratora.
-    # Nadpisywalny ze środowiska tak, aby pasował do faktycznego aparatu.
+    # Numery, z których prowadzący zadzwoni na scenie — caller-ID ról. Czytane ze
+    # środowiska (gitignored ``.env``); realne numery telefonów to dane osobowe i
+    # NIGDY nie trafiają do publicznego repo. Defaulty to placeholdery.
     ADMIN_PHONE = os.environ.get("DEMO_ADMIN_PHONE", "+48600000001")
+    MONTER_PHONE = os.environ.get("DEMO_MONTER_PHONE", "+48600000013")
 
     def _ensure_superuser(self):
         admin, created = User.objects.get_or_create(
@@ -181,7 +183,7 @@ class Command(BaseCommand):
                 EmployeeProfile.Function.MONTAZYSTA,
                 "Seba",
                 "Montażysta",
-                "+48600000013",
+                self.MONTER_PHONE,
                 "seba3@planer.local",
             ),
         ]

@@ -572,7 +572,11 @@
                     <nav class="flex items-center gap-4">
                         <a href="{% url 'core:privacy' %}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{% trans "Polityka prywatności" %}</a>
                         {% if user.is_authenticated %}
-                        <a href="{% url 'accounts:data_export' %}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{% trans "Moje dane (eksport)" %}</a>
+                        {# Eksport danych RODO to POST (CSRF, brak prefetch na GET) — przycisk stylizowany jak link. #}
+                        <form method="post" action="{% url 'accounts:data_export' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="bg-transparent border-0 p-0 cursor-pointer text-xs hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{% trans "Moje dane (eksport)" %}</button>
+                        </form>
                         {% endif %}
                         <span class="text-slate-500 dark:text-slate-400">&copy; 2026 {% trans "Planer Maszyn" %}</span>
                     </nav>

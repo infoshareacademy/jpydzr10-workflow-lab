@@ -1051,18 +1051,29 @@ class TestConfirmErrorPath:
 class TestBatchBulkErrorPaths:
     """Pokrycie ValidationError branches w bulk_confirm/cancel/change_operator."""
 
-    def test_bulk_confirm_with_invalid_batch_uuid_no_error(self, client_logged):
-        """Random UUID → service zwraca 0 confirmed, 0 skipped → success flash."""
+    @staticmethod
+    def _error_messages(response):
+        from django.contrib.messages import get_messages
+
+        return [(m.level_tag, str(m.message)) for m in get_messages(response.wsgi_request)]
+
+    def test_bulk_confirm_with_invalid_batch_uuid_flashes_error(self, client_logged):
+        """Nieznany UUID → service podnosi ValidationError → widok flashuje BŁĄD
+        i przekierowuje. Sam status 302 nie odróżniał błędu od (niemożliwego tu)
+        sukcesu — asertujemy komunikat błędu 'nie istnieje'."""
         import uuid
 
         random_id = uuid.uuid4()
         response = client_logged.post(
             reverse("reservations:batch_bulk_confirm", kwargs={"batch_id": random_id})
         )
-        # Redirect (do nieistniejącego batch_detail → 404 follow, ale redirect status ok)
         assert response.status_code == 302
+        assert any(
+            tag == "error" and "nie istnieje" in text
+            for tag, text in self._error_messages(response)
+        )
 
-    def test_bulk_cancel_with_invalid_uuid_no_error(self, client_logged):
+    def test_bulk_cancel_with_invalid_uuid_flashes_error(self, client_logged):
         import uuid
 
         random_id = uuid.uuid4()
@@ -1071,8 +1082,12 @@ class TestBatchBulkErrorPaths:
             data={"cancellation_reason": "klient_zrezygnowal"},
         )
         assert response.status_code == 302
+        assert any(
+            tag == "error" and "nie istnieje" in text
+            for tag, text in self._error_messages(response)
+        )
 
-    def test_bulk_change_operator_with_invalid_uuid_no_error(self, client_logged):
+    def test_bulk_change_operator_with_invalid_uuid_flashes_error(self, client_logged):
         import uuid
 
         random_id = uuid.uuid4()
@@ -1081,3 +1096,7 @@ class TestBatchBulkErrorPaths:
             data={"new_person": "Anna"},
         )
         assert response.status_code == 302
+        assert any(
+            tag == "error" and "nie istnieje" in text
+            for tag, text in self._error_messages(response)
+        )

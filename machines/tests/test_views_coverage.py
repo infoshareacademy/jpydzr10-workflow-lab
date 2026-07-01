@@ -293,7 +293,15 @@ class TestXlsxImportErrorPaths:
             reverse("machines:import_xlsx"),
             {"file": self._xlsx_upload(buf.getvalue())},
         )
+        from django.contrib.messages import get_messages
+
         assert resp.status_code == 302
+        # Zły wiersz NIE może zostać utrwalony (inaczej cichy zapis niepoprawnych
+        # danych) ORAZ musi pojawić się komunikat błędu per-wiersz — sam 302 był
+        # niezmienniczy względem tego, czy walidacja zadziałała.
+        assert not Machine.objects.filter(uid="BAD-1").exists()
+        msgs = [str(m) for m in get_messages(resp.wsgi_request)]
+        assert any("BAD-1" in m for m in msgs)
 
     def test_import_with_more_than_10_errors_shows_truncation_msg(self, staff_client):
         """>10 błędów → "...oraz N dalszych" (line 344-348)."""
@@ -334,7 +342,14 @@ class TestXlsxImportErrorPaths:
             reverse("machines:import_xlsx"),
             {"file": self._xlsx_upload(buf.getvalue())},
         )
+        from django.contrib.messages import get_messages
+
         assert resp.status_code == 302
+        # Żaden zły wiersz nie zostaje utrwalony ORAZ komunikat truncation
+        # ("...dalszych") faktycznie się pojawia (gałąź >10 błędów).
+        assert Machine.objects.filter(uid__startswith="BAD-").count() == 0
+        msgs = [str(m) for m in get_messages(resp.wsgi_request)]
+        assert any("dalszych" in m for m in msgs)
 
 
 # =============================================================================

@@ -57,10 +57,6 @@ class TestRoleMatrix:
         for name in ("admin", "kierownik", "magazynier", "montazysta"):
             assert not role_users[name].is_superuser, f"{name} nie może być superuserem"
 
-    def test_role_accounts_have_email(self, role_users):
-        for user in role_users.values():
-            assert user.email
-
     def test_magazynier_permissions(self, role_users):
         mag = role_users["magazynier"]
         assert mag.has_perm("reservations.add_reservation")

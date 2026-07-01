@@ -401,7 +401,16 @@ def _sanitize_xlsx_cell(value):
 
 
 class MachineExportXlsxView(LoginRequiredMixin, View):
-    """Streaming XLSX download of the full machine inventory."""
+    """Streaming XLSX download of the full machine inventory.
+
+    Access: ``LoginRequiredMixin`` only — NO extra permission, intentionally.
+    Export is a pure read of the same inventory that ``MachineListView`` /
+    ``MachineDetailView`` already expose to every authenticated role (both are
+    ``LoginRequiredMixin``-only; even read-only montażysta sees the machine
+    list). Exporting that same non-sensitive data (no costs) therefore mirrors
+    the read parity of the list view. Mutating endpoints (create/update/import)
+    keep ``PermissionRequiredMixin`` — only the read/export path is open.
+    """
 
     def get(self, request):
         workbook = openpyxl.Workbook()

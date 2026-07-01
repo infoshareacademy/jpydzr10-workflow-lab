@@ -139,9 +139,9 @@ class ReservationAdmin(PlanerHistoryAdmin):
             {
                 "fields": ("start_date", "end_date", "actual_return_date"),
                 "description": _(
-                    "<code>actual_return_date</code> — faktyczny zwrot maszyny "
-                    "(B-3). Jeśli ustawiony i &lt; end_date, rezerwacja zwolniła "
-                    "maszynę wcześniej."
+                    "<code>actual_return_date</code> — ewidencyjny zapis faktycznego "
+                    "zwrotu maszyny (B-3). Maszynę zwalnia zakończenie rezerwacji "
+                    "(status „Zakończona” jest pomijany przy konfliktach), nie ta data."
                 ),
             },
         ),

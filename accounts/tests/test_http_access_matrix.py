@@ -146,3 +146,33 @@ def test_reservation_edit_is_admin_only(roles, role):
     client.force_login(roles[role])
     resp = client.get(reverse("reservations:update", args=[res.pk]))
     assert resp.status_code == 403
+
+
+# Dowód „kto MOŻE" — nie wystarczy brak 403. Po akcji sprawdzamy REALNY efekt
+# mutacji w bazie: confirm → POTWIERDZONA, cancel → ANULOWANA. Bez tej asercji
+# widok mógłby zwrócić 302 i NIC nie zmienić, a test i tak by przeszedł.
+@pytest.mark.parametrize("role", ["admin", "magazynier"])
+def test_confirm_actually_sets_status_in_db(roles, role):
+    res = _reservation(roles["admin"], status=Reservation.Status.OCZEKUJACA)
+    client = Client()
+    client.force_login(roles[role])
+    resp = client.post(reverse("reservations:confirm", args=[res.pk]))
+    assert resp.status_code in (200, 302)
+    res.refresh_from_db()
+    assert res.status == Reservation.Status.POTWIERDZONA
+
+
+@pytest.mark.parametrize("role", ["admin", "magazynier"])
+def test_cancel_actually_sets_status_in_db(roles, role):
+    res = _reservation(roles["admin"], status=Reservation.Status.OCZEKUJACA)
+    client = Client()
+    client.force_login(roles[role])
+    # Anulowanie wymaga powodu (B-2) — bez niego serwis rzuca ValidationError
+    # i status pozostaje OCZEKUJACA; podajemy prawidłowy ``cancellation_reason``.
+    resp = client.post(
+        reverse("reservations:cancel", args=[res.pk]),
+        {"cancellation_reason": Reservation.CancellationReason.KLIENT_ZREZYGNOWAL},
+    )
+    assert resp.status_code in (200, 302)
+    res.refresh_from_db()
+    assert res.status == Reservation.Status.ANULOWANA

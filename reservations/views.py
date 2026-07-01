@@ -574,11 +574,12 @@ def reservation_cancel(request: HttpRequest, pk: int) -> HttpResponse:
 def reservation_complete(request: HttpRequest, pk: int) -> HttpResponse:
     """Kończy rezerwację (POTWIERDZONA → ZAKONCZONA) i zwraca maszynę.
 
-    B-3 — opcjonalny POST field ``actual_return_date`` (ISO yyyy-mm-dd).
-    Jeśli ustawione, ustawia ``Reservation.actual_return_date`` (zapis w
-    services), co zwalnia maszynę w ``has_conflict`` na kolejne dni.
-    Brak pola = brak zmiany ``actual_return_date`` (default dzisiejszy
-    zwrot zgodnie z legacy zachowaniem).
+    B-3 — opcjonalny POST field ``actual_return_date`` (ISO yyyy-mm-dd) zapisywany
+    do ``Reservation.actual_return_date`` jako zapis EWIDENCYJNY (kiedy klient
+    faktycznie zwrócił). Maszynę zwalnia SAM przejście w status ``ZAKONCZONA``
+    (statusy zamknięte są pomijane przy wykrywaniu konfliktów — patrz
+    ``reservations.managers.active``), a NIE ta data; wykrywanie konfliktów i
+    raporty operują na ``end_date``. Brak pola = brak zmiany ``actual_return_date``.
 
     Wymaga uprawnienia ``reservations.change_reservation``.
     """

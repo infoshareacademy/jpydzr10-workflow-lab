@@ -79,22 +79,14 @@ def confirm_pending(session: VoiceCallSession) -> str:
     return result
 
 
-async def run_voice_socket(*args, **kwargs):  # pragma: no cover - I/O, bramkowane na żywo
+async def run_voice_socket(scope, receive, send):
     """Żywa pętla WS (Twilio ConversationRelay ↔ Gemini Live).
 
-    Szkielet domykany przy uruchomieniu na żywo: weryfikacja nonce →
-    User, otwarcie Gemini Live (``response_modalities=['TEXT']`` + function
-    declarations z Pydantic ``*Params``), na ``tool_call`` →
-    :func:`propose_or_execute`, na „tak” → :func:`confirm_pending`, każdy zapis
-    ORM owinięty w ``database_sync_to_async``. Wymaga ``GEMINI_LIVE_MODEL``.
-
-    Bezpieczeństwo (OBOWIĄZKOWE przy domknięciu): nonce z TwiML weryfikuj
-    ``TimestampSigner(salt='voice-call-identity').unsign(nonce,
-    max_age=NONCE_MAX_AGE_SECONDS)`` i odrzuć połączenie przy
-    ``SignatureExpired`` / ``BadSignature`` — bez ``max_age`` przechwycony nonce
-    działałby aż do rotacji ``SECRET_KEY`` (okno replay).
+    Implementacja żyje w :mod:`chatbot.voice_socket` (transport WS + most do
+    Gemini Live). Tu zostaje cienki delegat, by zachować historyczny punkt
+    wejścia i uniknąć cyklicznego importu (``voice_socket`` importuje dyspozytor
+    z tego modułu). Routing ASGI ``/ws/voice/`` wskazuje na tę funkcję.
     """
-    raise NotImplementedError(
-        "Żywe gniazdo głosowe jest domykane przy uruchomieniu na żywo "
-        "(wymaga GEMINI_LIVE_MODEL oraz konfiguracji telefonii i tunelu)."
-    )
+    from chatbot.voice_socket import run_voice_socket as _impl
+
+    return await _impl(scope, receive, send)

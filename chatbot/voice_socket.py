@@ -1,0 +1,439 @@
+"""Żywe gniazdo WebSocket agenta głosowego: Twilio ConversationRelay ↔ Gemini Live.
+
+Twilio robi STT (mowa→tekst) i TTS (tekst→mowa); MY mostkujemy warstwę LLM.
+Protokół po stronie Twilio (ramki JSON):
+
+* ``{"type":"setup", ..., "customParameters":{"user_id":"123","nonce":"123:sig"}}``
+  — pierwsza ramka; ``customParameters`` pochodzą z ``<Parameter>`` w TwiML
+  (patrz :func:`chatbot.voice_views.build_twiml`).
+* ``{"type":"prompt","voicePrompt":"<transkrypcja>","last":true}`` — wypowiedź usera.
+* ``{"type":"interrupt", ...}`` — barge-in (user przerwał TTS).
+
+Wysyłamy do Twilio strumień ``{"type":"text","token":"<chunk>","last":false}`` i na
+końcu tury ``{"type":"text","token":"","last":true}``.
+
+Po stronie Gemini Live (``google-genai`` 2.3.0, async): tool-calling robi GEMINI
+(nie Twilio). Na ``tool_call`` wołamy ten sam dyspozytor co czat
+(:func:`chatbot.voice_consumer.propose_or_execute` / :func:`confirm_pending`), więc
+głos stosuje DOKŁADNIE te same reguły uprawnień. Pseudo-narzędzie
+``confirm_pending_action`` pozwala Gemini potwierdzić wiszącą akcję na „tak"
+zamiast kruchego dopasowania słów kluczowych.
+
+Bezpieczeństwo: tożsamość dzwoniącego pochodzi z ``setup.customParameters`` (nie z
+ponownego lookupu numeru w WS — to zrobił już webhook). Podpisany ``nonce`` jest
+weryfikowany z ``max_age`` (okno replay), a jego ładunek (``user_id``) musi się
+zgadzać z jawnym ``customParameters.user_id``. Każda nieprawidłowość → degradacja
+do GOŚCIA (read-only) — nigdy eskalacja.
+
+Cała warstwa ORM (rozpoznanie usera, dyspozytor narzędzi) jest synchroniczna i
+owijana ``asgiref.sync.sync_to_async`` (NIE ``channels.db`` — projekt nie używa
+Channels; pętla WS to surowe ASGI obsługiwane natywnie przez uvicorn).
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
+from asgiref.sync import sync_to_async
+from django.contrib.auth import get_user_model
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+
+from chatbot.tools import WRITE_ACTION_PERMS
+from chatbot.voice_consumer import (
+    NONCE_MAX_AGE_SECONDS,
+    build_user_perms_summary,
+    confirm_pending,
+    propose_or_execute,
+)
+from chatbot.voice_session import VoiceCallSession
+from chatbot.voice_views import _NONCE_SALT
+
+logger = logging.getLogger("chatbot")
+
+User = get_user_model()
+
+# Pseudo-narzędzie potwierdzenia — Gemini woła je gdy user powie „tak"/„potwierdzam",
+# zamiast kruchego keyword-matchingu po naszej stronie.
+CONFIRM_TOOL = "confirm_pending_action"
+
+
+# =============================================================================
+# FUNCTION DECLARATIONS — schematy narzędzi dla Gemini (oczyszczone)
+# =============================================================================
+#
+# ``model_json_schema()`` z Pydantica produkuje ``anyOf`` (dla pól Optional) oraz
+# klucze walidacyjne (pattern/maxLength/...), których schemat funkcji Gemini nie
+# akceptuje. ``_gemini_clean`` spłaszcza ``anyOf [T, null]`` → ``T`` z
+# ``nullable=True`` i usuwa nieobsługiwane klucze. (Modele ``*Params`` są płaskie —
+# nie ma zagnieżdżonych ``$ref``/``$defs`` — ale i tak je usuwamy defensywnie.)
+
+# Klucze walidacyjne JSON Schema, których nie przekazujemy do Gemini.
+_DROP_KEYS = frozenset(
+    {
+        "maxLength",
+        "minLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "default",
+        "title",
+        "additionalProperties",
+        "$defs",
+        "$ref",
+        "format",
+    }
+)
+
+
+def _gemini_clean(schema: dict) -> dict:
+    """Rekurencyjnie oczyszcza JSON Schema do podzbioru akceptowanego przez Gemini."""
+    schema = dict(schema)
+    schema.pop("$defs", None)
+
+    if "anyOf" in schema:
+        variants = [v for v in schema["anyOf"] if v.get("type") != "null"]
+        nullable = any(v.get("type") == "null" for v in schema["anyOf"])
+        base = _gemini_clean(variants[0]) if variants else {"type": "string"}
+        if nullable:
+            base["nullable"] = True
+        if schema.get("description") and "description" not in base:
+            base["description"] = schema["description"]
+        return base
+
+    cleaned = {k: v for k, v in schema.items() if k not in _DROP_KEYS}
+
+    if cleaned.get("type") == "object" and "properties" in cleaned:
+        cleaned["properties"] = {k: _gemini_clean(v) for k, v in cleaned["properties"].items()}
+    if "items" in cleaned:
+        cleaned["items"] = _gemini_clean(cleaned["items"])
+    return cleaned
+
+
+# Mapowanie akcji zapisującej → model parametrów (źródło schematu dla Gemini).
+def _write_param_models() -> dict[str, Any]:
+    from chatbot import tools as t
+
+    return {
+        "create_reservation": t.CreateReservationParams,
+        "cancel_reservation": t.CancelReservationParams,
+        "change_operator": t.ChangeOperatorParams,
+        "swap_machine": t.SwapMachineParams,
+        "set_machine_to_service": t.SetMachineToServiceParams,
+        "create_service_record": t.CreateServiceRecordParams,
+        "update_service_record": t.UpdateServiceRecordParams,
+        "update_machine_inspection_date": t.UpdateMachineInspectionDateParams,
+        "confirm_reservation": t.ConfirmReservationParams,
+        "complete_reservation": t.CompleteReservationParams,
+        "update_reservation": t.UpdateReservationParams,
+        "report_breakdown": t.ReportBreakdownParams,
+        "create_machine": t.CreateMachineParams,
+        "update_machine": t.UpdateMachineParams,
+        "return_machine": t.ReturnMachineParams,
+        "close_repair_machine": t.CloseRepairMachineParams,
+        "retire_machine": t.RetireMachineParams,
+        "create_site": t.CreateSiteParams,
+        "update_site": t.UpdateSiteParams,
+        "delete_site": t.DeleteSiteParams,
+        "terminate_employee": t.TerminateEmployeeParams,
+        "anonymize_employee": t.AnonymizeEmployeeParams,
+    }
+
+
+# Schematy narzędzi odczytu (zwykłe funkcje, nie modele Pydantic — opisujemy ręcznie).
+_READ_PARAM_SCHEMAS: dict[str, dict] = {
+    "get_machine_status": {
+        "type": "object",
+        "properties": {"uid": {"type": "string", "description": "UID maszyny (np. KOP-001)"}},
+        "required": ["uid"],
+    },
+    "check_availability": {
+        "type": "object",
+        "properties": {
+            "uid": {"type": "string", "description": "UID maszyny"},
+            "start_date": {"type": "string", "description": "Data od (ISO YYYY-MM-DD)"},
+            "end_date": {"type": "string", "description": "Data do (ISO YYYY-MM-DD)"},
+        },
+        "required": ["uid", "start_date", "end_date"],
+    },
+    "get_inspections_due": {
+        "type": "object",
+        "properties": {
+            "days_ahead": {"type": "integer", "description": "Horyzont w dniach (domyślnie 14)"}
+        },
+        "required": [],
+    },
+    "get_service_costs": {
+        "type": "object",
+        "properties": {
+            "machine_type": {
+                "type": "string",
+                "nullable": True,
+                "description": "Filtr typu maszyny (opcjonalny)",
+            },
+            "days": {"type": "integer", "description": "Okno w dniach (domyślnie 90)"},
+        },
+        "required": [],
+    },
+}
+
+
+def build_function_declarations() -> list[dict]:
+    """Buduje listę deklaracji funkcji (dict JSON-schema) dla Gemini Live.
+
+    Zwraca dict-y nadające się jako ``FunctionDeclaration.parameters_json_schema``
+    (czyste — bez ``anyOf``/``$ref``/``$defs``). Obejmuje: 4 narzędzia odczytu, wszystkie
+    akcje zapisujące z :data:`WRITE_ACTION_PERMS` oraz pseudo-narzędzie
+    :data:`CONFIRM_TOOL`.
+    """
+    declarations: list[dict] = []
+
+    for action, schema in _READ_PARAM_SCHEMAS.items():
+        declarations.append(
+            {
+                "name": action,
+                "description": f"Akcja odczytu: {action} (bez efektów ubocznych, dostępna gościom).",
+                "parameters": _gemini_clean(schema),
+            }
+        )
+
+    param_models = _write_param_models()
+    for action in WRITE_ACTION_PERMS:
+        model = param_models.get(action)
+        if model is None:  # pragma: no cover - mapowanie pełne, ale defensywnie
+            continue
+        declarations.append(
+            {
+                "name": action,
+                "description": (
+                    f"Akcja zapisująca: {action}. Wymaga uprawnień i POTWIERDZENIA głosowego "
+                    f"(po wywołaniu poproś o „tak” i dopiero wtedy wywołaj {CONFIRM_TOOL})."
+                ),
+                "parameters": _gemini_clean(model.model_json_schema()),
+            }
+        )
+
+    declarations.append(
+        {
+            "name": CONFIRM_TOOL,
+            "description": (
+                "Potwierdza wiszącą akcję zapisującą — wywołaj DOPIERO gdy rozmówca powie "
+                "„tak”/„potwierdzam” po zaproponowanej akcji."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        }
+    )
+    return declarations
+
+
+# =============================================================================
+# TOŻSAMOŚĆ DZWONIĄCEGO (z setup.customParameters)
+# =============================================================================
+
+
+def resolve_caller(setup: dict):
+    """Rozpoznaje usera z ramki ``setup`` Twilio (``customParameters``).
+
+    Zwraca obiekt ``User`` dla zweryfikowanego, znanego dzwoniącego albo ``None``
+    (gość, read-only). Degradacja do gościa przy KAŻDEJ nieprawidłowości — nigdy
+    eskalacja:
+
+    * ``nonce`` weryfikowany ``TimestampSigner.unsign(..., max_age=...)`` — zły/
+      wygasły podpis → gość;
+    * ładunek nonce (``user_id``) musi się zgadzać z jawnym ``customParameters.user_id``
+      (inaczej ktoś podmienił jeden bez drugiego) → gość;
+    * ``"guest"`` lub nieistniejący/nieaktywny user → gość.
+    """
+    custom = (setup or {}).get("customParameters") or {}
+    claimed_user_id = str(custom.get("user_id", "guest"))
+    nonce = custom.get("nonce", "")
+
+    signer = TimestampSigner(salt=_NONCE_SALT)
+    try:
+        signed_user_id = signer.unsign(nonce, max_age=NONCE_MAX_AGE_SECONDS)
+    except BadSignature, SignatureExpired:
+        logger.warning("Voice WS: nieprawidłowy/wygasły nonce — degradacja do gościa.")
+        return None
+
+    if signed_user_id != claimed_user_id:
+        logger.warning(
+            "Voice WS: nonce (%s) ≠ customParameters.user_id (%s) — gość.",
+            signed_user_id,
+            claimed_user_id,
+        )
+        return None
+    if signed_user_id == "guest":
+        return None
+
+    try:
+        return User.objects.get(pk=int(signed_user_id), is_active=True)
+    except User.DoesNotExist, ValueError:
+        logger.warning("Voice WS: user_id=%s nie odpowiada aktywnemu kontu — gość.", signed_user_id)
+        return None
+
+
+def dispatch_tool_call(session: VoiceCallSession, name: str, args: dict) -> str:
+    """Kieruje wywołanie narzędzia Gemini do dyspozytora głosowego.
+
+    ``confirm_pending_action`` → :func:`confirm_pending`; każde inne → przez
+    :func:`propose_or_execute` (które egzekwuje uprawnienia/gość/potwierdzenie).
+    """
+    if name == CONFIRM_TOOL:
+        return confirm_pending(session)
+    return propose_or_execute(session, name, dict(args or {}))
+
+
+# =============================================================================
+# WARSTWA TRANSPORTU (Twilio WS) + POŁĄCZENIE GEMINI
+# =============================================================================
+
+
+async def _send_text(send, token: str, *, last: bool) -> None:
+    """Wysyła ramkę tekstu do ConversationRelay (Twilio zrobi TTS)."""
+    await send(
+        {
+            "type": "websocket.send",
+            "text": json.dumps({"type": "text", "token": token, "last": last}, ensure_ascii=False),
+        }
+    )
+
+
+async def _recv_json(receive) -> dict | None:
+    """Czyta jedną ramkę z gniazda. ``None`` = rozłączenie (koniec pętli)."""
+    event = await receive()
+    etype = event.get("type")
+    if etype == "websocket.disconnect":
+        return None
+    if etype == "websocket.receive":
+        text = event.get("text")
+        if not text:
+            return {}
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            logger.warning("Voice WS: nieparsowalna ramka JSON — pomijam.")
+            return {}
+    return {}
+
+
+def _gemini_connect(user):  # pragma: no cover - I/O na żywo (mockowane w testach)
+    """Otwiera sesję Gemini Live skonfigurowaną pod ConversationRelay (TEXT-out).
+
+    Zwraca async context manager. Wydzielone, by testy mogły to podmienić na
+    atrapę bez realnego klucza/sieci.
+    """
+    import os
+
+    from django.conf import settings
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "").strip())
+    config = types.LiveConnectConfig(
+        response_modalities=["TEXT"],
+        system_instruction=_system_instruction(user),
+        tools=[
+            types.Tool(
+                function_declarations=[
+                    types.FunctionDeclaration(
+                        name=d["name"],
+                        description=d["description"],
+                        parameters_json_schema=d["parameters"],
+                    )
+                    for d in build_function_declarations()
+                ]
+            )
+        ],
+    )
+    return client.aio.live.connect(model=settings.GEMINI_LIVE_MODEL, config=config)
+
+
+def _system_instruction(user) -> str:
+    """Instrukcja systemowa dla Gemini — zakres uprawnień rozmówcy + reguły."""
+    return (
+        "Jesteś asystentem głosowym Planera Maszyn Budowlanych. Mów po polsku, krótko. "
+        "Akcje zapisujące wykonuj wyłącznie przez właściwe narzędzie; po jego wywołaniu "
+        "PRZECZYTAJ podgląd i poproś rozmówcę o potwierdzenie. Dopiero gdy powie „tak”, "
+        f"wywołaj narzędzie {CONFIRM_TOOL}. " + build_user_perms_summary(user)
+    )
+
+
+async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -> None:
+    """Przekazuje wypowiedź usera do Gemini i streamuje odpowiedź z powrotem do Twilio."""
+    from google.genai import types
+
+    voice_prompt = msg.get("voicePrompt", "")
+    session.add_turn("user", voice_prompt)
+    await gsession.send_client_content(
+        turns={"role": "user", "parts": [{"text": voice_prompt}]}, turn_complete=True
+    )
+
+    async for gmsg in gsession.receive():
+        tool_call = getattr(gmsg, "tool_call", None)
+        if tool_call and getattr(tool_call, "function_calls", None):
+            responses = []
+            for fc in tool_call.function_calls:
+                result = await sync_to_async(dispatch_tool_call, thread_sensitive=True)(
+                    session, fc.name, dict(fc.args or {})
+                )
+                session.add_turn("tool", result)
+                responses.append(
+                    types.FunctionResponse(id=fc.id, name=fc.name, response={"result": result})
+                )
+            await gsession.send_tool_response(function_responses=responses)
+            continue
+
+        server_content = getattr(gmsg, "server_content", None)
+        if server_content and getattr(server_content, "interrupted", False):
+            # Barge-in po stronie Gemini (różny od ramki ``interrupt`` z Twilio):
+            # rozmówca przerwał — kończymy turę bez ramki ``last``.
+            return
+
+        text = getattr(gmsg, "text", None)
+        if text:
+            session.add_turn("assistant", text)
+            await _send_text(send, text, last=False)
+
+        if server_content and getattr(server_content, "turn_complete", False):
+            await _send_text(send, "", last=True)
+            return
+
+
+async def run_voice_socket(scope, receive, send) -> None:
+    """Pętla WS: akceptacja → setup/tożsamość → Gemini Live ↔ Twilio (tury)."""
+    # Handshake ASGI WebSocket.
+    event = await receive()
+    if event.get("type") == "websocket.connect":
+        await send({"type": "websocket.accept"})
+
+    setup = await _recv_json(receive)
+    if setup is None:
+        return
+    if setup.get("type") != "setup":
+        logger.warning("Voice WS: pierwsza ramka to nie 'setup' (%s) — zamykam.", setup.get("type"))
+        await send({"type": "websocket.close"})
+        return
+
+    user = await sync_to_async(resolve_caller, thread_sensitive=True)(setup)
+    call_sid = setup.get("callSid") or setup.get("CallSid") or ""
+    session = VoiceCallSession(call_sid=call_sid, user=user)
+    logger.info("Voice WS setup: call_sid=%s user=%s", call_sid, getattr(user, "pk", "guest"))
+
+    async with _gemini_connect(user) as gsession:
+        while True:
+            msg = await _recv_json(receive)
+            if msg is None:
+                break
+            mtype = msg.get("type")
+            if mtype == "prompt":
+                await _handle_prompt(gsession, session, msg, send)
+            elif mtype == "interrupt" and session.has_pending():
+                # Barge-in z Twilio: w modelu turowym tura Gemini już jest
+                # zamknięta; czyścimy wiszącą akcję, by „tak” po przerwaniu nie
+                # potwierdziło czegoś nieaktualnego.
+                session.cancel()
+            # 'setup'/inne ramki ignorujemy.
+    logger.info("Voice WS zakończone: call_sid=%s", call_sid)

@@ -145,6 +145,35 @@ class TestEnforcement:
         with override_settings(OTP_TESTING_BYPASS=True):
             assert client.get("/maszyny/").status_code == 200
 
+    def test_login_suffix_attack_not_allow_listed(self, client):
+        # Atak sufiksowy: /accounts/loginEVIL NIE jest trasą logowania, więc NIE
+        # może być zwolniony z 2FA. Uprawniony niezweryfikowany user zostaje
+        # zepchnięty na setup — gdyby allow-lista używała gołego startswith,
+        # przepuściłaby ten URL (i każdy /accounts/login* ).
+        user = _make_user("kiersuffix", EmployeeProfile.Function.KIEROWNIK)
+        client.force_login(user)
+        response = client.get("/accounts/loginEVIL")
+        assert response.status_code == 302
+        assert response["Location"] == reverse("accounts:2fa_setup")
+
+    def test_login_trailing_slash_still_allow_listed(self, client):
+        # Realna trasa z ukośnikiem (/accounts/login/) MUSI pozostać dostępna —
+        # kotwiczone dopasowanie obejmuje ``trasa + "/"``, więc nie ma pętli.
+        user = _make_user("kiertrail", EmployeeProfile.Function.KIEROWNIK)
+        client.force_login(user)
+        response = client.get("/accounts/login/")
+        assert response.get("Location") != reverse("accounts:2fa_setup")
+
+    def test_media_now_behind_2fa(self, client):
+        # /media/ zostało USUNIĘTE z allow-listy — przesłane pliki (protokoły
+        # przeglądów) to zasób chroniony. Uprawniony niezweryfikowany user jest
+        # przekierowany na 2FA zamiast dostać plik.
+        user = _make_user("kiermedia", EmployeeProfile.Function.KIEROWNIK)
+        client.force_login(user)
+        response = client.get("/media/protokoly/tajny.pdf")
+        assert response.status_code == 302
+        assert response["Location"] == reverse("accounts:2fa_setup")
+
 
 # -----------------------------------------------------------------------------
 # Setup → confirm → recovery

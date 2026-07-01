@@ -141,6 +141,30 @@ def test_set_machine_to_service_blocks_with_future_reservations():
 
 
 @pytest.mark.django_db
+@freeze_time("2026-05-16")
+def test_set_machine_to_service_blocks_with_real_future_confirmed_reservation():
+    """D6 BEZ mocka — realna przyszła rezerwacja POTWIERDZONA blokuje serwis.
+
+    Wariant powyżej patchuje ``_get_future_confirmed_reservations`` w całości,
+    więc NIE wykonuje faktycznego zapytania. Ten test tworzy prawdziwą rezerwację
+    (status POTWIERDZONA, start_date w przyszłości) i pokrywa realny filtr
+    (``status=POTWIERDZONA`` + ``start_date__gte=today``) — pada, gdyby filtr
+    użył złego statusu lub operatora daty."""
+    from reservations.factories import ConfirmedReservationFactory
+
+    machine = MachineFactory(uid="S-4R", status=Machine.Status.W_MAGAZYNIE)
+    ConfirmedReservationFactory(
+        machine=machine,
+        start_date=date(2026, 6, 1),  # przyszłość względem freeze 2026-05-16
+        end_date=date(2026, 6, 5),
+    )
+    with pytest.raises(ValidationError, match="potwierdzonych rezerwacji"):
+        set_machine_to_service(machine)
+    machine.refresh_from_db()
+    assert machine.status == Machine.Status.W_MAGAZYNIE
+
+
+@pytest.mark.django_db
 def test_return_machine_to_warehouse():
     machine = OnSiteMachineFactory(uid="R-1", location="Warszawa, ul. Test 5")
     result = return_machine_to_warehouse(machine)

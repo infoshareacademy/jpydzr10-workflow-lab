@@ -32,5 +32,12 @@ if VOICE_TUNNEL_HOST:
     ALLOWED_HOSTS.append(VOICE_TUNNEL_HOST)
     CSRF_TRUSTED_ORIGINS = [f"https://{VOICE_TUNNEL_HOST}"]
 
-# Model Gemini Live (zamrażany w .env po weryfikacji dostępu do API).
-GEMINI_LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "")
+# Webhook głosowy jest tu wystawiony za PUBLICZNYM tunelem — wymuszamy podpis
+# Twilio (fail-closed). Dziedziczymy ``False`` z ``dev.py``, więc jawnie
+# przywracamy bezpieczny default: brak ``TWILIO_AUTH_TOKEN`` → webhook odrzucony.
+VOICE_REQUIRE_SIGNATURE = True
+
+# Model Gemini Live (zamrażany w .env po weryfikacji dostępu do API). Default na
+# model Live native-audio (TYLKO Live); jeśli nie streamuje TEXT-out wymaganego
+# przez ConversationRelay → ustaw w .env fallback Live (``gemini-live-2.5-flash-preview``).
+GEMINI_LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-latest")
