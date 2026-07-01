@@ -32,6 +32,12 @@ logger = logging.getLogger("chatbot")
 
 _NONCE_SALT = "voice-call-identity"
 
+# TwiML odrzucający połączenie z numeru spoza białej listy — zwracany ZANIM
+# powstanie ConversationRelay, więc Gemini pozostaje nietknięty (zero tokenów).
+_REJECT_TWIML = (
+    '<?xml version="1.0" encoding="UTF-8"?><Response><Reject reason="rejected"/></Response>'
+)
+
 
 def mint_identity_nonce(user) -> str:
     """Podpisany, krótkotrwały token tożsamości dzwoniącego dla warstwy WS."""
@@ -115,6 +121,13 @@ def voice_incoming(request):
     from_number = request.POST.get("From", "")
     e164 = normalize_phone_e164(from_number)
     user = user_for_phone(e164)
+    # Biały list: numer spoza bazy (nieznany / nieaktywny / zanonimizowany) →
+    # ODRZUĆ zanim cokolwiek dotknie Gemini (anti-token-drain — „nie da się
+    # dodzwonić" z nieautoryzowanego numeru). Flaga off (dev/test) → dawny gość
+    # read-only, dla lokalnego debugowania ścieżki gościa.
+    if user is None and getattr(settings, "VOICE_REJECT_UNKNOWN_CALLERS", True):
+        logger.warning("Voice incoming ODRZUCONE (biały list): nieznany numer from=%s", from_number)
+        return HttpResponse(_REJECT_TWIML, content_type="text/xml")
     logger.info(
         "Voice incoming: from=%s e164=%s → %s",
         from_number,

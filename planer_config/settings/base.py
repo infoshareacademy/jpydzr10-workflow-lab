@@ -524,6 +524,13 @@ LOGGING = {
 # ``True``.
 VOICE_REQUIRE_SIGNATURE = True
 
+# Biały list numerów: połączenia z numerów SPOZA bazy (nieznanych / nieaktywnych /
+# zanonimizowanych) są ODRZUCANE (``<Reject>``) w webhooku, ZANIM cokolwiek dotknie
+# Gemini — anti-token-drain („nie da się dodzwonić" z nieautoryzowanego numeru).
+# Dev/test ustawiają ``False`` (guest-flow lokalnie testowalny); profil ``voice``
+# (demo/prod) — ``True``.
+VOICE_REJECT_UNKNOWN_CALLERS = True
+
 
 # =============================================================================
 # OBSERVABILITY — GlitchTip (Sentry SDK), opcjonalne i sterowane DSN
