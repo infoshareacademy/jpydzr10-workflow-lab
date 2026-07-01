@@ -178,6 +178,17 @@ _READ_PARAM_SCHEMAS: dict[str, dict] = {
         },
         "required": [],
     },
+    "get_machine_service_history": {
+        "type": "object",
+        "properties": {
+            "uid": {"type": "string", "description": "UID maszyny (np. KOP-001)"},
+            "limit": {
+                "type": "integer",
+                "description": "Ile ostatnich wpisów serwisowych (domyślnie 5)",
+            },
+        },
+        "required": ["uid"],
+    },
 }
 
 
@@ -319,21 +330,21 @@ async def _recv_json(receive) -> dict | None:
     return {}
 
 
-def _gemini_connect(user):  # pragma: no cover - I/O na żywo (mockowane w testach)
-    """Otwiera sesję Gemini Live skonfigurowaną pod ConversationRelay (TEXT-out).
+def _build_live_config(user):
+    """Buduje ``LiveConnectConfig`` dla ConversationRelay.
 
-    Zwraca async context manager. Wydzielone, by testy mogły to podmienić na
-    atrapę bez realnego klucza/sieci.
+    🔴 Modalność MUSI być ``AUDIO`` (nie ``TEXT``): ŻADEN dostępny model Gemini
+    Live nie streamuje TEXT-out — ``response_modalities=['TEXT']`` zwraca błąd API
+    1007 (zweryfikowane realnymi połączeniami). Zamiast tego model mówi AUDIO, a
+    my włączamy ``output_audio_transcription`` i równoległą transkrypcję tekstową
+    przekazujemy do ConversationRelay jako ramki ``text`` (Twilio robi z nich TTS).
+    Wydzielone z :func:`_gemini_connect`, by test mógł sprawdzić config bez I/O.
     """
-    import os
-
-    from django.conf import settings
-    from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "").strip())
-    config = types.LiveConnectConfig(
-        response_modalities=["TEXT"],
+    return types.LiveConnectConfig(
+        response_modalities=["AUDIO"],
+        output_audio_transcription=types.AudioTranscriptionConfig(),
         system_instruction=_system_instruction(user),
         tools=[
             types.Tool(
@@ -348,7 +359,23 @@ def _gemini_connect(user):  # pragma: no cover - I/O na żywo (mockowane w testa
             )
         ],
     )
-    return client.aio.live.connect(model=settings.GEMINI_LIVE_MODEL, config=config)
+
+
+def _gemini_connect(user):  # pragma: no cover - I/O na żywo (mockowane w testach)
+    """Otwiera sesję Gemini Live skonfigurowaną pod ConversationRelay.
+
+    Zwraca async context manager. Wydzielone, by testy mogły to podmienić na
+    atrapę bez realnego klucza/sieci; budowanie configu → :func:`_build_live_config`.
+    """
+    import os
+
+    from django.conf import settings
+    from google import genai
+
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "").strip())
+    return client.aio.live.connect(
+        model=settings.GEMINI_LIVE_MODEL, config=_build_live_config(user)
+    )
 
 
 def _system_instruction(user) -> str:
@@ -392,7 +419,11 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
             # rozmówca przerwał — kończymy turę bez ramki ``last``.
             return
 
-        text = getattr(gmsg, "text", None)
+        # Model gada AUDIO; tekst do ConversationRelay bierzemy z transkrypcji
+        # wyjścia (``output_transcription``) — ``gmsg.text`` przy modalności AUDIO
+        # jest puste. Transkrypt jest strumieniowany przyrostowo.
+        ot = getattr(server_content, "output_transcription", None) if server_content else None
+        text = getattr(ot, "text", None) if ot else None
         if text:
             session.add_turn("assistant", text)
             await _send_text(send, text, last=False)

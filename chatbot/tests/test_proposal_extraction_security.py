@@ -23,7 +23,7 @@ from types import SimpleNamespace
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from pydantic_ai.messages import ToolCallPart
+from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
 from chatbot import agent as agent_module
 from chatbot.services import _extract_proposal_from_tool_calls, ask_chatbot
@@ -215,6 +215,56 @@ class TestExtractProposalUnit:
         assert proposal is not None
         assert proposal["params"]["reservation_id"] == 5
         assert proposal["params"]["new_person"] == "Maria"
+
+    def test_business_error_return_suppresses_proposal(self):
+        """``propose_*`` zwróciło {"error": ...} (walidacja biznesowa) → brak pending.
+
+        Bez tego agent "obiecuje i nie dowozi": pokazuje "Proponowana akcja…",
+        user mówi "tak", a wykonanie i tak pada na tej samej walidacji. Extractor
+        MUSI rozpoznać błędny zwrot narzędzia (po sparowanym ``tool_call_id``).
+        """
+        call = ToolCallPart(
+            tool_name="propose_create_reservation",
+            args={"machine_uid": "KOP-001", "person": "Anna"},
+            tool_call_id="tc-err-1",
+        )
+        ret = ToolReturnPart(
+            tool_name="propose_create_reservation",
+            content='{"error": "Nie można proponować rezerwacji w przeszłości."}',
+            tool_call_id="tc-err-1",
+        )
+        result = SimpleNamespace(
+            all_messages=lambda: [
+                SimpleNamespace(parts=[call]),
+                SimpleNamespace(parts=[ret]),
+            ]
+        )
+        assert _extract_proposal_from_tool_calls(result) is None
+
+    def test_success_return_still_builds_proposal(self):
+        """Happy-path zwrot ({"proposed_action": ...}) → proposal budowany normalnie."""
+        call = ToolCallPart(
+            tool_name="propose_create_reservation",
+            args={"machine_uid": "KOP-001", "person": "Anna"},
+            tool_call_id="tc-ok-1",
+        )
+        ret = ToolReturnPart(
+            tool_name="propose_create_reservation",
+            content=(
+                '{"proposed_action": "create_reservation", '
+                '"params": {"machine_uid": "KOP-001"}, "confirmation_required": true}'
+            ),
+            tool_call_id="tc-ok-1",
+        )
+        result = SimpleNamespace(
+            all_messages=lambda: [
+                SimpleNamespace(parts=[call]),
+                SimpleNamespace(parts=[ret]),
+            ]
+        )
+        proposal = _extract_proposal_from_tool_calls(result)
+        assert proposal is not None
+        assert proposal["action"] == "create_reservation"
 
 
 # =============================================================================

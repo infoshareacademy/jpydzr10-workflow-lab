@@ -82,6 +82,48 @@ def is_valid_e164(value: str | None) -> bool:
     return bool(value and E164_RE.match(value))
 
 
+# Domyślny kierunkowy dla numerów krajowych wpisywanych bez prefiksu. Belgia (+32) —
+# aplikacja jest budowana dla flandryjskiej firmy; pracownicy zagraniczni (np. z
+# Francji) wpisują pełny numer z prefiksem (+33…), który jest respektowany.
+DEFAULT_COUNTRY_CODE = "32"
+
+
+def normalize_local_phone(
+    raw: str | None, default_country_code: str = DEFAULT_COUNTRY_CODE
+) -> str | None:
+    """Normalizuje numer WPISANY PRZEZ UŻYTKOWNIKA do E.164, zakładając kraj domyślny.
+
+    W odróżnieniu od :func:`normalize_phone_e164` (best-effort dla dowolnego
+    źródła, m.in. caller-ID z Twilio, który zawsze przychodzi z ``+``), ta
+    funkcja jest przeznaczona do POLA FORMULARZA, gdzie pracownik wpisuje swój
+    numer KRAJOWY bez prefiksu (np. ``468 27 49 44`` albo ``0468274944``):
+
+    * ``+…``  → pełny E.164 (obsługuje zagraniczne: ``+33``, ``+31``, …),
+    * ``00…`` → międzynarodowy prefiks „00" zamieniany na „+",
+    * same cyfry → numer krajowy: usuwamy wiodące ``0`` i dostawiamy
+      ``+<default_country_code>`` (domyślnie ``+32`` — Belgia).
+
+    KRYTYCZNE dla caller-ID: numer zapisany tą funkcją musi po stronie webhooka
+    (Twilio ``From`` = pełne E.164) DOKŁADNIE się zgadzać — dlatego krajowy
+    ``468274944`` i ``0468274944`` sprowadzamy do tego samego ``+32468274944``.
+
+    Wynik NIE jest walidowany (jak w :func:`normalize_phone_e164`) — ścisłe
+    E.164 wymusza :data:`phone_e164_validator` w formularzu.
+    """
+    if not raw:
+        return None
+    cleaned = _PHONE_SEPARATORS_RE.sub("", str(raw).strip())
+    if not cleaned:
+        return None
+    if cleaned.startswith("+"):
+        return cleaned
+    if cleaned.startswith("00") and cleaned[2:].isdigit():
+        return "+" + cleaned[2:]
+    if cleaned.isdigit():
+        return "+" + default_country_code + cleaned.lstrip("0")
+    return cleaned
+
+
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DOCUMENT_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}

@@ -118,6 +118,27 @@ class ServiceCostResult(BaseModel):
     by_type: dict[str, float]
 
 
+class ServiceHistoryItem(BaseModel):
+    """Pojedynczy wpis w historii serwisowej maszyny."""
+
+    performed_date: str
+    record_type: str
+    cost: float
+    description: str
+    performed_by: str
+    next_inspection: str | None = None
+
+
+class MachineServiceHistoryResult(BaseModel):
+    """Wynik :func:`get_machine_service_history` — ostatnie wpisy serwisowe."""
+
+    uid: str
+    name: str | None = None
+    found: int = 0
+    records: list[ServiceHistoryItem] = Field(default_factory=list)
+    error: str | None = None
+
+
 class AvailableMachineItem(BaseModel):
     """Pojedyncza maszyna na liście dostępnych w danym okresie."""
 
@@ -349,6 +370,58 @@ def get_service_costs(machine_type: str | None = None, days: int = 90) -> Servic
         total_cost=float(total),
         record_count=len(records),
         by_type=by_type,
+    )
+
+
+# Domyślna liczba ostatnich wpisów serwisowych zwracanych przez
+# ``get_machine_service_history`` (oszczędność kontekstu promptu; user zwykle
+# pyta o „ostatni" przegląd/naprawę, nie o całą historię).
+SERVICE_HISTORY_DEFAULT_LIMIT = 5
+SERVICE_HISTORY_MAX_LIMIT = 20
+
+
+def get_machine_service_history(
+    uid: str, limit: int = SERVICE_HISTORY_DEFAULT_LIMIT
+) -> MachineServiceHistoryResult:
+    """Ostatnie wpisy serwisowe (przeglądy/naprawy) maszyny — od najnowszego.
+
+    Używaj gdy user pyta „kiedy był ostatni przegląd/serwis maszyny X",
+    „pokaż historię serwisową KOP-001", „ostatnia naprawa minikoparki".
+    Zwraca do ``limit`` najnowszych wpisów: data wykonania, typ, koszt (EUR),
+    opis, wykonawca oraz data następnego przeglądu (jeśli dotyczy). Dane
+    kosztowe są wrażliwe — dostęp wymaga uprawnienia ``service.view_servicerecord``
+    (montażysta/gość dostaną odmowę, tak jak w interfejsie).
+    """
+    from machines.models import Machine
+    from service.models import ServiceRecord
+
+    uid = (uid or "").strip().upper()
+    limit = max(1, min(limit, SERVICE_HISTORY_MAX_LIMIT))
+    machine = Machine.objects.filter(uid=uid).first()
+    if machine is None:
+        return MachineServiceHistoryResult(
+            uid=uid,
+            error=_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": uid},
+        )
+    records = list(
+        ServiceRecord.objects.filter(machine=machine).order_by("-performed_date")[:limit]
+    )
+    items = [
+        ServiceHistoryItem(
+            performed_date=r.performed_date.isoformat(),
+            record_type=r.get_record_type_display(),
+            cost=float(r.cost.amount),
+            description=r.description or "",
+            performed_by=r.performed_by or "",
+            next_inspection=r.next_inspection.isoformat() if r.next_inspection else None,
+        )
+        for r in records
+    ]
+    return MachineServiceHistoryResult(
+        uid=machine.uid,
+        name=machine.name,
+        found=len(items),
+        records=items,
     )
 
 
@@ -1855,18 +1928,48 @@ READ_ACTIONS: dict[str, Any] = {
     "check_availability": check_availability,
     "get_inspections_due": get_inspections_due,
     "get_service_costs": get_service_costs,
+    "get_machine_service_history": get_machine_service_history,
+}
+
+# Uprawnienia dla odczytów ujawniających dane WRAŻLIWE (koszty serwisowe).
+# Większość odczytów (status / dostępność / przeglądy) jest dostępna wszystkim —
+# także gościom — ale KOSZTY serwisowe są w UI zablokowane dla montażysty/gościa
+# (brak ``service.view_servicerecord``). Ta sama reguła musi obowiązywać przez
+# agenta, inaczej chatbot/voice obchodziłby blokadę kosztów z interfejsu.
+READ_ACTION_PERMS: dict[str, tuple[str, ...]] = {
+    "get_service_costs": ("service.view_servicerecord",),
+    "get_machine_service_history": ("service.view_servicerecord",),
 }
 
 
-def execute_read_action(action: str, params: dict) -> str:
+def read_action_denied(action: str, user) -> str | None:
+    """Zwraca JSON z odmową, jeśli ``user`` nie ma prawa do wrażliwego odczytu.
+
+    ``None`` = wolno (akcja spoza :data:`READ_ACTION_PERMS` — dostępna wszystkim,
+    także gościom — albo user ma wymagane uprawnienia).
+    """
+    perms = READ_ACTION_PERMS.get(action)
+    if not perms:
+        return None
+    if user is None or not getattr(user, "is_authenticated", False):
+        return _error_json(_("Ta informacja wymaga zalogowanego konta z uprawnieniami."))
+    if any(not user.has_perm(p) for p in perms):
+        return _error_json(_("Nie masz uprawnień do przeglądania kosztów serwisowych."))
+    return None
+
+
+def execute_read_action(action: str, params: dict, user=None) -> str:
     """Wykonuje akcję odczytu i zwraca deterministyczny JSON (string).
 
-    Akcje odczytu nie mają efektów ubocznych i NIE wymagają zalogowania —
-    dostępne także gościom (``user is None``). Celowo nie przyjmuje ``user``:
-    brak ścieżki, którą dałoby się tędy wykonać akcję zapisującą. Każde
-    narzędzie odczytu zwraca model Pydantic, więc serializujemy go do JSON
-    spójnie z resztą warstwy narzędzi.
+    Większość odczytów nie ma efektów ubocznych i jest dostępna także gościom
+    (``user is None``). Wyjątek: odczyty z :data:`READ_ACTION_PERMS` (koszty
+    serwisowe) wymagają uprawnień — inaczej agent obchodziłby blokadę z UI.
+    ``READ_ACTIONS`` jest rozłączny z ``WRITE_ACTION_PERMS``, więc tędy nadal
+    nie da się wykonać żadnej akcji zapisującej.
     """
+    denied = read_action_denied(action, user)
+    if denied is not None:
+        return denied
     tool = READ_ACTIONS.get(action)
     if tool is None:
         return _("Nieznana akcja odczytu: %(action)s.") % {"action": action}
@@ -2381,6 +2484,13 @@ def _execute_terminate_employee(params: dict, user) -> str:
     from accounts.services import terminate_employee
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
+    # Self-guard (defense-in-depth): przez agenta nie wolno zakończyć własnego
+    # zatrudnienia ani konta administratora — to nieodwracalne, a kanał agenta
+    # (zwłaszcza głosowy po caller-ID) jest słabszym czynnikiem niż panel UI.
+    if profile.user_id == getattr(user, "pk", None):
+        return _("Nie można zakończyć zatrudnienia własnego konta przez agenta.")
+    if profile.user.is_superuser:
+        return _("Nie można zakończyć zatrudnienia konta administratora przez agenta.")
     terminate_employee(profile, reason=params.get("reason", ""), actor=user)
     return _("Zatrudnienie pracownika '%(username)s' zakończone.") % {
         "username": params["username"]
@@ -2392,6 +2502,12 @@ def _execute_anonymize_employee(params: dict, user) -> str:
     from accounts.services import anonymize_employee
 
     profile = EmployeeProfile.objects.select_related("user").get(user__username=params["username"])
+    # Self-guard (defense-in-depth): anonimizacja RODO jest NIEODWRACALNA — przez
+    # agenta nie wolno zanonimizować własnego konta ani administratora.
+    if profile.user_id == getattr(user, "pk", None):
+        return _("Nie można zanonimizować własnego konta przez agenta.")
+    if profile.user.is_superuser:
+        return _("Nie można zanonimizować konta administratora przez agenta.")
     anonymize_employee(profile, actor=user)
     return _("Pracownik '%(username)s' zanonimizowany (GDPR Art.17).") % {
         "username": params["username"]

@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.forms import INPUT_CSS, SELECT_CSS
-from core.validators import normalize_phone_e164, phone_e164_validator
+from core.validators import normalize_local_phone, phone_e164_validator
 
 from .models import EmployeeProfile
 
@@ -18,11 +18,12 @@ User = get_user_model()
 def _clean_phone_field(raw: str | None) -> str:
     """Normalizuje i waliduje numer telefonu z formularza.
 
-    Akceptuje wpis z separatorami ("+48 600 100 200"), sprowadza go do ścisłego
-    E.164 i waliduje; pusty wpis zwraca ``""`` (formularz konwertuje na NULL
-    przez ``EmployeeProfile.save``).
+    Numer krajowy wpisany bez prefiksu (np. "468 27 49 44" albo "0468274944")
+    dostaje domyślny kierunkowy +32 (Belgia); numery zagraniczne wpisuje się
+    pełne z prefiksem (+33 …). Pusty wpis zwraca ``""`` (formularz konwertuje na
+    NULL przez ``EmployeeProfile.save``).
     """
-    normalized = normalize_phone_e164(raw)
+    normalized = normalize_local_phone(raw)
     if normalized is None:
         return ""
     phone_e164_validator(normalized)
@@ -41,8 +42,14 @@ class ProfileForm(forms.ModelForm):
             "theme_preference": _("Motyw interfejsu"),
             "preferred_language": _("Preferowany język"),
         }
+        help_texts = {
+            "phone": _(
+                "Numer krajowy bez prefiksu (np. 468 27 49 44) — dodamy +32 automatycznie. "
+                "Numer zagraniczny wpisz z prefiksem, np. +33 6 12 34 56 78."
+            ),
+        }
         widgets = {
-            "phone": forms.TextInput(attrs={"class": INPUT_CSS, "placeholder": "+48 …"}),
+            "phone": forms.TextInput(attrs={"class": INPUT_CSS, "placeholder": "468 27 49 44"}),
             "employee_id": forms.TextInput(attrs={"class": INPUT_CSS}),
             "theme_preference": forms.Select(attrs={"class": SELECT_CSS}),
             "preferred_language": forms.Select(attrs={"class": SELECT_CSS}),
@@ -115,8 +122,12 @@ class RegisterEmployeeForm(forms.Form):
             attrs={
                 "class": INPUT_CSS,
                 "autocomplete": "tel",
-                "placeholder": "+48 …",
+                "placeholder": "468 27 49 44",
             }
+        ),
+        help_text=_(
+            "Numer krajowy bez prefiksu (np. 468 27 49 44) — dodamy +32. "
+            "Zagraniczny wpisz z prefiksem, np. +33…"
         ),
     )
     password1 = forms.CharField(

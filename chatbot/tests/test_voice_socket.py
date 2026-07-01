@@ -58,16 +58,31 @@ class FakeToolCall:
         self.function_calls = function_calls
 
 
+class _FakeTranscript:
+    def __init__(self, text):
+        self.text = text
+        self.finished = False
+
+
 class FakeServerContent:
-    def __init__(self, *, interrupted=False, turn_complete=False):
+    def __init__(self, *, interrupted=False, turn_complete=False, output_text=None):
         self.interrupted = interrupted
         self.turn_complete = turn_complete
+        # Realny protokół AUDIO: tekst asystenta przychodzi jako transkrypt wyjścia
+        # (``output_transcription``), nie jako ``gmsg.text`` (które przy AUDIO jest puste).
+        self.output_transcription = (
+            _FakeTranscript(output_text) if output_text is not None else None
+        )
 
 
 class FakeMsg:
     def __init__(self, *, text=None, tool_call=None, server_content=None):
         self.text = text
         self.tool_call = tool_call
+        # Gdy test podaje text=..., budujemy ramkę transkryptu wyjścia (realny
+        # protokół AUDIO — patrz FakeServerContent).
+        if text is not None and server_content is None:
+            server_content = FakeServerContent(output_text=text)
         self.server_content = server_content
 
 
