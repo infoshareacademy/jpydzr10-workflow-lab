@@ -40,6 +40,7 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 
+from chatbot.sanitize import sanitize_user_input, wrap_user_input
 from chatbot.tools import WRITE_ACTION_PERMS
 from chatbot.voice_consumer import (
     NONCE_MAX_AGE_SECONDS,
@@ -393,9 +394,15 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
     from google.genai import types
 
     voice_prompt = msg.get("voicePrompt", "")
+    # Transkrypt (audyt) trzyma SUROWĄ wypowiedź — chcemy wiedzieć co user naprawdę
+    # powiedział. Do Gemini idzie wersja sanityzowana i opakowana w <user_input>
+    # (defense-in-depth, spójnie ze ścieżką tekstową w ``chatbot.services``).
+    # RBAC serwerowy w ``propose_or_execute`` i tak jest twardą warstwą autoryzacji,
+    # ale sanityzacja ogranicza prompt-leak i wzorce wstrzyknięcia w mowie.
     session.add_turn("user", voice_prompt)
+    prompt_for_model = wrap_user_input(sanitize_user_input(voice_prompt))
     await gsession.send_client_content(
-        turns={"role": "user", "parts": [{"text": voice_prompt}]}, turn_complete=True
+        turns={"role": "user", "parts": [{"text": prompt_for_model}]}, turn_complete=True
     )
 
     async for gmsg in gsession.receive():
