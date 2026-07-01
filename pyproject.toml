@@ -210,10 +210,12 @@ omit = [
     "*/asgi.py",
     "*/__init__.py",
     # Per-env settings są importowane via DJANGO_SETTINGS_MODULE (test używa .test).
-    # Dev/prod nie są ładowane przez test runner → coverage 0% nie odzwierciedla
-    # rzeczywistego ryzyka (lint sprawdza ich poprawność w pre-commit).
+    # Dev/prod/voice nie są ładowane przez test runner → coverage 0% nie odzwierciedla
+    # rzeczywistego ryzyka (lint sprawdza ich poprawność w pre-commit). ``voice`` ładuje
+    # osobny proces uvicorn agenta głosowego, nie pytest.
     "planer_config/settings/dev.py",
     "planer_config/settings/prod.py",
+    "planer_config/settings/voice.py",
 ]
 branch = true
 

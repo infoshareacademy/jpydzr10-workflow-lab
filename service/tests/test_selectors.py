@@ -201,12 +201,35 @@ def test_report_data_matches_selector(client, records):
 
 
 def test_export_respects_filters(client, records):
-    """Eksport z filtrem zwraca XLSX (200) i przechodzi przez ten sam selektor."""
+    """Eksport z filtrem FAKTYCZNIE honoruje filtr — nie tylko 200/content-type.
+
+    Ładujemy wygenerowany XLSX i sprawdzamy zawartość: maszyny spełniające filtr
+    (KOP-002=2000, KOP-003=3000) są w pliku, a maszyna poniżej progu (KOP-001,
+    koszty 100/500) NIE jest. Sam status 200 + content-type był niezmienniczy
+    względem tego, czy widok stosuje ``filter_service_records`` czy ``.all()`` —
+    ten test pada, gdyby eksport przestał filtrować."""
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
     user = _viewer("eksporter")
     client.force_login(user)
     response = client.get(reverse("service:export_all_xlsx"), {"cost_min": "1000"})
     assert response.status_code == 200
     assert "spreadsheet" in response["Content-Type"]
+
+    filtered = filter_service_records({"cost_min": "1000"})
+    assert filtered.count() == 2  # KOP-002 (2000) + KOP-003 (3000)
+
+    raw = response.content if hasattr(response, "content") else b"".join(response.streaming_content)
+    workbook = load_workbook(BytesIO(raw))
+    cells = {
+        str(c.value) for row in workbook.active.iter_rows() for c in row if c.value is not None
+    }
+    for uid in {r.machine.uid for r in filtered}:
+        assert uid in cells, f"{uid} (spełnia filtr) powinna być w eksporcie"
+    # KOP-001 ma wyłącznie koszty < 1000 → filtr ją wyklucza → nie może być w pliku.
+    assert "KOP-001" not in cells
 
 
 def test_report_data_requires_login(client, records):

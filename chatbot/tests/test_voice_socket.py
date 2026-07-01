@@ -439,6 +439,54 @@ class TestRunVoiceSocket:
         assert all(t.get("last") is not True for t in texts)
         assert all(t.get("token") != "tego nie powinno być" for t in texts)
 
+    def test_asgi_router_sends_voice_ws_to_voice_handler(self, monkeypatch):
+        import planer_config.asgi as asgi
+        from chatbot import voice_consumer
+
+        called = {}
+
+        async def fake_voice(scope, receive, send):
+            called["path"] = scope["path"]
+
+        async def _noop():
+            return {}
+
+        async def _noop_send(_m):
+            return None
+
+        monkeypatch.setattr(voice_consumer, "run_voice_socket", fake_voice)
+        async_to_sync(asgi.application)(
+            {"type": "websocket", "path": asgi.VOICE_WS_PATH}, _noop, _noop_send
+        )
+        assert called.get("path") == "/ws/voice/"
+
+    def test_asgi_router_sends_non_voice_to_django(self, monkeypatch):
+        import planer_config.asgi as asgi
+
+        called = {}
+
+        async def fake_django(scope, receive, send):
+            called["type"] = scope["type"]
+
+        async def _noop():
+            return {}
+
+        async def _noop_send(_m):
+            return None
+
+        monkeypatch.setattr(asgi, "_django_app", fake_django)
+        async_to_sync(asgi.application)({"type": "http", "path": "/maszyny/"}, _noop, _noop_send)
+        assert called.get("type") == "http"
+
+    def test_router_path_matches_twiml_ws_url(self, client):
+        # Guard przeciw dryfowi: ścieżka routera ASGI musi być tą samą, którą
+        # webhook wstawia do TwiML (wss://.../ws/voice/). Rozjazd literałów =
+        # martwe gniazdo na scenie.
+        import planer_config.asgi as asgi
+
+        resp = client.post("/voice/incoming/", {"From": "+48999999999", "CallSid": "CA1"})
+        assert asgi.VOICE_WS_PATH in resp.content.decode("utf-8")
+
     def test_interrupt_frame_clears_pending(self, monkeypatch):
         admin = _admin()
         machine = Machine.objects.create(
