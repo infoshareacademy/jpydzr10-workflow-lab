@@ -264,10 +264,21 @@ class TestResolveCaller:
         user = _role_user("vs_exp", EmployeeProfile.Function.KIEROWNIK, "+48600000204")
         with freeze_time("2026-07-01 10:00:00"):
             nonce = mint_identity_nonce(user)
-        # +11 min > NONCE_MAX_AGE_SECONDS (600 s).
-        with freeze_time("2026-07-01 10:11:00"):
+        # +3 min > NONCE_MAX_AGE_SECONDS (120 s) → nonce wygasł.
+        with freeze_time("2026-07-01 10:03:00"):
             setup = self._setup_dict(str(user.pk), nonce)
             assert resolve_caller(setup) is None
+
+    def test_fresh_nonce_within_window_resolves(self):
+        # Nonce użyty w oknie TTL (+90 s < 120 s) MUSI dalej rozpoznawać usera —
+        # dowód, że zaostrzenie do 120 s nie odcina legalnych, chwilę późniejszych
+        # połączeń (ConversationRelay łączy WS sekundy po webhooku).
+        user = _role_user("vs_fresh", EmployeeProfile.Function.KIEROWNIK, "+48600000206")
+        with freeze_time("2026-07-01 10:00:00"):
+            nonce = mint_identity_nonce(user)
+        with freeze_time("2026-07-01 10:01:30"):
+            setup = self._setup_dict(str(user.pk), nonce)
+            assert resolve_caller(setup) == user
 
     def test_inactive_user_is_guest(self):
         user = _role_user("vs_inact", EmployeeProfile.Function.KIEROWNIK, "+48600000205")
