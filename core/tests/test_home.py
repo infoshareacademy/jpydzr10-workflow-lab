@@ -247,3 +247,12 @@ class TestHomeMorningChecklistUX1:
         response = client.get(reverse("home"))
         # Wszystkie 7 startują dziś, ale context limit'uje do 5.
         assert len(list(response.context["starting_today"])) == 5
+
+
+@pytest.mark.django_db
+def test_favicon_ico_redirects_to_svg(client):
+    """Przeglądarki żądają /favicon.ico z roota mimo <link rel="icon"> na SVG —
+    redirect usuwa jedyny 404 w konsoli (dostępny bez logowania)."""
+    response = client.get("/favicon.ico")
+    assert response.status_code == 301
+    assert response.url == "/static/favicon.svg"

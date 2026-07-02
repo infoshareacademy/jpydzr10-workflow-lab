@@ -12,12 +12,16 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 
 from core.email_preview import email_preview
 from core.views import home, maps_view
 
 urlpatterns = [
     path("", home, name="home"),
+    # Przeglądarki żądają /favicon.ico z roota mimo <link rel="icon"> na SVG —
+    # bez tego jedyny 404 w konsoli na każdej stronie. Przekierowujemy na SVG.
+    path("favicon.ico", RedirectView.as_view(url="/static/favicon.svg", permanent=True)),
     # Deweloperski podglad maili — PRZED include admina, zeby nie zostal
     # polkniety przez admin.site.urls. Aktywny tylko w DEBUG + dla staff.
     path("admin/preview-email/", email_preview, name="email_preview"),
