@@ -125,10 +125,16 @@ def _ws_url(request) -> str:
 # klawiaturze (DTMF) ZANIM webhook zwróci ``ConversationRelay`` — Gemini NIE
 # uruchamia się bez poprawnego PIN (podwójna weryfikacja: numer + PIN; dodatkowo
 # oszczędza tokeny). Weryfikacja jest 100% server-side (``verify_voice_pin``),
-# nigdy nie ufamy LLM. Liczbę prób ograniczamy per ``CallSid`` (cache).
+# nigdy nie ufamy LLM. Liczbę prób ograniczamy DWUWARSTWOWO: per ``CallSid``
+# (UX jednego połączenia) ORAZ per NUMER dzwoniącego — twardy limit, którego
+# nowe połączenie (= nowy ``CallSid``) NIE resetuje. Bez tej drugiej warstwy
+# atakujący z podszytym ``From`` wybierałby numer w kółko, dostając świeże 3
+# próby na każde połączenie = nieograniczony brute-force PIN.
 
 _PIN_MAX_ATTEMPTS = 3
 _PIN_ATTEMPTS_TTL = 600  # 10 min — okno jednego połączenia
+_PIN_FROM_MAX_ATTEMPTS = 10  # twardy limit prób per NUMER (kumulowany przez wiele połączeń)
+_PIN_FROM_TTL = 3600  # 1 h — okno kumulacji prób per numer
 
 _NO_PIN_TWIML = (
     '<?xml version="1.0" encoding="UTF-8"?><Response>'
@@ -169,6 +175,33 @@ def _clear_pin_attempts(call_sid: str) -> None:
     cache.delete(_pin_attempts_key(call_sid))
 
 
+def _pin_from_key(e164: str) -> str:
+    return f"voice:pin:from:{e164 or 'unknown'}"
+
+
+def _bump_pin_from_attempts(e164: str) -> int:
+    """Zwiększa licznik prób PIN per NUMER (kumulowany między połączeniami)."""
+    from django.core.cache import cache
+
+    key = _pin_from_key(e164)
+    count = cache.get(key, 0) + 1
+    cache.set(key, count, _PIN_FROM_TTL)
+    return count
+
+
+def _pin_from_locked(e164: str) -> bool:
+    """True gdy numer wyczerpał twardy limit prób (brute-force wielopołączeniowy)."""
+    from django.core.cache import cache
+
+    return cache.get(_pin_from_key(e164), 0) >= _PIN_FROM_MAX_ATTEMPTS
+
+
+def _clear_pin_from_attempts(e164: str) -> None:
+    from django.core.cache import cache
+
+    cache.delete(_pin_from_key(e164))
+
+
 @csrf_exempt
 @require_POST
 def voice_verify_pin(request):
@@ -177,8 +210,15 @@ def voice_verify_pin(request):
         return HttpResponseForbidden("Invalid Twilio signature")
 
     from_number = request.POST.get("From", "")
-    user = user_for_phone(normalize_phone_e164(from_number))
+    e164 = normalize_phone_e164(from_number)
+    user = user_for_phone(e164)
     if user is None:  # defensywnie — webhook incoming już odsiał nieznane numery
+        return HttpResponse(_REJECT_TWIML, content_type="text/xml")
+
+    # Twardy limit per NUMER wyczerpany → odrzuć BEZ sprawdzania PIN (brute-force
+    # wieloma połączeniami z podszytym From nie obejdzie tego świeżym CallSid).
+    if _pin_from_locked(e164):
+        logger.warning("Voice verify-pin ZABLOKOWANE (limit per-numer): from=%s", from_number)
         return HttpResponse(_REJECT_TWIML, content_type="text/xml")
 
     call_sid = request.POST.get("CallSid", "")
@@ -193,14 +233,22 @@ def voice_verify_pin(request):
 
     if verify_voice_pin(profile, digits):
         _clear_pin_attempts(call_sid)
+        _clear_pin_from_attempts(e164)  # sukces zeruje też twardy licznik per-numer
         logger.info("Voice PIN OK: user=%s call=%s", user.username, call_sid)
         nonce = mint_identity_nonce(user)
         twiml = build_twiml(ws_url=_ws_url(request), user=user, nonce=nonce)
         return HttpResponse(twiml, content_type="text/xml")
 
     attempts = _bump_pin_attempts(call_sid)
-    logger.warning("Voice PIN FAIL: user=%s call=%s attempt=%d", user.username, call_sid, attempts)
-    if attempts >= _PIN_MAX_ATTEMPTS:
+    from_attempts = _bump_pin_from_attempts(e164)
+    logger.warning(
+        "Voice PIN FAIL: user=%s call=%s próba(połączenie)=%d próba(numer)=%d",
+        user.username,
+        call_sid,
+        attempts,
+        from_attempts,
+    )
+    if attempts >= _PIN_MAX_ATTEMPTS or from_attempts >= _PIN_FROM_MAX_ATTEMPTS:
         _clear_pin_attempts(call_sid)
         return HttpResponse(_REJECT_TWIML, content_type="text/xml")
     return HttpResponse(
@@ -235,6 +283,14 @@ def voice_incoming(request):
 
     # Znany numer + PIN wymagany → poproś o PIN (brama DTMF przed Gemini).
     if user is not None and getattr(settings, "VOICE_REQUIRE_PIN", False):
+        # Numer po twardym limicie prób PIN → odrzuć od razu (nie proś o PIN).
+        if _pin_from_locked(e164):
+            logger.warning(
+                "Voice incoming ODRZUCONE (limit PIN per-numer): from=%s user=%s",
+                from_number,
+                user.username,
+            )
+            return HttpResponse(_REJECT_TWIML, content_type="text/xml")
         return HttpResponse(
             build_gather_pin_twiml("Podaj swój PIN i zakończ krzyżykiem."),
             content_type="text/xml",
