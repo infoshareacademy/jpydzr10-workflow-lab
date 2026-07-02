@@ -46,9 +46,27 @@ class TestVoiceScope:
         assert "aplikacji" in confirm_pending(session)
 
     def test_allowed_write_still_proposes(self):
-        # Akcja spoza blacklisty — admin dostaje normalną propozycję (nie regres).
+        # Akcja spoza blacklisty z PRAWIDŁOWYMI danymi → normalna propozycja (nie regres).
+        from machines.models import Machine
+
         admin = User.objects.create_superuser("vs_scope_admin3", "a3@a.test", "x")
+        Machine.objects.create(
+            uid="KOP-001",
+            name="Koparka",
+            machine_type=Machine.Type.KOPARKA,
+            status=Machine.Status.W_MAGAZYNIE,
+        )
         session = VoiceCallSession(call_sid="CAok", user=admin)
-        result = propose_or_execute(session, "create_reservation", {"machine_uid": "KOP-001"})
+        result = propose_or_execute(session, "set_machine_to_service", {"machine_uid": "KOP-001"})
         assert "potwierdzasz" in result.lower()
         assert session.has_pending()
+
+    def test_p6_validates_before_promise(self):
+        # P6: głos waliduje write PRZED obietnicą — akcja na NIEISTNIEJĄCYM obiekcie
+        # → błąd wypowiedziany, NIE „Czy potwierdzasz?" (parytet z czatem tekstowym).
+        admin = User.objects.create_superuser("vs_scope_p6", "p6@a.test", "x")
+        session = VoiceCallSession(call_sid="CAp6", user=admin)
+        result = propose_or_execute(session, "set_machine_to_service", {"machine_uid": "KOP-999"})
+        assert "potwierdzasz" not in result.lower()  # NIE obiecuje
+        assert not session.has_pending()  # brak pending do potwierdzenia
+        assert "nie istnieje" in result.lower()

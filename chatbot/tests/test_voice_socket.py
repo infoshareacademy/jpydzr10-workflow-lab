@@ -286,15 +286,21 @@ class TestResolveCaller:
 class TestDispatchToolCall:
     def test_write_action_proposes_for_admin(self):
         admin = _admin()
+        machine = Machine.objects.create(
+            uid="KOP-200",
+            name="K",
+            machine_type=Machine.Type.KOPARKA,
+            status=Machine.Status.W_MAGAZYNIE,
+        )
         session = VoiceCallSession(call_sid="CA", user=admin)
-        result = dispatch_tool_call(session, "create_reservation", {"machine_uid": "KOP-001"})
+        result = dispatch_tool_call(session, "create_reservation", _reservation_args(machine))
         assert "potwierdzasz" in result.lower()
         assert session.has_pending()
 
     def test_confirm_tool_routes_to_confirm_pending(self):
         admin = _admin()
         machine = Machine.objects.create(
-            uid="KOP-DS1",
+            uid="KOP-201",
             name="K",
             machine_type=Machine.Type.KOPARKA,
             status=Machine.Status.W_MAGAZYNIE,
@@ -332,7 +338,7 @@ class TestRunVoiceSocket:
     def test_admin_create_then_confirm_writes_to_db(self, monkeypatch):
         admin = _admin()
         machine = Machine.objects.create(
-            uid="KOP-WS1",
+            uid="KOP-202",
             name="Koparka WS",
             machine_type=Machine.Type.KOPARKA,
             status=Machine.Status.W_MAGAZYNIE,
@@ -551,7 +557,7 @@ class TestRunVoiceSocket:
     def test_interrupt_frame_clears_pending(self, monkeypatch):
         admin = _admin()
         machine = Machine.objects.create(
-            uid="KOP-WS4",
+            uid="KOP-205",
             name="K",
             machine_type=Machine.Type.KOPARKA,
             status=Machine.Status.W_MAGAZYNIE,
