@@ -72,6 +72,11 @@ TITLE_MAX_LENGTH = 80
 # ``httpx`` raise'uje ``TimeoutException`` (bez orphan threadów —
 # z natywną asyncio/httpx cancellation w odróżnieniu od ``ThreadPoolExecutor``).
 GEMINI_TIMEOUT_SECONDS = 30
+# Liczba prób wywołania agenta (1 pierwotna + retry). Gemini bywa chwilowo
+# rozłączony (httpx ``RemoteProtocolError`` „server disconnected") — jeden
+# natychmiastowy retry na błąd PRZEJŚCIOWY chroni rozmowę (i demo) przed
+# „zawieszeniem" na pojedynczej usterce sieci. Auth/limit NIE są ponawiane.
+_AGENT_MAX_ATTEMPTS = 2
 
 # Wave 14-H Bundle H-3: TTL dla ``Conversation.pending_action``. Po 10 minutach
 # pending action wygasa — chroni przed "zombie approval" gdy user wraca po
@@ -609,41 +614,52 @@ def ask_chatbot(
     # ``_classify_agent_error`` mapuje wyjątek na polski komunikat (timeout
     # rozpoznawany po ``"timeout" in name``).
     # =========================================================================
-    try:
-        # ``ChatDeps(user=user)`` daje narzędziom typed ``ctx.deps.user`` —
-        # baza pod per-user authorization w przyszłych bundle'ach (obecnie
-        # tools w ``chatbot.agent`` nie filtrują, ale ``user`` jest dostępny).
-        # Lazy import zapobiega circular dependency z ``chatbot.agent`` (które
-        # importuje ``django.contrib.auth.models.User`` — bezpieczne tylko po
-        # bootstrapie app registry, czyli przy pierwszym wywołaniu serwisu).
-        from django.utils import timezone
+    # ``ChatDeps(user=user)`` daje narzędziom typed ``ctx.deps.user`` — baza pod
+    # per-user authorization. Lazy import zapobiega circular dependency z
+    # ``chatbot.agent`` (bezpieczne dopiero po bootstrapie app registry).
+    from django.utils import timezone
 
-        from .agent import ChatDeps
+    from .agent import ChatDeps
 
-        wrapped = wrap_user_input(sanitized)
-        # ``timezone.localdate()`` i ``timezone.now()`` używają TIME_ZONE z
-        # settings (Europe/Warsaw) — dzięki temu agent zna polski dzień i
-        # godzinę nawet gdy serwer chodzi w UTC.
-        result = agent.run_sync(
-            wrapped,
-            deps=ChatDeps(
-                user=user,
-                today=timezone.localdate(),
-                now=timezone.localtime(),
-            ),
-            model_settings={"timeout": GEMINI_TIMEOUT_SECONDS},
-        )
-    except Exception as exc:
-        logger.exception(
-            "Błąd agenta chatbota dla user_id=%s",
-            getattr(user, "pk", None),
-        )
-        with transaction.atomic():
-            return Message.objects.create(
-                conversation=conversation,
-                role=Message.Role.ERROR,
-                content=_classify_agent_error(exc),
+    wrapped = wrap_user_input(sanitized)
+    # ``timezone.localdate()`` / ``localtime()`` używają TIME_ZONE z settings
+    # (Europe/Warsaw) — agent zna polski dzień i godzinę nawet gdy serwer chodzi w UTC.
+    deps = ChatDeps(
+        user=user,
+        today=timezone.localdate(),
+        now=timezone.localtime(),
+    )
+    # Retry TYLKO dla błędów przejściowych (rozłączenie/timeout sieci). Narzędzia
+    # agenta CZYTAJĄ albo PROPONUJĄ (bez mutacji DB — zapis dopiero w confirm),
+    # więc ponowienie jest idempotentne i nie tworzy podwójnych efektów.
+    result = None
+    for attempt in range(_AGENT_MAX_ATTEMPTS):
+        try:
+            result = agent.run_sync(
+                wrapped,
+                deps=deps,
+                model_settings={"timeout": GEMINI_TIMEOUT_SECONDS},
             )
+            break
+        except Exception as exc:
+            if attempt + 1 < _AGENT_MAX_ATTEMPTS and _is_transient_agent_error(exc):
+                logger.warning(
+                    "Agent chatbota — błąd przejściowy (próba %d/%d), ponawiam: %s",
+                    attempt + 1,
+                    _AGENT_MAX_ATTEMPTS,
+                    exc.__class__.__name__,
+                )
+                continue
+            logger.exception(
+                "Błąd agenta chatbota dla user_id=%s",
+                getattr(user, "pk", None),
+            )
+            with transaction.atomic():
+                return Message.objects.create(
+                    conversation=conversation,
+                    role=Message.Role.ERROR,
+                    content=_classify_agent_error(exc),
+                )
 
     # =========================================================================
     # FAZA 3 — atomic: zapis odpowiedzi asystenta + telemetria tokenów.
@@ -899,6 +915,37 @@ def _handle_pending_cancel(conversation: Conversation, question_clean: str) -> M
 # =============================================================================
 # Klasyfikacja błędów — polski user-friendly message bez wycieku nazwy klasy
 # =============================================================================
+
+
+# Frazy w nazwie klasy / treści wyjątku oznaczające błąd PRZEJŚCIOWY (wart
+# jednego retry): chwilowe rozłączenie lub timeout sieci.
+_TRANSIENT_ERROR_HINTS = (
+    "timeout",
+    "connection",
+    "network",
+    "unreachable",
+    "protocol",  # httpx RemoteProtocolError („server disconnected")
+    "disconnect",
+    "reset",
+    "incompleteread",
+    "readerror",
+    "temporarilyunavailable",
+)
+
+
+def _is_transient_agent_error(exc: Exception) -> bool:
+    """True gdy wyjątek wygląda na chwilowy problem sieci (wart 1 retry).
+
+    Auth/konfiguracja i limity zapytań są celowo NIE-przejściowe — natychmiastowy
+    retry ich nie naprawi (a przy 429 tylko dokłada obciążenia).
+    """
+    name = exc.__class__.__name__.lower()
+    msg = str(exc).lower()
+    if "auth" in name or "apikey" in name or "unauthorized" in msg or "api_key" in msg:
+        return False
+    if "ratelimit" in name or "quota" in msg or "429" in msg or "rate limit" in msg:
+        return False
+    return any(hint in name or hint in msg for hint in _TRANSIENT_ERROR_HINTS)
 
 
 def _classify_agent_error(exc: Exception) -> str:
