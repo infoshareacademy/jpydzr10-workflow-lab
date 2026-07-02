@@ -40,11 +40,14 @@ _VOICE_BLOCKED_REFUSAL = (
     "Ta operacja jest zbyt wrażliwa, aby wykonać ją głosowo — proszę użyć aplikacji."
 )
 
-# Maksymalny wiek nonce tożsamości (sekundy). Połączenie głosowe nie żyje
-# dłużej niż kilka minut, więc krótki TTL zamyka okno replay przechwyconego
-# nonce. Egzekwowane przez ``TimestampSigner.unsign(nonce, max_age=...)`` przy
-# domykaniu ``run_voice_socket`` na żywo.
-NONCE_MAX_AGE_SECONDS = 600
+# Maksymalny wiek nonce tożsamości (sekundy). Nonce powstaje w webhooku, a
+# ConversationRelay łączy WS w ciągu SEKUND — 120 s daje zapas na opóźnienia
+# sieci, zamykając okno replay przechwyconego nonce znacznie ciaśniej niż dawne
+# 600 s. Egzekwowane przez ``TimestampSigner.unsign(nonce, max_age=...)`` w
+# ``resolve_caller``. Związanie nonce z CallSid rozważone i świadomie pominięte:
+# nonce nie jest eksponowany klientowi (leci wyłącznie kanałami TLS Twilio↔serwer),
+# więc TTL jest tu wystarczającą obroną — bind dodałby złożoności bez realnego zysku.
+NONCE_MAX_AGE_SECONDS = 120
 
 
 def build_user_perms_summary(user) -> str:
