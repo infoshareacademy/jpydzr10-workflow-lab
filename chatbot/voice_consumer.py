@@ -31,6 +31,7 @@ logger = logging.getLogger("chatbot")
 _REFUSAL = "Nie masz uprawnień do tej operacji."
 _GUEST_REFUSAL = "Ta operacja wymaga zalogowanego konta. Dzwonisz jako gość."
 _UNKNOWN_ACTION = "Nie rozpoznaję tej operacji."
+_RATE_LIMIT_REFUSAL = "Osiągnięto dzienny limit operacji zapisu. Spróbuj ponownie jutro."
 
 # Akcje NIEODWRACALNE zablokowane na kanale GŁOSOWYM niezależnie od roli — wymagają
 # pełnego kontekstu UI, a kanał głosowy (caller-ID + PIN) jest słabszym czynnikiem
@@ -100,6 +101,14 @@ def confirm_pending(session: VoiceCallSession) -> str:
     action, params = session.confirm()
     if action in VOICE_BLOCKED_ACTIONS:  # defense-in-depth (propose już blokuje)
         return _VOICE_BLOCKED_REFUSAL
+    # Rate-limit write WSPÓŁDZIELONY z czatem (ten sam licznik per user) — 10
+    # zapisów/dobę łącznie na obu kanałach, więc przełączenie na głos nie obchodzi
+    # limitu. Fail-closed (cache pad → odmowa), tak samo jak w czacie tekstowym.
+    from chatbot.services import _check_write_rate_limit
+
+    if not _check_write_rate_limit(getattr(session.user, "pk", 0)):
+        logger.warning("Voice confirm ODMOWA (limit write): user=%s", getattr(session.user, "pk", None))
+        return _RATE_LIMIT_REFUSAL
     result = execute_confirmed_action(action, params, session.user)
     logger.info("Voice confirm: action=%s user=%s", action, getattr(session.user, "pk", None))
     return result

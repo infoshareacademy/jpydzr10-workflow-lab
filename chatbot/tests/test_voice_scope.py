@@ -70,3 +70,44 @@ class TestVoiceScope:
         assert "potwierdzasz" not in result.lower()  # NIE obiecuje
         assert not session.has_pending()  # brak pending do potwierdzenia
         assert "nie istnieje" in result.lower()
+
+
+@pytest.mark.django_db
+class TestVoiceWriteRateLimit:
+    """Rate-limit write na głosie = parytet z czatem (wspólny licznik per user)."""
+
+    def test_confirm_blocked_when_daily_write_limit_exhausted(self):
+        # Wyczerpany limit (np. wcześniejsze zapisy) → głos odmawia confirm.
+        from chatbot.services import WRITE_RATE_LIMIT_PER_DAY, _check_write_rate_limit
+
+        admin = User.objects.create_superuser("vrl_admin", "vrl@a.test", "x")
+        for _ in range(WRITE_RATE_LIMIT_PER_DAY):
+            _check_write_rate_limit(admin.pk)
+        session = VoiceCallSession(call_sid="CArl", user=admin)
+        session.propose("set_machine_to_service", {"machine_uid": "KOP-401"})
+        result = confirm_pending(session)
+        assert "limit" in result.lower()  # odmowa PRZED wykonaniem
+
+    def test_confirm_shares_counter_with_text_channel(self):
+        # Parytet: 9 zapisów „czatem" + 1 głosem = 10 (przechodzi), 11. głosem
+        # zablokowany — ten sam licznik per user, nie da się obejść zmianą kanału.
+        from chatbot.services import WRITE_RATE_LIMIT_PER_DAY, _check_write_rate_limit
+        from machines.models import Machine
+
+        admin = User.objects.create_superuser("vrl_admin2", "vrl2@a.test", "x")
+        Machine.objects.create(
+            uid="KOP-402",
+            name="K",
+            machine_type=Machine.Type.KOPARKA,
+            status=Machine.Status.W_MAGAZYNIE,
+        )
+        for _ in range(WRITE_RATE_LIMIT_PER_DAY - 1):
+            _check_write_rate_limit(admin.pk)  # 9 zapisów „czatem"
+        # 10. zapis (głos) — wciąż w limicie → wykonany.
+        s1 = VoiceCallSession(call_sid="CArl2a", user=admin)
+        s1.propose("set_machine_to_service", {"machine_uid": "KOP-402"})
+        assert "limit" not in confirm_pending(s1).lower()
+        # 11. zapis (głos) — limit wyczerpany → odmowa.
+        s2 = VoiceCallSession(call_sid="CArl2b", user=admin)
+        s2.propose("set_machine_to_service", {"machine_uid": "KOP-402"})
+        assert "limit" in confirm_pending(s2).lower()
