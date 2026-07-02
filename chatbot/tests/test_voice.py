@@ -203,6 +203,39 @@ class TestVoiceWebhook:
         r3 = client.post("/voice/verify-pin/", payload)  # 3. zły → lockout
         assert "<Reject" in r3.content.decode("utf-8")
 
+    def test_verify_pin_bruteforce_locked_per_number(self, client, settings):
+        """Ponawianie połączeń (nowy CallSid za każdym razem) NIE resetuje twardego
+        limitu prób per NUMER. Bez tej warstwy brute-force PIN byłby nieograniczony
+        (świeże 3 próby na każde połączenie). Po wyczerpaniu limitu każde verify →
+        <Reject>, nawet ze świeżym CallSid — i nowe połączenie też jest odrzucane."""
+        from accounts.services import set_voice_pin
+        from chatbot.voice_views import _PIN_FROM_MAX_ATTEMPTS
+
+        settings.VOICE_REQUIRE_PIN = True
+        _role_user("pin_bf", EmployeeProfile.Function.KIEROWNIK, "+48600000093")
+        set_voice_pin(EmployeeProfile.objects.get(user__username="pin_bf"), "4821")
+
+        # UNIKALNY CallSid na każde połączenie → per-CallSid licznik nigdy nie
+        # sięga 3, więc lockout musi zadziałać na warstwie per-numer.
+        for i in range(_PIN_FROM_MAX_ATTEMPTS):
+            client.post(
+                "/voice/verify-pin/",
+                {"From": "+48600000093", "CallSid": f"CAbf{i}", "Digits": "0000"},
+            )
+        r = client.post(
+            "/voice/verify-pin/",
+            {"From": "+48600000093", "CallSid": "CAbf-final", "Digits": "0000"},
+        )
+        body = r.content.decode("utf-8")
+        assert "<Reject" in body
+        assert "<Gather" not in body
+
+        # Zablokowany numer nie dostaje nawet prośby o PIN na nowym połączeniu.
+        r_inc = client.post("/voice/incoming/", {"From": "+48600000093", "CallSid": "CAbf-inc"})
+        inc_body = r_inc.content.decode("utf-8")
+        assert "<Reject" in inc_body
+        assert "<Gather" not in inc_body
+
     def test_verify_pin_no_pin_configured_hangs_up(self, client, settings):
         """User bez skonfigurowanego PIN → komunikat + <Hangup>, brak relay."""
         settings.VOICE_REQUIRE_PIN = True
