@@ -10,6 +10,7 @@ urlpatterns = [
     path("login/", views.PlanerLoginView.as_view(), name="login"),
     path("logout/", views.PlanerLogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    path("voice-pin/", views.voice_pin_view, name="voice_pin"),
     # Reset hasła („zapomniałem hasła") — 4 kroki standardowego flow Django,
     # z firmowymi szablonami i dwujęzycznym mailem.
     path("reset-hasla/", views.PlanerPasswordResetView.as_view(), name="password_reset"),
