@@ -211,6 +211,7 @@ class Command(BaseCommand):
             )
         )
         self._preenroll_2fa()
+        self._preenroll_voice_pins()
 
     # Stałe sekrety TOTP dla kont demo wymagających 2FA (kierownik/magazynier) —
     # dzięki temu rola jest "gotowa do pokazu" bez ręcznego skanowania QR.
@@ -235,6 +236,35 @@ class Command(BaseCommand):
                 defaults={"key": key, "confirmed": True},
             )
         self.stdout.write(self.style.SUCCESS("✓ 2FA pre-enroll: seba1, seba2 (TOTP)."))
+
+    # Stałe PIN-y głosowe (drugi czynnik DTMF) kont demo — rola „gotowa do pokazu"
+    # bez ręcznego ustawiania. Realne wartości pokazu czytamy z env (gitignored);
+    # defaulty to NIE-realne placeholdery, by publiczny seed nie ujawniał PIN-ów demo.
+    DEMO_VOICE_PINS = {
+        "sebastian": os.environ.get("DEMO_ADMIN_VOICE_PIN", "4729"),
+        "seba1": os.environ.get("DEMO_KIER_VOICE_PIN", "8317"),
+        "seba2": os.environ.get("DEMO_MAG_VOICE_PIN", "6284"),
+        "seba3": os.environ.get("DEMO_MONTER_VOICE_PIN", "5193"),
+    }
+
+    def _preenroll_voice_pins(self):
+        """Ustawia stałe PIN-y głosowe kont demo (idempotentnie, przez serwis).
+
+        Bez tego kroku PIN-y ustawione ręcznie znikają przy re-seedzie (pole
+        ``voice_pin_hash`` nie ma backfillu) — a wtedy pokaz głosowy przestaje
+        działać, bo dzwoniący nie przejdzie bramy DTMF.
+        """
+        from accounts.services import set_voice_pin
+
+        for username, pin in self.DEMO_VOICE_PINS.items():
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                continue
+            set_voice_pin(user.profile, pin)
+        self.stdout.write(
+            self.style.SUCCESS("✓ PIN głosowy pre-enroll: sebastian, seba1, seba2, seba3.")
+        )
 
     def _import_from_m1(self):
         machines_json = M1_DATA_DIR / "machines.json"

@@ -124,6 +124,25 @@ def test_seed_demo_creates_role_accounts():
 
 
 @pytest.mark.django_db
+def test_seed_demo_preenrolls_voice_pins():
+    """Seed ustawia PIN-y głosowe kont demo — bez tego pokaz głosowy pada po
+    re-seedzie (dzwoniący nie przejdzie bramy DTMF). Weryfikujemy przez serwis
+    (verify_voice_pin), nie po surowym hashu. Używamy ``Command.DEMO_VOICE_PINS``
+    (ten sam obiekt, który wczytał seed) → test jest odporny na env vs placeholder."""
+    from accounts.services import verify_voice_pin
+    from core.management.commands.seed_demo import Command
+
+    call_command(
+        "seed_demo", "--machines", "1", "--sites", "1", "--reservations", "0", stdout=StringIO()
+    )
+    user_model = get_user_model()
+    for username, pin in Command.DEMO_VOICE_PINS.items():
+        profile = user_model.objects.get(username=username).profile
+        assert profile.voice_pin_hash  # PIN ustawiony (hash niepusty, nie plaintext)
+        assert verify_voice_pin(profile, pin)  # dokładnie ten PIN przechodzi weryfikację
+
+
+@pytest.mark.django_db
 def test_seed_demo_reset_clears_then_seeds(machine_factory):
     """--reset → _reset() przed seedem."""
     # Pre-existing machine
