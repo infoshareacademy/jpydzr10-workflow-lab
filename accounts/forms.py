@@ -30,6 +30,51 @@ def _clean_phone_field(raw: str | None) -> str:
     return normalized
 
 
+class VoicePinForm(forms.Form):
+    """Ustawienie/zmiana PIN-u głosowego (drugi czynnik DTMF agenta telefonicznego).
+
+    Waliduje format (4–6 cyfr) i zgodność powtórzenia. Odrzucenie PIN-ów zbyt
+    prostych deleguje do :func:`accounts.services.set_voice_pin` (jedno źródło
+    reguł) — widok łapie ``ValidationError`` i pokazuje komunikat przy polu.
+    """
+
+    new_pin = forms.CharField(
+        label=_("Nowy PIN (4–6 cyfr)"),
+        min_length=4,
+        max_length=6,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": INPUT_CSS,
+                "inputmode": "numeric",
+                "autocomplete": "off",
+                "placeholder": "np. 4821",
+            }
+        ),
+    )
+    confirm_pin = forms.CharField(
+        label=_("Powtórz PIN"),
+        min_length=4,
+        max_length=6,
+        widget=forms.PasswordInput(
+            attrs={"class": INPUT_CSS, "inputmode": "numeric", "autocomplete": "off"}
+        ),
+    )
+
+    def clean_new_pin(self):
+        pin = self.cleaned_data["new_pin"]
+        if not pin.isdigit():
+            raise forms.ValidationError(_("PIN może zawierać wyłącznie cyfry."))
+        return pin
+
+    def clean(self):
+        cleaned = super().clean()
+        new_pin = cleaned.get("new_pin")
+        confirm_pin = cleaned.get("confirm_pin")
+        if new_pin and confirm_pin and new_pin != confirm_pin:
+            raise forms.ValidationError(_("PIN-y nie są identyczne."))
+        return cleaned
+
+
 class ProfileForm(forms.ModelForm):
     """Formularz edycji profilu pracownika (telefon, motyw, ID pracownika)."""
 

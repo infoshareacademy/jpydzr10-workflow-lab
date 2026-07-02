@@ -35,9 +35,16 @@ from .forms import (
     PlanerAuthenticationForm,
     ProfileForm,
     RegisterEmployeeForm,
+    VoicePinForm,
 )
 from .models import EmployeeProfile
-from .services import anonymize_employee, register_employee, terminate_employee, update_profile
+from .services import (
+    anonymize_employee,
+    register_employee,
+    set_voice_pin,
+    terminate_employee,
+    update_profile,
+)
 
 
 def _apply_language_cookie(response: HttpResponse, lang_code: str) -> HttpResponse:
@@ -179,7 +186,45 @@ def profile(request):
     return render(
         request,
         "accounts/profile.html",
-        {"form": form, "profile": employee_profile, "has_2fa": has_2fa},
+        {
+            "form": form,
+            "profile": employee_profile,
+            "has_2fa": has_2fa,
+            "has_voice_pin": bool(employee_profile.voice_pin_hash),
+        },
+    )
+
+
+@login_required
+def voice_pin_view(request):
+    """Self-service: użytkownik ustawia lub zmienia własny PIN głosowy (DTMF).
+
+    PIN jest drugim czynnikiem agenta telefonicznego (po caller-ID). Zapis
+    delegowany do ``set_voice_pin`` (hash + reguły trywialności); nigdy nie
+    przechowujemy ani nie renderujemy PIN-u jawnie.
+    """
+    profile = getattr(request.user, "profile", None)
+    if profile is None:
+        messages.error(request, _("Brak profilu pracownika dla tego konta."))
+        return redirect("home")
+
+    if request.method == "POST":
+        form = VoicePinForm(request.POST)
+        if form.is_valid():
+            try:
+                set_voice_pin(profile, form.cleaned_data["new_pin"], actor=request.user)
+            except ValidationError as exc:
+                form.add_error("new_pin", exc.messages[0])
+            else:
+                messages.success(request, _("PIN głosowy został zapisany."))
+                return redirect("accounts:profile")
+    else:
+        form = VoicePinForm()
+
+    return render(
+        request,
+        "accounts/voice_pin.html",
+        {"form": form, "has_pin": bool(profile.voice_pin_hash)},
     )
 
 
