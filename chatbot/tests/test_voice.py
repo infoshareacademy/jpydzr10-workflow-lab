@@ -291,8 +291,21 @@ class TestVoiceDispatch:
 
     def test_admin_write_proposes_confirmation(self):
         admin = User.objects.create_superuser("adminvoice", "a@a.test", "x")
+        Machine.objects.create(
+            uid="KOP-001",
+            name="Koparka",
+            machine_type=Machine.Type.KOPARKA,
+            status=Machine.Status.W_MAGAZYNIE,
+        )
         s = VoiceCallSession(call_sid="CA12", user=admin)
-        params = {"machine_uid": "KOP-001", "person": "Jan"}
+        start = date.today() + timedelta(days=4)
+        params = {
+            "machine_uid": "KOP-001",
+            "start_date": start.isoformat(),
+            "end_date": (start + timedelta(days=2)).isoformat(),
+            "person": "Jan Kowalski",
+            "responsible_person": "Anna Nowak",
+        }
         result = propose_or_execute(s, "create_reservation", params)
         assert "potwierdzasz" in result.lower()
         assert s.has_pending()
@@ -309,8 +322,24 @@ class TestVoiceDispatch:
         assert kier.has_perm("reservations.add_reservation")
         assert not kier.has_perm("reservations.change_reservation")
         # Składanie wniosku (add_reservation) — proponuje zapis jak admin.
+        Machine.objects.create(
+            uid="KOP-001",
+            name="Koparka",
+            machine_type=Machine.Type.KOPARKA,
+            status=Machine.Status.W_MAGAZYNIE,
+        )
         s = VoiceCallSession(call_sid="CA12b", user=kier)
-        result = propose_or_execute(s, "create_reservation", {"machine_uid": "KOP-001"})
+        start = date.today() + timedelta(days=4)
+        result = propose_or_execute(
+            s,
+            "create_reservation",
+            {
+                "machine_uid": "KOP-001",
+                "start_date": start.isoformat(),
+                "end_date": (start + timedelta(days=2)).isoformat(),
+                "person": "Jan Kowalski",
+            },
+        )
         assert "potwierdzasz" in result.lower()
         assert s.pending_action == "create_reservation"
         # Akcja wymagająca change_reservation (anulowanie) — kierownik NIE może.
@@ -322,7 +351,7 @@ class TestVoiceDispatch:
     def test_confirm_executes_create_reservation(self):
         admin = User.objects.create_superuser("adminexec", "a@a.test", "x")
         machine = Machine.objects.create(
-            uid="KOP-V01",
+            uid="KOP-101",
             name="Koparka voice",
             machine_type=Machine.Type.KOPARKA,
             status=Machine.Status.W_MAGAZYNIE,
@@ -361,7 +390,7 @@ class TestVoiceDispatch:
         MIĘDZY propozycją a potwierdzeniem, confirm odmawia i NIC nie zapisuje."""
         kier = _role_user("kier_revoke", EmployeeProfile.Function.KIEROWNIK, "+48600000066")
         machine = Machine.objects.create(
-            uid="KOP-V02",
+            uid="KOP-102",
             name="Koparka revoke",
             machine_type=Machine.Type.KOPARKA,
             status=Machine.Status.W_MAGAZYNIE,
@@ -455,12 +484,21 @@ class TestVoiceDispatch:
         """Druga propozycja nadpisuje pierwszą (udokumentowane zachowanie
         sesji głosowej — ostatnia propozycja wygrywa)."""
         admin = User.objects.create_superuser("adminov", "a@a.test", "x")
+        for uid in ("KOP-301", "KOP-302"):
+            Machine.objects.create(
+                uid=uid,
+                name="Koparka",
+                machine_type=Machine.Type.KOPARKA,
+                status=Machine.Status.W_MAGAZYNIE,
+            )
         s = VoiceCallSession(call_sid="CA20", user=admin)
-        propose_or_execute(s, "create_reservation", {"machine_uid": "KOP-001"})
-        propose_or_execute(s, "cancel_reservation", {"reservation_id": 7})
+        # Obie propozycje z PRAWIDŁOWYMI danymi (P6 waliduje przed obietnicą) —
+        # sprawdzamy samo nadpisanie stanu sesji, nie walidację danych.
+        propose_or_execute(s, "set_machine_to_service", {"machine_uid": "KOP-301"})
+        propose_or_execute(s, "set_machine_to_service", {"machine_uid": "KOP-302"})
         assert s.has_pending()
-        assert s.pending_action == "cancel_reservation"
-        assert s.pending_params == {"reservation_id": 7}
+        assert s.pending_action == "set_machine_to_service"
+        assert s.pending_params == {"machine_uid": "KOP-302"}
 
     def test_perms_summary_variants(self):
         admin = User.objects.create_superuser("adminsum", "a@a.test", "x")

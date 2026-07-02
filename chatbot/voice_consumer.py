@@ -22,6 +22,7 @@ from chatbot.tools import (
     _check_user_can,
     execute_confirmed_action,
     execute_read_action,
+    validate_write_proposal,
 )
 from chatbot.voice_session import VoiceCallSession
 
@@ -73,6 +74,12 @@ def propose_or_execute(session: VoiceCallSession, action: str, params: dict) -> 
             return _GUEST_REFUSAL
         if _check_user_can(session.user, action) is not None:
             return _REFUSAL
+        # P6: waliduj biznesowo PRZED obietnicą (parytet z czatem tekstowym) —
+        # nie proponuj akcji, która przy potwierdzeniu i tak by padła
+        # (nieistniejąca maszyna, data w przeszłości, zły UID → wypowiedz błąd).
+        error = validate_write_proposal(action, params, session.user)
+        if error:
+            return error
         session.propose(action, params)
         return f"Czy potwierdzasz akcję „{action}”? Powiedz tak, aby wykonać."
     if action in READ_ACTIONS:

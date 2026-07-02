@@ -3026,3 +3026,44 @@ ALL_TOOLS: dict[str, Any] = {
     "propose_terminate_employee": propose_terminate_employee,
     "propose_anonymize_employee": propose_anonymize_employee,
 }
+
+
+def validate_write_proposal(action: str, params: dict, user) -> str | None:
+    """Waliduje propozycję akcji ZAPISUJĄCEJ tak jak ścieżka tekstowa.
+
+    Agent GŁOSOWY dostaje surowy dict od Gemini i (inaczej niż czat, gdzie Pydantic
+    tool-call waliduje automatycznie) mógłby „obiecać" akcję z błędnymi danymi
+    (nieistniejąca maszyna, data w przeszłości, zły format UID), a walidacja
+    padłaby dopiero przy wykonaniu — „obiecuje i nie dowozi". Ta funkcja buduje
+    właściwy model ``*Params`` i woła odpowiednie ``propose_*``:
+
+    * zwraca komunikat BŁĘDU (do wypowiedzenia) gdy format/walidacja biznesowa
+      odrzuca — wtedy głos NIE prosi o potwierdzenie,
+    * zwraca ``None`` gdy propozycja jest poprawna (można prosić o „tak").
+
+    Model parametrów jest wyprowadzany z adnotacji ``propose_*`` (bez osobnej mapy —
+    nie ma dryfu). Dla nieznanej akcji zwraca ``None`` (brak walidacji).
+    """
+    import typing
+
+    from pydantic import ValidationError
+
+    propose_fn = ALL_TOOLS.get(f"propose_{action}")
+    if propose_fn is None:
+        return None
+    try:
+        model_cls = typing.get_type_hints(propose_fn)["params"]
+    except (KeyError, NameError, TypeError):
+        return None
+    try:
+        params_model = model_cls(**(params or {}))
+    except ValidationError:
+        return _("Dane operacji są niekompletne lub w złym formacie.")
+    result_json = propose_fn(params_model, user=user)
+    try:
+        data = json.loads(result_json)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(data, dict) and "error" in data and "proposed_action" not in data:
+        return data["error"]
+    return None
