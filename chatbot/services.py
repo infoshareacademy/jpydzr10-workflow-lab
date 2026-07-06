@@ -582,7 +582,7 @@ def ask_chatbot(
                 user=user,
                 title=question_clean[:TITLE_MAX_LENGTH],
             )
-        Message.objects.create(
+        user_msg = Message.objects.create(
             conversation=conversation,
             role=Message.Role.USER,
             content=question_clean,
@@ -629,6 +629,15 @@ def ask_chatbot(
         today=timezone.localdate(),
         now=timezone.localtime(),
     )
+    # Historia rozmowy dla agenta (slot-filling multi-turn): bez niej każda tura
+    # czatu jest bezstanowa — model nie pamięta poprzedniej wiadomości ("sprawdź
+    # tę rezerwację" → "podaj maszynę?"). Przekazujemy ją TYLKO gdy nie ma wiszącej
+    # propozycji — w trakcie potwierdzania (pending) historia mogłaby skłonić model
+    # do ponownego zaproponowania akcji i nadpisania pending.
+    if conversation.pending_action:
+        message_history = []
+    else:
+        message_history = _build_message_history(conversation, exclude_pk=user_msg.pk)
     # Retry TYLKO dla błędów przejściowych (rozłączenie/timeout sieci). Narzędzia
     # agenta CZYTAJĄ albo PROPONUJĄ (bez mutacji DB — zapis dopiero w confirm),
     # więc ponowienie jest idempotentne i nie tworzy podwójnych efektów.
@@ -638,6 +647,7 @@ def ask_chatbot(
             result = agent.run_sync(
                 wrapped,
                 deps=deps,
+                message_history=message_history,
                 model_settings={"timeout": GEMINI_TIMEOUT_SECONDS},
             )
             break
@@ -915,6 +925,32 @@ def _handle_pending_cancel(conversation: Conversation, question_clean: str) -> M
 # =============================================================================
 # Klasyfikacja błędów — polski user-friendly message bez wycieku nazwy klasy
 # =============================================================================
+
+
+def _build_message_history(conversation, *, exclude_pk=None, limit=20):
+    """Rekonstruuje historię rozmowy dla agenta (Pydantic AI ``message_history``).
+
+    Bez niej każda tura czatu jest bezstanowa — model nie widzi poprzednich
+    wiadomości, więc gubi slot-filling ("zarezerwuj koparkę" → "na jutro" traci
+    maszynę). Bierzemy wcześniejsze wiadomości user/asystent (pomijamy błędy oraz
+    bieżące pytanie ``exclude_pk``) i mapujemy na ModelRequest/ModelResponse.
+    Wiadomości usera przechodzą przez ``sanitize_user_input`` (spójnie z bieżącym
+    promptem). Limit ostatnich ``limit`` wpisów ogranicza koszt tokenów.
+    """
+    from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+
+    qs = Message.objects.filter(conversation=conversation).exclude(role=Message.Role.ERROR)
+    if exclude_pk is not None:
+        qs = qs.exclude(pk=exclude_pk)
+    history: list = []
+    for msg in qs.order_by("created_at"):
+        if msg.role == Message.Role.USER:
+            history.append(
+                ModelRequest(parts=[UserPromptPart(content=sanitize_user_input(msg.content))])
+            )
+        elif msg.role == Message.Role.ASSISTANT:
+            history.append(ModelResponse(parts=[TextPart(content=msg.content)]))
+    return history[-limit:] if limit else history
 
 
 # Frazy w nazwie klasy / treści wyjątku oznaczające błąd PRZEJŚCIOWY (wart
