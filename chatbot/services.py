@@ -639,8 +639,13 @@ def ask_chatbot(
     else:
         message_history = _build_message_history(conversation, exclude_pk=user_msg.pk)
     # Retry TYLKO dla błędów przejściowych (rozłączenie/timeout sieci). Narzędzia
-    # agenta CZYTAJĄ albo PROPONUJĄ (bez mutacji DB — zapis dopiero w confirm),
-    # więc ponowienie jest idempotentne i nie tworzy podwójnych efektów.
+    # agenta CZYTAJĄ albo PROPONUJĄ — NIE mutują bazy (zapis dopiero w confirm),
+    # więc ponowienie jest bezpieczne NA POZIOMIE DB (żadnej podwójnej rezerwacji).
+    # UWAGA (świadomy kompromis): każdy propose_* emituje wpis audytu
+    # "CHATBOT PROPOSE"; przy retrze po CZĘŚCIOWYM run_sync (model zdążył wywołać
+    # narzędzie, potem padł) wpis może się zdublować. To intencja, nie wykonanie —
+    # realny EXECUTE loguje się osobno przy potwierdzeniu. Akceptowalne; gdyby
+    # audyt propozycji musiał być ściśle jednokrotny, trzeba deduplikować w loggerze.
     result = None
     for attempt in range(_AGENT_MAX_ATTEMPTS):
         try:
