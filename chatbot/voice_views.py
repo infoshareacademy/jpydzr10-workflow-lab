@@ -93,10 +93,13 @@ def _env_auth_token() -> str:
 
 def build_twiml(*, ws_url: str, user, nonce: str) -> str:
     """Buduje odpowiedź TwiML kierującą do ConversationRelay (STT+TTS po stronie Twilio)."""
+    # Greeting jest TTS-owany przez Twilio na starcie i sygnalizuje rozmówcy, że
+    # to JEGO kolej — musi wprost zapraszać do mówienia (inaczej rozmówca czeka
+    # w ciszy, nie wiedząc że ma zacząć). Krótko, po ludzku.
     greeting = (
-        "Łączę z asystentem Planera Maszyn."
+        "Dzień dobry, tu asystent Planera Maszyn Budowlanych. Powiedz, w czym mogę pomóc."
         if user is not None
-        else "Łączę z asystentem. Dostęp tylko do odczytu."
+        else "Dzień dobry, tu asystent Planera Maszyn. Masz dostęp tylko do odczytu — o co chcesz zapytać?"
     )
     user_id = str(user.pk) if user is not None else "guest"
     return (

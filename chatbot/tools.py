@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
@@ -175,6 +176,49 @@ class FindAvailableMachinesResult(BaseModel):
 INSPECTIONS_LIST_LIMIT = 20
 
 
+def _resolve_machine(raw: str):
+    """Znajduje maszynę odpornie na warianty z rozpoznawania mowy (STT) — zwraca
+    ``Machine`` albo ``None``.
+
+    STT z „ka-o-pe zero zero jeden" / „koparka jeden" produkuje formy typu
+    „KOP 001", „KOP001", „kop-1", „Koparka 1". Sztywne ``Machine.objects.get(uid=...)``
+    poległoby na nich („maszyna nie istnieje"). Kolejno próbujemy: dokładny UID
+    (case-insensitive) → UID bez spacji → prefiks liter + numer z dowolnymi zerami
+    wiodącymi → nazwa. Zwracamy pierwszą trafioną maszynę.
+    """
+    from machines.models import Machine
+
+    if not raw or not raw.strip():
+        return None
+    s = raw.strip()
+
+    m = Machine.objects.filter(uid__iexact=s).first()  # 1. dokładny UID
+    if m:
+        return m
+
+    compact = re.sub(r"\s+", "", s)  # 2. UID bez spacji: „KOP 001" → „KOP001"
+    if compact != s:
+        m = Machine.objects.filter(uid__iexact=compact).first()
+        if m:
+            return m
+
+    # 3. Prefiks liter + numer, ignorując separatory i zera wiodące:
+    #    „kop 1" / „KOP-1" / „kop001" → UID „KOP-001".
+    mm = re.match(r"^([A-Za-z]+)[\s\-_]*0*(\d+)$", s)
+    if mm:
+        prefix = re.escape(mm.group(1).upper())
+        num = mm.group(2).lstrip("0") or "0"
+        m = Machine.objects.filter(uid__iregex=rf"^{prefix}-?0*{num}$").first()
+        if m:
+            return m
+
+    # 4. Fallback po nazwie („Koparka 1").
+    return (
+        Machine.objects.filter(name__iexact=s).first()
+        or Machine.objects.filter(name__icontains=s).first()
+    )
+
+
 def get_machine_status(uid: str) -> MachineStatusResult:
     """Zwraca aktualny status maszyny po jej UID (np. ``KOP-001``).
 
@@ -183,11 +227,8 @@ def get_machine_status(uid: str) -> MachineStatusResult:
         (zamiast wyjątku — łatwiej dla agenta złożyć odpowiedź naturalnym
         językiem niż obsługiwać exception).
     """
-    from machines.models import Machine
-
-    try:
-        m = Machine.objects.get(uid=uid)
-    except Machine.DoesNotExist:
+    m = _resolve_machine(uid)
+    if m is None:
         return MachineStatusResult(found=False, uid=uid)
 
     return MachineStatusResult(
@@ -216,7 +257,6 @@ def check_availability(uid: str, start_date: str, end_date: str) -> Availability
         do trzech konfliktujących rezerwacji. Gdy maszyna nie istnieje lub
         daty są nieprawidłowe — zwraca ``available=False`` + ``error``.
     """
-    from machines.models import Machine
     from reservations.services import get_conflicting_reservations, has_conflict
 
     try:
@@ -246,9 +286,8 @@ def check_availability(uid: str, start_date: str, end_date: str) -> Availability
             error="Data końca musi być >= data początku.",
         )
 
-    try:
-        machine = Machine.objects.get(uid=uid)
-    except Machine.DoesNotExist:
+    machine = _resolve_machine(uid)
+    if machine is None:
         return AvailabilityResult(
             machine_uid=uid,
             machine_found=False,
@@ -1279,7 +1318,6 @@ def propose_create_reservation(params: CreateReservationParams, user) -> str:
     jest pod ``select_for_update`` w :func:`execute_confirmed_action`
     (race-safe approval).
     """
-    from machines.models import Machine
     from reservations.models import ConstructionSite
 
     auth_err = _check_user_can(user, "create_reservation")
@@ -1301,9 +1339,8 @@ def propose_create_reservation(params: CreateReservationParams, user) -> str:
     if not params.person or not params.person.strip():
         return _error_json(_("Pole 'osoba rezerwująca' nie może być puste."))
 
-    try:
-        machine = Machine.objects.get(uid=params.machine_uid)
-    except Machine.DoesNotExist:
+    machine = _resolve_machine(params.machine_uid)
+    if machine is None:
         return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
     site_id: int | None = None
