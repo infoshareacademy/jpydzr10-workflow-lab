@@ -89,3 +89,20 @@ class TestVoicePinUI:
         resp = client.get(reverse("accounts:profile"))
         assert resp.status_code == 200
         assert resp.context["has_voice_pin"] is True
+
+    def test_rate_limited_after_10_per_hour(self, client):
+        # Ustawianie PIN-u to zapis sekretu — musi mieć limit (jak login/eksport RODO).
+        # 10 POST/h przechodzi, 11. jest blokowany (429), by zalogowany user nie spamował.
+        from django.core.cache import cache
+
+        cache.clear()  # świeży licznik ratelimit dla izolacji testu
+        rl_user = User.objects.create_user("pin_rl", "pinrl@a.test", "pw-1234!Tajne")
+        client.force_login(rl_user)
+        for i in range(10):
+            pin = f"73{i:02d}"
+            resp = client.post(reverse("accounts:voice_pin"), {"new_pin": pin, "confirm_pin": pin})
+            assert resp.status_code in (200, 302)  # ustawienie/re-render, nie zablokowane
+        blocked = client.post(
+            reverse("accounts:voice_pin"), {"new_pin": "7399", "confirm_pin": "7399"}
+        )
+        assert blocked.status_code in (403, 429)  # limit przekroczony

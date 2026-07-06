@@ -196,6 +196,7 @@ def profile(request):
 
 
 @login_required
+@ratelimit(key="user", rate="10/h", method="POST", block=True)
 def voice_pin_view(request):
     """Self-service: użytkownik ustawia lub zmienia własny PIN głosowy (DTMF).
 
