@@ -18,7 +18,85 @@ Two things are verified:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from django.utils.translation import gettext, ngettext, override
+
+_EN_PO = Path(__file__).resolve().parents[1] / "locale" / "en" / "LC_MESSAGES" / "django.po"
+
+
+def _quoted_value(fragment: str) -> str:
+    """Zwraca zawartość literału ``"..."`` z linii .po (pomija komentarz/flagi)."""
+    first = fragment.find('"')
+    last = fragment.rfind('"')
+    return fragment[first + 1 : last] if 0 <= first < last else ""
+
+
+def _scan_catalog(path: Path) -> tuple[list[str], list[str]]:
+    """Skanuje katalog .po → (untranslated, fuzzy) msgid-y widoczne dla usera.
+
+    Prosty, deterministyczny parser blokowy (bloki rozdzielone pustą linią):
+    wpis jest FUZZY, gdy ma flagę ``#, fuzzy`` (Django pomija go przy kompilacji
+    → renderuje polskie źródło), oraz UNTRANSLATED, gdy ``msgid`` niepusty a
+    wszystkie części ``msgstr`` puste. Nagłówek (``msgid ""``) jest pomijany.
+    """
+    untranslated: list[str] = []
+    fuzzy: list[str] = []
+
+    def flush(block: list[str]) -> None:
+        if not block:
+            return
+        is_fuzzy = any(ln.startswith("#,") and "fuzzy" in ln for ln in block)
+        msgid_parts: list[str] = []
+        msgstr_parts: list[str] = []
+        mode: str | None = None
+        for ln in block:
+            stripped = ln.strip()
+            if stripped.startswith("#"):
+                continue
+            if stripped.startswith("msgid_plural"):
+                mode = "id"
+            elif stripped.startswith("msgid"):
+                mode = "id"
+                msgid_parts.append(_quoted_value(stripped[5:]))
+            elif stripped.startswith("msgstr"):
+                mode = "str"
+                rest = stripped[6:]
+                if rest.startswith("["):  # msgstr[0]/[1] (formy mnogie)
+                    rest = rest.split("]", 1)[1]
+                msgstr_parts.append(_quoted_value(rest))
+            elif stripped.startswith('"'):
+                (msgid_parts if mode == "id" else msgstr_parts).append(_quoted_value(stripped))
+        msgid = "".join(msgid_parts)
+        if not msgid:  # nagłówek
+            return
+        if is_fuzzy:
+            fuzzy.append(msgid)
+        if not "".join(msgstr_parts):
+            untranslated.append(msgid)
+
+    block: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            flush(block)
+            block = []
+        else:
+            block.append(line)
+    flush(block)
+    return untranslated, fuzzy
+
+
+def test_english_catalog_is_fully_translated():
+    """Cały katalog EN jest kompletny — 0 nieprzetłumaczonych, 0 fuzzy.
+
+    Egzekwuje deklarację „pełna PL/EN" (Task 1.1): user z językiem EN nie może
+    zobaczyć ani jednego polskiego stringa. Chroni przed dryfem — nowy `{% trans %}`
+    bez tłumaczenia (lub fuzzy-match z makemessages) wywali ten test, nie demo.
+    """
+    untranslated, fuzzy = _scan_catalog(_EN_PO)
+    assert not untranslated, f"Nieprzetłumaczone msgid w katalogu EN: {untranslated}"
+    assert not fuzzy, f"Fuzzy msgid (Django pominie → polski w UI): {fuzzy}"
+
 
 # A representative sample of msgids that are translated in
 # ``locale/en/LC_MESSAGES/django.po``. Each maps PL source -> expected EN.
