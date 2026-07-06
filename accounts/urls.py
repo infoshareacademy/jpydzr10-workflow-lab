@@ -62,4 +62,9 @@ urlpatterns = [
         views.employee_anonymize_view,
         name="employee_anonymize",
     ),
+    path(
+        "pracownicy/<int:pk>/reset-pin/",
+        views.employee_clear_voice_pin_view,
+        name="employee_clear_voice_pin",
+    ),
 ]

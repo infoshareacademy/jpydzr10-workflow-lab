@@ -29,6 +29,11 @@ _state = threading.local()
 # i tylko zaśmiecałyby ``changes`` bez wartości audytowej.
 _DIFF_EXCLUDE = frozenset({"updated_at"})
 
+# Pola-sekrety: logujemy FAKT zmiany (ustawiony ↔ pusty), NIGDY wartość. Hash PIN-u
+# głosowego (drugi czynnik uwierzytelnienia) nie ma wartości audytowej jako wartość,
+# a trzymanie go w dzienniku (czytelnym dla admina) to zbędna ekspozycja sekretu.
+_REDACT_FIELDS = frozenset({"voice_pin_hash"})
+
 
 def _tracked_models() -> tuple[type, ...]:
     """Modele biznesowe objęte dziennikiem (rozwiązywane leniwie po app-registry)."""
@@ -72,12 +77,19 @@ def _json_safe(value: Any) -> Any:
 
 
 def _serialize(instance) -> dict[str, Any]:
-    """Pełny, JSON-bezpieczny snapshot pól konkretnych (bez relacji wstecznych)."""
+    """Pełny, JSON-bezpieczny snapshot pól konkretnych (bez relacji wstecznych).
+
+    Pola z ``_REDACT_FIELDS`` (sekrety) są maskowane do znacznika
+    ``<ustawiony>``/``<pusty>`` — dziennik widzi że wartość się zmieniła, nigdy samej wartości.
+    """
     data: dict[str, Any] = {}
     for field in instance._meta.concrete_fields:
         if field.name in _DIFF_EXCLUDE:
             continue
-        data[field.name] = _json_safe(getattr(instance, field.attname))
+        if field.name in _REDACT_FIELDS:
+            data[field.name] = "<ustawiony>" if getattr(instance, field.attname) else "<pusty>"
+        else:
+            data[field.name] = _json_safe(getattr(instance, field.attname))
     return data
 
 

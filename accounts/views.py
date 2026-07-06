@@ -40,6 +40,7 @@ from .forms import (
 from .models import EmployeeProfile
 from .services import (
     anonymize_employee,
+    clear_voice_pin,
     register_employee,
     set_voice_pin,
     terminate_employee,
@@ -547,3 +548,32 @@ def employee_anonymize_view(request: HttpRequest, pk: int) -> HttpResponse:
         _("Profil zanonimizowany zgodnie z RODO (Art.17 — prawo do bycia zapomnianym)."),
     )
     return redirect(reverse_lazy("accounts:employee_list") + "?filter=anonymized")
+
+
+@login_required
+@permission_required("accounts.change_employeeprofile", raise_exception=True)
+@require_POST
+def employee_clear_voice_pin_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """POST endpoint: admin czyści PIN głosowy pracownika (gdy pracownik go zapomniał).
+
+    Nie ustawia nowego PIN (admin nie zna cudzego sekretu) — tylko kasuje hash;
+    pracownik ustawia nowy sam w swoim profilu. To nie-destrukcyjna alternatywa
+    dla anonimizacji. Zdarzenie trafia do dziennika (actor = admin, obiekt = profil)
+    przez ``AuditLogMiddleware``; wartość hasha jest maskowana (``core.audit``).
+    """
+    profile = get_object_or_404(EmployeeProfile.objects.select_related("user"), pk=pk)
+    cleared = clear_voice_pin(profile, actor=request.user)
+
+    name = profile.user.get_full_name() or profile.user.username
+    if cleared:
+        messages.success(
+            request,
+            _("PIN głosowy pracownika %(name)s wyczyszczony — może ustawić nowy w swoim profilu.")
+            % {"name": name},
+        )
+    else:
+        messages.info(
+            request,
+            _("Pracownik %(name)s nie miał ustawionego PIN głosowego.") % {"name": name},
+        )
+    return redirect("accounts:employee_list")
