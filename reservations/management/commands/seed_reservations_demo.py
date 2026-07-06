@@ -1,16 +1,12 @@
-"""Seed realistycznych rezerwacji na prezentację 14 czerwca 2026.
+"""Seed realistycznych rezerwacji — dane centrowane na dniu uruchomienia seeda.
 
-Sebastian's spec (Wave 14-B, 17 maja 2026):
+Kotwice dat są WZGLĘDEM ``date.today()`` (nie zamrożone), więc seed odpalony przed
+demo daje świeży, sensowny obraz „na dziś". Rozkład:
 
-* historyczne (marzec 2026 - dziś): wszystkie ``zakończona``,
-* dziś - 15.06.2026: wszystkie ``potwierdzona`` (zero ``oczekująca`` przed
-  prezentacją - magazynier idzie do spotkania z czystą tablicą),
-* po 15.06.2026: mix ``potwierdzona`` (60-70%) + ``oczekująca`` (30-40%) -
-  pokazuje "to się jeszcze potwierdza" workflow,
-* lipiec: dense - większość maszyn zajęta (długie kontrakty wakacyjne),
-* sierpień: medium density (~60% maszyn ma rezerwacje),
-* wrzesień: rare (~30%) - kilka maszyn ma długie zlecenia ciągnące się od
-  lipca, reszta wolna,
+* historyczne (~2,5 mies. wstecz - dziś): wszystkie ``zakończona``,
+* dziś - +7 dni (CONFIRM_CUTOFF): wszystkie ``potwierdzona`` (czysta tablica),
+* dalej: mix ``potwierdzona`` (~70%) + ``oczekująca`` (~30%),
+* gęstość ~0,6 wokół dziś (część maszyn WOLNA — magazyn ma zapas), sparse dalej,
 * średnia długość rezerwacji: 15 dni (min 5, max 60), przestoje 1-4 dni
   między rezerwacjami na tę samą maszynę.
 
@@ -57,21 +53,22 @@ from reservations.models import ConstructionSite, Reservation
 # CONFIG - daty kluczowe
 # =============================================================================
 
-# Sebastian prezentacja - hard-coded zamiast date.today() bo demo powinien
-# wygladać identycznie niezależnie od kiedy uruchomimy seed.
-PRESENTATION_DATE = date(2026, 6, 14)
-TODAY = date(2026, 5, 17)
+# Kotwice dat są WZGLĘDEM dnia uruchomienia seeda (date.today()), NIE zamrożone.
+# Zamrożenie na 2026-06-14 sprawiło, że po 3 tygodniach dane „przeterminowały się":
+# rezerwacje ciągnęły od marca, prawie każda maszyna wyglądała na wynajętą od
+# miesięcy, znikomo mało wolnych. Seed uruchomiony PRZED demo = dane centrowane na
+# dniu demo (świeży, sensowny obraz). Dla powtarzalnego układu użyj `--seed N`.
+PRESENTATION_DATE = date.today()
+TODAY = date.today()
 
-# Do tej daty wszystkie rezerwacje sa potwierdzone (Sebastian: "zero
-# oczekujacych przed prezentacja - czysta tablica"). Tydzien po prezentacji.
-CONFIRM_CUTOFF = date(2026, 6, 15)
+# Rezerwacje kończące się do tej daty są potwierdzone (czysta tablica przed demo).
+CONFIRM_CUTOFF = date.today() + timedelta(days=7)
 
-# Start danych historycznych - 2.5 miesiaca przed dzis, zeby gridy dashboardu
-# pokazaly "zakonczone w tym kwartale" sensownie.
-HISTORY_START = date(2026, 3, 1)
+# Start danych historycznych - ~2.5 miesiaca wstecz (dashboard „zakonczone w kwartale").
+HISTORY_START = date.today() - timedelta(days=75)
 
-# Koniec horyzontu - 30 wrzesnia. Wrzesien jest sparse (rare bookings).
-HORIZON_END = date(2026, 9, 30)
+# Koniec horyzontu - ~2.8 miesiaca w przod. Dalej rzadko (sparse).
+HORIZON_END = date.today() + timedelta(days=85)
 
 # =============================================================================
 # CONFIG - długości i density
@@ -87,17 +84,19 @@ DURATION_MODE = 15
 GAP_MIN_DAYS = 1
 GAP_MAX_DAYS = 4
 
-# Density per miesiac - prawdopodobienstwo ze maszyna ma rezerwacje
-# w tym okresie. Sierpien medium, wrzesien sparse.
-DENSITY_BY_MONTH = {
-    3: 1.0,  # marzec - historyczne dense
-    4: 1.0,  # kwiecien
-    5: 1.0,  # maj - dochodzimy do prezentacji
-    6: 1.0,  # czerwiec - dense (do prezentacji + po)
-    7: 1.0,  # lipiec - dense
-    8: 0.55,  # sierpien - medium
-    9: 0.30,  # wrzesien - sparse
-}
+
+# Gęstość rezerwacji zależy od ODLEGŁOŚCI slotu od dnia demo, nie od bezwzględnego
+# miesiąca (inaczej po przesunięciu okna względem dziś gęstość by się rozjechała).
+# Umiarkowanie gęsto wokół „dziś" (~0.6 → część maszyn WOLNA, realny magazyn ma zapas
+# i jest co rezerwować głosem), rzadziej w dalszej przyszłości.
+def _density_for(cursor: date, center: date) -> float:
+    months = (cursor.year - center.year) * 12 + (cursor.month - center.month)
+    if months <= 1:  # przeszłość, bieżący i następny miesiąc — umiarkowanie gęsto
+        return 0.6
+    if months == 2:
+        return 0.45
+    return 0.3  # dalej w przyszłość — sparse
+
 
 # =============================================================================
 # CONFIG - dane fixturowe (osoby, adresy)
@@ -316,7 +315,7 @@ class Command(BaseCommand):
 
                 # Density check - dla sierpnia/wrzesnia czasem skip slot
                 # (cursor przesuwa sie ale nie tworzymy rezerwacji).
-                density = DENSITY_BY_MONTH.get(cursor.month, 1.0)
+                density = _density_for(cursor, PRESENTATION_DATE)
                 if random.random() > density:
                     # Skip - przesuwamy cursor do nastepnego potencjalnego okna
                     # bez tworzenia rezerwacji.
