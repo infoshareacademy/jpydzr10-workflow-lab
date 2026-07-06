@@ -130,6 +130,32 @@ def verify_voice_pin(profile: EmployeeProfile, raw_pin: str) -> bool:
     return check_password((raw_pin or "").strip(), profile.voice_pin_hash)
 
 
+def clear_voice_pin(profile: EmployeeProfile, *, actor: User | None = None) -> bool:
+    """Kasuje PIN głosowy pracownika — ścieżka „admin reset" gdy pracownik zapomni PIN.
+
+    Admin NIE ustawia nowego PIN (nie zna cudzego sekretu) — tylko usuwa hash.
+    Pracownik ustawia potem nowy PIN sam (self-service ``set_voice_pin``). To jedyna
+    nie-destrukcyjna droga odzyskania dostępu głosowego (alternatywą był tylko
+    ``anonymize_employee``, który kasuje całe PII).
+
+    Zwraca ``True`` gdy PIN istniał i został skasowany, ``False`` gdy pracownik
+    i tak PIN-u nie miał (idempotentne — brak zapisu). Zdarzenie trafia do dziennika
+    przez ``AuditLogMiddleware`` (actor = wywołujący, obiekt = profil); wartość hasha
+    NIE jest logowana (audit maskuje ``voice_pin_hash`` — zob. ``core.audit``).
+    """
+    if not profile.voice_pin_hash:
+        return False
+    profile.voice_pin_hash = ""
+    profile.save(update_fields=["voice_pin_hash", "updated_at"])
+    if actor is not None:
+        logger.info(
+            "clear_voice_pin: actor=%s skasował PIN głosowy user=%s",
+            getattr(actor, "username", "system"),
+            profile.user.username,
+        )
+    return True
+
+
 @transaction.atomic
 def register_employee(
     *,

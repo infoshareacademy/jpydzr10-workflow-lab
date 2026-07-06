@@ -168,6 +168,23 @@
                                             </button>
                                         </form>
                                     {% endif %}
+
+                                    {# Reset PIN głosowego (gdy pracownik zapomni): admin kasuje hash, pracownik ustawia nowy sam. Tylko gdy PIN ustawiony. #}
+                                    {% if profile.voice_pin_hash and perms.accounts.change_employeeprofile %}
+                                        <form method="post" action="{% url 'accounts:employee_clear_voice_pin' pk=profile.pk %}"
+                                              x-data="{ confirming: false }" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" x-show="confirming" x-cloak
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-sky-600 hover:bg-sky-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition">
+                                                {% trans "Potwierdź reset PIN" %}
+                                            </button>
+                                            <button type="button" @click="confirming = true" x-show="!confirming"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                                                    title="{% trans 'Kasuje PIN głosowy pracownika (gdy zapomniał) — ustawi nowy sam w swoim profilu.' %}">
+                                                {% trans "Reset PIN" %}
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             {% elif profile.user == user %}
                                 <span class="text-[0.6875rem] uppercase tracking-wider text-slate-400 dark:text-slate-500" title="{% trans 'Nie można modyfikować swojego konta' %}">

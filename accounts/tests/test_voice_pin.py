@@ -10,7 +10,12 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
-from accounts.services import anonymize_employee, set_voice_pin, verify_voice_pin
+from accounts.services import (
+    anonymize_employee,
+    clear_voice_pin,
+    set_voice_pin,
+    verify_voice_pin,
+)
 
 User = get_user_model()
 
@@ -63,3 +68,18 @@ class TestVoicePin:
         assert profile.voice_pin_hash == ""  # RODO: bieżący hash wykasowany
         # Historia (django-simple-history) też nie trzyma już hasha PIN-u.
         assert not profile.history.exclude(voice_pin_hash="").exists()
+
+    def test_clear_voice_pin_removes_hash(self, profile):
+        # Ścieżka „admin reset": pracownik zapomniał PIN → admin kasuje hash.
+        set_voice_pin(profile, "4821")
+        profile.refresh_from_db()
+        assert clear_voice_pin(profile) is True  # PIN istniał → skasowany
+        profile.refresh_from_db()
+        assert profile.voice_pin_hash == ""
+        assert verify_voice_pin(profile, "4821") is False  # stary PIN nie działa
+
+    def test_clear_voice_pin_idempotent_when_no_pin(self, profile):
+        # Brak PIN-u → False, żadnego zapisu (idempotentne).
+        assert clear_voice_pin(profile) is False
+        profile.refresh_from_db()
+        assert profile.voice_pin_hash == ""
