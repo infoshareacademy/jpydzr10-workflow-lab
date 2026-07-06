@@ -104,7 +104,13 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
         "<Response><Connect>"
         f'<ConversationRelay url="{escape(ws_url)}" language="pl-PL" '
         'ttsProvider="Google" transcriptionProvider="Google" '
-        f'welcomeGreeting="{escape(greeting)}" interruptible="any" dtmfDetection="true">'
+        # interruptible="any": mowa rozmówcy zatrzymuje TTS bota (barge-in po stronie Twilio).
+        # reportInputDuringAgentSpeech="speech": Twilio PRZEKAZUJE mowę rozmówcy do serwera
+        # także gdy bot mówi (domyślnie 'none' = milczy → most nie wie o przerwaniu na czas).
+        # ignoreBackchannel="true": „mhm/aha" nie liczą się jako przerwanie (mniej fałszywych cięć).
+        f'welcomeGreeting="{escape(greeting)}" interruptible="any" '
+        'reportInputDuringAgentSpeech="speech" ignoreBackchannel="true" '
+        'dtmfDetection="true">'
         f'<Parameter name="user_id" value="{escape(user_id)}"/>'
         f'<Parameter name="nonce" value="{escape(nonce)}"/>'
         "</ConversationRelay></Connect></Response>"
