@@ -15,7 +15,7 @@ Domknięcie obszarów M3 z oryginalnego harmonogramu kursu **+ rozszerzenia o wo
 2. **Mailing transakcyjny** — Google Workspace SMTP (`info@budmech.pl`), 6 scenariuszy biznesowych. **Idempotency, unsubscribe (GDPR), bounce log, dark mode Outlook, preview view, Mailpit w dev.**
 3. **2FA (TOTP)** — `django-otp` + QR code dla wszystkich `is_staff` użytkowników. Recovery codes. OWASP A07:2021 compliance.
 4. **Audit log** — middleware + `AuditLogEntry` + admin + CSV + retention 90 dni + GDPR erasure obejmuje audit.
-5. **Raporty wizualne** — 4 wykresy Chart.js + PDF raport miesięczny (server-side matplotlib) + lokalizacja PL/EN.
+5. **Raporty kosztów** — wykres Chart.js kosztów serwisowych (filtrowany po okresie/typie/maszynie) + eksporty (kwartalny XLSX, roczny PDF, per-maszyna PDF, eksport listy serwisów z aktywnymi filtrami) + lokalizacja PL/EN.
 6. **Accessibility (WCAG 2.1 AA)** — pełen audit przez Axe DevTools, fixy kontrastów, focus rings, ARIA labels, skip links, keyboard nav. **European Accessibility Act compliance** (od 28.06.2025 wymagane prawem dla nowych app w EU).
 7. **CI/CD pipeline** — GitHub Actions: pytest + ruff + coverage badge + bandit + safety (CVE scan deps). **Bez deployment** — sama infrastruktura testowa.
 8. **GDPR essentials** — privacy policy page, cookie notice, data export endpoint, anonymize obejmuje audit log.
@@ -51,9 +51,9 @@ Stack M2 zostaje bez zmian. **Nowe paczki dodawane w M3:**
 
 | Warstwa | Pakiet | Wersja minimum | Zastosowanie |
 |---------|--------|----------------|--------------|
-| Charts | **Chart.js** | **4.x stable** (vendored w `static/vendor/`) | 4 wykresy na stronie `/raporty/` |
-| PDF reports | **reportlab** | **>=4.2** (już w stacku) | Raport miesięczny PDF |
-| Matplotlib (PDF charts) | **matplotlib** | **>=3.9** | Renderowanie wykresów do PNG dla PDF (server-side) |
+| Charts | **Chart.js** | **4.x stable** (vendored w `static/vendor/`) | Wykres kosztów serwisowych na `/raporty/` |
+| PDF reports | **reportlab** | **>=4.2** (już w stacku) | Roczny + per-maszyna PDF (zestawienia tabelaryczne) |
+| Excel eksport | **openpyxl** | **>=3.1** (już w stacku) | Kwartalny XLSX + eksport listy serwisów z filtrami |
 | Coverage badge | **coverage-badge** | **>=1.1** | SVG badge w README po pytest |
 | **2FA** | **django-otp** | **>=1.5** | TOTP + recovery codes |
 | **2FA — QR codes** | **qrcode[pil]** | **>=7.4** | Generowanie QR do enrolmentu w Google Authenticator |
@@ -95,17 +95,14 @@ planer_workflow/                       (root)
 │       ├── prune_audit_log.py         # NOWE
 │       ├── send_daily_reminders.py    # NOWE
 │       └── send_inspection_alerts.py  # NOWE
-├── reports/                           # NOWA app — wykresy + PDF
-│   ├── views.py
-│   ├── urls.py
-│   ├── pdf_generator.py
-│   └── tests/
+├── service/                           # ZMIANA — raporty w app service (nie osobna app)
+│   ├── views.py                       # ReportPageView, ReportDataView, *XlsxView, *PdfView
+│   ├── reports.py                     # generatory PDF/XLSX (reportlab + openpyxl)
+│   └── selectors.py                   # filter_service_records (wspólny filtr listy/wykresu/eksportu)
 ├── accounts/
 │   └── models.py                      # ZMIANA — EmployeeProfile.preferred_language
 ├── locale/                            # ROZSZERZENIE
-│   ├── nl/LC_MESSAGES/django.{po,mo}  # 100% tłumaczeń
-│   ├── fr/LC_MESSAGES/django.{po,mo}  # 100% tłumaczeń
-│   └── en/LC_MESSAGES/django.{po,mo}  # 100% tłumaczeń (z 90% do 100%)
+│   └── en/LC_MESSAGES/django.{po,mo}  # 100% tłumaczeń (PL źródło + EN; NL/FR wycięte — zob. zmiana zakresu 2026-06-22)
 ├── templates/
 │   ├── emails/                        # NOWE
 │   │   ├── base_email.html
@@ -115,13 +112,11 @@ planer_workflow/                       (root)
 │   │   ├── inspection_overdue.{txt,html}
 │   │   ├── inspection_upcoming.{txt,html}
 │   │   └── password_reset.{txt,html}  # OVERRIDE Django default
-│   └── reports/
-│       └── reports_dashboard.html     # NOWE
+│   └── service/
+│       └── reports.html               # NOWE — strona /raporty/ (wykres + karty eksportu)
 ├── static/vendor/
 │   ├── chart.min.js                   # NOWE — Chart.js 4.x
-│   ├── flatpickr-nl.js                # NOWE
-│   ├── flatpickr-fr.js                # NOWE
-│   └── flatpickr-en.js                # NOWE
+│   └── flatpickr-en.js                # NOWE (NL/FR wycięte — scope PL/EN)
 ├── docs/
 │   ├── instrukcja-magazyniera.pdf     # NOWE
 │   └── instrukcja-administratora.pdf  # NOWE
@@ -571,51 +566,28 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 
 ---
 
-### Task 2.2 — Raporty Chart.js + PDF
+### Task 2.2 — Raporty kosztów (Chart.js + eksporty XLSX/PDF)
 
-**Co robimy:** nowa strona `/raporty/` z 4 wykresami Chart.js + przycisk "PDF raport miesięczny" generujący 1-stronicowy PDF.
+**Co robimy:** strona `/raporty/` z wykresem kosztów serwisowych (Chart.js, filtrowanym po okresie/typie/maszynie) + zestaw eksportów: kwartalny XLSX, roczny PDF, per-maszyna PDF oraz eksport listy serwisów respektujący aktywne filtry.
 
 **Plan działania:**
 
-1. Nowa app `reports`:
-   ```bash
-   uv run python manage.py startapp reports
-   ```
-   Dodać do `INSTALLED_APPS`, URL pattern `path('raporty/', include('reports.urls'))`.
+1. Widoki raportów w app `service` (URL `/raporty/`), link w nav header (tylko `is_staff`):
+   - `ReportPageView` — strona z filtrami + wykresem + kartami eksportu
+   - `ReportDataView` (`/raporty/dane.json`) — dane wykresu jako JSON (filter-aware)
 
-2. Vendor Chart.js 4.x:
-   ```bash
-   # Weryfikacja wersji
-   npm view chart.js time.modified  # czy najnowsza ma >2 tyg?
-   curl -o static/vendor/chart.min.js https://cdn.jsdelivr.net/npm/chart.js@4.X.X/dist/chart.umd.min.js
-   ```
+2. Chart.js 4.x vendored w `static/vendor/` (zero CDN).
 
-3. 4 wykresy w `reports/views.py` → `reports_dashboard_view`:
+3. Wykres kosztów serwisowych (bar chart, `json_script` → Chart.js) w `service/views.py`:
+   - Oś Y = suma `ServiceRecord.cost` (per waluta osobno — EUR/PLN, bez auto-konwersji, brak FX w M3)
+   - Respektuje filtry `ReportFilterForm` (rok, kwartał, typ serwisu, maszyna, data od)
+   - Reaguje na dark mode
 
-   **Wykres 1 — Wykorzystanie maszyn (%):**
-   - Bar chart, oś X = UID maszyn (top 20), oś Y = `(dni_w_terenie / dni_w_okresie) * 100`
-   - Okres = ostatnie 30 dni (parametr `?days=30`)
-   - Kalkulacja w widoku, dane pchnięte do template jako `json_script`
-
-   **Wykres 2 — Ranking osób (top 10):**
-   - Horizontal bar chart
-   - Oś X = liczba rezerwacji wpisanych przez osobę (pole `Reservation.person`)
-   - Oś Y = nazwiska (top 10)
-   - Okres = ostatnie 90 dni
-
-   **Wykres 3 — Koszty serwisowe per miesiąc:**
-   - Line chart, oś X = ostatnie 12 miesięcy, oś Y = suma `ServiceRecord.cost`
-   - Tooltip: breakdown per typ (`PRZEGLAD`, `NAPRAWA`, `WYMIANA_CZESCI`)
-
-   **Wykres 4 — Pie chart statusów maszyn:**
-   - W magazynie / Zarezerwowana / Na budowie / W serwisie / Wycofana
-   - Liczebność per status, color-coded (zgodne z timeline legend)
-
-4. PDF eksport raportu miesięcznego:
-   - Button "PDF raport za czerwiec 2026" → POST `/raporty/pdf/?month=2026-06`
-   - `reports/pdf_generator.py` używa `reportlab` (już w stacku) do layoutu + `matplotlib` do wykresów (server-side render do PNG, wstawione w PDF)
-   - 1 strona A4: branding header (logo, nazwa firmy, miesiąc), 4 wykresy (2×2 grid), tabela KPI summary (total rezerwacji, wykorzystanie %, koszty PLN)
-   - Plik: `raport-2026-06.pdf`
+4. Eksporty (wspólny selektor `filter_service_records` → spójne z ekranem):
+   - **Kwartalny XLSX** (`openpyxl`) — koszty/serwisy za wybrany kwartał
+   - **Roczny PDF** (`reportlab`) — zbiorczy: koszty, statystyki, przeglądy zaległe
+   - **Per-maszyna PDF** — pełna karta serwisowa pojedynczej maszyny
+   - **Eksport listy serwisów XLSX respektujący AKTYWNE filtry** (`AllServiceRecordsXlsxView` — dokładnie wiersze widoczne na liście)
 
 5. Permissions: `/raporty/` widoczne tylko dla `is_staff` (Kierownicy + Administratorzy):
    ```python
@@ -627,26 +599,21 @@ Wywoływane z `transaction.on_commit(lambda: send_localized_mail(...))` żeby ma
 
 **Definition of Done:**
 
-- [ ] Chart.js 4.x vendored w `static/vendor/chart.min.js`, wersja zweryfikowana (>2 tyg od release)
-- [ ] Nowa app `reports/`, URL `/raporty/`, link w nav header (tylko dla `is_staff`)
-- [ ] Wykres 1 (wykorzystanie maszyn) — działa, parametr `?days=N` zmienia okres
-- [ ] Wykres 2 (ranking osób) — top 10 sortowane desc, prawidłowe liczby
-- [ ] Wykres 3 (koszty serwisowe) — line chart 12 ostatnich miesięcy, tooltip z breakdownem
-- [ ] Wykres 4 (statusy maszyn) — pie chart 5 segmentów, kolory zgodne z timeline
-- [ ] Wszystkie wykresy responsive (mobile-friendly), reagują na dark mode (color schemes)
-- [ ] PDF eksport: button → `raport-2026-06.pdf` z 4 wykresami + KPI table + branded header
-- [ ] `/raporty/` zabezpieczone — anonymous → 302 na login, non-staff user → 403
-- [ ] Lokalizacja: tytuły wykresów + axis labels + tooltips + PDF po PL/EN
-- [ ] Testy: `uv run pytest reports/tests/ -v` — minimum 6:
-  - wykres 1 generuje poprawne dane (wykorzystanie z mocked rezerwacji)
-  - ranking sortowany desc, top 10 nie więcej
-  - koszty sumują się poprawnie z `ServiceRecord.cost`
-  - pie chart 5 segmentów
-  - PDF generuje się bez crash, content_type='application/pdf'
-  - anonymous → 302, non-staff → 403
-- [ ] **Acceptance**: Sebastian klika "Raporty" w nav → widzi stronę z 4 wykresami z realnymi danymi z DB → klika "PDF raport za czerwiec 2026" → pobiera plik z ładnym layoutem, drukuje na A4, czytelne.
+- [x] Chart.js 4.x vendored w `static/vendor/` (zero CDN)
+- [x] Widoki raportów w app `service`, URL `/raporty/`, link w nav header (tylko dla `is_staff`)
+- [x] Wykres kosztów serwisowych — respektuje filtry (rok/kwartał/typ/maszyna/data od), dark-mode aware
+- [x] Koszt per maszyna za DOWOLNY okres (filtr zakresu) — kluczowy wymóg raportowy
+- [x] Kwartalny XLSX (`openpyxl`) — koszty/serwisy za wybrany kwartał
+- [x] Roczny PDF (`reportlab`) — zbiorczy: koszty, statystyki, przeglądy zaległe
+- [x] Per-maszyna PDF — pełna karta serwisowa pojedynczej maszyny
+- [x] Eksport listy serwisów XLSX respektuje AKTYWNE filtry (identyczny zestaw wierszy co ekran — `filter_service_records`)
+- [x] Waluty sumowane per waluta osobno (EUR/PLN, zero auto-konwersji — brak FX w M3)
+- [x] `/raporty/` zabezpieczone — anonymous → login, brak uprawnień → 403 (`ServiceReadPermMixin`)
+- [x] Lokalizacja: widok + labelki wykresu + nagłówki eksportów po PL/EN
+- [x] Testy (`service/tests/`): dane wykresu z DB; XLSX respektuje filtry (ładuje workbook + sprawdza treść, nie tylko status 200); PDF bez crash (`content_type='application/pdf'`); dostęp (anonymous / brak uprawnień → 403)
+- [x] **Acceptance**: Kierownik/Admin klika "Raporty" w nav → widzi koszty serwisowe za wybrany okres z realnymi danymi z DB → zawęża filtry → eksport XLSX pobiera dokładnie te wiersze; roczny PDF / per-maszyna PDF czytelne.
 
-**Effort estimate:** 3 dni roboczych.
+**Effort estimate:** 3 dni robocze (zrealizowane).
 
 ---
 
@@ -885,7 +852,7 @@ Wow faktor dla kursu — biznesowe scenariusze zapisane w stylu "Given/When/Then
 #### 2.3.J — Dokumentacja użytkownika + README + django check --deploy
 
 - [ ] `docs/instrukcja-magazyniera.pdf` (~5 stron, screenshots z UI): jak zalogować się (z 2FA!), jak zarezerwować maszynę, jak potwierdzić, jak zgłosić awarię
-- [ ] `docs/instrukcja-administratora.pdf` (~5 stron): jak dodać użytkownika, jak nadać role, jak zobaczyć audit log, jak wyeksportować raport miesięczny, jak wyłączyć 2FA innego usera
+- [ ] `docs/instrukcja-administratora.pdf` (~5 stron): jak dodać użytkownika, jak nadać role, jak zobaczyć audit log, jak wyeksportować raport (kwartalny XLSX / roczny PDF), jak wyłączyć 2FA innego usera
 - [ ] **README.md** sekcje:
   - [ ] "Internacjonalizacja" — jak dodać nowy język
   - [ ] "Mailing" — SMTP Google Workspace + App Password
@@ -1016,7 +983,7 @@ Przed zakończeniem M3 wszystko poniżej musi być zielone:
 - [ ] 24 maile transakcyjne wysłane manualnie do `info@budmech.pl`, każdy zweryfikowany w Gmail Web (poprawny subject, body, dark mode, unsubscribe link, plaintext fallback)
 - [ ] 2FA: login z Google Authenticator działa, recovery codes do downloadu, admin może wyłączyć 2FA innego usera
 - [ ] Audit log działa, CSV eksport pobrany i otwarty w Excelu, prune cron usuwa stare
-- [ ] Raporty: 4 wykresy renderują się responsively, PDF generuje się z brandingiem
+- [ ] Raporty: wykres kosztów renderuje się responsively i respektuje filtry, eksporty XLSX/PDF generują się z brandingiem
 - [ ] GDPR: privacy policy live, data export działa, anonymize obejmuje audit log
 
 **Jakościowe:**
