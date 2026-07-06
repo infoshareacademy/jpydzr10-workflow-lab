@@ -1,4 +1,4 @@
-.PHONY: help install dev db-up db-down db-logs test test-cov test-fast e2e lint format check migrate seed run voice shell superuser clean css css-watch messages compilemessages
+.PHONY: help install dev db-up db-down db-logs test test-cov test-fast e2e lint format check migrate seed run voice voice-repl voice-dev shell superuser clean css css-watch messages compilemessages
 
 help:
 	@echo "Planer Maszyn — Reference repo — Makefile common tasks"
@@ -98,6 +98,19 @@ run: compilemessages
 # żywe gniazdo WS domykane przy uruchomieniu na żywo (patrz chatbot/voice_consumer.py).
 voice: compilemessages
 	DJANGO_SETTINGS_MODULE=planer_config.settings.voice uv run uvicorn planer_config.asgi:application --host 0.0.0.0 --port 8010
+
+# Lokalny symulator agenta głosowego — iteracja bez telefonu/tunelu/Twilio
+# (stdin/stdout zamiast ConversationRelay, prawdziwy Gemini Live). Do szybkiego
+# testowania promptu/narzędzi/RBAC. ROLE=admin|kierownik|magazynier|montazysta|guest.
+ROLE ?= admin
+voice-repl:
+	DJANGO_SETTINGS_MODULE=planer_config.settings.voice uv run python manage.py voice_repl --role $(ROLE)
+
+# Serwer głosowy w trybie DEV — uvicorn z hot-reload, bez compilemessages w ścieżce
+# krytycznej. Do iterowania kodu mostu (zmiana .py → auto-reload). DEBUG=False zostaje
+# (profil voice; NIE przełączać na dev — debug_toolbar wysadza ASGI).
+voice-dev:
+	DJANGO_SETTINGS_MODULE=planer_config.settings.voice uv run uvicorn planer_config.asgi:application --host 0.0.0.0 --port 8010 --reload --reload-dir chatbot --reload-dir planer_config
 
 shell:
 	uv run python manage.py shell
