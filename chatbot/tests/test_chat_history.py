@@ -88,3 +88,31 @@ class TestChatHistory:
         # Pytanie inne niż tak/nie → normalny flow agenta, ale z pending → BEZ historii.
         ask_chatbot(user=user, question="A ile to potrwa?", conversation=conv)
         assert agent.last_history == []
+
+    def test_history_isolated_between_users(self, monkeypatch, client):
+        # Prywatność: user A podając conversation_id konwersacji usera B NIE dostaje
+        # jego historii — widok filtruje konwersację po zalogowanym userze, więc
+        # cudze conv_id → nowa konwersacja A, zero kontekstu (ani PII) usera B.
+        from django.urls import reverse
+
+        agent = _HistoryCapturingAgent()
+        monkeypatch.setattr(agent_module, "AGENT", agent)
+        user_b = User.objects.create_user("hist_b", "b@a.test", "pw-1234!Tajne")
+        conv_b = Conversation.objects.create(user=user_b, title="B")
+        Message.objects.create(conversation=conv_b, role=Message.Role.USER, content="Sekret B: KOP-B99")
+        Message.objects.create(
+            conversation=conv_b, role=Message.Role.ASSISTANT, content="Odpowiedź dla B"
+        )
+
+        user_a = User.objects.create_user("hist_a", "a@a.test", "pw-1234!Tajne")
+        client.force_login(user_a)
+        resp = client.post(
+            reverse("chatbot:ask"),
+            {"question": "Cześć asystencie", "conversation_id": conv_b.pk},
+            HTTP_HX_REQUEST="true",
+        )
+        assert resp.status_code == 200
+        # Historia usera B NIE trafiła do modelu (guard w widoku → nowa konwersacja A).
+        rendered = str(agent.last_history)
+        assert "KOP-B99" not in rendered
+        assert "Sekret B" not in rendered
