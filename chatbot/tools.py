@@ -212,11 +212,18 @@ def _resolve_machine(raw: str):
         if m:
             return m
 
-    # 4. Fallback po nazwie („Koparka 1").
-    return (
-        Machine.objects.filter(name__iexact=s).first()
-        or Machine.objects.filter(name__icontains=s).first()
-    )
+    # 4. Fallback po nazwie — TYLKO gdy JEDNOZNACZNE. Duplikaty nazw („Koparka 1"
+    #    może istnieć w kilku egzemplarzach) albo gołe słowo-typ („koparka" → wiele)
+    #    → None, żeby agent dopytał / użył find_available_machines zamiast po cichu
+    #    trafić losową maszynę. Wycofane wykluczamy (nie da się ich używać).
+    active = Machine.objects.exclude(status=Machine.Status.WYCOFANA)
+    exact = list(active.filter(name__iexact=s)[:2])
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        return None  # niejednoznaczne — nie zgaduj
+    partial = list(active.filter(name__icontains=s)[:2])
+    return partial[0] if len(partial) == 1 else None
 
 
 def get_machine_status(uid: str) -> MachineStatusResult:
