@@ -480,7 +480,12 @@ async def run_voice_socket(scope, receive, send) -> None:
     session = VoiceCallSession(call_sid=call_sid, user=user)
     logger.info("Voice WS setup: call_sid=%s user=%s", call_sid, getattr(user, "pk", "guest"))
 
-    async with _gemini_connect(user) as gsession:
+    # Budowa configu Gemini uderza do DB (build_user_perms_summary → has_perm),
+    # więc MUSI iść przez sync_to_async — inaczej dla zalogowanego NIE-superusera
+    # (kierownik/magazynier/montażysta) leci ``SynchronousOnlyOperation`` i połączenie
+    # pada tuż po PIN. (Admin=superuser omija DB, więc bug nie ujawniał się na demo.)
+    gemini_cm = await sync_to_async(_gemini_connect, thread_sensitive=True)(user)
+    async with gemini_cm as gsession:
         while True:
             msg = await _recv_json(receive)
             if msg is None:

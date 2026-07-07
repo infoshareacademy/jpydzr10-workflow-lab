@@ -604,3 +604,31 @@ class TestRunVoiceSocket:
         assert Reservation.objects.count() == before
         confirm_result = session.tool_responses[1][0].response["result"]
         assert "oczekując" in confirm_result.lower()
+
+
+def test_build_live_config_non_superuser_uses_db_needs_thread():
+    """RE-1: budowa configu Gemini woła build_user_perms_summary→has_perm (DB).
+    W kontekście async BEZ sync_to_async rzuca SynchronousOnlyOperation — więc
+    zalogowany NIE-superuser (kierownik/magazynier/montażysta) rozłączał się tuż
+    po PIN. Admin=superuser omijał DB, więc bug nie wychodził na demo. Fix:
+    run_voice_socket owija _gemini_connect w sync_to_async.
+    """
+    from asgiref.sync import async_to_sync, sync_to_async
+    from django.core.exceptions import SynchronousOnlyOperation
+
+    from chatbot.voice_socket import _build_live_config
+
+    user = User.objects.create_user(
+        "re1_nonsuper", password="x"
+    )  # nie-superuser → has_perm dotyka DB
+
+    async def _direct():
+        return _build_live_config(user)  # tak jak było: w async, bez wątku
+
+    with pytest.raises(SynchronousOnlyOperation):
+        async_to_sync(_direct)()
+
+    async def _threaded():
+        return await sync_to_async(_build_live_config, thread_sensitive=True)(user)
+
+    assert async_to_sync(_threaded)() is not None  # fix: config zbudowany w wątku
