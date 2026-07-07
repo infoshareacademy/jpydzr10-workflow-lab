@@ -338,6 +338,7 @@ class TestVoiceDispatch:
             "end_date": (start + timedelta(days=2)).isoformat(),
             "person": "Jan Kowalski",
             "responsible_person": "Anna Nowak",
+            "address": "ul. Testowa 1, Lublin",
         }
         result = propose_or_execute(s, "create_reservation", params)
         assert "potwierdzasz" in result.lower()
@@ -371,6 +372,8 @@ class TestVoiceDispatch:
                 "start_date": start.isoformat(),
                 "end_date": (start + timedelta(days=2)).isoformat(),
                 "person": "Jan Kowalski",
+                "responsible_person": "Anna Nowak",
+                "address": "ul. Testowa 1, Lublin",
             },
         )
         assert "potwierdzasz" in result.lower()

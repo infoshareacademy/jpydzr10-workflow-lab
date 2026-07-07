@@ -162,7 +162,17 @@ class TestProposeCreateReservation:
             start_date=(today + timedelta(days=3)).isoformat(),
             end_date=(today + timedelta(days=8)).isoformat(),
             person="Jan Kowalski",
+            responsible_person="Anna Nowak",
+            address="ul. Testowa 1, Lublin",
         )
+
+    def test_rejects_missing_responsible_person(self, user_full_perms, koparka_001):
+        """RE-3: parytet propose↔execute — brak osoby odpowiedzialnej odrzucany JUŻ
+        w propose (bot dopyta), a nie dopiero przy confirm (anty „obiecuje i pada")."""
+        p = self._params().model_copy(update={"responsible_person": ""})
+        result = chatbot_tools.propose_create_reservation(p, user=user_full_perms)
+        assert "odpowiedzialn" in result.lower()
+        assert '"confirmation_required": true' not in result
 
     def test_returns_json_proposal(self, user_full_perms, koparka_001):
         result = chatbot_tools.propose_create_reservation(self._params(), user=user_full_perms)
@@ -260,6 +270,7 @@ class TestProposeCreateReservation:
             start_date=(today + timedelta(days=3)).isoformat(),
             end_date=(today + timedelta(days=8)).isoformat(),
             person="Jan Kowalski",
+            responsible_person="Anna Nowak",
             site_project_number="BUD-2026-007",
         )
         result = chatbot_tools.propose_create_reservation(params, user=user_full_perms)

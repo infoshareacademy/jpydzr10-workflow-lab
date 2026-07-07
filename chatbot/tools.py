@@ -1343,6 +1343,17 @@ def propose_create_reservation(params: CreateReservationParams, user) -> str:
     if machine is None:
         return _error_json(_("Maszyna o UID '%(uid)s' nie istnieje.") % {"uid": params.machine_uid})
 
+    # Parytet propose↔execute: execute woła serwis z require_full_fields=True, który
+    # wymaga osoby odpowiedzialnej I adresu. Bez tej walidacji propose obiecywał
+    # „potwierdzasz?", a confirm padał na „tak" (anty-wzorzec „obiecuje i nie dowozi").
+    # Sprawdzamy TU (po maszynie), żeby bot dopytał o brakujące pole zamiast obiecać i paść.
+    if not params.responsible_person or not params.responsible_person.strip():
+        return _error_json(_("Podaj osobę odpowiedzialną (kierownika budowy)."))
+    # Adres dostawy: z params.address ALBO z budowy (site_project_number → adres budowy).
+    has_site = bool(params.site_project_number and params.site_project_number.strip())
+    if not (params.address and params.address.strip()) and not has_site:
+        return _error_json(_("Podaj adres dostawy maszyny albo numer budowy."))
+
     site_id: int | None = None
     site_label = ""
     if params.site_project_number:
@@ -1963,6 +1974,7 @@ def propose_report_breakdown(params: ReportBreakdownParams, user) -> str:
 READ_ACTIONS: dict[str, Any] = {
     "get_machine_status": get_machine_status,
     "check_availability": check_availability,
+    "find_available_machines": find_available_machines,
     "get_inspections_due": get_inspections_due,
     "get_service_costs": get_service_costs,
     "get_machine_service_history": get_machine_service_history,

@@ -569,6 +569,8 @@ class TestAuditLog:
             start_date=(today + timedelta(days=3)).isoformat(),
             end_date=(today + timedelta(days=8)).isoformat(),
             person="Audit Test",
+            responsible_person="Anna Nowak",
+            address="ul. Testowa 1, Lublin",
         )
         with caplog.at_level("INFO", logger="chatbot.audit"):
             propose_create_reservation(params, user=user_full_perms)
@@ -620,6 +622,8 @@ class TestAuditLog:
             start_date=(today + timedelta(days=3)).isoformat(),
             end_date=(today + timedelta(days=8)).isoformat(),
             person="Audit Smoke",
+            responsible_person="Anna Nowak",
+            address="ul. Testowa 1, Lublin",
         )
         with caplog.at_level("INFO", logger="chatbot.audit"):
             propose_create_reservation(params, user=user_full_perms)

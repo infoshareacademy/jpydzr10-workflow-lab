@@ -108,12 +108,12 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
         f'<ConversationRelay url="{escape(ws_url)}" language="pl-PL" '
         'ttsProvider="Google" transcriptionProvider="Google" '
         # interruptible="any": mowa rozmówcy zatrzymuje TTS bota (barge-in po stronie Twilio).
-        # reportInputDuringAgentSpeech="speech": Twilio PRZEKAZUJE mowę rozmówcy do serwera
-        # także gdy bot mówi (domyślnie 'none' = milczy → most nie wie o przerwaniu na czas).
         # ignoreBackchannel="true": „mhm/aha" nie liczą się jako przerwanie (mniej fałszywych cięć).
+        # NIE ustawiamy reportInputDuringAgentSpeech="speech": pętla WS jest jednozadaniowa,
+        # więc mowa dostarczona W TRAKCIE tury bota tylko kolejkuje się za nią (miesza tury,
+        # gorszy UX). Włączyć DOPIERO z refaktorem współbieżnego odbioru (osobny task na receive).
         f'welcomeGreeting="{escape(greeting)}" interruptible="any" '
-        'reportInputDuringAgentSpeech="speech" ignoreBackchannel="true" '
-        'dtmfDetection="true">'
+        'ignoreBackchannel="true" dtmfDetection="true">'
         f'<Parameter name="user_id" value="{escape(user_id)}"/>'
         f'<Parameter name="nonce" value="{escape(nonce)}"/>'
         "</ConversationRelay></Connect></Response>"
