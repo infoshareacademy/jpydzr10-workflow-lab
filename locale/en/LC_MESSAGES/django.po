@@ -7471,6 +7471,10 @@ msgstr ""
 msgid "%(count)s maszyn z przeterminowanym przeglądem technicznym"
 msgstr "%(count)s machines with an overdue technical inspection"
 
+#: templates/home.html:516
+msgid "Maszyny z przeterminowanym przeglądem technicznym"
+msgstr "Machines with an overdue technical inspection"
+
 #: templates/home.html:524
 msgid ""
 "Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym "

@@ -511,7 +511,10 @@
         </span>
         <div class="flex-1 min-w-0">
             <h2 class="text-sm font-semibold text-rose-900 dark:text-rose-100">
-                {% blocktrans with count=kpi.inspections_overdue %}{{ count }} maszyn z przeterminowanym przeglądem technicznym{% endblocktrans %}
+                {% comment %}Liczba po dwukropku: polska odmiana ma trzy formy (1 maszyna /
+                2 maszyny / 5 maszyn), a katalog operuje dwiema — ten szyk jest poprawny
+                dla każdej wartości licznika.{% endcomment %}
+                {% trans "Maszyny z przeterminowanym przeglądem technicznym" %}: {{ kpi.inspections_overdue }}
             </h2>
             <p class="text-xs sm:text-sm text-rose-800 dark:text-rose-200 mt-1">
                 {% trans "Skontaktuj się z serwisem żeby umówić przegląd. Maszyny z przeterminowanym przeglądem nie mogą legalnie pracować na budowie." %}
