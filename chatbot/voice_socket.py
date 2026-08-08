@@ -63,6 +63,20 @@ CONFIRM_TOOL = "confirm_pending_action"
 # powtarzalnych decyzji o wywołaniu narzędzia, nie wariantowości językowej.
 TEMPERATURE = 0.2
 
+# Awaria po stronie modelu/sieci w trakcie tury. Dzwoniący trzyma słuchawkę przy
+# uchu, więc MUSI usłyszeć cokolwiek — milczący socket jest nieodróżnialny od
+# zepsutego systemu i kończy się rozłączeniem przez rozmówcę.
+TURN_ERROR_MESSAGE = "Przepraszam, nie dosłyszałem. Możesz powtórzyć?"
+FATAL_ERROR_MESSAGE = (
+    "Przepraszam, straciłem połączenie z systemem. Zadzwoń proszę jeszcze raz za chwilę."
+)
+CONNECT_ERROR_MESSAGE = (
+    "Przepraszam, system jest chwilowo niedostępny. Zadzwoń proszę jeszcze raz za chwilę."
+)
+# Po tylu nieudanych turach z rzędu przestajemy udawać, że rozmowa trwa: kolejne
+# próby na zerwanej sesji i tak padną, a rozmówca w kółko słyszy „powtórz”.
+MAX_TURN_FAILURES = 2
+
 
 # =============================================================================
 # FUNCTION DECLARATIONS — schematy narzędzi dla Gemini (oczyszczone)
@@ -533,7 +547,17 @@ async def run_voice_socket(scope, receive, send) -> None:
     # więc MUSI iść przez sync_to_async — inaczej dla zalogowanego NIE-superusera
     # (kierownik/magazynier/montażysta) leci ``SynchronousOnlyOperation`` i połączenie
     # pada tuż po PIN. (Admin=superuser omija DB, więc bug nie ujawniał się na demo.)
-    gemini_cm = await sync_to_async(_gemini_connect, thread_sensitive=True)(user)
+    try:
+        gemini_cm = await sync_to_async(_gemini_connect, thread_sensitive=True)(user)
+    except Exception:
+        # Szeroki wyjątek celowo: cokolwiek zawiedzie po drodze (klucz, limit, sieć,
+        # niedostępny model), rozmówca ma usłyszeć zdanie zamiast ciszy w słuchawce.
+        logger.exception("Voice WS: nie udało się otworzyć sesji modelu (call_sid=%s).", call_sid)
+        await _send_text(send, CONNECT_ERROR_MESSAGE, last=True)
+        await send({"type": "websocket.close"})
+        return
+
+    failures = 0
     async with gemini_cm as gsession:
         while True:
             msg = await _recv_json(receive)
@@ -541,7 +565,28 @@ async def run_voice_socket(scope, receive, send) -> None:
                 break
             mtype = msg.get("type")
             if mtype == "prompt":
-                await _handle_prompt(gsession, session, msg, send)
+                try:
+                    await _handle_prompt(gsession, session, msg, send)
+                except Exception:
+                    # Jw. — pojedyncza tura może paść z wielu powodów (zerwane
+                    # gniazdo do modelu, timeout, błąd narzędzia). Rozmowa jest
+                    # kanałem czasu rzeczywistego: lepiej poprosić o powtórzenie
+                    # niż zostawić dzwoniącego w ciszy do samego rozłączenia.
+                    failures += 1
+                    logger.exception(
+                        "Voice WS: tura nie powiodła się (call_sid=%s, z rzędu=%s).",
+                        call_sid,
+                        failures,
+                    )
+                    # Wisząca akcja pochodzi z przerwanej tury — po błędzie „tak”
+                    # nie może potwierdzić czegoś, czego rozmówca nie usłyszał.
+                    session.cancel()
+                    if failures >= MAX_TURN_FAILURES:
+                        await _send_text(send, FATAL_ERROR_MESSAGE, last=True)
+                        break
+                    await _send_text(send, TURN_ERROR_MESSAGE, last=True)
+                else:
+                    failures = 0
             elif mtype == "interrupt" and session.has_pending():
                 # Barge-in z Twilio: w modelu turowym tura Gemini już jest
                 # zamknięta; czyścimy wiszącą akcję, by „tak” po przerwaniu nie

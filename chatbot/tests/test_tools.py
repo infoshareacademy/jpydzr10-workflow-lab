@@ -100,7 +100,9 @@ def test_check_availability_detects_conflict(machine):
     result = tools.check_availability(machine.uid, "2026-06-03", "2026-06-10")
     assert result.available is False
     assert result.conflict_count >= 1
-    assert result.conflicts[0].person == "Jan Kowalski"
+    # Dane osobowe NIE wychodzą z narzędzia — kanał głosowy dostaje sam termin
+    # i status, więc nazwisko z cudzej rezerwacji nie może zostać wypowiedziane.
+    assert "Jan Kowalski" not in result.model_dump_json()
     assert result.conflicts[0].start == "2026-06-01"
 
 

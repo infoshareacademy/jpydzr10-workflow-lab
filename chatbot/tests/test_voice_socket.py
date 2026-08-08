@@ -632,3 +632,85 @@ def test_build_live_config_non_superuser_uses_db_needs_thread():
         return await sync_to_async(_build_live_config, thread_sensitive=True)(user)
 
     assert async_to_sync(_threaded)() is not None  # fix: config zbudowany w wątku
+
+
+# =============================================================================
+# Awaria modelu w trakcie rozmowy — rozmówca musi USŁYSZEĆ, że coś nie wyszło
+# =============================================================================
+
+
+class FakeBrokenSession(FakeGeminiSession):
+    """Sesja, która zrywa się na zadanej turze (symuluje utratę łącza do modelu)."""
+
+    def __init__(self, turns, fail_on=(0,)):
+        super().__init__(turns)
+        self._fail_on = set(fail_on)
+        self._sent = 0
+
+    async def send_client_content(self, turns, turn_complete=True):
+        index = self._sent
+        self._sent += 1
+        if index in self._fail_on:
+            raise ConnectionError("gniazdo do modelu zerwane")
+        return await super().send_client_content(turns=turns, turn_complete=turn_complete)
+
+
+class TestVoiceFailureRecovery:
+    """Cisza w słuchawce jest nieodróżnialna od zepsutego systemu — po każdej
+    awarii rozmówca dostaje zdanie, a nie milczący socket."""
+
+    def test_failed_turn_is_spoken_and_conversation_survives(self, monkeypatch):
+        admin = _admin()
+        ok_turn = [
+            FakeMsg(text="Koparka jest w magazynie."),
+            FakeMsg(server_content=FakeServerContent(turn_complete=True)),
+        ]
+        # Pierwsza tura zrywa się, druga przechodzi normalnie.
+        session = FakeBrokenSession([ok_turn], fail_on=(0,))
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "status koparki"}),
+            _ws_text({"type": "prompt", "voicePrompt": "to jaki jest status?"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+
+        assert voice_socket.TURN_ERROR_MESSAGE in spoken  # awaria zapowiedziana głosem
+        # ...a rozmowa toczy się dalej: kolejna tura obsłużona normalnie.
+        assert "Koparka jest w magazynie." in spoken
+
+    def test_repeated_failures_end_call_with_explanation(self, monkeypatch):
+        admin = _admin()
+        session = FakeBrokenSession([], fail_on=(0, 1, 2))
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "raz"}),
+            _ws_text({"type": "prompt", "voicePrompt": "dwa"}),
+            _ws_text({"type": "prompt", "voicePrompt": "trzy"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+
+        assert voice_socket.FATAL_ERROR_MESSAGE in spoken  # zamiast „powtórz” w kółko
+        # Trzecia wypowiedź nie jest już obsługiwana — pętla zakończona po limicie.
+        assert spoken.count(voice_socket.TURN_ERROR_MESSAGE) == 1
+
+    def test_unavailable_model_is_announced_before_hangup(self, monkeypatch):
+        admin = _admin()
+
+        def _boom(user):
+            raise RuntimeError("brak dostępu do modelu")
+
+        monkeypatch.setattr(voice_socket, "_gemini_connect", _boom)
+        channel = FakeChannel([{"type": "websocket.connect"}, _setup_event(admin)])
+        async_to_sync(voice_socket.run_voice_socket)(
+            {"type": "websocket", "path": "/ws/voice/"}, channel.receive, channel.send
+        )
+        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+
+        assert voice_socket.CONNECT_ERROR_MESSAGE in spoken
+        assert {"type": "websocket.close"} in channel.sent

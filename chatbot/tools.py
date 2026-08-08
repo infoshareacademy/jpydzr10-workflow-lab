@@ -67,11 +67,17 @@ class MachineStatusResult(BaseModel):
 
 
 class ConflictItem(BaseModel):
-    """Pojedynczy konflikt rezerwacji zwracany przez :func:`check_availability`."""
+    """Pojedynczy konflikt rezerwacji zwracany przez :func:`check_availability`.
+
+    Świadomie BEZ danych osobowych. Odpowiedź na pytanie „czy wolna?" to termin i
+    status kolidującej rezerwacji — imię i nazwisko osoby, która ją złożyła, nie
+    jest do tego potrzebne, a trafiłoby do modelu i mogło zostać wypowiedziane
+    dowolnemu dzwoniącemu (również takiemu, który ma wyłącznie prawo odczytu).
+    Kto rezerwował, widać w aplikacji, gdzie obowiązuje kontrola uprawnień.
+    """
 
     start: str
     end: str
-    person: str
     status: str
 
 
@@ -383,7 +389,6 @@ def check_availability(uid: str, start_date: str, end_date: str) -> Availability
             ConflictItem(
                 start=r.start_date.isoformat(),
                 end=r.end_date.isoformat(),
-                person=r.person,
                 status=r.status,
             )
             for r in conflicts_qs[:3]
