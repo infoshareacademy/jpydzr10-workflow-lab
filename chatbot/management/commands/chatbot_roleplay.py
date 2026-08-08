@@ -95,7 +95,9 @@ class Command(BaseCommand):
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
-                self.stdout.write(self.style.WARNING(f"Konto {username} ({role}) nie istnieje — SKIP."))
+                self.stdout.write(
+                    self.style.WARNING(f"Konto {username} ({role}) nie istnieje — SKIP.")
+                )
                 continue
             runs = max(1, opts["runs"])
             for probe in probes:
@@ -137,7 +139,16 @@ class Command(BaseCommand):
             transaction.set_rollback(True)
 
         ok, note = self._evaluate(action, allowed, proposed, proposed_action, error)
-        return ProbeResult(role, "read" if action is None else "write", question, allowed, proposed, error, ok, note)
+        return ProbeResult(
+            role,
+            "read" if action is None else "write",
+            question,
+            allowed,
+            proposed,
+            error,
+            ok,
+            note,
+        )
 
     def _evaluate(self, action, allowed, proposed, proposed_action, error):
         """Zwraca (ok, nota). Oceniamy spójność z RBAC, nie treść modelu."""

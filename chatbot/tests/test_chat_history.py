@@ -71,7 +71,9 @@ class TestChatHistory:
         monkeypatch.setattr(agent_module, "AGENT", agent)
         conv = Conversation.objects.create(user=user, title="t")
         Message.objects.create(conversation=conv, role=Message.Role.USER, content="Pytanie A")
-        Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Odpowiedź A")
+        Message.objects.create(
+            conversation=conv, role=Message.Role.ASSISTANT, content="Odpowiedź A"
+        )
         Message.objects.create(conversation=conv, role=Message.Role.ERROR, content="Błąd sieci")
         ask_chatbot(user=user, question="Pytanie B", conversation=conv)
         # 2 wpisy (user A + assistant A); ERROR pominięty, bieżące pytanie wykluczone.
@@ -82,7 +84,9 @@ class TestChatHistory:
         monkeypatch.setattr(agent_module, "AGENT", agent)
         conv = Conversation.objects.create(user=user, title="t")
         Message.objects.create(conversation=conv, role=Message.Role.USER, content="Wcześniejsze")
-        Message.objects.create(conversation=conv, role=Message.Role.ASSISTANT, content="Wcześniejsza odp")
+        Message.objects.create(
+            conversation=conv, role=Message.Role.ASSISTANT, content="Wcześniejsza odp"
+        )
         conv.pending_action = {"action": "create_reservation", "params": {}}
         conv.save(update_fields=["pending_action"])
         # Pytanie inne niż tak/nie → normalny flow agenta, ale z pending → BEZ historii.
@@ -99,7 +103,9 @@ class TestChatHistory:
         monkeypatch.setattr(agent_module, "AGENT", agent)
         user_b = User.objects.create_user("hist_b", "b@a.test", "pw-1234!Tajne")
         conv_b = Conversation.objects.create(user=user_b, title="B")
-        Message.objects.create(conversation=conv_b, role=Message.Role.USER, content="Sekret B: KOP-B99")
+        Message.objects.create(
+            conversation=conv_b, role=Message.Role.USER, content="Sekret B: KOP-B99"
+        )
         Message.objects.create(
             conversation=conv_b, role=Message.Role.ASSISTANT, content="Odpowiedź dla B"
         )

@@ -107,7 +107,9 @@ def confirm_pending(session: VoiceCallSession) -> str:
     from chatbot.services import _check_write_rate_limit
 
     if not _check_write_rate_limit(getattr(session.user, "pk", 0)):
-        logger.warning("Voice confirm ODMOWA (limit write): user=%s", getattr(session.user, "pk", None))
+        logger.warning(
+            "Voice confirm ODMOWA (limit write): user=%s", getattr(session.user, "pk", None)
+        )
         return _RATE_LIMIT_REFUSAL
     result = execute_confirmed_action(action, params, session.user)
     logger.info("Voice confirm: action=%s user=%s", action, getattr(session.user, "pk", None))
