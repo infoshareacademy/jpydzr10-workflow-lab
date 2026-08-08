@@ -34,10 +34,10 @@ User = get_user_model()
 
 # Rola (etykieta) → konto demo. Zgodne z seed_demo.
 ROLE_USER = {
-    "admin": "sebastian",
-    "kierownik": "seba1",
-    "magazynier": "seba2",
-    "montazysta": "seba3",
+    "admin": "adm",
+    "kierownik": "kier",
+    "magazynier": "mag",
+    "montazysta": "mont",
 }
 
 # Sondy. ``action=None`` → odczyt (bez propozycji). Inaczej write-akcja, której

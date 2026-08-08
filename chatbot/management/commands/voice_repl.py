@@ -12,7 +12,7 @@ Tożsamość rozmówcy podstawiana jest jak w realnym połączeniu — przez pod
 warstwa RBAC działają identycznie jak na żywo.
 
 Użycie:
-    make voice-repl                  # rola admin (konto sebastian)
+    make voice-repl                  # rola admin (konto adm)
     make voice-repl ROLE=montazysta  # read-only — agent odmówi zapisu
 
 W trakcie:  wpisz wypowiedź + Enter.  ``/interrupt`` = ramka barge-in (jak przerwanie
@@ -37,10 +37,10 @@ User = get_user_model()
 
 # Mapowanie roli → konto demo (spójne z ``chatbot_roleplay``). ``None`` = gość.
 ROLE_USERNAME: dict[str, str | None] = {
-    "admin": "sebastian",
-    "kierownik": "seba1",
-    "magazynier": "seba2",
-    "montazysta": "seba3",
+    "admin": "adm",
+    "kierownik": "kier",
+    "magazynier": "mag",
+    "montazysta": "mont",
     "guest": None,
 }
 

@@ -33,7 +33,7 @@ def test_seed_demo_default_creates_data():
     assert "Demo data zaseedowane" in out.getvalue()
     user_model = get_user_model()
     # Superuser stworzony
-    assert user_model.objects.filter(username="sebastian").exists()
+    assert user_model.objects.filter(username="adm").exists()
 
 
 @pytest.mark.django_db
@@ -93,14 +93,14 @@ def test_seed_demo_creates_role_accounts():
     )
     user_model = get_user_model()
 
-    admin = user_model.objects.get(username="sebastian")
+    admin = user_model.objects.get(username="adm")
     assert admin.is_superuser
     assert admin.email  # adres skrzynki demo (adresat powiadomień)
 
     expected = {
-        "seba1": EmployeeProfile.Function.KIEROWNIK,
-        "seba2": EmployeeProfile.Function.MAGAZYNIER,
-        "seba3": EmployeeProfile.Function.MONTAZYSTA,
+        "kier": EmployeeProfile.Function.KIEROWNIK,
+        "mag": EmployeeProfile.Function.MAGAZYNIER,
+        "mont": EmployeeProfile.Function.MONTAZYSTA,
     }
     for username, function in expected.items():
         user = user_model.objects.get(username=username)
@@ -115,12 +115,12 @@ def test_seed_demo_creates_role_accounts():
     # RBAC end-to-end: sygnał sync_groups_on_employee_save musi przypisać konta
     # ról do właściwych grup uprawnień (kierownik→Kierownicy, magazynier→
     # Magazynierzy). Montażysta celowo NIE ma grupy (least privilege).
-    seba1 = user_model.objects.get(username="seba1")
-    seba2 = user_model.objects.get(username="seba2")
-    seba3 = user_model.objects.get(username="seba3")
-    assert seba1.groups.filter(name="Kierownicy").exists()
-    assert seba2.groups.filter(name="Magazynierzy").exists()
-    assert not seba3.groups.exists()
+    kier = user_model.objects.get(username="kier")
+    mag = user_model.objects.get(username="mag")
+    mont = user_model.objects.get(username="mont")
+    assert kier.groups.filter(name="Kierownicy").exists()
+    assert mag.groups.filter(name="Magazynierzy").exists()
+    assert not mont.groups.exists()
 
 
 @pytest.mark.django_db

@@ -41,7 +41,7 @@ pytestmark = pytest.mark.e2e
 
 
 def test_login_flow(page: Page, base_url: str) -> None:
-    """Logging in as ``seba2`` redirects to the authenticated dashboard."""
+    """Logging in as ``mag`` redirects to the authenticated dashboard."""
     login(page, base_url, DEMO_USERNAME, DEMO_PASSWORD)
 
     # We should no longer be on the login page (no password field in the DOM)

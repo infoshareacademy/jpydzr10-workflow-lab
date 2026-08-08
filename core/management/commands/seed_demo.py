@@ -22,6 +22,15 @@ User = get_user_model()
 # czemu import działa na świeżym klonie niezależnie od nazwy katalogu nadrzędnego.
 M1_DATA_DIR = settings.BASE_DIR / "archive" / "milestone-1" / "data"
 
+# Loginy kont pokazowych — krótkie i jednoznaczne, bo podczas prezentacji wpisuje
+# się je na żywo przy przełączaniu ról. Hasło każdego konta jest równe loginowi
+# (patrz ``Command._demo_password``): to środowisko demonstracyjne z danymi
+# syntetycznymi, nie instalacja produkcyjna.
+ADMIN_USERNAME = "adm"
+KIEROWNIK_USERNAME = "kier"
+MAGAZYNIER_USERNAME = "mag"
+MONTER_USERNAME = "mont"
+
 
 class Command(BaseCommand):
     help = "Bulk seed demo data: superuser, budowy, maszyny, rezerwacje, serwis."
@@ -125,6 +134,28 @@ class Command(BaseCommand):
     MONTER_PHONE = os.environ.get("DEMO_MONTER_PHONE", "+48600000013")
 
     @staticmethod
+    def _demo_password(username: str) -> str:
+        """Hasło konta pokazowego = jego login (nadpisywalne ``DEMO_SEED_PASSWORD``).
+
+        Prezentacja wymaga kilku przelogowań pod presją czasu, a dane są w całości
+        syntetyczne — krótki, przewidywalny login/hasło eliminuje literówki na scenie.
+        """
+        return os.environ.get("DEMO_SEED_PASSWORD") or username
+
+    def _role_inbox(self, role: str) -> str:
+        """Adres roli w skrzynce pokazowej — wariant „+rola" tej samej skrzynki.
+
+        Poczta obsługuje sufiks po ``+`` jako ten sam adres docelowy, więc wszystkie
+        powiadomienia lądują w jednym miejscu (jeden ekran na pokazie), a mimo to w
+        nagłówku „Do:" widać, do której roli system je skierował — bez zakładania
+        osobnych kont pocztowych.
+        """
+        local, _, domain = self.DEMO_INBOX.partition("@")
+        if not domain or "+" in local:
+            return self.DEMO_INBOX
+        return f"{local}+{role}@{domain}"
+
+    @staticmethod
     def _release_phone(phone: str, keep_user_id: int) -> None:
         """Zwolnij numer trzymany przez innego pracownika (``phone`` jest unique).
 
@@ -139,10 +170,11 @@ class Command(BaseCommand):
         EmployeeProfile.objects.filter(phone=phone).exclude(user_id=keep_user_id).update(phone=None)
 
     def _ensure_superuser(self):
+        admin_inbox = self._role_inbox("admin")
         admin, created = User.objects.get_or_create(
-            username="sebastian",
+            username=ADMIN_USERNAME,
             defaults={
-                "email": self.DEMO_INBOX,
+                "email": admin_inbox,
                 "first_name": "Sebastian",
                 "last_name": "Nowak",
                 "is_staff": True,
@@ -150,15 +182,17 @@ class Command(BaseCommand):
             },
         )
         if created:
-            admin.set_password(self.DEMO_PASSWORD)
-            admin.save(update_fields=["password"])
-            self.stdout.write(self.style.SUCCESS("✓ Utworzono superusera 'sebastian'"))
+            self.stdout.write(self.style.SUCCESS(f"✓ Utworzono superusera '{ADMIN_USERNAME}'"))
         else:
             # Idempotentnie wyrównujemy e-mail (adresat powiadomień na pokazie).
-            if admin.email != self.DEMO_INBOX:
-                admin.email = self.DEMO_INBOX
+            if admin.email != admin_inbox:
+                admin.email = admin_inbox
                 admin.save(update_fields=["email"])
-            self.stdout.write("• Superuser 'sebastian' już istnieje.")
+            self.stdout.write(f"• Superuser '{ADMIN_USERNAME}' już istnieje.")
+        # Hasło wyrównujemy zawsze — konta pokazowe mają być przewidywalne nawet
+        # po ręcznej zmianie w panelu.
+        admin.set_password(self._demo_password(ADMIN_USERNAME))
+        admin.save(update_fields=["password"])
 
         # Telefon administratora (caller-ID na scenie) na profilu pracownika.
         profile = admin.profile
@@ -172,14 +206,14 @@ class Command(BaseCommand):
         """Tworzy trzy konta ról (kierownik / magazynier / montażysta) używane do
         pokazania zróżnicowanego RBAC. Idempotentne — ponowny seed nie duplikuje.
 
-        ``seba1``/``seba2`` (kierownik/magazynik) mają e-mail skrzynki demo, aby
-        utworzona przez nich rezerwacja wysłała potwierdzenie na pokazową skrzynkę.
+        Kierownik i magazynier mają e-mail skrzynki pokazowej, aby złożony wniosek
+        i jego zatwierdzenie były widoczne w jednym miejscu.
         """
         from accounts.models import EmployeeProfile
 
         accounts = [
             (
-                "seba1",
+                KIEROWNIK_USERNAME,
                 EmployeeProfile.Function.KIEROWNIK,
                 "Seba",
                 "Kierownik",
@@ -187,20 +221,20 @@ class Command(BaseCommand):
                 self.DEMO_INBOX,
             ),
             (
-                "seba2",
+                MAGAZYNIER_USERNAME,
                 EmployeeProfile.Function.MAGAZYNIER,
                 "Seba",
                 "Magazynier",
                 "+48600000012",
-                self.DEMO_INBOX,
+                self._role_inbox("magazynier"),
             ),
             (
-                "seba3",
+                MONTER_USERNAME,
                 EmployeeProfile.Function.MONTAZYSTA,
                 "Seba",
                 "Montażysta",
                 self.MONTER_PHONE,
-                "seba3@planer.local",
+                f"{MONTER_USERNAME}@planer.local",
             ),
         ]
         for username, function, first, last, phone, email in accounts:
@@ -214,9 +248,10 @@ class Command(BaseCommand):
                     "is_superuser": False,
                 },
             )
-            if created:
-                user.set_password(self.DEMO_PASSWORD)
-                user.save(update_fields=["password"])
+            if not created and user.email != email:
+                user.email = email
+            user.set_password(self._demo_password(username))
+            user.save(update_fields=["password", "email"])
             profile = user.profile
             self._release_phone(phone, user.pk)
             profile.function = function
@@ -224,7 +259,8 @@ class Command(BaseCommand):
             profile.save(update_fields=["function", "phone", "updated_at"])
         self.stdout.write(
             self.style.SUCCESS(
-                "✓ Konta demo ról: seba1 (kierownik), seba2 (magazynier), seba3 (montażysta)."
+                f"✓ Konta demo ról: {KIEROWNIK_USERNAME} (kierownik), "
+                f"{MAGAZYNIER_USERNAME} (magazynier), {MONTER_USERNAME} (montażysta)."
             )
         )
         self._preenroll_2fa()
@@ -234,12 +270,12 @@ class Command(BaseCommand):
     # dzięki temu rola jest "gotowa do pokazu" bez ręcznego skanowania QR.
     # Wartości base32 do wpisania w aplikacji authenticator są udokumentowane lokalnie.
     DEMO_TOTP_KEYS = {
-        "seba1": "1234567890abcdef1234567890abcdef12345678",
-        "seba2": "fedcba0987654321fedcba0987654321fedcba09",
+        KIEROWNIK_USERNAME: "1234567890abcdef1234567890abcdef12345678",
+        MAGAZYNIER_USERNAME: "fedcba0987654321fedcba0987654321fedcba09",
     }
 
     def _preenroll_2fa(self):
-        """Tworzy potwierdzone urządzenia TOTP dla seba1/seba2 (stałe sekrety)."""
+        """Tworzy potwierdzone urządzenia TOTP dla kierownika i magazyniera."""
         from django_otp.plugins.otp_totp.models import TOTPDevice
 
         for username, key in self.DEMO_TOTP_KEYS.items():
@@ -252,16 +288,20 @@ class Command(BaseCommand):
                 name="default",
                 defaults={"key": key, "confirmed": True},
             )
-        self.stdout.write(self.style.SUCCESS("✓ 2FA pre-enroll: seba1, seba2 (TOTP)."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✓ 2FA pre-enroll: {KIEROWNIK_USERNAME}, {MAGAZYNIER_USERNAME} (TOTP)."
+            )
+        )
 
     # Stałe PIN-y głosowe (drugi czynnik DTMF) kont demo — rola „gotowa do pokazu"
     # bez ręcznego ustawiania. Realne wartości pokazu czytamy z env (gitignored);
     # defaulty to NIE-realne placeholdery, by publiczny seed nie ujawniał PIN-ów demo.
     DEMO_VOICE_PINS = {
-        "sebastian": os.environ.get("DEMO_ADMIN_VOICE_PIN", "4729"),
-        "seba1": os.environ.get("DEMO_KIER_VOICE_PIN", "8317"),
-        "seba2": os.environ.get("DEMO_MAG_VOICE_PIN", "6284"),
-        "seba3": os.environ.get("DEMO_MONTER_VOICE_PIN", "5193"),
+        ADMIN_USERNAME: os.environ.get("DEMO_ADMIN_VOICE_PIN", "4729"),
+        KIEROWNIK_USERNAME: os.environ.get("DEMO_KIER_VOICE_PIN", "8317"),
+        MAGAZYNIER_USERNAME: os.environ.get("DEMO_MAG_VOICE_PIN", "6284"),
+        MONTER_USERNAME: os.environ.get("DEMO_MONTER_VOICE_PIN", "5193"),
     }
 
     def _preenroll_voice_pins(self):
@@ -280,7 +320,7 @@ class Command(BaseCommand):
                 continue
             set_voice_pin(user.profile, pin)
         self.stdout.write(
-            self.style.SUCCESS("✓ PIN głosowy pre-enroll: sebastian, seba1, seba2, seba3.")
+            self.style.SUCCESS("✓ PIN głosowy pre-enroll: " + ", ".join(self.DEMO_VOICE_PINS) + ".")
         )
 
     def _import_from_m1(self):

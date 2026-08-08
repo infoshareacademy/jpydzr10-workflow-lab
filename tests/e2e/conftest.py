@@ -30,9 +30,9 @@ if TYPE_CHECKING:  # pragma: no cover — typing only
 DEFAULT_BASE_URL = "http://localhost:8002"
 
 # Demo credentials seeded by ``manage.py seed_demo`` (password shared across the
-# four demo roles in the dev environment). ``seba2`` is the warehouse keeper —
+# four demo roles in the dev environment). ``mag`` is the warehouse keeper —
 # enough privilege to reach the dashboard, timeline and reservation form.
-DEMO_USERNAME = "seba2"
+DEMO_USERNAME = "mag"
 DEMO_PASSWORD = "Planer2026!"
 
 

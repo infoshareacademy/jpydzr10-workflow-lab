@@ -35,8 +35,8 @@ def test_system_instruction_is_terse_for_voice():
     # powrotowi gadatliwości (recytacja pól akcji = „bla bla czy potwierdzasz").
     instr = _system_instruction(None)
     assert "PRZECZYTAJ podgląd" not in instr  # usunięte źródło rozwlekłości
-    assert "1-2" in instr  # twardy limit długości tury
-    assert "zwięzły" in instr.lower()
+    assert "krótk" in instr.lower()  # limit długości tury
+    assert "JEDNO pytanie naraz" in instr  # rozmowa krok po kroku, nie kwestionariusz
     assert "potwierdzasz?" in instr  # zwięzły format potwierdzenia zamiast wyliczania pól
 
 
