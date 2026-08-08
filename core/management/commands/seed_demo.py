@@ -121,7 +121,22 @@ class Command(BaseCommand):
     # środowiska (gitignored ``.env``); realne numery telefonów to dane osobowe i
     # NIGDY nie trafiają do publicznego repo. Defaulty to placeholdery.
     ADMIN_PHONE = os.environ.get("DEMO_ADMIN_PHONE", "+48600000001")
+    KIEROWNIK_PHONE = os.environ.get("DEMO_KIER_PHONE", "+48600000011")
     MONTER_PHONE = os.environ.get("DEMO_MONTER_PHONE", "+48600000013")
+
+    @staticmethod
+    def _release_phone(phone: str, keep_user_id: int) -> None:
+        """Zwolnij numer trzymany przez innego pracownika (``phone`` jest unique).
+
+        Bez tego przepięcie numeru między rolami (np. z administratora na
+        kierownika) wywracałoby seed na ``IntegrityError`` przy każdym kolejnym
+        uruchomieniu.
+        """
+        from accounts.models import EmployeeProfile
+
+        if not phone:
+            return
+        EmployeeProfile.objects.filter(phone=phone).exclude(user_id=keep_user_id).update(phone=None)
 
     def _ensure_superuser(self):
         admin, created = User.objects.get_or_create(
@@ -148,6 +163,7 @@ class Command(BaseCommand):
         # Telefon administratora (caller-ID na scenie) na profilu pracownika.
         profile = admin.profile
         if profile.phone != self.ADMIN_PHONE:
+            self._release_phone(self.ADMIN_PHONE, admin.pk)
             profile.function = profile.Function.ADMIN
             profile.phone = self.ADMIN_PHONE
             profile.save(update_fields=["function", "phone", "updated_at"])
@@ -167,7 +183,7 @@ class Command(BaseCommand):
                 EmployeeProfile.Function.KIEROWNIK,
                 "Seba",
                 "Kierownik",
-                "+48600000011",
+                self.KIEROWNIK_PHONE,
                 self.DEMO_INBOX,
             ),
             (
@@ -202,6 +218,7 @@ class Command(BaseCommand):
                 user.set_password(self.DEMO_PASSWORD)
                 user.save(update_fields=["password"])
             profile = user.profile
+            self._release_phone(phone, user.pk)
             profile.function = function
             profile.phone = phone
             profile.save(update_fields=["function", "phone", "updated_at"])

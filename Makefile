@@ -84,6 +84,24 @@ superuser:
 seed:
 	uv run python manage.py seed_demo
 
+# --- Migawka bazy na czas pokazu -------------------------------------------
+# Stan bazy (rezerwacje, maszyny, konta) NIE jest wersjonowany w repozytorium —
+# `git checkout` cofa wyłącznie kod. Żeby próbny przebieg pokazu dało się
+# powtórzyć od tego samego punktu, zapisujemy migawkę Postgresa i wracamy do
+# niej jedną komendą. Plik trafia do `backups/` (ignorowany przez git).
+DEMO_DUMP ?= backups/demo_snapshot.dump
+PG_CONTAINER ?= kursowe-repo-8002
+
+demo-snapshot:
+	@mkdir -p backups
+	docker exec $(PG_CONTAINER) pg_dump -U planer -d planer_kursowy -Fc > $(DEMO_DUMP)
+	@echo "✓ Migawka zapisana: $(DEMO_DUMP) ($$(du -h $(DEMO_DUMP) | cut -f1))"
+
+demo-restore:
+	@test -f $(DEMO_DUMP) || { echo "✗ Brak migawki $(DEMO_DUMP) — najpierw 'make demo-snapshot'"; exit 1; }
+	docker exec -i $(PG_CONTAINER) pg_restore -U planer -d planer_kursowy --clean --if-exists --no-owner < $(DEMO_DUMP)
+	@echo "✓ Baza przywrócona z migawki $(DEMO_DUMP)"
+
 messages:
 	uv run python manage.py makemessages -l en --ignore=.venv --ignore=node_modules --ignore=static/vendor --ignore=archive
 

@@ -176,6 +176,55 @@ class FindAvailableMachinesResult(BaseModel):
 INSPECTIONS_LIST_LIMIT = 20
 
 
+def _spell_out_numerals(text: str) -> str:
+    """Zamień liczebniki zapisane słownie na cyfry („koparka dwa" → „koparka 2").
+
+    Transkrypcja mowy zwraca numer maszyny słownie znacznie częściej niż cyfrą,
+    a katalog numeruje egzemplarze cyframi — bez tej normalizacji „Koparka dwa"
+    nie trafia w „Koparka 2". Podmieniamy tylko samodzielne wyrazy, żeby nie
+    uszkodzić nazw zawierających je jako fragment.
+    """
+    out = text
+    for word, digit in _NUMERAL_WORDS.items():
+        out = re.sub(rf"\b{word}\b", digit, out, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", out).strip()
+
+
+# Liczebniki 1-12 w formach, które zwraca transkrypcja mowy (mianownik + biernik
+# rodzaju żeńskiego, bo „koparka"/„minikoparka"/„spawarka" są rodzaju żeńskiego).
+_NUMERAL_WORDS: dict[str, str] = {
+    "jeden": "1",
+    "jedna": "1",
+    "jedną": "1",
+    "pierwsza": "1",
+    "dwa": "2",
+    "dwie": "2",
+    "druga": "2",
+    "trzy": "3",
+    "trzecia": "3",
+    "cztery": "4",
+    "czwarta": "4",
+    "pięć": "5",
+    "piec": "5",
+    "piąta": "5",
+    "sześć": "6",
+    "szesc": "6",
+    "szósta": "6",
+    "siedem": "7",
+    "siódma": "7",
+    "osiem": "8",
+    "ósma": "8",
+    "dziewięć": "9",
+    "dziewiec": "9",
+    "dziewiąta": "9",
+    "dziesięć": "10",
+    "dziesiec": "10",
+    "dziesiąta": "10",
+    "jedenaście": "11",
+    "dwanaście": "12",
+}
+
+
 def _resolve_machine(raw: str):
     """Znajduje maszynę odpornie na warianty z rozpoznawania mowy (STT) — zwraca
     ``Machine`` albo ``None``.
@@ -217,13 +266,27 @@ def _resolve_machine(raw: str):
     #    → None, żeby agent dopytał / użył find_available_machines zamiast po cichu
     #    trafić losową maszynę. Wycofane wykluczamy (nie da się ich używać).
     active = Machine.objects.exclude(status=Machine.Status.WYCOFANA)
-    exact = list(active.filter(name__iexact=s)[:2])
-    if len(exact) == 1:
-        return exact[0]
-    if len(exact) > 1:
-        return None  # niejednoznaczne — nie zgaduj
-    partial = list(active.filter(name__icontains=s)[:2])
-    return partial[0] if len(partial) == 1 else None
+    #    Próbujemy wariantu wypowiedzianego („Koparka dwa") obok dosłownego —
+    #    transkrypcja mowy zapisuje numer egzemplarza słownie częściej niż cyfrą.
+    candidates = [s]
+    spoken = _spell_out_numerals(s)
+    if spoken != s:
+        candidates.append(spoken)
+
+    for candidate in candidates:
+        exact = list(active.filter(name__iexact=candidate)[:2])
+        if len(exact) == 1:
+            return exact[0]
+        if len(exact) > 1:
+            return None  # niejednoznaczne — nie zgaduj
+
+    for candidate in candidates:
+        partial = list(active.filter(name__icontains=candidate)[:2])
+        if len(partial) == 1:
+            return partial[0]
+        if len(partial) > 1:
+            return None  # niejednoznaczne — dopytaj zamiast losować
+    return None
 
 
 def get_machine_status(uid: str) -> MachineStatusResult:
