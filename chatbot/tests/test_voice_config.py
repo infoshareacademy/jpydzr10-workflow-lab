@@ -46,14 +46,16 @@ def test_system_instruction_keeps_confirm_contract():
 
 
 def test_system_instruction_pins_machine_name_pronunciation():
-    """Nazwa maszyny ma być czytana dosłownie, nie zamieniana na liczebnik porządkowy.
+    """Numer maszyny ma być czytany ze słowem „numer" — inaczej wpada w odmianę.
 
-    Rozmówca słyszał raz „minikoparka dwa", raz „druga minikoparka" — dla ucha to dwie
-    różne maszyny, a w systemie jedna. Instrukcja musi to rozstrzygać wprost.
+    Bez niego model mówił „koparkę jedną" / „minikoparkę drugą", co brzmi jak
+    kolejność, a nie jak nazwa egzemplarza. „Numer dwa" jest nieodmienne, więc
+    forma zostaje ta sama w każdym przypadku gramatycznym.
     """
     instr = _system_instruction(None)
+    assert "minikoparka numer dwa" in instr, "brak wzorca poprawnej wymowy"
     assert "druga minikoparka" in instr, "brak zakazu formy porządkowej"
-    assert "minikoparka dwa" in instr, "brak wzorca poprawnej wymowy"
+    assert "minikoparkę jedną" in instr, "brak zakazu formy odmienionej"
 
 
 def test_system_instruction_speaks_as_a_woman():

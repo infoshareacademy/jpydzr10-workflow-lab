@@ -226,3 +226,41 @@ def test_get_service_costs_excludes_older_records(machine):
         )
         result = tools.get_service_costs(days=30)
     assert result.record_count == 0
+
+
+class TestSpokenMachineNumber:
+    """Rozpoznanie maszyny, gdy numer pada w mowie — z „numer" i bez.
+
+    Agent czyta numery ze słowem „numer" („koparka numer dwa"), bo bez niego
+    liczebnik wpada w odmianę i wychodzi „koparkę drugą". Rozmówca powtarza tę
+    formę, więc normalizacja musi ją rozumieć — nie tracąc starych wariantów.
+    """
+
+    @pytest.mark.parametrize(
+        ("spoken", "expected"),
+        [
+            ("koparka numer jeden", "koparka 1"),
+            ("koparka nr 3", "koparka 3"),
+            ("minikoparka numer dwa", "minikoparka 2"),
+            ("koparka jeden", "koparka 1"),  # wariant bez „numer" nadal działa
+            ("M-0001", "M-0001"),  # identyfikator zostaje nietknięty
+        ],
+    )
+    def test_normalisation_strips_numer_and_spells_digits(self, spoken, expected):
+        assert tools._spell_out_numerals(spoken) == expected
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "spoken",
+        [
+            "koparka numer dwa",
+            "koparka dwa",
+            "Koparka numer 2",
+            "koparka nr 2",
+        ],
+    )
+    def test_machine_found_regardless_of_how_number_is_said(self, spoken):
+        machine = Machine.objects.create(
+            uid="KOP-902", name="Koparka 2", machine_type=Machine.Type.KOPARKA
+        )
+        assert tools._resolve_machine(spoken) == machine

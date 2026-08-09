@@ -183,14 +183,19 @@ INSPECTIONS_LIST_LIMIT = 20
 
 
 def _spell_out_numerals(text: str) -> str:
-    """Zamień liczebniki zapisane słownie na cyfry („koparka dwa" → „koparka 2").
+    """Sprowadza wypowiedziany numer maszyny do postaci z katalogu.
 
-    Transkrypcja mowy zwraca numer maszyny słownie znacznie częściej niż cyfrą,
-    a katalog numeruje egzemplarze cyframi — bez tej normalizacji „Koparka dwa"
-    nie trafia w „Koparka 2". Podmieniamy tylko samodzielne wyrazy, żeby nie
+    Robi dwie rzeczy: zamienia liczebniki słowne na cyfry („koparka dwa" →
+    „koparka 2") i usuwa słowo „numer"/„nr" („koparka numer dwa" → „koparka 2").
+
+    Transkrypcja mowy zwraca numer egzemplarza słownie znacznie częściej niż cyfrą,
+    a katalog numeruje je cyframi — bez tej normalizacji „Koparka dwa" nie trafia
+    w „Koparka 2". Słowo „numer" wypada, bo agent sam mówi „koparka numer dwa"
+    (inaczej liczebnik wpada w odmianę i wychodzi „koparkę drugą"), więc rozmówca
+    naturalnie powtarza tę formę. Podmieniamy tylko samodzielne wyrazy, żeby nie
     uszkodzić nazw zawierających je jako fragment.
     """
-    out = text
+    out = re.sub(r"\b(?:numer|nr\.?)\b", " ", text, flags=re.IGNORECASE)
     for word, digit in _NUMERAL_WORDS.items():
         out = re.sub(rf"\b{word}\b", digit, out, flags=re.IGNORECASE)
     return re.sub(r"\s+", " ", out).strip()
