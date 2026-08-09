@@ -19,6 +19,7 @@ from chatbot.voice_consumer import (
     propose_or_execute,
 )
 from chatbot.voice_session import VoiceCallSession, VoiceState
+from chatbot.voice_views import VOICE_NAME
 from machines.models import Machine
 
 User = get_user_model()
@@ -98,6 +99,13 @@ class TestVoiceWebhook:
         body = response.content.decode("utf-8")
         assert 'language="pl-PL"' in body
         assert 'ttsProvider="Google"' in body
+        # Bez jawnego ``voice`` ConversationRelay czyta polski tekst domyślnym głosem
+        # ANGIELSKIM (``en-US-Journey-O``) — brzmi jak syntezator sylabizujący nazwy.
+        # Lektor musi być polski i musi iść bez prefiksu providera.
+        assert f'voice="{VOICE_NAME}"' in body
+        assert VOICE_NAME.startswith("pl-PL-"), "lektor musi być polski"
+        assert "Google.pl-PL" not in body, "ConversationRelay nie przyjmuje prefiksu providera"
+        assert 'ttsLanguage="pl-PL"' in body
         assert 'transcriptionProvider="Google"' in body
         assert 'dtmfDetection="true"' in body
         assert 'interruptible="any"' in body

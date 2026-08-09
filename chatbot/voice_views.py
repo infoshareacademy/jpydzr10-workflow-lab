@@ -32,6 +32,10 @@ logger = logging.getLogger("chatbot")
 
 _NONCE_SALT = "voice-call-identity"
 
+# Lektor rozmowy telefonicznej. Rozmówca ocenia system w pierwszych sekundach, a nic
+# nie psuje wrażenia tak jak obcojęzyczny syntezator sylabizujący polskie nazwy.
+VOICE_NAME = "pl-PL-Chirp3-HD-Aoede"
+
 # TwiML odrzucający połączenie z numeru spoza białej listy — zwracany ZANIM
 # powstanie ConversationRelay, więc Gemini pozostaje nietknięty (zero tokenów).
 _REJECT_TWIML = (
@@ -106,7 +110,16 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
         '<?xml version="1.0" encoding="UTF-8"?>'
         "<Response><Connect>"
         f'<ConversationRelay url="{escape(ws_url)}" language="pl-PL" '
-        'ttsProvider="Google" transcriptionProvider="Google" '
+        # Głos MUSI być podany jawnie. Bez atrybutu ``voice`` ConversationRelay bierze
+        # swój domyślny — ``en-US-Journey-O`` — czyli AMERYKAŃSKI głos czytający polski
+        # tekst angielską fonetyką. ``language="pl-PL"`` tego NIE zmienia (ustawia STT
+        # i język TTS, nie lektora). Stąd wrażenie „maszyny czytającej wyrazy".
+        # ``Chirp3-HD`` to generatywna rodzina Google — dla ConversationRelay podaje się
+        # ją BEZ prefiksu providera (``pl-PL-…``, nie ``Google.pl-PL-…``).
+        # Pozostałe polskie głosy do podmiany jednym słowem: żeńskie Kore, Leda, Zephyr;
+        # męskie Charon, Orus, Puck, Fenrir.
+        f'ttsProvider="Google" voice="{VOICE_NAME}" ttsLanguage="pl-PL" '
+        'transcriptionProvider="Google" '
         # interruptible="any": mowa rozmówcy zatrzymuje TTS bota (barge-in po stronie Twilio).
         # ignoreBackchannel="true": „mhm/aha" nie liczą się jako przerwanie (mniej fałszywych cięć).
         # NIE ustawiamy reportInputDuringAgentSpeech="speech": pętla WS jest jednozadaniowa,
