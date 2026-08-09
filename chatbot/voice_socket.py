@@ -521,6 +521,29 @@ def _system_instruction(user) -> str:
     )
 
 
+def _new_speech(spoken: list[str], text: str) -> str:
+    """Zwraca tę część ``text``, której jeszcze nie wysłano do TTS.
+
+    Transkrypcja wyjścia modelu bywa dosyłana z nakładką (kolejna ramka powtarza
+    początek poprzedniej) albo zdublowana w całości. Wysłanie jej wprost sprawia, że
+    rozmówca słyszy urywek jeszcze raz — brzmi to jak zacinająca się płyta.
+    """
+    if not text:
+        return ""
+    already = "".join(spoken)
+    if not already:
+        return text
+    if text in already:  # pełny duplikat już wypowiedzianego fragmentu
+        return ""
+    if text.startswith(already):  # ramka kumulatywna — zostaje sam ogon
+        return text[len(already) :]
+    # Nakładka częściowa: znajdujemy najdłuższy wspólny styk ogona z początkiem.
+    overlap = min(len(already), len(text))
+    while overlap > 0 and not already.endswith(text[:overlap]):
+        overlap -= 1
+    return text[overlap:]
+
+
 async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -> None:
     """Przekazuje wypowiedź usera do Gemini i streamuje odpowiedź z powrotem do Twilio."""
     from google.genai import types
@@ -613,30 +636,39 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
 
         # Model gada AUDIO; tekst do ConversationRelay bierzemy z transkrypcji
         # wyjścia (``output_transcription``) — ``gmsg.text`` przy modalności AUDIO
-        # jest puste. Transkrypt jest strumieniowany przyrostowo.
+        # jest puste.
         ot = getattr(server_content, "output_transcription", None) if server_content else None
         text = getattr(ot, "text", None) if ot else None
-        if text:
-            session.add_turn("assistant", text)
-            spoken.append(text)
-            await _send_text(send, text, last=False)
-            saw_output = True
+        if text and not closed:
+            # Transkrypcja NIE zawsze jest czysto przyrostowa: potrafi wrócić z
+            # nakładką albo powtórzyć fragment, który już poszedł do TTS. Rozmówca
+            # słyszy wtedy „No cześć, wariacie! Mam — No cześć, wariacie! Mam…”, czyli
+            # zacinanie się i mówienie od nowa (zgłoszone 09.08). Wysyłamy więc tylko
+            # tę część, której jeszcze nie wypowiedziała.
+            chunk = _new_speech(spoken, text)
+            if chunk:
+                session.add_turn("assistant", chunk)
+                spoken.append(chunk)
+                await _send_text(send, chunk, last=False)
+                saw_output = True
 
         if server_content and getattr(server_content, "turn_complete", False):
             # ``saw_output`` chroni przed domknięciem tury ramką zaległą po turze
-            # poprzedniej (możliwą, gdy tamtą zamknął nasz timeout, a model dosłał
-            # ``turn_complete`` już po fakcie) — inaczej ucięlibyśmy odpowiedź,
-            # zanim model zdąży cokolwiek powiedzieć.
+            # poprzedniej — inaczej ucięlibyśmy odpowiedź, zanim model cokolwiek powie.
             if saw_output:
                 await _close_turn()
                 return
             continue
 
         if server_content and getattr(server_content, "generation_complete", False):
-            # Model skończył mówić — oddajemy głos OD RAZU. Zostajemy jeszcze na krótkie
-            # okno (patrz stała), bo zaraz po wypowiedzi może paść wywołanie narzędzia.
-            generation_done = True
+            # Model skończył mówić — domykamy i WYCHODZIMY od razu. Czekanie na
+            # ``turn_complete`` jest pułapką: po turze z narzędziem often nie przychodzi
+            # wcale, więc kończyło się limitem czasu, a ten anuluje odczyt z gniazda i
+            # rozsypuje sesję. Ramki porządkowe, które model dosyła po wypowiedzi
+            # (``sessionResumption``, zużycie tokenów), nie niosą mowy — spokojnie
+            # doczytamy je na początku następnej tury.
             await _close_turn()
+            return
 
     await _close_turn()
 

@@ -933,3 +933,87 @@ class TestTurnClosedExactlyOnce:
         closed_after = channel.seconds_until_turn_closed()
         assert closed_after is not None, "tura nigdy nie została domknięta"
         assert closed_after < 1.0, f"rozmówca czekał w ciszy {closed_after:.1f} s"
+
+
+class TestSpeechDeduplication:
+    """Powtórzona transkrypcja nie może trafić do TTS drugi raz.
+
+    Rozmowa z 09.08: rozmówca usłyszał „No cześć, wariacie! Mam No cześć, wariacie!
+    Mam Mam wolną…”. Model dosyła transkrypcję z nakładką, a most wysyłał ją wprost.
+    """
+
+    def test_exact_duplicate_is_dropped(self):
+        assert voice_socket._new_speech(["Dzień dobry."], "Dzień dobry.") == ""
+
+    def test_cumulative_frame_keeps_only_the_tail(self):
+        assert (
+            voice_socket._new_speech(["Mam wolną"], "Mam wolną Minikoparkę 1") == " Minikoparkę 1"
+        )
+
+    def test_partial_overlap_is_trimmed(self):
+        assert voice_socket._new_speech(["No cześć, wariacie! Mam"], "Mam wolną") == " wolną"
+
+    def test_fresh_text_passes_through(self):
+        assert voice_socket._new_speech(["Dzień dobry."], " Co dalej?") == " Co dalej?"
+
+    def test_first_chunk_passes_through(self):
+        assert voice_socket._new_speech([], "Dzień dobry.") == "Dzień dobry."
+
+    def test_repeated_greeting_is_not_spoken_twice(self, monkeypatch):
+        """Pełny przebieg: trzy nakładające się ramki → jedno czyste zdanie."""
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(text="No cześć, wariacie! Mam"),
+                    FakeMsg(text="No cześć, wariacie! Mam"),
+                    FakeMsg(text="Mam wolną Minikoparkę 1."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                ]
+            ]
+        )
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "cześć wariatko"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        spoken = "".join(f.get("token", "") for f in _sent_texts(channel))
+
+        assert spoken.count("No cześć, wariacie!") == 1, f"powtórzone powitanie: {spoken!r}"
+        assert spoken.count("Mam") == 1, f"powtórzone 'Mam': {spoken!r}"
+        assert "Minikoparkę 1" in spoken
+
+
+class TestTurnEndsWithoutWaitingForTurnComplete:
+    def test_generation_complete_returns_immediately(self, monkeypatch):
+        """Po zakończeniu mowy most NIE czeka na ``turn_complete`` (potrafi nie przyjść).
+
+        Czekanie kończyło się limitem czasu, a limit anuluje odczyt z gniazda modelu —
+        to właśnie rozsypywało sesję w rozmowach z 09.08.
+        """
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(text="Zarezerwowałam minikoparkę jeden."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                ],
+                [FakeMsg(text="Coś jeszcze?")],
+            ]
+        )
+        # Gdyby most czekał na 'turn_complete', poszedłby w ten limit.
+        monkeypatch.setattr(voice_socket, "POST_GENERATION_GRACE_SECONDS", 30.0)
+        monkeypatch.setattr(voice_socket, "TURN_IDLE_TIMEOUT_SECONDS", 30.0)
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "zarezerwuj"}),
+            _ws_text({"type": "prompt", "voicePrompt": "dzięki"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+
+        assert len(session.client_contents) == 2, "druga wypowiedź nie dotarła do modelu"
+        assert channel.seconds_until_turn_closed() < 1.0
