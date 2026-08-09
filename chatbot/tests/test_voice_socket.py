@@ -15,6 +15,7 @@ Każdy test efektu w bazie ma swój wariant „anty-teatr" — gdyby usunąć ko
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import date, timedelta
 
@@ -65,9 +66,17 @@ class _FakeTranscript:
 
 
 class FakeServerContent:
-    def __init__(self, *, interrupted=False, turn_complete=False, output_text=None):
+    def __init__(
+        self,
+        *,
+        interrupted=False,
+        turn_complete=False,
+        generation_complete=False,
+        output_text=None,
+    ):
         self.interrupted = interrupted
         self.turn_complete = turn_complete
+        self.generation_complete = generation_complete
         # Realny protokół AUDIO: tekst asystenta przychodzi jako transkrypt wyjścia
         # (``output_transcription``), nie jako ``gmsg.text`` (które przy AUDIO jest puste).
         self.output_transcription = (
@@ -105,6 +114,26 @@ class FakeGeminiSession:
         batch = self._turns.pop(0) if self._turns else []
         for msg in batch:
             yield msg
+
+
+class HangingGeminiSession(FakeGeminiSession):
+    """Sesja, która po wyczerpaniu ramek NIE kończy strumienia, tylko wisi.
+
+    Tak zachowuje się prawdziwe gniazdo Gemini: ``receive()`` czeka na kolejną
+    ramkę dopóki sesja żyje. ``FakeGeminiSession`` kończy generator po ostatniej
+    ramce, więc pętla tury zawsze grzecznie wracała i awaria „modelu, który nie
+    domknął tury" była w testach niewidoczna — a na żywym połączeniu wieszała most.
+    """
+
+    def __init__(self, turns, *, hang_seconds=30.0):
+        super().__init__(turns)
+        self._hang_seconds = hang_seconds
+
+    async def receive(self):
+        batch = self._turns.pop(0) if self._turns else []
+        for msg in batch:
+            yield msg
+        await asyncio.sleep(self._hang_seconds)
 
 
 class FakeConnect:
@@ -714,3 +743,120 @@ class TestVoiceFailureRecovery:
 
         assert voice_socket.CONNECT_ERROR_MESSAGE in spoken
         assert {"type": "websocket.close"} in channel.sent
+
+
+# =============================================================================
+# DOMYKANIE TURY — model, który nie wysłał ``turn_complete``
+# =============================================================================
+#
+# Regresja z żywego połączenia (rozmowa CA189c74…, 09.08): po odesłaniu wyniku
+# narzędzia model powiedział swoje i przysłał ``generation_complete``, ale
+# ``turn_complete`` nie przyszedł nigdy. Most czekał na niego w nieskończoność i
+# przestał czytać ramki z Twilio — dzwoniący usłyszał urwane zdanie, a potem ciszę
+# aż do rozłączenia. Testy używają ``HangingGeminiSession``, bo to dopiero
+# wiszący strumień (a nie grzecznie zakończony) odtwarza tamte warunki.
+
+
+class TestTurnClosingWithoutTurnComplete:
+    def test_generation_complete_alone_closes_turn(self, monkeypatch):
+        """Sam ``generation_complete`` musi domknąć turę (ramka ``last``)."""
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(text="Mam minikoparkę numer M-0001."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                ]
+            ]
+        )
+        monkeypatch.setattr(voice_socket, "POST_GENERATION_GRACE_SECONDS", 0.05)
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "jaka minikoparka jest wolna"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        frames = _sent_texts(channel)
+
+        assert any(f.get("last") for f in frames), "tura nie została domknięta ramką last=True"
+        spoken = " ".join(f.get("token", "") for f in frames)
+        assert "M-0001" in spoken
+
+    def test_silent_model_does_not_freeze_the_call(self, monkeypatch):
+        """Model milczy bez zapowiedzi — most i tak wraca do słuchania rozmówcy."""
+        admin = _admin()
+        session = HangingGeminiSession([[FakeMsg(text="Chwileczkę.")], [FakeMsg(text="Gotowe.")]])
+        monkeypatch.setattr(voice_socket, "TURN_IDLE_TIMEOUT_SECONDS", 0.05)
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "pierwsze pytanie"}),
+            _ws_text({"type": "prompt", "voicePrompt": "drugie pytanie"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+
+        # Sedno regresji: DRUGA wypowiedź w ogóle dotarła do modelu. Przed poprawką
+        # pętla wisiała na pierwszej turze i nikt już nie czytał ramek z Twilio.
+        assert len(session.client_contents) == 2
+        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+        assert "Gotowe." in spoken
+
+    def test_reservation_by_voice_survives_missing_turn_complete(self, monkeypatch):
+        """Pełny scenariusz demo: rezerwacja przez narzędzie, bez ``turn_complete``."""
+        admin = _admin()
+        machine = Machine.objects.create(
+            uid="M-9001", name="Minikoparka testowa", machine_type="minikoparka"
+        )
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(
+                        tool_call=FakeToolCall(
+                            [FakeFC("fc1", "create_reservation", _reservation_args(machine))]
+                        )
+                    ),
+                    FakeMsg(text="Zarezerwowałem minikoparkę testową."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                ]
+            ]
+        )
+        monkeypatch.setattr(voice_socket, "POST_GENERATION_GRACE_SECONDS", 0.05)
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "zarezerwuj minikoparkę na jutro"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        frames = _sent_texts(channel)
+
+        assert len(session.tool_responses) == 1, "wynik narzędzia nie wrócił do modelu"
+        assert any(f.get("last") for f in frames), "tura nie została domknięta"
+        spoken = " ".join(f.get("token", "") for f in frames)
+        assert "Zarezerwowałem" in spoken
+
+    def test_stale_turn_complete_does_not_cut_next_answer(self, monkeypatch):
+        """Zaległe ``turn_complete`` z poprzedniej tury nie ucina następnej odpowiedzi."""
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                # Tura 2 zaczyna się od ramki domykającej, która „spóźniła się" z tury 1.
+                [
+                    FakeMsg(server_content=FakeServerContent(turn_complete=True)),
+                    FakeMsg(text="Wolna jest koparka numer M-0004."),
+                    FakeMsg(server_content=FakeServerContent(turn_complete=True)),
+                ]
+            ]
+        )
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "co jest wolne"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+
+        assert "M-0004" in spoken, "odpowiedź ucięta przez zaległą ramkę domykającą"

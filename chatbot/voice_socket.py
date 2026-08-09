@@ -32,6 +32,7 @@ Channels; pętla WS to surowe ASGI obsługiwane natywnie przez uvicorn).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -76,6 +77,21 @@ CONNECT_ERROR_MESSAGE = (
 # Po tylu nieudanych turach z rzędu przestajemy udawać, że rozmowa trwa: kolejne
 # próby na zerwanej sesji i tak padną, a rozmówca w kółko słyszy „powtórz”.
 MAX_TURN_FAILURES = 2
+
+# Model nie zawsze domyka turę ``turn_complete``. Zaobserwowane na żywym połączeniu
+# (rozmowa CA189c74…): po odesłaniu wyniku narzędzia przyszła wypowiedź modelu i
+# ``generation_complete``, ale ``turn_complete`` NIE przyszedł już nigdy. Pętla tury
+# czekała na niego w nieskończoność, więc most przestał czytać ramki z Twilio —
+# rozmówca mówił do mikrofonu, którego nikt nie słuchał, i słyszał ciszę aż do
+# rozłączenia. Stąd DWA niezależne wyjścia awaryjne poniżej.
+#
+# Po ``generation_complete`` czekamy jeszcze chwilę na ``turn_complete``, bo w
+# poprawnych turach potrafi przyjść z zauważalnym opóźnieniem (w tej samej rozmowie
+# 2,4 s). Okno musi być WYRAŹNIE większe, inaczej ucinamy zdrowe tury.
+POST_GENERATION_GRACE_SECONDS = 4.0
+# Siatka na wszystko inne: model milczy, choć nie zapowiedział końca generowania.
+# Wartość hojna — to bezpiecznik na patologię, nie element normalnego rytmu rozmowy.
+TURN_IDLE_TIMEOUT_SECONDS = 15.0
 
 
 # =============================================================================
@@ -488,7 +504,29 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
         turns={"role": "user", "parts": [{"text": prompt_for_model}]}, turn_complete=True
     )
 
-    async for gmsg in gsession.receive():
+    # Iterujemy JAWNIE (zamiast ``async for``), bo każde oczekiwanie na ramkę musi
+    # mieć limit czasu — patrz komentarz przy ``POST_GENERATION_GRACE_SECONDS``.
+    stream = gsession.receive().__aiter__()
+    generation_done = False  # model zapowiedział koniec generowania
+    saw_output = False  # w TEJ turze przyszła już treść albo wywołanie narzędzia
+
+    while True:
+        timeout = POST_GENERATION_GRACE_SECONDS if generation_done else TURN_IDLE_TIMEOUT_SECONDS
+        try:
+            gmsg = await asyncio.wait_for(anext(stream), timeout)
+        except StopAsyncIteration:
+            # Strumień tury zamknięty bez ``turn_complete`` — i tak domykamy poniżej,
+            # żeby Twilio wypowiedziało bufor i wróciło do słuchania.
+            break
+        except TimeoutError:
+            logger.warning(
+                "Voice WS: model nie domknął tury (call_sid=%s, po generowaniu=%s) — "
+                "domykam po stronie mostu.",
+                session.call_sid,
+                generation_done,
+            )
+            break
+
         tool_call = getattr(gmsg, "tool_call", None)
         if tool_call and getattr(tool_call, "function_calls", None):
             responses = []
@@ -501,6 +539,10 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
                     types.FunctionResponse(id=fc.id, name=fc.name, response={"result": result})
                 )
             await gsession.send_tool_response(function_responses=responses)
+            # Po wyniku narzędzia model generuje odpowiedź od nowa — poprzednia
+            # zapowiedź końca generowania jest już nieaktualna.
+            generation_done = False
+            saw_output = True
             continue
 
         server_content = getattr(gmsg, "server_content", None)
@@ -517,10 +559,22 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
         if text:
             session.add_turn("assistant", text)
             await _send_text(send, text, last=False)
+            saw_output = True
 
         if server_content and getattr(server_content, "turn_complete", False):
-            await _send_text(send, "", last=True)
-            return
+            # ``saw_output`` chroni przed domknięciem tury ramką zaległą po turze
+            # poprzedniej (możliwą, gdy tamtą zamknął nasz timeout, a model dosłał
+            # ``turn_complete`` już po fakcie) — inaczej ucięlibyśmy odpowiedź,
+            # zanim model zdąży cokolwiek powiedzieć.
+            if saw_output:
+                await _send_text(send, "", last=True)
+                return
+            continue
+
+        if server_content and getattr(server_content, "generation_complete", False):
+            generation_done = True
+
+    await _send_text(send, "", last=True)
 
 
 async def run_voice_socket(scope, receive, send) -> None:
