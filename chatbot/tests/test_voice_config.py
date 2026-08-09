@@ -54,3 +54,33 @@ def test_system_instruction_pins_machine_name_pronunciation():
     instr = _system_instruction(None)
     assert "druga minikoparka" in instr, "brak zakazu formy porządkowej"
     assert "minikoparka dwa" in instr, "brak wzorca poprawnej wymowy"
+
+
+def test_system_instruction_speaks_as_a_woman():
+    """Lektor jest damski, więc asystentka mówi o sobie w rodzaju żeńskim."""
+    instr = _system_instruction(None)
+    assert "sprawdziłam" in instr
+    assert "KOBIETĄ" in instr
+
+
+def test_system_instruction_mirrors_casual_greeting():
+    """Na zagajenie »cześć wariatko« odpowiada tym samym tonem — raz, nie w kółko."""
+    instr = _system_instruction(None)
+    assert "wariacie" in instr or "wariatko" in instr, "brak reguły dopasowania tonu"
+    assert "RAZ" in instr, "brak ograniczenia, żeby nie powtarzać zwrotu w kółko"
+
+
+def test_system_instruction_reuses_data_for_next_machine():
+    """Kolejna maszyna »na tych samych warunkach« = przepisanie danych, bez dopytywania."""
+    instr = _system_instruction(None)
+    assert "KOLEJNA MASZYNA" in instr
+    assert "PRZEPISZ" in instr
+
+
+def test_rule_numbering_has_no_duplicates():
+    """Numeracja reguł musi być ciągła — duplikat myli model przy odwołaniach."""
+    import re
+
+    numbers = [int(m) for m in re.findall(r"^(\d+)\.", _system_instruction(None), re.MULTILINE)]
+    assert numbers == sorted(set(numbers)), f"numeracja reguł się dubluje: {numbers}"
+    assert numbers == list(range(1, len(numbers) + 1)), f"numeracja nieciągła: {numbers}"

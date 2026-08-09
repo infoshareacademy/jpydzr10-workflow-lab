@@ -100,10 +100,12 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
     # Greeting jest TTS-owany przez Twilio na starcie i sygnalizuje rozmówcy, że
     # to JEGO kolej — musi wprost zapraszać do mówienia (inaczej rozmówca czeka
     # w ciszy, nie wiedząc że ma zacząć). Krótko, po ludzku.
+    # „Asystentka”, nie „asystent” — lektor jest damski (patrz VOICE_NAME), a rozmówca
+    # zwraca się do niej tak, jak się przedstawi.
     greeting = (
-        "Dzień dobry, tu asystent Planera Maszyn Budowlanych. Powiedz, w czym mogę pomóc."
+        "Dzień dobry, tu asystentka Planera Maszyn Budowlanych. Powiedz, w czym mogę pomóc."
         if user is not None
-        else "Dzień dobry, tu asystent Planera Maszyn. Masz dostęp tylko do odczytu — o co chcesz zapytać?"
+        else "Dzień dobry, tu asystentka Planera Maszyn. Masz dostęp tylko do odczytu — o co chcesz zapytać?"
     )
     user_id = str(user.pk) if user is not None else "guest"
     return (
