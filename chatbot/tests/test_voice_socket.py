@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from datetime import date, timedelta
 
 import pytest
@@ -153,6 +154,10 @@ class FakeChannel:
     def __init__(self, events):
         self._events = list(events)
         self.sent = []
+        # Znaczniki czasu wysyłki — dla rozmówcy liczy się MOMENT, w którym usłyszał
+        # koniec zdania, a nie moment, w którym most zakończył obsługę tury.
+        self.sent_at = []
+        self.created_at = time.monotonic()
 
     async def receive(self):
         if self._events:
@@ -161,6 +166,16 @@ class FakeChannel:
 
     async def send(self, message):
         self.sent.append(message)
+        self.sent_at.append(time.monotonic() - self.created_at)
+
+    def seconds_until_turn_closed(self):
+        """Ile sekund od startu poszła pierwsza ramka domykająca (``last``)."""
+        for offset, msg in zip(self.sent_at, self.sent, strict=True):
+            if msg.get("type") != "websocket.send":
+                continue
+            if json.loads(msg["text"]).get("last"):
+                return offset
+        return None
 
 
 def _ws_text(payload: dict) -> dict:
@@ -860,3 +875,61 @@ class TestTurnClosingWithoutTurnComplete:
         spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
 
         assert "M-0004" in spoken, "odpowiedź ucięta przez zaległą ramkę domykającą"
+
+
+class TestTurnClosedExactlyOnce:
+    def test_generation_then_turn_complete_sends_single_last_frame(self, monkeypatch):
+        """Dwa sygnały końca (``generation_complete`` + ``turn_complete``) = jedna ramka ``last``.
+
+        Turę domykamy już na pierwszym z nich, żeby rozmówca nie czekał w ciszy. Druga
+        ramka ``last`` kazałaby Twilio domknąć wypowiedź, której już nie ma.
+        """
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(text="Zarezerwowane."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                    FakeMsg(server_content=FakeServerContent(turn_complete=True)),
+                ]
+            ]
+        )
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "potwierdzam"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+
+        last_frames = [f for f in _sent_texts(channel) if f.get("last")]
+        assert len(last_frames) == 1, (
+            f"oczekiwano jednej ramki domykającej, jest {len(last_frames)}"
+        )
+
+    def test_turn_closes_before_grace_window_elapses(self, monkeypatch):
+        """Domknięcie idzie NATYCHMIAST po ``generation_complete``, nie po odczekaniu okna."""
+        admin = _admin()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(text="Wolna jest minikoparka dwa."),
+                    FakeMsg(server_content=FakeServerContent(generation_complete=True)),
+                ]
+            ]
+        )
+        # Okno celowo długie: gdyby domknięcie czekało na jego upływ, rozmówca
+        # wysłuchałby pięciu sekund ciszy i zaczął powtarzać pytanie — dokładnie to
+        # zgłosił po rozmowie z 09.08.
+        monkeypatch.setattr(voice_socket, "POST_GENERATION_GRACE_SECONDS", 5.0)
+        events = [
+            {"type": "websocket.connect"},
+            _setup_event(admin),
+            _ws_text({"type": "prompt", "voicePrompt": "co jest wolne"}),
+            {"type": "websocket.disconnect"},
+        ]
+        channel = _run_socket(events, session, monkeypatch)
+
+        closed_after = channel.seconds_until_turn_closed()
+        assert closed_after is not None, "tura nigdy nie została domknięta"
+        assert closed_after < 1.0, f"rozmówca czekał w ciszy {closed_after:.1f} s"

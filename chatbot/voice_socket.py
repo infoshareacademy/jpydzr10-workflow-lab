@@ -85,10 +85,13 @@ MAX_TURN_FAILURES = 2
 # rozmówca mówił do mikrofonu, którego nikt nie słuchał, i słyszał ciszę aż do
 # rozłączenia. Stąd DWA niezależne wyjścia awaryjne poniżej.
 #
-# Po ``generation_complete`` czekamy jeszcze chwilę na ``turn_complete``, bo w
-# poprawnych turach potrafi przyjść z zauważalnym opóźnieniem (w tej samej rozmowie
-# 2,4 s). Okno musi być WYRAŹNIE większe, inaczej ucinamy zdrowe tury.
-POST_GENERATION_GRACE_SECONDS = 4.0
+# ``generation_complete`` = model skończył mówić. Turę domykamy WTEDY, nie czekając na
+# ``turn_complete``: rozmówca słyszy wtedy koniec zdania i od razu może mówić. Czekanie
+# na spóźniony sygnał (2,4 s w zmierzonej turze, a bywa że nie przychodzi wcale) jest w
+# słuchawce nieodróżnialne od zawieszenia — rozmówca zaczyna powtarzać pytanie.
+# To okno służy już tylko złapaniu narzędzia wywołanego TUŻ po wypowiedzi; TTS jest
+# domknięty wcześniej, więc rozmowy nie blokuje.
+POST_GENERATION_GRACE_SECONDS = 0.8
 # Siatka na wszystko inne: model milczy, choć nie zapowiedział końca generowania.
 # Wartość hojna — to bezpiecznik na patologię, nie element normalnego rytmu rozmowy.
 TURN_IDLE_TIMEOUT_SECONDS = 15.0
@@ -450,6 +453,11 @@ def _system_instruction(user) -> str:
         "2. Zadawaj JEDNO pytanie naraz i czekaj na odpowiedź. Rozmowa idzie krok po kroku — "
         "nigdy nie wypytuj o kilka rzeczy w jednym zdaniu.\n"
         "3. Daty mów naturalnie („dziewiątego sierpnia”), nie czytaj formatu z cyfr i myślników.\n"
+        "4. Nazwę maszyny wymawiaj DOKŁADNIE tak, jak brzmi w systemie. Liczba w nazwie jest jej "
+        "częścią, a nie kolejnością: „Minikoparka 2” to „minikoparka dwa” — nigdy „druga "
+        "minikoparka”, „minikoparka numer dwa” ani „minikoparka II”. Tak samo przy wyliczaniu "
+        "kilku maszyn: „minikoparka dwa i minikoparka trzy”. Ta sama zasada dla każdego typu "
+        "(koparka, podnośnik nożycowy, agregat prądotwórczy).\n"
         "\n"
         "CZEGO NIGDY NIE ROBISZ\n"
         "4. Nie zmyślasz. Nie znasz żadnego faktu o maszynach, terminach ani rezerwacjach, "
@@ -499,6 +507,10 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
     # RBAC serwerowy w ``propose_or_execute`` i tak jest twardą warstwą autoryzacji,
     # ale sanityzacja ogranicza prompt-leak i wzorce wstrzyknięcia w mowie.
     session.add_turn("user", voice_prompt)
+    # Transkrypt trafia też do logu: po rozmowie telefonicznej NIE ZOSTAJE nic innego,
+    # z czego dałoby się odtworzyć, co poszło nie tak (nagrania nie robimy). Bez tego
+    # diagnoza „bot się zaciął" opiera się wyłącznie na pamięci rozmówcy.
+    logger.info("Voice ◀ rozmówca [%s]: %s", session.call_sid, voice_prompt)
     prompt_for_model = wrap_user_input(sanitize_user_input(voice_prompt))
     await gsession.send_client_content(
         turns={"role": "user", "parts": [{"text": prompt_for_model}]}, turn_complete=True
@@ -509,6 +521,18 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
     stream = gsession.receive().__aiter__()
     generation_done = False  # model zapowiedział koniec generowania
     saw_output = False  # w TEJ turze przyszła już treść albo wywołanie narzędzia
+    closed = False  # ramka ``last`` poszła — TTS domknięty, rozmówca ma głos
+    spoken: list[str] = []  # całość wypowiedzi bota w tej turze (do logu)
+
+    async def _close_turn() -> None:
+        """Domyka turę u Twilio dokładnie raz i zapisuje wypowiedź do logu."""
+        nonlocal closed
+        if closed:
+            return
+        closed = True
+        await _send_text(send, "", last=True)
+        if spoken:
+            logger.info("Voice ▶ asystent [%s]: %s", session.call_sid, "".join(spoken))
 
     while True:
         timeout = POST_GENERATION_GRACE_SECONDS if generation_done else TURN_IDLE_TIMEOUT_SECONDS
@@ -545,6 +569,11 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
             saw_output = True
             continue
 
+        if closed:
+            # Turę już domknęliśmy (model zapowiedział koniec mówienia), a to nie było
+            # wywołanie narzędzia — nie ma na co dłużej czekać, oddajemy głos rozmówcy.
+            return
+
         server_content = getattr(gmsg, "server_content", None)
         if server_content and getattr(server_content, "interrupted", False):
             # Barge-in po stronie Gemini (różny od ramki ``interrupt`` z Twilio):
@@ -558,6 +587,7 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
         text = getattr(ot, "text", None) if ot else None
         if text:
             session.add_turn("assistant", text)
+            spoken.append(text)
             await _send_text(send, text, last=False)
             saw_output = True
 
@@ -567,14 +597,17 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
             # ``turn_complete`` już po fakcie) — inaczej ucięlibyśmy odpowiedź,
             # zanim model zdąży cokolwiek powiedzieć.
             if saw_output:
-                await _send_text(send, "", last=True)
+                await _close_turn()
                 return
             continue
 
         if server_content and getattr(server_content, "generation_complete", False):
+            # Model skończył mówić — oddajemy głos OD RAZU. Zostajemy jeszcze na krótkie
+            # okno (patrz stała), bo zaraz po wypowiedzi może paść wywołanie narzędzia.
             generation_done = True
+            await _close_turn()
 
-    await _send_text(send, "", last=True)
+    await _close_turn()
 
 
 async def run_voice_socket(scope, receive, send) -> None:

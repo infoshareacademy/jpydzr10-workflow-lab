@@ -43,3 +43,14 @@ def test_system_instruction_is_terse_for_voice():
 def test_system_instruction_keeps_confirm_contract():
     # Zwięzłość NIE może zdjąć kontraktu bezpieczeństwa: write → potwierdzenie → confirm.
     assert CONFIRM_TOOL in _system_instruction(None)
+
+
+def test_system_instruction_pins_machine_name_pronunciation():
+    """Nazwa maszyny ma być czytana dosłownie, nie zamieniana na liczebnik porządkowy.
+
+    Rozmówca słyszał raz „minikoparka dwa", raz „druga minikoparka" — dla ucha to dwie
+    różne maszyny, a w systemie jedna. Instrukcja musi to rozstrzygać wprost.
+    """
+    instr = _system_instruction(None)
+    assert "druga minikoparka" in instr, "brak zakazu formy porządkowej"
+    assert "minikoparka dwa" in instr, "brak wzorca poprawnej wymowy"
