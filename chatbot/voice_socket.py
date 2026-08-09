@@ -33,6 +33,7 @@ Channels; pętla WS to surowe ASGI obsługiwane natywnie przez uvicorn).
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from typing import Any
@@ -67,9 +68,12 @@ TEMPERATURE = 0.2
 # Awaria po stronie modelu/sieci w trakcie tury. Dzwoniący trzyma słuchawkę przy
 # uchu, więc MUSI usłyszeć cokolwiek — milczący socket jest nieodróżnialny od
 # zepsutego systemu i kończy się rozłączeniem przez rozmówcę.
-TURN_ERROR_MESSAGE = "Przepraszam, nie dosłyszałem. Możesz powtórzyć?"
+# Formy ŻEŃSKIE — lektor jest damski (``VOICE_NAME``), a te zdania wypowiada ta sama
+# asystentka co resztę rozmowy. „Nie dosłyszałem" damskim głosem zgrzyta i od razu
+# zdradza, że to gotowiec systemu, a nie rozmowa.
+TURN_ERROR_MESSAGE = "Przepraszam, nie dosłyszałam. Możesz powtórzyć?"
 FATAL_ERROR_MESSAGE = (
-    "Przepraszam, straciłem połączenie z systemem. Zadzwoń proszę jeszcze raz za chwilę."
+    "Przepraszam, straciłam połączenie z systemem. Zadzwoń proszę jeszcze raz za chwilę."
 )
 CONNECT_ERROR_MESSAGE = (
     "Przepraszam, system jest chwilowo niedostępny. Zadzwoń proszę jeszcze raz za chwilę."
@@ -85,13 +89,17 @@ MAX_TURN_FAILURES = 2
 # rozmówca mówił do mikrofonu, którego nikt nie słuchał, i słyszał ciszę aż do
 # rozłączenia. Stąd DWA niezależne wyjścia awaryjne poniżej.
 #
-# ``generation_complete`` = model skończył mówić. Turę domykamy WTEDY, nie czekając na
-# ``turn_complete``: rozmówca słyszy wtedy koniec zdania i od razu może mówić. Czekanie
-# na spóźniony sygnał (2,4 s w zmierzonej turze, a bywa że nie przychodzi wcale) jest w
-# słuchawce nieodróżnialne od zawieszenia — rozmówca zaczyna powtarzać pytanie.
-# To okno służy już tylko złapaniu narzędzia wywołanego TUŻ po wypowiedzi; TTS jest
-# domknięty wcześniej, więc rozmowy nie blokuje.
-POST_GENERATION_GRACE_SECONDS = 0.8
+# ``generation_complete`` = model skończył mówić — wtedy domykamy TTS, żeby rozmówca
+# usłyszał koniec zdania i mógł od razu mówić. Ale pętli NIE przerywamy: model dosyła
+# jeszcze ``sessionResumption`` i dopiero potem ``turn_complete``, a przerwanie odczytu
+# w środku psuje strumień (patrz niżej). Zmierzone na żywej rozmowie: ``turn_complete``
+# przyszedł 1,4 s po ``generation_complete``, więc okno musi być wyraźnie większe.
+#
+# ⚠️ Timeout tutaj NIE jest darmowy: anuluje trwający odczyt z gniazda modelu. Zbyt
+# krótkie okno (0,8 s — wersja z 09.08) wywoływało go w każdej zdrowej turze i rozsypało
+# rozmowę: odpowiedzi zaczęły wracać z opóźnieniem o całą turę, aż gniazdo przestało
+# odbierać keepalive i sesja padła. Ta wartość ma być ostatecznością, nie rytmem pracy.
+POST_GENERATION_GRACE_SECONDS = 5.0
 # Siatka na wszystko inne: model milczy, choć nie zapowiedział końca generowania.
 # Wartość hojna — to bezpiecznik na patologię, nie element normalnego rytmu rozmowy.
 TURN_IDLE_TIMEOUT_SECONDS = 15.0
@@ -549,7 +557,7 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
         closed = True
         await _send_text(send, "", last=True)
         if spoken:
-            logger.info("Voice ▶ asystent [%s]: %s", session.call_sid, "".join(spoken))
+            logger.info("Voice ▶ asystentka [%s]: %s", session.call_sid, "".join(spoken))
 
     while True:
         timeout = POST_GENERATION_GRACE_SECONDS if generation_done else TURN_IDLE_TIMEOUT_SECONDS
@@ -566,6 +574,11 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
                 session.call_sid,
                 generation_done,
             )
+            # Odczyt został właśnie anulowany w środku ramki. Porzucony generator
+            # potrafi zostawić gniazdo w stanie, w którym kolejna tura dostaje cudze
+            # ramki, a keepalive przestaje chodzić — zamykamy go jawnie.
+            with contextlib.suppress(Exception):
+                await stream.aclose()
             break
 
         tool_call = getattr(gmsg, "tool_call", None)
@@ -586,15 +599,16 @@ async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -
             saw_output = True
             continue
 
-        if closed:
-            # Turę już domknęliśmy (model zapowiedział koniec mówienia), a to nie było
-            # wywołanie narzędzia — nie ma na co dłużej czekać, oddajemy głos rozmówcy.
-            return
-
         server_content = getattr(gmsg, "server_content", None)
         if server_content and getattr(server_content, "interrupted", False):
             # Barge-in po stronie Gemini (różny od ramki ``interrupt`` z Twilio):
             # rozmówca przerwał — kończymy turę bez ramki ``last``.
+            if spoken:
+                logger.info(
+                    "Voice ▶ asystentka [%s] (przerwana): %s",
+                    session.call_sid,
+                    "".join(spoken),
+                )
             return
 
         # Model gada AUDIO; tekst do ConversationRelay bierzemy z transkrypcji
