@@ -83,6 +83,11 @@ CONNECT_ERROR_MESSAGE = (
 # kosztowałoby rezerwację, którą rozmówca przed chwilą potwierdził głosem.
 SHUTDOWN_GRACE_SECONDS = 3.0
 
+# Najkrótsza nakładka transkrypcji, którą wolno uznać za powtórzenie transportu.
+# Poniżej tej długości zbieżność jest przypadkowa — „to”, „ i ”, „nie” wracają w
+# zdaniu wielokrotnie i wycięcie ich robi dziury w wypowiedzi.
+MIN_OVERLAP_CHARS = 8
+
 # Model nie zawsze domyka turę ``turn_complete``. Zaobserwowane na żywym połączeniu
 # (rozmowa CA189c74…): po odesłaniu wyniku narzędzia przyszła wypowiedź modelu i
 # ``generation_complete``, ale ``turn_complete`` NIE przyszedł już nigdy. Pętla tury
@@ -526,24 +531,32 @@ def _system_instruction(user) -> str:
 def _new_speech(spoken: list[str], text: str) -> str:
     """Zwraca tę część ``text``, której jeszcze nie wysłano do TTS.
 
-    Transkrypcja wyjścia modelu bywa dosyłana z nakładką (kolejna ramka powtarza
-    początek poprzedniej) albo zdublowana w całości. Wysłanie jej wprost sprawia, że
-    rozmówca słyszy urywek jeszcze raz — brzmi to jak zacinająca się płyta.
+    Transkrypcja wyjścia modelu bywa zdublowana (ta sama ramka dwa razy) albo
+    dosyłana kumulatywnie (kolejna ramka powtarza całość od początku). Wysłanie jej
+    wprost sprawia, że rozmówca słyszy urywek ponownie — jak zacinająca się płyta.
+
+    ⚠️ Odsiewamy WYŁĄCZNIE powtórzenia dosłowne i długie. Pierwsza wersja odrzucała
+    każdy fragment, który wystąpił już gdziekolwiek wcześniej — a przy strumieniu
+    dzielonym na sylaby („a”, „ i ”, „ko”) taki fragment wystąpił PRAKTYCZNIE ZAWSZE.
+    Wypowiedzi robiły się dziurawe i urywały w połowie zdania (rozmowy z 15:42).
+    Powtórzone słowo jest normalną częścią zdania — nie wolno go traktować jak błąd.
     """
     if not text:
+        return ""
+    if spoken and text == spoken[-1]:
+        # Ta sama ramka dwa razy pod rząd — to duplikat transportu, nie mowa.
         return ""
     already = "".join(spoken)
     if not already:
         return text
-    if text in already:  # pełny duplikat już wypowiedzianego fragmentu
-        return ""
     if text.startswith(already):  # ramka kumulatywna — zostaje sam ogon
         return text[len(already) :]
-    # Nakładka częściowa: znajdujemy najdłuższy wspólny styk ogona z początkiem.
+    # Nakładka częściowa tylko dla DŁUGICH styków. Przy krótkich (sylaba, spójnik)
+    # zbieżność jest przypadkowa i ucięcie zjadłoby fragment prawdziwej wypowiedzi.
     overlap = min(len(already), len(text))
-    while overlap > 0 and not already.endswith(text[:overlap]):
+    while overlap >= MIN_OVERLAP_CHARS and not already.endswith(text[:overlap]):
         overlap -= 1
-    return text[overlap:]
+    return text[overlap:] if overlap >= MIN_OVERLAP_CHARS else text
 
 
 async def _pump_caller_to_model(gsession, session: VoiceCallSession, receive) -> None:

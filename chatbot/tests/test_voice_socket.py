@@ -1004,8 +1004,21 @@ class TestSpeechDeduplication:
             voice_socket._new_speech(["Mam wolną"], "Mam wolną Minikoparkę 1") == " Minikoparkę 1"
         )
 
-    def test_partial_overlap_is_trimmed(self):
-        assert voice_socket._new_speech(["No cześć, wariacie! Mam"], "Mam wolną") == " wolną"
+    def test_long_partial_overlap_is_trimmed(self):
+        assert (
+            voice_socket._new_speech(["Mam wolną minikoparkę"], "minikoparkę numer dwa")
+            == " numer dwa"
+        )
+
+    def test_short_overlap_is_left_alone(self):
+        """Krótki styk zostaje — lepiej powtórzone słowo niż dziura w zdaniu.
+
+        Świadomy kompromis: przy strumieniu dzielonym na sylaby zbieżność 2–3 znaków
+        jest przypadkowa. Ucinanie jej zjadało fragmenty prawdziwej wypowiedzi i
+        zdania urywały się w połowie (rozmowy z 15:42) — a to brzmi znacznie gorzej
+        niż raz powtórzone słowo.
+        """
+        assert voice_socket._new_speech(["No cześć, wariacie! Mam"], "Mam wolną") == "Mam wolną"
 
     def test_fresh_text_passes_through(self):
         assert voice_socket._new_speech(["Dzień dobry."], " Co dalej?") == " Co dalej?"
@@ -1035,9 +1048,12 @@ class TestSpeechDeduplication:
         channel = _run_socket(events, session, monkeypatch)
         spoken = "".join(f.get("token", "") for f in _sent_texts(channel))
 
+        # Dosłownie zdublowana ramka nie może polecieć do lektora drugi raz...
         assert spoken.count("No cześć, wariacie!") == 1, f"powtórzone powitanie: {spoken!r}"
-        assert spoken.count("Mam") == 1, f"powtórzone 'Mam': {spoken!r}"
+        # ...ale treść wypowiedzi musi dojść W CAŁOŚCI. Nadgorliwe odsiewanie
+        # powtórzeń urywało zdania w połowie — to gorsze niż powtórzone słowo.
         assert "Minikoparkę 1" in spoken
+        assert spoken.endswith("."), f"zdanie urwane: {spoken!r}"
 
 
 class TestTurnEndsWithoutWaitingForTurnComplete:
