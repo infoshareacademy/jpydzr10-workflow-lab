@@ -78,9 +78,10 @@ FATAL_ERROR_MESSAGE = (
 CONNECT_ERROR_MESSAGE = (
     "Przepraszam, system jest chwilowo niedostępny. Zadzwoń proszę jeszcze raz za chwilę."
 )
-# Po tylu nieudanych turach z rzędu przestajemy udawać, że rozmowa trwa: kolejne
-# próby na zerwanej sesji i tak padną, a rozmówca w kółko słyszy „powtórz”.
-MAX_TURN_FAILURES = 2
+# Po rozłączeniu rozmówcy dajemy strumieniowi w dół tyle czasu na dokończenie tego,
+# co właśnie robi (typowo: zapis rezerwacji przez narzędzie). Ucięcie w pół zapisu
+# kosztowałoby rezerwację, którą rozmówca przed chwilą potwierdził głosem.
+SHUTDOWN_GRACE_SECONDS = 3.0
 
 # Model nie zawsze domyka turę ``turn_complete``. Zaobserwowane na żywym połączeniu
 # (rozmowa CA189c74…): po odesłaniu wyniku narzędzia przyszła wypowiedź modelu i
@@ -544,137 +545,129 @@ def _new_speech(spoken: list[str], text: str) -> str:
     return text[overlap:]
 
 
-async def _handle_prompt(gsession, session: VoiceCallSession, msg: dict, send) -> None:
-    """Przekazuje wypowiedź usera do Gemini i streamuje odpowiedź z powrotem do Twilio."""
+async def _pump_caller_to_model(gsession, session: VoiceCallSession, receive) -> None:
+    """Strumień W GÓRĘ: co powie rozmówca, leci do modelu. Nigdy nie czeka na odpowiedź.
+
+    Kluczowe, że ta pętla nie robi NIC poza przekazywaniem: dopóki działa, ramki z
+    Twilio są odbierane na bieżąco. W poprzedniej wersji most przetwarzał odpowiedź
+    modelu w tej samej pętli, więc przez czas mówienia bota nikt nie czytał mikrofonu —
+    rozmówca mówił „do ściany" i musiał się powtarzać.
+    """
+    while True:
+        msg = await _recv_json(receive)
+        if msg is None:  # rozłączenie rozmówcy
+            return
+        mtype = msg.get("type")
+        if mtype == "prompt":
+            voice_prompt = msg.get("voicePrompt", "")
+            if not voice_prompt:
+                continue
+            # Transkrypt (audyt) trzyma SUROWĄ wypowiedź. Do modelu idzie wersja
+            # sanityzowana i opakowana w <user_input> — spójnie ze ścieżką tekstową.
+            session.add_turn("user", voice_prompt)
+            logger.info("Voice ◀ rozmówca [%s]: %s", session.call_sid, voice_prompt)
+            await gsession.send_client_content(
+                turns={
+                    "role": "user",
+                    "parts": [{"text": wrap_user_input(sanitize_user_input(voice_prompt))}],
+                },
+                turn_complete=True,
+            )
+        elif mtype == "interrupt" and session.has_pending():
+            # Rozmówca wszedł w słowo — wisząca akcja przestaje być aktualna, żeby
+            # „tak" po przerwaniu nie potwierdziło czegoś, czego nie dosłuchał.
+            session.cancel()
+
+
+async def _pump_model_to_caller(gsession, session: VoiceCallSession, send) -> None:
+    """Strumień W DÓŁ: odpowiedzi modelu → lektor Twilio.
+
+    Nie ma tu żadnego limitu czasu ani „domykania tury na siłę" — to one rozsypywały
+    sesję, bo anulowały odczyt w środku ramki.
+
+    ⚠️ Kontrakt SDK: ``receive()`` obejmuje JEDNĄ turę modelu — jego własna pętla robi
+    ``break`` na ``turn_complete``. Dlatego odbiór jest opakowany w pętlę zewnętrzną,
+    która otwiera kolejny po każdej domkniętej turze; bez niej most zamilkłby po
+    pierwszej odpowiedzi. Gdy ``turn_complete`` nie przyjdzie (zdarza się po turze z
+    narzędziem), wewnętrzny ``async for`` po prostu czeka dalej — i to nie szkodzi,
+    bo rozmówcy słucha bez przerwy drugi strumień.
+    """
     from google.genai import types
 
-    voice_prompt = msg.get("voicePrompt", "")
-    # Transkrypt (audyt) trzyma SUROWĄ wypowiedź — chcemy wiedzieć co user naprawdę
-    # powiedział. Do Gemini idzie wersja sanityzowana i opakowana w <user_input>
-    # (defense-in-depth, spójnie ze ścieżką tekstową w ``chatbot.services``).
-    # RBAC serwerowy w ``propose_or_execute`` i tak jest twardą warstwą autoryzacji,
-    # ale sanityzacja ogranicza prompt-leak i wzorce wstrzyknięcia w mowie.
-    session.add_turn("user", voice_prompt)
-    # Transkrypt trafia też do logu: po rozmowie telefonicznej NIE ZOSTAJE nic innego,
-    # z czego dałoby się odtworzyć, co poszło nie tak (nagrania nie robimy). Bez tego
-    # diagnoza „bot się zaciął" opiera się wyłącznie na pamięci rozmówcy.
-    logger.info("Voice ◀ rozmówca [%s]: %s", session.call_sid, voice_prompt)
-    prompt_for_model = wrap_user_input(sanitize_user_input(voice_prompt))
-    await gsession.send_client_content(
-        turns={"role": "user", "parts": [{"text": prompt_for_model}]}, turn_complete=True
-    )
+    spoken: list[str] = []
 
-    # Iterujemy JAWNIE (zamiast ``async for``), bo każde oczekiwanie na ramkę musi
-    # mieć limit czasu — patrz komentarz przy ``POST_GENERATION_GRACE_SECONDS``.
-    stream = gsession.receive().__aiter__()
-    generation_done = False  # model zapowiedział koniec generowania
-    saw_output = False  # w TEJ turze przyszła już treść albo wywołanie narzędzia
-    closed = False  # ramka ``last`` poszła — TTS domknięty, rozmówca ma głos
-    spoken: list[str] = []  # całość wypowiedzi bota w tej turze (do logu)
-
-    async def _close_turn() -> None:
-        """Domyka turę u Twilio dokładnie raz i zapisuje wypowiedź do logu."""
-        nonlocal closed
-        if closed:
+    async def _finish_utterance() -> None:
+        """Domyka wypowiedź u Twilio (lektor kończy zdanie i oddaje głos)."""
+        if not spoken:
             return
-        closed = True
+        logger.info("Voice ▶ asystentka [%s]: %s", session.call_sid, "".join(spoken))
+        spoken.clear()
         await _send_text(send, "", last=True)
-        if spoken:
-            logger.info("Voice ▶ asystentka [%s]: %s", session.call_sid, "".join(spoken))
 
     while True:
-        timeout = POST_GENERATION_GRACE_SECONDS if generation_done else TURN_IDLE_TIMEOUT_SECONDS
-        try:
-            gmsg = await asyncio.wait_for(anext(stream), timeout)
-        except StopAsyncIteration:
-            # Strumień tury zamknięty bez ``turn_complete`` — i tak domykamy poniżej,
-            # żeby Twilio wypowiedziało bufor i wróciło do słuchania.
-            break
-        except TimeoutError:
-            logger.warning(
-                "Voice WS: model nie domknął tury (call_sid=%s, po generowaniu=%s) — "
-                "domykam po stronie mostu.",
-                session.call_sid,
-                generation_done,
-            )
-            # Odczyt został właśnie anulowany w środku ramki. Porzucony generator
-            # potrafi zostawić gniazdo w stanie, w którym kolejna tura dostaje cudze
-            # ramki, a keepalive przestaje chodzić — zamykamy go jawnie.
-            with contextlib.suppress(Exception):
-                await stream.aclose()
-            break
+        received_any = False
+        async for gmsg in gsession.receive():
+            received_any = True
+            tool_call = getattr(gmsg, "tool_call", None)
+            if tool_call and getattr(tool_call, "function_calls", None):
+                responses = []
+                for fc in tool_call.function_calls:
+                    result = await sync_to_async(dispatch_tool_call, thread_sensitive=True)(
+                        session, fc.name, dict(fc.args or {})
+                    )
+                    session.add_turn("tool", result)
+                    responses.append(
+                        types.FunctionResponse(id=fc.id, name=fc.name, response={"result": result})
+                    )
+                await gsession.send_tool_response(function_responses=responses)
+                continue
 
-        tool_call = getattr(gmsg, "tool_call", None)
-        if tool_call and getattr(tool_call, "function_calls", None):
-            responses = []
-            for fc in tool_call.function_calls:
-                result = await sync_to_async(dispatch_tool_call, thread_sensitive=True)(
-                    session, fc.name, dict(fc.args or {})
-                )
-                session.add_turn("tool", result)
-                responses.append(
-                    types.FunctionResponse(id=fc.id, name=fc.name, response={"result": result})
-                )
-            await gsession.send_tool_response(function_responses=responses)
-            # Po wyniku narzędzia model generuje odpowiedź od nowa — poprzednia
-            # zapowiedź końca generowania jest już nieaktualna.
-            generation_done = False
-            saw_output = True
-            continue
+            server_content = getattr(gmsg, "server_content", None)
+            if server_content is None:
+                continue
 
-        server_content = getattr(gmsg, "server_content", None)
-        if server_content and getattr(server_content, "interrupted", False):
-            # Barge-in po stronie Gemini (różny od ramki ``interrupt`` z Twilio):
-            # rozmówca przerwał — kończymy turę bez ramki ``last``.
-            if spoken:
-                logger.info(
-                    "Voice ▶ asystentka [%s] (przerwana): %s",
-                    session.call_sid,
-                    "".join(spoken),
-                )
+            if getattr(server_content, "interrupted", False):
+                # Rozmówca wszedł w słowo: reszta wypowiedzi przestaje być aktualna.
+                # Turę u Twilio trzeba mimo to DOMKNĄĆ — bez ramki ``last`` zostaje ono
+                # w zawieszeniu, czekając na koniec wypowiedzi, który nigdy nie przyjdzie.
+                # Odbioru nie kończymy: model zaraz odpowie na nową kwestię.
+                if spoken:
+                    logger.info(
+                        "Voice ▶ asystentka [%s] (przerwana): %s",
+                        session.call_sid,
+                        "".join(spoken),
+                    )
+                    spoken.clear()
+                    await _send_text(send, "", last=True)
+                continue
+
+            # Przy modalności AUDIO tekst dla lektora bierzemy z transkrypcji wyjścia
+            # (``gmsg.text`` jest wtedy puste).
+            ot = getattr(server_content, "output_transcription", None)
+            text = getattr(ot, "text", None) if ot else None
+            if text:
+                chunk = _new_speech(spoken, text)
+                if chunk:
+                    session.add_turn("assistant", chunk)
+                    spoken.append(chunk)
+                    await _send_text(send, chunk, last=False)
+
+            # Oba sygnały traktujemy tak samo — liczy się PIERWSZY, który dotrze.
+            # ``turn_complete`` po turze z narzędziem potrafi nie przyjść wcale.
+            if getattr(server_content, "generation_complete", False) or getattr(
+                server_content, "turn_complete", False
+            ):
+                await _finish_utterance()
+
+        # Odbiór zamknął się na ``turn_complete`` — domykamy i otwieramy następny.
+        # Przebieg bez ani jednej ramki oznacza, że sesja modelu już nie żyje.
+        await _finish_utterance()
+        if not received_any:
             return
-
-        # Model gada AUDIO; tekst do ConversationRelay bierzemy z transkrypcji
-        # wyjścia (``output_transcription``) — ``gmsg.text`` przy modalności AUDIO
-        # jest puste.
-        ot = getattr(server_content, "output_transcription", None) if server_content else None
-        text = getattr(ot, "text", None) if ot else None
-        if text and not closed:
-            # Transkrypcja NIE zawsze jest czysto przyrostowa: potrafi wrócić z
-            # nakładką albo powtórzyć fragment, który już poszedł do TTS. Rozmówca
-            # słyszy wtedy „No cześć, wariacie! Mam — No cześć, wariacie! Mam…”, czyli
-            # zacinanie się i mówienie od nowa (zgłoszone 09.08). Wysyłamy więc tylko
-            # tę część, której jeszcze nie wypowiedziała.
-            chunk = _new_speech(spoken, text)
-            if chunk:
-                session.add_turn("assistant", chunk)
-                spoken.append(chunk)
-                await _send_text(send, chunk, last=False)
-                saw_output = True
-
-        if server_content and getattr(server_content, "turn_complete", False):
-            # ``saw_output`` chroni przed domknięciem tury ramką zaległą po turze
-            # poprzedniej — inaczej ucięlibyśmy odpowiedź, zanim model cokolwiek powie.
-            if saw_output:
-                await _close_turn()
-                return
-            continue
-
-        if server_content and getattr(server_content, "generation_complete", False):
-            # Model skończył mówić — domykamy i WYCHODZIMY od razu. Czekanie na
-            # ``turn_complete`` jest pułapką: po turze z narzędziem often nie przychodzi
-            # wcale, więc kończyło się limitem czasu, a ten anuluje odczyt z gniazda i
-            # rozsypuje sesję. Ramki porządkowe, które model dosyła po wypowiedzi
-            # (``sessionResumption``, zużycie tokenów), nie niosą mowy — spokojnie
-            # doczytamy je na początku następnej tury.
-            await _close_turn()
-            return
-
-    await _close_turn()
 
 
 async def run_voice_socket(scope, receive, send) -> None:
-    """Pętla WS: akceptacja → setup/tożsamość → Gemini Live ↔ Twilio (tury)."""
+    """Most Twilio ConversationRelay ↔ Gemini Live: dwa niezależne strumienie."""
     # Handshake ASGI WebSocket.
     event = await receive()
     if event.get("type") == "websocket.connect":
@@ -693,54 +686,44 @@ async def run_voice_socket(scope, receive, send) -> None:
     session = VoiceCallSession(call_sid=call_sid, user=user)
     logger.info("Voice WS setup: call_sid=%s user=%s", call_sid, getattr(user, "pk", "guest"))
 
-    # Budowa configu Gemini uderza do DB (build_user_perms_summary → has_perm),
-    # więc MUSI iść przez sync_to_async — inaczej dla zalogowanego NIE-superusera
-    # (kierownik/magazynier/montażysta) leci ``SynchronousOnlyOperation`` i połączenie
-    # pada tuż po PIN. (Admin=superuser omija DB, więc bug nie ujawniał się na demo.)
+    # Budowa configu uderza do DB (uprawnienia), więc MUSI iść przez sync_to_async —
+    # inaczej dla nie-superusera leci ``SynchronousOnlyOperation`` tuż po PIN.
     try:
         gemini_cm = await sync_to_async(_gemini_connect, thread_sensitive=True)(user)
     except Exception:
-        # Szeroki wyjątek celowo: cokolwiek zawiedzie po drodze (klucz, limit, sieć,
-        # niedostępny model), rozmówca ma usłyszeć zdanie zamiast ciszy w słuchawce.
+        # Szeroki wyjątek celowo: cokolwiek zawiedzie (klucz, limit, sieć, model),
+        # rozmówca ma usłyszeć zdanie zamiast ciszy w słuchawce.
         logger.exception("Voice WS: nie udało się otworzyć sesji modelu (call_sid=%s).", call_sid)
         await _send_text(send, CONNECT_ERROR_MESSAGE, last=True)
         await send({"type": "websocket.close"})
         return
 
-    failures = 0
     async with gemini_cm as gsession:
-        while True:
-            msg = await _recv_json(receive)
-            if msg is None:
-                break
-            mtype = msg.get("type")
-            if mtype == "prompt":
-                try:
-                    await _handle_prompt(gsession, session, msg, send)
-                except Exception:
-                    # Jw. — pojedyncza tura może paść z wielu powodów (zerwane
-                    # gniazdo do modelu, timeout, błąd narzędzia). Rozmowa jest
-                    # kanałem czasu rzeczywistego: lepiej poprosić o powtórzenie
-                    # niż zostawić dzwoniącego w ciszy do samego rozłączenia.
-                    failures += 1
-                    logger.exception(
-                        "Voice WS: tura nie powiodła się (call_sid=%s, z rzędu=%s).",
-                        call_sid,
-                        failures,
-                    )
-                    # Wisząca akcja pochodzi z przerwanej tury — po błędzie „tak”
-                    # nie może potwierdzić czegoś, czego rozmówca nie usłyszał.
-                    session.cancel()
-                    if failures >= MAX_TURN_FAILURES:
-                        await _send_text(send, FATAL_ERROR_MESSAGE, last=True)
-                        break
-                    await _send_text(send, TURN_ERROR_MESSAGE, last=True)
-                else:
-                    failures = 0
-            elif mtype == "interrupt" and session.has_pending():
-                # Barge-in z Twilio: w modelu turowym tura Gemini już jest
-                # zamknięta; czyścimy wiszącą akcję, by „tak” po przerwaniu nie
-                # potwierdziło czegoś nieaktualnego.
-                session.cancel()
-            # 'setup'/inne ramki ignorujemy.
+        uplink = asyncio.create_task(_pump_caller_to_model(gsession, session, receive))
+        downlink = asyncio.create_task(_pump_model_to_caller(gsession, session, send))
+        done, pending = await asyncio.wait({uplink, downlink}, return_when=asyncio.FIRST_COMPLETED)
+
+        if uplink in done and downlink in pending:
+            # Rozmówca odłożył słuchawkę. Strumień w dół może być W ŚRODKU narzędzia —
+            # np. dopisywać rezerwację do bazy. Ucięcie go w tym miejscu zgubiłoby
+            # zapis, który rozmówca przed chwilą potwierdził, więc dajemy mu dokończyć.
+            finished, pending = await asyncio.wait({downlink}, timeout=SHUTDOWN_GRACE_SECONDS)
+            done = done | finished
+
+        for task in pending:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await task
+        # Rozłączenie rozmówcy kończy most normalnie; awaria strumienia musi jeszcze
+        # zdążyć powiedzieć zdanie, zanim gniazdo padnie.
+        for task in done:
+            if task.cancelled():
+                continue
+            exc = task.exception()
+            if exc is not None:
+                logger.exception(
+                    "Voice WS: strumień przerwany (call_sid=%s).", call_sid, exc_info=exc
+                )
+                with contextlib.suppress(Exception):
+                    await _send_text(send, FATAL_ERROR_MESSAGE, last=True)
     logger.info("Voice WS zakończone: call_sid=%s", call_sid)

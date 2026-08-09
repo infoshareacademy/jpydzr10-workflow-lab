@@ -97,23 +97,37 @@ class FakeMsg:
 
 
 class FakeGeminiSession:
-    """Sesja Gemini Live — jedna ``receive()`` (jeden async-for) na turę."""
+    """Sesja Gemini Live — jedna ``receive()`` na turę (tak jak w SDK: pętla
+    ``receive()`` robi ``break`` na ``turn_complete``).
+
+    Model odzywa się DOPIERO po otrzymaniu wypowiedzi — stąd bramka ``_prompted``.
+    Bez niej atrapa oddawałaby wszystkie zaprogramowane tury naraz, więc przy
+    współbieżnym moście odpowiedzi wyprzedzałyby pytania i testy sprawdzałyby
+    kolejność zdarzeń, która w prawdziwej rozmowie nie może wystąpić.
+    """
 
     def __init__(self, turns):
         # turns: lista batchy; każdy batch = lista FakeMsg dla jednej tury (prompt).
         self._turns = list(turns)
         self.client_contents = []
         self.tool_responses = []
+        # Kolejka, nie flaga: rozmówca potrafi powiedzieć dwie rzeczy pod rząd, zanim
+        # model odpowie na pierwszą. Flaga zgubiłaby drugą wypowiedź.
+        self._prompts: asyncio.Queue = asyncio.Queue()
 
-    async def send_client_content(self, turns, turn_complete):
+    async def send_client_content(self, turns, turn_complete=True):
         self.client_contents.append(turns)
+        self._prompts.put_nowait(None)
 
     async def send_tool_response(self, function_responses):
         self.tool_responses.append(function_responses)
 
+    async def _next_batch(self):
+        await self._prompts.get()
+        return self._turns.pop(0) if self._turns else []
+
     async def receive(self):
-        batch = self._turns.pop(0) if self._turns else []
-        for msg in batch:
+        for msg in await self._next_batch():
             yield msg
 
 
@@ -131,8 +145,7 @@ class HangingGeminiSession(FakeGeminiSession):
         self._hang_seconds = hang_seconds
 
     async def receive(self):
-        batch = self._turns.pop(0) if self._turns else []
-        for msg in batch:
+        for msg in await self._next_batch():
             yield msg
         await asyncio.sleep(self._hang_seconds)
 
@@ -161,7 +174,15 @@ class FakeChannel:
 
     async def receive(self):
         if self._events:
-            return self._events.pop(0)
+            event = self._events.pop(0)
+            # Znacznik pauzy: oddaje sterowanie, żeby DRUGI strumień (odpowiedzi
+            # modelu) zdążył przetworzyć to, co już dostał. Most jest współbieżny,
+            # więc bez tego test wysyłałby całą rozmowę, zanim padnie pierwsza
+            # odpowiedź — kolejność zdarzeń nie odpowiadałaby prawdziwej rozmowie.
+            if event.get("type") == "__pause__":
+                await asyncio.sleep(event.get("seconds", 0.05))
+                return await self.receive()
+            return event
         return {"type": "websocket.disconnect"}
 
     async def send(self, message):
@@ -539,9 +560,13 @@ class TestRunVoiceSocket:
         assert "KOP-WS3" in result
         assert '"found":true' in result.replace(" ", "")
 
-    def test_barge_in_ends_turn_without_last_frame(self, monkeypatch):
+    def test_barge_in_drops_rest_of_utterance_but_closes_the_turn(self, monkeypatch):
+        """Przerwanie ucina resztę wypowiedzi, ale MUSI domknąć turę u Twilio.
+
+        Bez ramki ``last`` Twilio czeka na koniec wypowiedzi, który nigdy nie przyjdzie,
+        i po chwili samo zrywa połączenie — tak padły rozmowy z 09.08 (15:11–15:13).
+        """
         admin = _admin()
-        # Gemini sygnalizuje przerwanie (interrupted) — tura kończy się BEZ last=True.
         turn1 = [
             FakeMsg(text="Zaczynam mówić…"),
             FakeMsg(server_content=FakeServerContent(interrupted=True)),
@@ -556,10 +581,16 @@ class TestRunVoiceSocket:
         ]
         channel = _run_socket(events, session, monkeypatch)
         texts = _sent_texts(channel)
-        # Wysłano pierwszy fragment, ale NIE domknięcie tury (last=True) ani tekst po interrupt.
-        assert any(t.get("token") == "Zaczynam mówić…" for t in texts)
-        assert all(t.get("last") is not True for t in texts)
-        assert all(t.get("token") != "tego nie powinno być" for t in texts)
+        tokens = [t.get("token") for t in texts]
+
+        assert "Zaczynam mówić…" in tokens
+        # Tura zostaje domknięta, więc Twilio oddaje głos zamiast czekać na koniec
+        # wypowiedzi, który po przerwaniu nigdy nie nadejdzie.
+        assert any(t.get("last") for t in texts), "brak domknięcia tury po przerwaniu"
+        # Domknięcie musi paść ZARAZ po przerwaniu — zanim pójdzie cokolwiek dalej,
+        # inaczej reszta doklejałaby się do wypowiedzi, której rozmówca już nie słucha.
+        closing = next(i for i, t in enumerate(texts) if t.get("last"))
+        assert tokens.index("Zaczynam mówić…") < closing
 
     def test_asgi_router_sends_voice_ws_to_voice_handler(self, monkeypatch):
         import planer_config.asgi as asgi
@@ -639,7 +670,12 @@ class TestRunVoiceSocket:
             {"type": "websocket.connect"},
             _setup_event(admin),
             _ws_text({"type": "prompt", "voicePrompt": "Zarezerwuj"}),
+            # Pauza odwzorowuje prawdziwy przebieg: rozmówca przerywa DOPIERO gdy
+            # usłyszy propozycję, więc wisząca akcja zdążyła już powstać. Bez niej
+            # test wysyłałby całą rozmowę, zanim model cokolwiek odpowie.
+            {"type": "__pause__", "seconds": 0.1},
             _ws_text({"type": "interrupt"}),
+            {"type": "__pause__", "seconds": 0.05},
             _ws_text({"type": "prompt", "voicePrompt": "tak"}),
             {"type": "websocket.disconnect"},
         ]
@@ -703,45 +739,60 @@ class TestVoiceFailureRecovery:
     """Cisza w słuchawce jest nieodróżnialna od zepsutego systemu — po każdej
     awarii rozmówca dostaje zdanie, a nie milczący socket."""
 
-    def test_failed_turn_is_spoken_and_conversation_survives(self, monkeypatch):
+    def test_broken_model_socket_is_announced_not_silent(self, monkeypatch):
+        """Zerwane łącze do modelu = zdanie w słuchawce, nie cisza do rozłączenia.
+
+        Most nie próbuje już ratować pojedynczej tury komunikatem „powtórz” — przy
+        rozdzielonych strumieniach awaria gniazda dotyczy całej sesji, nie jednej
+        wypowiedzi, a kolejne próby na martwym gnieździe i tak padają.
+        """
         admin = _admin()
-        ok_turn = [
-            FakeMsg(text="Koparka jest w magazynie."),
-            FakeMsg(server_content=FakeServerContent(turn_complete=True)),
-        ]
-        # Pierwsza tura zrywa się, druga przechodzi normalnie.
-        session = FakeBrokenSession([ok_turn], fail_on=(0,))
+        session = FakeBrokenSession([], fail_on=(0,))
         events = [
             {"type": "websocket.connect"},
             _setup_event(admin),
             _ws_text({"type": "prompt", "voicePrompt": "status koparki"}),
-            _ws_text({"type": "prompt", "voicePrompt": "to jaki jest status?"}),
+            {"type": "__pause__", "seconds": 0.1},
             {"type": "websocket.disconnect"},
         ]
         channel = _run_socket(events, session, monkeypatch)
         spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
 
-        assert voice_socket.TURN_ERROR_MESSAGE in spoken  # awaria zapowiedziana głosem
-        # ...a rozmowa toczy się dalej: kolejna tura obsłużona normalnie.
-        assert "Koparka jest w magazynie." in spoken
+        assert voice_socket.FATAL_ERROR_MESSAGE in spoken
 
-    def test_repeated_failures_end_call_with_explanation(self, monkeypatch):
+    def test_caller_hangup_lets_pending_tool_finish(self, monkeypatch):
+        """Rozłączenie w trakcie zapisu nie może zgubić potwierdzonej rezerwacji."""
         admin = _admin()
-        session = FakeBrokenSession([], fail_on=(0, 1, 2))
+        machine = Machine.objects.create(
+            uid="M-7788", name="Koparka odkładana", machine_type=Machine.Type.KOPARKA
+        )
+        before = Reservation.objects.count()
+        session = HangingGeminiSession(
+            [
+                [
+                    FakeMsg(
+                        tool_call=FakeToolCall(
+                            [FakeFC("fc1", "create_reservation", _reservation_args(machine))]
+                        )
+                    ),
+                    FakeMsg(tool_call=FakeToolCall([FakeFC("fc2", CONFIRM_TOOL, {})])),
+                    FakeMsg(text="Gotowe."),
+                    FakeMsg(server_content=FakeServerContent(turn_complete=True)),
+                ]
+            ]
+        )
         events = [
             {"type": "websocket.connect"},
             _setup_event(admin),
-            _ws_text({"type": "prompt", "voicePrompt": "raz"}),
-            _ws_text({"type": "prompt", "voicePrompt": "dwa"}),
-            _ws_text({"type": "prompt", "voicePrompt": "trzy"}),
+            _ws_text({"type": "prompt", "voicePrompt": "zarezerwuj i potwierdzam"}),
+            # Rozmówca odkłada słuchawkę natychmiast — zapis trwa.
             {"type": "websocket.disconnect"},
         ]
-        channel = _run_socket(events, session, monkeypatch)
-        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
+        _run_socket(events, session, monkeypatch)
 
-        assert voice_socket.FATAL_ERROR_MESSAGE in spoken  # zamiast „powtórz” w kółko
-        # Trzecia wypowiedź nie jest już obsługiwana — pętla zakończona po limicie.
-        assert spoken.count(voice_socket.TURN_ERROR_MESSAGE) == 1
+        assert Reservation.objects.count() == before + 1, (
+            "rezerwacja zgubiona przez rozłączenie w trakcie zapisu"
+        )
 
     def test_unavailable_model_is_announced_before_hangup(self, monkeypatch):
         admin = _admin()
@@ -799,10 +850,14 @@ class TestTurnClosingWithoutTurnComplete:
         assert "M-0001" in spoken
 
     def test_silent_model_does_not_freeze_the_call(self, monkeypatch):
-        """Model milczy bez zapowiedzi — most i tak wraca do słuchania rozmówcy."""
+        """Model zamilkł w pół tury — most NADAL słucha rozmówcy.
+
+        Sedno rozdzielenia strumieni: odbiór odpowiedzi może sobie wisieć w
+        nieskończoność, a mikrofon i tak jest czytany. W dawnej, jednozadaniowej
+        pętli rozmówca mówił wtedy „do ściany" i musiał się powtarzać.
+        """
         admin = _admin()
         session = HangingGeminiSession([[FakeMsg(text="Chwileczkę.")], [FakeMsg(text="Gotowe.")]])
-        monkeypatch.setattr(voice_socket, "TURN_IDLE_TIMEOUT_SECONDS", 0.05)
         events = [
             {"type": "websocket.connect"},
             _setup_event(admin),
@@ -810,13 +865,12 @@ class TestTurnClosingWithoutTurnComplete:
             _ws_text({"type": "prompt", "voicePrompt": "drugie pytanie"}),
             {"type": "websocket.disconnect"},
         ]
-        channel = _run_socket(events, session, monkeypatch)
+        _run_socket(events, session, monkeypatch)
 
-        # Sedno regresji: DRUGA wypowiedź w ogóle dotarła do modelu. Przed poprawką
-        # pętla wisiała na pierwszej turze i nikt już nie czytał ramek z Twilio.
+        # Sedno: DRUGA wypowiedź dotarła do modelu, mimo że odbiór odpowiedzi wisi
+        # na pierwszej turze. Wcześniej most zatrzymywał się na niej i przestawał
+        # czytać mikrofon — rozmówca mówił w próżnię.
         assert len(session.client_contents) == 2
-        spoken = " ".join(f.get("token", "") for f in _sent_texts(channel))
-        assert "Gotowe." in spoken
 
     def test_reservation_by_voice_survives_missing_turn_complete(self, monkeypatch):
         """Pełny scenariusz demo: rezerwacja przez narzędzie, bez ``turn_complete``."""

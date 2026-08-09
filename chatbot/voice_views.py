@@ -124,9 +124,12 @@ def build_twiml(*, ws_url: str, user, nonce: str) -> str:
         'transcriptionProvider="Google" '
         # interruptible="any": mowa rozmówcy zatrzymuje TTS bota (barge-in po stronie Twilio).
         # ignoreBackchannel="true": „mhm/aha" nie liczą się jako przerwanie (mniej fałszywych cięć).
-        # NIE ustawiamy reportInputDuringAgentSpeech="speech": pętla WS jest jednozadaniowa,
-        # więc mowa dostarczona W TRAKCIE tury bota tylko kolejkuje się za nią (miesza tury,
-        # gorszy UX). Włączyć DOPIERO z refaktorem współbieżnego odbioru (osobny task na receive).
+        # ⚠️ NIE włączać reportInputDuringAgentSpeech="speech". Próba z 09.08 (możliwa
+        # dopiero po rozdzieleniu strumieni) skończyła się tym, że asystentka przerywała
+        # samą sobie po dwóch słowach: jej własny głos wracał przez mikrofon rozmówcy,
+        # transkrypcja z trakt mówienia trafiała do nas i była liczona jako wejście
+        # rozmówcy. W logu widać serię „(przerwana): No cześć,”. Barge-in i tak działa —
+        # daje go interruptible="any" po stronie Twilio.
         f'welcomeGreeting="{escape(greeting)}" interruptible="any" '
         'ignoreBackchannel="true" dtmfDetection="true">'
         f'<Parameter name="user_id" value="{escape(user_id)}"/>'
